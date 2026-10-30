@@ -379,4 +379,39 @@ await check('quien envía puede retirar la solicitud y el registro vuelve a borr
   assert.equal((await q(`select status from approval_requests where id = $1`, [id]))[0].status, 'recalled');
 });
 
+console.log('Fase 9');
+await check('condition_matches evalúa los operadores como el evaluador de la aplicación', async () => {
+  const row = JSON.stringify({ amount: 500, name: 'Torre Norte', is_closed: false, close_date: '2026-01-15', tags: ['a', 'b'],
+    custom_fields: { nivel: 'Oro' }, created_at: '2026-01-15T03:00:00+00:00', empty: null });
+  const cases = [
+    [{ field: 'amount', op: 'gt', value: '100' }, true], [{ field: 'amount', op: 'lte', value: '100' }, false],
+    [{ field: 'name', op: 'contains', value: 'norte' }, true], [{ field: 'name', op: 'starts', value: 'torre' }, true],
+    [{ field: 'is_closed', op: 'eq', value: 'false' }, true], [{ field: 'cf.nivel', op: 'eq', value: 'oro' }, true],
+    [{ field: 'tags', op: 'contains', value: 'b' }, true], [{ field: 'empty', op: 'empty' }, true],
+    [{ field: 'close_date', op: 'lt', value: '2026-02-01' }, true], [{ field: 'close_date', op: 'overdue' }, true],
+    [{ field: 'created_at', op: 'eq', value: '2026-01-14' }, true], [{ field: 'name', op: 'neq', value: 'Torre Norte' }, false],
+  ];
+  for (const [c, expected] of cases) {
+    const [{ ok }] = await q(`select condition_matches($1::jsonb, $2::jsonb) ok`, [row, JSON.stringify(c)]);
+    assert.equal(ok, expected, JSON.stringify(c));
+  }
+});
+await check('las reglas programadas se disparan una vez por fecha objetivo', async () => {
+  const [opp] = await q(`select id, owner_id from opportunities where not is_closed and owner_id = $1 order by name limit 1`, [admin.id]);
+  await q(`update automation_rules set created_at = now() - interval '30 days' where trigger_on = 'scheduled'`);
+  await q(`update opportunities set close_date = (now() at time zone 'America/Bogota')::date + 3 where id = $1`, [opp.id]);
+  const first = await as(admin, () => q(`select run_scheduled_automations() n`));
+  assert.ok(Number(first[0].n) >= 1);
+  assert.equal(await count(`select count(*) n from activities where opportunity_id = $1 and subject = 'Confirmar cierre con el cliente'`, [opp.id]), 1);
+  await as(admin, () => q(`select run_scheduled_automations()`));
+  assert.equal(await count(`select count(*) n from activities where opportunity_id = $1 and subject = 'Confirmar cierre con el cliente'`, [opp.id]), 1);
+  await assert.rejects(as(rep, () => q(`select run_scheduled_automations()`)));
+});
+await check('las cotizaciones vencidas avisan al propietario y a su jefe', async () => {
+  await q(`update quotes set status = 'Presentada', expiration_date = (now() at time zone 'America/Bogota')::date - 1 where id = $1`, [quote.id]);
+  await q(`select run_scheduled_automations()`);
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title = 'Cotización vencida sin respuesta'`, [rep.id]), 1);
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title = 'Cotización de tu equipo vencida'`, [mgr.id]), 1);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

@@ -465,6 +465,8 @@ export type Database = {
           name: string
           object: string
           run_count: number
+          schedule_field: string | null
+          schedule_offset_days: number
           sort_order: number
           trigger_on: string
           updated_at: string
@@ -481,6 +483,8 @@ export type Database = {
           name: string
           object: string
           run_count?: number
+          schedule_field?: string | null
+          schedule_offset_days?: number
           sort_order?: number
           trigger_on?: string
           updated_at?: string
@@ -497,12 +501,43 @@ export type Database = {
           name?: string
           object?: string
           run_count?: number
+          schedule_field?: string | null
+          schedule_offset_days?: number
           sort_order?: number
           trigger_on?: string
           updated_at?: string
           watch_field?: string | null
         }
         Relationships: [
+        ]
+      }
+      automation_runs: {
+        Row: {
+          executed_at: string
+          record_id: string
+          rule_id: string
+          target_date: string
+        }
+        Insert: {
+          executed_at?: string
+          record_id: string
+          rule_id: string
+          target_date: string
+        }
+        Update: {
+          executed_at?: string
+          record_id?: string
+          rule_id?: string
+          target_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_runs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
         ]
       }
       campaign_members: {
@@ -2397,6 +2432,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      condition_matches: {
+        Args: {
+          p_row: Json
+          c: Json
+        }
+        Returns: boolean
+      }
+      conditions_match: {
+        Args: {
+          p_row: Json
+          p_conditions: Json
+        }
+        Returns: boolean
+      }
       convert_lead: {
         Args: {
           p_lead: string
@@ -2433,6 +2482,13 @@ export type Database = {
           p_request: string
           p_approve: boolean
           p_comment?: string
+        }
+        Returns: undefined
+      }
+      execute_automation_actions: {
+        Args: {
+          p_rule: string
+          p_row: Json
         }
         Returns: undefined
       }
@@ -2523,6 +2579,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      jsonb_to_date: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
       mark_automation_run: {
         Args: {
           p_rule: string
@@ -2580,11 +2642,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_label: {
+        Args: {
+          p_row: Json
+        }
+        Returns: string
+      }
       record_path: {
         Args: {
           p_object: string
         }
         Returns: string
+      }
+      run_scheduled_automations: {
+        Args: never
+        Returns: number
       }
       sharing_access: {
         Args: {
@@ -2605,6 +2677,12 @@ export type Database = {
           p_quote: string
         }
         Returns: undefined
+      }
+      try_numeric: {
+        Args: {
+          p: string
+        }
+        Returns: number
       }
     }
     Enums: {

@@ -364,12 +364,17 @@ export async function saveAutomationRule(object: string, id: string | null, _pre
   const actions = parseJsonArray(str(fd, "actions"));
   if (!name) return { message: "Ponle un nombre a la automatización" };
   if (!actions.length) return { message: "Agrega al menos una acción" };
-  const trigger = ["create", "update", "create_or_update"].includes(str(fd, "trigger_on")) ? str(fd, "trigger_on") : "create";
+  const trigger = ["create", "update", "create_or_update", "scheduled"].includes(str(fd, "trigger_on")) ? str(fd, "trigger_on") : "create";
+  const scheduled = trigger === "scheduled";
+  if (scheduled && !str(fd, "schedule_field")) return { message: "Elige la fecha de referencia de la regla programada" };
+  const days = Math.min(365, Math.max(0, Math.round(Number(str(fd, "schedule_days")) || 0)));
   const payload = {
     object, name, actions, trigger_on: trigger,
     description: nullable(fd, "description"),
     conditions: parseJsonArray(str(fd, "conditions")),
-    watch_field: trigger === "create" ? null : nullable(fd, "watch_field"),
+    watch_field: trigger === "create" || scheduled ? null : nullable(fd, "watch_field"),
+    schedule_field: scheduled ? str(fd, "schedule_field") : null,
+    schedule_offset_days: scheduled ? (str(fd, "schedule_when") === "before" ? -days : days) : 0,
     sort_order: Number(str(fd, "sort_order")) || 0,
     is_active: id ? fd.get("is_active") === "on" : true,
   };
@@ -450,6 +455,14 @@ export async function saveAlertSettings(_prev: FormState, fd: FormData): Promise
     notify_overdue_tasks: fd.get("notify_overdue_tasks") === "on",
   }).eq("id", 1);
   return error ? fail(error) : done("Alertas guardadas");
+}
+
+export async function runScheduledAutomationsNow(_prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { data, error } = await g.supabase.rpc("run_scheduled_automations");
+  if (error) return fail(error);
+  return done(data ? "Automatizaciones programadas ejecutadas" : "No había registros pendientes por automatizar");
 }
 
 export async function runAlertsNow(_prev?: FormState, _fd?: FormData): Promise<FormState> {

@@ -615,3 +615,18 @@ select 'quotes', 'Descuento superior al 15 %',
        '[{"field":"status","value":"Aprobada"}]',
        '[{"field":"status","value":"Borrador"}]', 1
 where not exists (select 1 from public.approval_processes where object = 'quotes' and name = 'Descuento superior al 15 %');
+
+-- ===========================================================================
+-- Fase 9: automatizaciones programadas de ejemplo
+-- ===========================================================================
+insert into public.automation_rules (object, name, description, trigger_on, schedule_field, schedule_offset_days, conditions, actions, sort_order)
+select v.object, v.name, v.description, 'scheduled', v.field, v.offset_days, v.conditions::jsonb, v.actions::jsonb, v.ord
+from (values
+  ('opportunities', 'Confirmar cierre 3 días antes', 'Recuerda al asesor confirmar con el cliente antes de la fecha de cierre.',
+   'close_date', -3, '[{"field":"is_closed","op":"eq","value":"false"}]',
+   '[{"type":"create_task","subject":"Confirmar cierre con el cliente","due_in_days":1,"assign_to":"owner","priority":"high"}]', 10),
+  ('quotes', 'Cotización vencida sin respuesta', 'Avisa al asesor y a su jefe cuando vence una cotización presentada.',
+   'expiration_date', 1, '[{"field":"status","op":"eq","value":"Presentada"}]',
+   '[{"type":"notify","to":"owner","title":"Cotización vencida sin respuesta","body":"Llama al cliente o actualiza la vigencia."},{"type":"notify","to":"manager","title":"Cotización de tu equipo vencida","body":"Sin respuesta del cliente."}]', 10)
+) as v(object, name, description, field, offset_days, conditions, actions, ord)
+where not exists (select 1 from public.automation_rules r where r.object = v.object and r.name = v.name);
