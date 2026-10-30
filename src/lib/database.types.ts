@@ -274,6 +274,40 @@ export type Database = {
           },
         ]
       }
+      alert_settings: {
+        Row: {
+          enabled: boolean
+          id: number
+          last_run_at: string | null
+          last_run_count: number | null
+          notify_overdue_close: boolean
+          notify_overdue_tasks: boolean
+          notify_stale: boolean
+          stale_days: number
+        }
+        Insert: {
+          enabled?: boolean
+          id?: number
+          last_run_at?: string | null
+          last_run_count?: number | null
+          notify_overdue_close?: boolean
+          notify_overdue_tasks?: boolean
+          notify_stale?: boolean
+          stale_days?: number
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          last_run_at?: string | null
+          last_run_count?: number | null
+          notify_overdue_close?: boolean
+          notify_overdue_tasks?: boolean
+          notify_stale?: boolean
+          stale_days?: number
+        }
+        Relationships: [
+        ]
+      }
       automation_rules: {
         Row: {
           actions: Json
@@ -843,6 +877,59 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          created: number
+          created_at: string
+          created_by: string | null
+          errors: Json
+          file_name: string | null
+          id: string
+          match_field: string | null
+          mode: string
+          object: string
+          skipped: number
+          total: number
+          updated: number
+        }
+        Insert: {
+          created?: number
+          created_at?: string
+          created_by?: string | null
+          errors?: Json
+          file_name?: string | null
+          id?: string
+          match_field?: string | null
+          mode?: string
+          object: string
+          skipped?: number
+          total?: number
+          updated?: number
+        }
+        Update: {
+          created?: number
+          created_at?: string
+          created_by?: string | null
+          errors?: Json
+          file_name?: string | null
+          id?: string
+          match_field?: string | null
+          mode?: string
+          object?: string
+          skipped?: number
+          total?: number
+          updated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           annual_revenue: number | null
@@ -1046,6 +1133,7 @@ export type Database = {
           body: string | null
           created_at: string
           created_by: string | null
+          dedupe_key: string | null
           id: string
           is_read: boolean
           link: string | null
@@ -1056,6 +1144,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           created_by?: string | null
+          dedupe_key?: string | null
           id?: string
           is_read?: boolean
           link?: string | null
@@ -1066,6 +1155,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           created_by?: string | null
+          dedupe_key?: string | null
           id?: string
           is_read?: boolean
           link?: string | null
@@ -2068,6 +2158,22 @@ export type Database = {
         }
         Returns: Json
       }
+      find_duplicates: {
+        Args: {
+          p_object: string
+        }
+        Returns: {
+          id_a: string
+          name_a: string
+          id_b: string
+          name_b: string
+          reason: string
+        }[]
+      }
+      generate_alerts: {
+        Args: never
+        Returns: number
+      }
       global_search: {
         Args: {
           p_query: string
@@ -2097,9 +2203,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      merge_records: {
+        Args: {
+          p_object: string
+          p_master: string
+          p_duplicate: string
+        }
+        Returns: string
+      }
       my_permissions: {
         Args: never
         Returns: Json
+      }
+      normalize_text: {
+        Args: {
+          p: string
+        }
+        Returns: string
       }
       notify_user: {
         Args: {
@@ -2109,6 +2229,18 @@ export type Database = {
           p_link?: string
         }
         Returns: string
+      }
+      possible_duplicates: {
+        Args: {
+          p_object: string
+          p_name: string
+          p_email?: string
+          p_tax_id?: string
+        }
+        Returns: {
+          id: string
+          label: string
+        }[]
       }
       recalc_quote: {
         Args: {

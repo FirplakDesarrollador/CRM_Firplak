@@ -65,7 +65,7 @@ export const PHRASES_EN: Record<string, string> = {
   Inicio: "Home", Indicadores: "Dashboards", Informes: "Reports", Configuración: "Setup",
   "Buscar cuentas, contactos, oportunidades…": "Search accounts, contacts, opportunities…",
   Nuevo: "New", Crear: "Create", Prospecto: "Lead", Cuenta: "Account", Contacto: "Contact", Oportunidad: "Opportunity", Caso: "Case", Actividad: "Activity", "Mis preferencias": "My preferences", "Mi perfil": "My profile",
-  "Plantillas de correo": "Email templates", "Cerrar sesión": "Log out", Notificaciones: "Notifications",
+  "Plantillas de correo": "Email templates", "Importar datos": "Import data", "Cerrar sesión": "Log out", Notificaciones: "Notifications",
   "Marcar todas como leídas": "Mark all as read", "Sin notificaciones.": "No notifications.", "Sin perfil": "No profile",
   // Listas
   "Buscar en esta lista…": "Search this list…", Todos: "All", Míos: "Mine", Filtros: "Filters", Columnas: "Columns",
@@ -82,7 +82,7 @@ export const PHRASES_EN: Record<string, string> = {
   Cotizaciones: "Quotes", Productos: "Products", Precios: "Prices", Resultados: "Results", Editar: "Edit", Eliminar: "Delete",
   "— Ninguno —": "— None —", "— Yo —": "— Me —", "Buscar…": "Search…", "Sin resultados": "No results", "Buscando…": "Searching…",
   "Campo obligatorio": "Required field", "Revisa los campos marcados.": "Please review the highlighted fields.",
-  "Guardando…": "Saving…", Volver: "Back", "Ver todo": "View all", "Sin registros relacionados.": "No related records.",
+  "Guardando…": "Saving…", "Guardar de todas formas": "Save anyway", Volver: "Back", "Ver todo": "View all", "Sin registros relacionados.": "No related records.",
 };
 
 // Operadores de filtro

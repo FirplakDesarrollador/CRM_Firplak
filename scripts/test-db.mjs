@@ -273,4 +273,44 @@ await check('solo personalización edita listas, validaciones y automatizaciones
   });
 });
 
+console.log('Fase 5');
+await check('find_duplicates detecta cuentas con el mismo NIT o nombre normalizado', async () => {
+  await as(admin, async () => {
+    await q(`insert into accounts (name, tax_id) values ('ALMACENES CASA VIVA S.A.S.', null), ('Otra razón social', '860045998-1')`);
+    const pairs = await q(`select reason from find_duplicates('accounts')`);
+    assert.ok(pairs.some((p) => p.reason === 'Mismo NIT'));
+    assert.ok(pairs.some((p) => p.reason === 'Mismo nombre'));
+  });
+});
+await check('merge_records mueve los relacionados al principal y elimina el duplicado', async () => {
+  await as(admin, async () => {
+    const [m] = await q(`select id from accounts where name = 'Almacenes Casa Viva'`);
+    const [d] = await q(`select id from accounts where name = 'ALMACENES CASA VIVA S.A.S.'`);
+    await q(`insert into contacts (last_name, account_id) values ('Duplicado', $1)`, [d.id]);
+    await q(`select merge_records('accounts', $1, $2)`, [m.id, d.id]);
+    assert.equal(await count(`select count(*) n from accounts where id = $1`, [d.id]), 0);
+    assert.equal(await count(`select count(*) n from contacts where last_name = 'Duplicado' and account_id = $1`, [m.id]), 1);
+  });
+});
+await check('un asesor no puede fusionar registros de otros', async () => {
+  const ids = await q(`select id from accounts where owner_id = $1 limit 2`, [admin.id]);
+  await assert.rejects(as(rep, () => q(`select merge_records('accounts', $1, $2)`, [ids[0].id, ids[1].id])));
+});
+await check('generate_alerts crea avisos una sola vez por día', async () => {
+  await db.exec(`update opportunities set close_date = current_date - 3 where name = 'Plaza Andina · Baterías sanitarias'`);
+  const first = await as(admin, () => q(`select generate_alerts() n`));
+  const second = await as(admin, () => q(`select generate_alerts() n`));
+  assert.ok(Number(first[0].n) > 0);
+  assert.equal(Number(second[0].n), 0);
+  await assert.rejects(as(rep, () => q(`select generate_alerts()`)));
+});
+
+await check('possible_duplicates encuentra cuentas por NIT y contactos por correo', async () => {
+  await as(admin, async () => {
+    assert.ok((await q(`select * from possible_duplicates('accounts', 'Nueva razón', null, '900 456 123-1')`)).length >= 1);
+    assert.ok((await q(`select * from possible_duplicates('contacts', 'x', 'MRESTREPO@altosdelvalle.example')`)).length >= 1);
+    assert.equal((await q(`select * from possible_duplicates('accounts', 'Empresa inexistente XYZ')`)).length, 0);
+  });
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

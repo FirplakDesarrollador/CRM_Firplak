@@ -50,6 +50,27 @@ export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev:
   }
   if (!values.owner_id) delete values.owner_id;
 
+  // Posibles duplicados al crear cuentas, contactos o prospectos.
+  if (!id && ["accounts", "contacts", "leads"].includes(objectKey) && formData.get("_ignore_duplicates") !== "1") {
+    const supabase = await createClient();
+    const name = objectKey === "accounts" ? String(values.name ?? "")
+      : objectKey === "contacts" ? `${values.first_name ?? ""} ${values.last_name ?? ""}`
+        : `${values.first_name ?? ""} ${values.last_name ?? ""}${values.company ?? ""}`;
+    const { data: dups } = await supabase.rpc("possible_duplicates", {
+      p_object: objectKey,
+      p_name: name,
+      p_email: (values.email as string | null) ?? undefined,
+      p_tax_id: (values.tax_id as string | null) ?? undefined,
+    });
+    if (dups?.length) {
+      return {
+        values: echo,
+        message: "Encontramos registros que podrían ser el mismo. Revísalos o guarda de todas formas.",
+        duplicates: dups.map((d) => ({ id: d.id, label: d.label, href: `${def.path}/${d.id}` })),
+      };
+    }
+  }
+
   // Reglas de validación sobre el estado final del registro.
   let candidate: Record<string, unknown> = { ...(before ?? {}), owner_id: before?.owner_id ?? user.id, ...values };
   if (objectKey === "opportunities") candidate = await withStageEffects(candidate, !before || before.stage_id !== values.stage_id);

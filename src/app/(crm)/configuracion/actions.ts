@@ -385,3 +385,34 @@ export async function deleteAutomationRule(id: string, _prev?: FormState, _fd?: 
   const { error } = await g.supabase.from("automation_rules").delete().eq("id", id);
   return error ? fail(error) : done("Automatización eliminada");
 }
+
+// ---------------------------------------------------------------- Duplicados
+export async function mergeDuplicates(object: string, a: string, b: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const master = str(fd, "master") === b ? b : a;
+  const duplicate = master === a ? b : a;
+  const { error } = await g.supabase.rpc("merge_records", { p_object: object, p_master: master, p_duplicate: duplicate });
+  return error ? fail(error) : done("Registros fusionados");
+}
+
+// ---------------------------------------------------------------- Alertas programadas
+export async function saveAlertSettings(_prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("alert_settings").update({
+    enabled: fd.get("enabled") === "on",
+    stale_days: Math.min(180, Math.max(3, Number(str(fd, "stale_days")) || 14)),
+    notify_overdue_close: fd.get("notify_overdue_close") === "on",
+    notify_stale: fd.get("notify_stale") === "on",
+    notify_overdue_tasks: fd.get("notify_overdue_tasks") === "on",
+  }).eq("id", 1);
+  return error ? fail(error) : done("Alertas guardadas");
+}
+
+export async function runAlertsNow(_prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { data, error } = await g.supabase.rpc("generate_alerts");
+  return error ? fail(error) : done(`${data ?? 0} aviso(s) nuevo(s) enviados`);
+}

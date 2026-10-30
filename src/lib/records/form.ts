@@ -5,6 +5,8 @@ export type FormState = {
   message?: string;
   errors?: Record<string, string>;
   values?: Record<string, string>;
+  /** Posibles duplicados encontrados al crear (se puede guardar de todas formas). */
+  duplicates?: { id: string; label: string; href: string }[];
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

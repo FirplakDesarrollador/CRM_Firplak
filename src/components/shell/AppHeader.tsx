@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronDown, LogOut, Mail, Plus, Settings, SlidersHorizontal, UserRound } from "lucide-react";
+import { ChevronDown, FileUp, LogOut, Mail, Plus, Settings, SlidersHorizontal, UserRound } from "lucide-react";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { Dropdown, menuItemClass } from "@/components/ui/Dropdown";
 import { OBJECT_ICONS } from "@/components/ui/icons";
@@ -66,6 +66,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
           <div className="pt-1">
             <Link href="/preferencias" className={menuItemClass}><SlidersHorizontal size={15} className="text-muted" /> {t("Mis preferencias")}</Link>
             <Link href="/preferencias?tab=perfil" className={menuItemClass}><UserRound size={15} className="text-muted" /> {t("Mi perfil")}</Link>
+            <Link href="/importar" className={menuItemClass}><FileUp size={15} className="text-muted" /> {t("Importar datos")}</Link>
             <Link href="/correo/plantillas" className={menuItemClass}><Mail size={15} className="text-muted" /> {t("Plantillas de correo")}</Link>
             {(canSystem(user.access, "customize") || canSystem(user.access, "manage_users")) && (
               <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> {t("Configuración")}</Link>

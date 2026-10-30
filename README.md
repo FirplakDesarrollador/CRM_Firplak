@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 4)
+## Módulos incluidos (Fases 1 a 5)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -27,6 +27,9 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Automatizaciones | Al crear/actualizar (opcionalmente solo si cambia un campo) y si se cumplen condiciones: asignar propietario, crear tarea, notificar (propietario, jefe o usuario) o actualizar un campo. Notificaciones en la campana de la cabecera. |
 | Auditoría | Historial de cambios por campo en cada ficha (registrado por triggers de la base) y vista global en Configuración → Auditoría de cambios. |
 | Idioma | Español o inglés por usuario (Mis preferencias). En inglés se traducen navegación, listas, filtros, formularios y nombres de objetos y campos; algunas pantallas (indicadores, configuración) siguen en español. |
+| Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
+| Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
+| Alertas programadas | Avisos diarios en la campana: cierres vencidos, oportunidades sin actividad (N días) y resumen de tareas vencidas. Se programan con pg_cron a las 7:00 a. m. de Colombia si la extensión está disponible; también se pueden ejecutar a mano. |
 | Configuración | Usuarios, jerarquía de roles, perfiles y permisos (matriz por objeto), compartir por defecto, pipelines y etapas editables, campos personalizados por objeto. |
 | Preferencias | Tema (claro/oscuro/sistema), página de inicio, densidad, registros por página, perfil y contraseña. |
 
@@ -48,6 +51,7 @@ Los objetos se describen con metadatos en `src/lib/objects/*.ts` (campos, seccio
    ```
    Completa `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Supabase → Project Settings → API).
    Opcional: `RESEND_API_KEY` y `EMAIL_FROM` para enviar correos desde el CRM (dominio verificado en Resend).
+   Para las alertas diarias automáticas, activa la extensión **pg_cron** en Supabase (Database → Extensions) antes de aplicar las migraciones.
 
 2. **Base de datos.** Opción A, SQL Editor (sin instalar nada):
    ```bash
@@ -109,6 +113,6 @@ línea de tiempo) toma como referencia funcional la documentación pública de S
 fuentes ni código.
 
 ## Próximos pasos sugeridos
+- Tablero de metas comerciales (cuotas por asesor y periodo) con avance en Indicadores.
 - Completar la traducción al inglés de indicadores, configuración y textos de las fichas.
 - Automatizaciones programadas (p. ej. oportunidades sin actividad en N días) con Supabase Cron.
-- Importación masiva desde Excel/CSV y deduplicación de cuentas y contactos.
