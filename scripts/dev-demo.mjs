@@ -258,6 +258,21 @@ const msMessages = [
   { id: 'msg-boletin', subject: 'Boletín de novedades', bodyPreview: 'Promociones del mes.', from: person('boletines@proveedor.example'),
     toRecipients: [person('luis.demo@firplak.com')], receivedDateTime: new Date(Date.now() - day).toISOString(), webLink: 'https://outlook.office.com/mail/msg-boletin' },
 ];
+// Planner: un plan con dos depósitos; las tareas llevan etiqueta de versión (If-Match).
+const plans = [{ id: 'plan-ventas', title: 'Ventas Firplak', buckets: [{ id: 'bucket-seguimiento', name: 'Seguimiento' }, { id: 'bucket-cotizaciones', name: 'Cotizaciones' }] }];
+const plannerTasks = new Map();
+let etagSeq = 1;
+// SharePoint: un sitio con su biblioteca de documentos (árbol de carpetas en memoria).
+const site = { id: 'site-comercial', displayName: 'Comercial Firplak', webUrl: 'https://firplak.sharepoint.com/sites/Comercial' };
+const drive = { id: 'drive-documentos', name: 'Documentos', webUrl: `${site.webUrl}/Documentos` };
+const items = new Map([['root', { id: 'root', name: '', path: '', folder: { childCount: 0 } }]]);
+const itemByPath = (path) => [...items.values()].find((i) => i.path === path);
+const addItem = (parent, data) => {
+  const path = parent.path ? `${parent.path}/${data.name}` : data.name;
+  const item = { id: `item-${randomBytes(5).toString('hex')}`, parentId: parent.id, path, webUrl: `${drive.webUrl}/${encodeURI(path)}`, lastModifiedDateTime: new Date().toISOString(), ...data };
+  items.set(item.id, item);
+  return item;
+};
 const msCodes = new Map();
 const msTokens = new Set();
 const msRefresh = new Set();
@@ -267,7 +282,8 @@ const issue = () => {
   const access = `sim-access-${randomBytes(12).toString('hex')}`;
   const refresh = `sim-refresh-${randomBytes(12).toString('hex')}`;
   msTokens.add(access); msRefresh.add(refresh);
-  return { token_type: 'Bearer', access_token: access, refresh_token: refresh, expires_in: 3600, scope: 'User.Read Calendars.ReadWrite Mail.Read Mail.Send' };
+  return { token_type: 'Bearer', access_token: access, refresh_token: refresh, expires_in: 3600,
+    scope: 'User.Read Calendars.ReadWrite Mail.Read Mail.Send Tasks.ReadWrite Files.ReadWrite.All Sites.Read.All' };
 };
 const ms = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${MS_PORT}`);
@@ -296,6 +312,14 @@ const ms = http.createServer(async (req, res) => {
       }
       if (p.get('grant_type') === 'refresh_token' && msRefresh.delete(p.get('refresh_token'))) return json(res, 200, issue());
       return json(res, 400, { error: 'invalid_grant', error_description: 'Token de refresco no válido' });
+    }
+    // Solo para la demo: marca como completada en Planner la última tarea creada.
+    if (url.pathname === '/sim/planner/completar' && req.method === 'POST') {
+      const task = [...plannerTasks.values()].at(-1);
+      if (!task) return json(res, 404, { error: 'Sin tareas en Planner' });
+      Object.assign(task, { percentComplete: 100, '@odata.etag': `W/"${++etagSeq}"` });
+      console.log(`[Planner simulado] completada en Planner: ${task.title}`);
+      return json(res, 200, { id: task.id, title: task.title });
     }
     if (url.pathname.startsWith('/teams/webhook/') && req.method === 'POST') {
       const card = JSON.parse(await readRaw(req));
@@ -337,6 +361,64 @@ const ms = http.createServer(async (req, res) => {
         console.log(`[Outlook simulado] correo enviado: ${message.subject}`);
         return json(res, 202);
       }
+      // Planner
+      if (path === '/me/planner/plans') return json(res, 200, { value: plans.map((p) => ({ id: p.id, title: p.title })) });
+      const bucketsMatch = path.match(/^\/planner\/plans\/([^/]+)\/(buckets|tasks)$/);
+      if (bucketsMatch) {
+        const plan = plans.find((p) => p.id === bucketsMatch[1]);
+        if (!plan) return json(res, 404, { error: { code: 'NotFound', message: 'Plan no encontrado' } });
+        return json(res, 200, { value: bucketsMatch[2] === 'buckets' ? plan.buckets : [...plannerTasks.values()].filter((t) => t.planId === plan.id) });
+      }
+      if (path === '/planner/tasks' && req.method === 'POST') {
+        const task = { ...JSON.parse(await readRaw(req)), id: `ptask-${randomBytes(5).toString('hex')}`, percentComplete: 0, '@odata.etag': `W/"${++etagSeq}"` };
+        plannerTasks.set(task.id, task);
+        console.log(`[Planner simulado] tarea creada: ${task.title}`);
+        return json(res, 201, task);
+      }
+      const taskMatch = path.match(/^\/planner\/tasks\/([^/]+)$/);
+      if (taskMatch) {
+        const task = plannerTasks.get(taskMatch[1]);
+        if (!task) return json(res, 404, { error: { code: 'NotFound', message: 'Tarea no encontrada' } });
+        if (req.method === 'GET') return json(res, 200, task);
+        if (req.headers['if-match'] !== task['@odata.etag']) return json(res, 412, { error: { code: 'PreconditionFailed', message: 'La tarea cambió' } });
+        if (req.method === 'DELETE') { plannerTasks.delete(task.id); console.log(`[Planner simulado] tarea eliminada: ${task.title}`); return json(res, 204); }
+        Object.assign(task, JSON.parse(await readRaw(req)), { '@odata.etag': `W/"${++etagSeq}"` });
+        console.log(`[Planner simulado] tarea actualizada: ${task.title} (${task.percentComplete} %)`);
+        return (req.headers.prefer ?? '').includes('return=representation') ? json(res, 200, task) : json(res, 204);
+      }
+      // SharePoint
+      if (path === '/sites') {
+        const q = (url.searchParams.get('search') ?? '').toLowerCase();
+        return json(res, 200, { value: site.displayName.toLowerCase().includes(q) || !q ? [site] : [] });
+      }
+      if (path === `/sites/${site.id}/drives`) return json(res, 200, { value: [drive] });
+      const byPath = path.match(new RegExp(`^/drives/${drive.id}/root:/(.+)$`));
+      if (byPath) {
+        const item = itemByPath(byPath[1].split('/').map(decodeURIComponent).join('/'));
+        return item ? json(res, 200, item) : json(res, 404, { error: { code: 'itemNotFound', message: 'No existe' } });
+      }
+      const children = path.match(new RegExp(`^/drives/${drive.id}/items/([^/:]+)/children$`));
+      if (children) {
+        const parent = items.get(children[1]);
+        if (!parent) return json(res, 404, { error: { code: 'itemNotFound', message: 'No existe' } });
+        if (req.method === 'POST') {
+          const body = JSON.parse(await readRaw(req));
+          if ([...items.values()].some((i) => i.parentId === parent.id && i.name === body.name)) return json(res, 409, { error: { code: 'nameAlreadyExists', message: 'Ya existe' } });
+          const folder = addItem(parent, { name: body.name, folder: { childCount: 0 } });
+          console.log(`[SharePoint simulado] carpeta creada: ${folder.path}`);
+          return json(res, 201, folder);
+        }
+        return json(res, 200, { value: [...items.values()].filter((i) => i.parentId === parent.id) });
+      }
+      const upload = path.match(new RegExp(`^/drives/${drive.id}/items/([^/:]+):/([^:]+):/content$`));
+      if (upload && req.method === 'PUT') {
+        const parent = items.get(upload[1]);
+        const chunks = [];
+        for await (const c of req) chunks.push(c);
+        const file = addItem(parent, { name: decodeURIComponent(upload[2]), file: { mimeType: req.headers['content-type'] }, size: Buffer.concat(chunks).length });
+        console.log(`[SharePoint simulado] archivo subido: ${file.path} (${file.size} bytes)`);
+        return json(res, 201, file);
+      }
       return json(res, 404, { error: { code: 'NotFound', message: `No simulado: ${path}` } });
     }
     json(res, 404, { error: 'not_found' });
@@ -364,6 +446,7 @@ const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'd
     MS365_CLIENT_ID: MS.clientId,
     MS365_CLIENT_SECRET: MS.clientSecret,
     MS365_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
+    CRON_SECRET: randomBytes(16).toString('hex'),
     MS365_LOGIN_URL: `http://127.0.0.1:${MS_PORT}`,
     MS365_GRAPH_URL: `http://127.0.0.1:${MS_PORT}/v1.0`,
     // El servidor MCP firma las sesiones de los tokens con el secreto de esta base de demo.

@@ -12,12 +12,13 @@ import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
 import { ms365, MS365_SCOPES, ms365Configured, redirectUri } from "@/lib/ms365/config";
 import { deleteTeamsChannel, saveTeamsChannel, testTeamsChannel } from "@/lib/ms365/actions";
+import { SharePointPicker } from "@/components/ms365/SharePointPicker";
 
 export const metadata: Metadata = { title: "Microsoft 365" };
 
 /** Administración: estado de la integración, canales de Teams y personas conectadas. */
-export default async function Ms365AdminPage() {
-  const [me, t] = await Promise.all([requireUser(), getT()]);
+export default async function Ms365AdminPage({ searchParams }: PageProps<"/configuracion/microsoft-365">) {
+  const [me, t, sp] = await Promise.all([requireUser(), getT(), searchParams]);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const supabase = await createClient();
   const [{ data: channels }, { data: connections }] = await Promise.all([
@@ -53,6 +54,8 @@ export default async function Ms365AdminPage() {
           <p>{t("Pasos completos en docs/puesta-en-produccion.md.")}</p>
         </div>
       </section>
+
+      <SharePointPicker userId={me.id} query={typeof sp.sitio === "string" ? sp.sitio.trim() : ""} />
 
       <section className="card overflow-hidden">
         <div className="card-header"><h2 className="card-title"><Tr>Canales de Teams</Tr> <span className="badge">{channels?.length ?? 0}</span></h2></div>

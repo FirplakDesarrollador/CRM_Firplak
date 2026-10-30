@@ -2,13 +2,15 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/env";
 import { getConnection, graph, GraphError, type Connection } from "./graph";
-import { ms365Configured } from "./config";
+import { hasScope, ms365Configured } from "./config";
 
 type Activity = {
   id: string; activity_type: string; subject: string; description: string | null; status: string;
   start_at: string | null; end_at: string | null; location: string | null; updated_at: string; owner_id: string | null;
 };
-type Link = { id: string; external_id: string; record_id: string; origin: string; synced_at: string; external_updated_at: string | null };
+type Link = { id: string; external_id: string; record_id: string; origin: string; synced_at: string; external_updated_at: string | null; etag: string | null };
+type Task = { id: string; subject: string; due_date: string | null; status: string; updated_at: string; owner_id: string | null };
+type PlannerTask = { id: string; title: string; percentComplete: number; dueDateTime?: string | null; "@odata.etag"?: string };
 type GraphDate = { dateTime: string; timeZone: string };
 type GraphEvent = {
   id: string; subject: string | null; bodyPreview?: string; webLink?: string; isCancelled?: boolean; lastModifiedDateTime?: string;
@@ -39,7 +41,7 @@ async function matchPeople(emails: string[]) {
 
 async function links(kind: string, userId: string, by: { externalIds?: string[]; recordIds?: string[] }) {
   const supabase = await createClient();
-  let query = supabase.from("external_links").select("id, external_id, record_id, origin, synced_at, external_updated_at").eq("kind", kind).eq("user_id", userId);
+  let query = supabase.from("external_links").select("id, external_id, record_id, origin, synced_at, external_updated_at, etag").eq("kind", kind).eq("user_id", userId);
   if (by.externalIds) query = query.in("external_id", by.externalIds.length ? by.externalIds : ["-"]);
   if (by.recordIds) query = query.in("record_id", by.recordIds.length ? by.recordIds : ["00000000-0000-0000-0000-000000000000"]);
   return ((await query).data ?? []) as Link[];
@@ -103,22 +105,112 @@ async function pushMeetings(conn: Connection) {
   return n;
 }
 
-/** Envía (o actualiza) una reunión del CRM al Outlook de su propietario, si está conectado. */
-export async function syncActivityToOutlook(activityId: string) {
+// ---------------------------------------------------------------- Planner
+const plannerReady = (conn: Connection) =>
+  Boolean(conn.settings.planner_plan_id && conn.settings.planner_bucket_id && hasScope(conn.scopes, "Tasks.ReadWrite"));
+// Planner guarda la fecha de vencimiento como fecha y hora: se usa el mediodía UTC del día.
+const plannerDue = (due: string | null) => (due ? `${due}T12:00:00Z` : null);
+
+/** Lleva una tarea del CRM a Planner y trae su estado; `current` es la tarea en Planner (si existe). */
+async function syncPlannerTask(conn: Connection, t: Task, link: Link | undefined, current: PlannerTask | undefined) {
+  const supabase = await createClient();
+  if (!link) {
+    if (!["pending", "in_progress"].includes(t.status)) return null;
+    const created = await graph<PlannerTask>(conn, "/planner/tasks", {
+      method: "POST",
+      body: {
+        planId: conn.settings.planner_plan_id, bucketId: conn.settings.planner_bucket_id, title: t.subject,
+        dueDateTime: plannerDue(t.due_date),
+        assignments: conn.ms_user_id ? { [conn.ms_user_id]: { "@odata.type": "#microsoft.graph.plannerAssignment", orderHint: " !" } } : {},
+      },
+    });
+    await supabase.from("external_links").insert({
+      user_id: conn.user_id, kind: "planner_task", external_id: created.id, object: "activities", record_id: t.id,
+      origin: "crm", etag: created["@odata.etag"] ?? null,
+    });
+    return "created";
+  }
+  if (!current) {
+    // Borrada en Planner: se suelta el vínculo.
+    await supabase.from("external_links").delete().eq("id", link.id);
+    return null;
+  }
+  const etag = current["@odata.etag"] ?? link.etag ?? "*";
+  const patch = async (body: object) => {
+    const updated = await graph<PlannerTask>(conn, `/planner/tasks/${current.id}`, {
+      method: "PATCH", body, headers: { "If-Match": etag, Prefer: "return=representation" },
+    });
+    await supabase.from("external_links").update({ synced_at: new Date().toISOString(), etag: updated?.["@odata.etag"] ?? etag }).eq("id", link.id);
+  };
+  if (t.status === "cancelled") {
+    await graph(conn, `/planner/tasks/${current.id}`, { method: "DELETE", headers: { "If-Match": etag } }).catch(() => undefined);
+    await supabase.from("external_links").delete().eq("id", link.id);
+    return "deleted";
+  }
+  if (current.percentComplete === 100 && t.status !== "completed") {
+    await supabase.from("activities").update({ status: "completed" }).eq("id", t.id);
+    await supabase.from("external_links").update({ synced_at: new Date().toISOString(), etag }).eq("id", link.id);
+    return "completed_in_crm";
+  }
+  if (t.status === "completed" && current.percentComplete !== 100) {
+    await patch({ percentComplete: 100 });
+    return "completed_in_planner";
+  }
+  if (new Date(t.updated_at) > new Date(link.synced_at)) {
+    await patch({ title: t.subject, dueDateTime: plannerDue(t.due_date) });
+    return "updated";
+  }
+  return null;
+}
+
+async function syncPlanner(conn: Connection) {
+  if (!plannerReady(conn)) return null;
+  const supabase = await createClient();
+  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const { data } = await supabase.from("activities").select("id, subject, due_date, status, updated_at, owner_id")
+    .eq("owner_id", conn.user_id).eq("activity_type", "task")
+    .or(`status.in.(pending,in_progress),updated_at.gte.${since}`).limit(300);
+  const tasks = (data ?? []) as Task[];
+  const linked = new Map((await links("planner_task", conn.user_id, { recordIds: tasks.map((t) => t.id) })).map((l) => [l.record_id, l]));
+  const { value: inPlan } = await graph<{ value: PlannerTask[] }>(conn, `/planner/plans/${conn.settings.planner_plan_id}/tasks`);
+  const byId = new Map(inPlan.map((p) => [p.id, p]));
+  const counts = { created: 0, completedInCrm: 0, completedInPlanner: 0 };
+  for (const t of tasks) {
+    const link = linked.get(t.id);
+    const r = await syncPlannerTask(conn, t, link, link ? byId.get(link.external_id) : undefined);
+    if (r === "created") counts.created++;
+    else if (r === "completed_in_crm") counts.completedInCrm++;
+    else if (r === "completed_in_planner") counts.completedInPlanner++;
+  }
+  return counts;
+}
+
+/**
+ * Lleva una actividad del CRM a Microsoft 365 de su propietario, si está conectado:
+ * reuniones al calendario de Outlook y tareas a Planner. Nunca interrumpe el guardado.
+ */
+export async function syncActivityToMicrosoft(activityId: string) {
   if (!ms365Configured()) return;
   try {
     const supabase = await createClient();
     const { data } = await supabase.from("activities")
-      .select("id, activity_type, subject, description, status, start_at, end_at, location, updated_at, owner_id").eq("id", activityId).maybeSingle();
-    const a = data as Activity | null;
-    if (!a?.owner_id || a.activity_type !== "meeting") return;
+      .select("id, activity_type, subject, description, status, start_at, end_at, location, updated_at, owner_id, due_date").eq("id", activityId).maybeSingle();
+    const a = data as (Activity & { due_date: string | null }) | null;
+    if (!a?.owner_id || !["meeting", "task"].includes(a.activity_type)) return;
     const conn = await getConnection(a.owner_id);
-    if (!conn?.settings.calendar_push) return;
-    const [link] = await links("outlook_event", a.owner_id, { recordIds: [a.id] });
-    if (link?.origin === "external") return;
-    await pushMeeting(conn, a, link);
+    if (!conn) return;
+    if (a.activity_type === "meeting") {
+      if (!conn.settings.calendar_push) return;
+      const [link] = await links("outlook_event", a.owner_id, { recordIds: [a.id] });
+      if (link?.origin !== "external") await pushMeeting(conn, a, link);
+      return;
+    }
+    if (!plannerReady(conn)) return;
+    const [link] = await links("planner_task", a.owner_id, { recordIds: [a.id] });
+    const current = link ? await graph<PlannerTask>(conn, `/planner/tasks/${link.external_id}`).catch(() => undefined) : undefined;
+    await syncPlannerTask(conn, a, link, current);
   } catch (e) {
-    console.error("Outlook: no se pudo sincronizar la reunión", (e as Error).message);
+    console.error("Microsoft 365: no se pudo sincronizar la actividad", (e as Error).message);
   }
 }
 
@@ -220,6 +312,8 @@ export async function syncUser(userId: string) {
     parts.push(`${r.created} reuniones importadas`, `${r.updated} actualizadas`);
   }
   if (conn.settings.mail_pull) parts.push(`${await pullMail(conn)} correos registrados`);
+  const planner = await syncPlanner(conn);
+  if (planner) parts.push(`${planner.created} tareas a Planner`, `${planner.completedInCrm + planner.completedInPlanner} completadas sincronizadas`);
   const summary = parts.join(" · ");
   const supabase = await createClient();
   await supabase.from("ms365_connections").update({ last_sync_at: new Date().toISOString(), last_sync_summary: summary }).eq("user_id", userId);
@@ -241,3 +335,9 @@ export async function sendViaOutlook(conn: Connection, mail: { to: string[]; cc:
     },
   });
 }
+
+const STALE_MS = 15 * 60_000;
+
+/** ¿Toca sincronizar? (conectada y sin sincronizar en los últimos 15 minutos) */
+export const syncIsDue = (conn: Connection | null) =>
+  Boolean(conn && (!conn.last_sync_at || Date.now() - new Date(conn.last_sync_at).getTime() > STALE_MS));

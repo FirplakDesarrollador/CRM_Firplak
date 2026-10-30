@@ -60,6 +60,9 @@ async function sessionFor(tokenId: string, userId: string, email: string): Promi
   return data.session.access_token;
 }
 
+/** Sesión corta del usuario para tareas de servidor sin navegador (p. ej. la sincronización programada). */
+export const sessionForUser = (userId: string, email: string) => sessionFor(`user:${userId}`, userId, email);
+
 /** Valida el token del encabezado Authorization y devuelve la identidad con su sesión. */
 export async function resolveToken(raw: string): Promise<McpIdentity | { error: string; status: number }> {
   if (!raw.startsWith(TOKEN_PREFIX)) return { error: "Token no válido", status: 401 };

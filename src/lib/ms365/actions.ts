@@ -7,6 +7,9 @@ import { canSystem } from "@/lib/permissions";
 import type { FormState } from "@/lib/records/form";
 import { syncUser } from "./sync";
 import { postToWebhook } from "./teams";
+import { hasScope } from "./config";
+import { getConnection } from "./graph";
+import { createRecordFolder, FOLDER_BY_OBJECT, getRecordFolder, getSharePointSettings, MAX_UPLOAD_BYTES, uploadToFolder } from "./sharepoint";
 
 export async function syncMs365Now(_prev?: FormState, _fd?: FormData): Promise<FormState> {
   const user = await getCurrentUser();
@@ -23,7 +26,16 @@ export async function syncMs365Now(_prev?: FormState, _fd?: FormData): Promise<F
 export async function saveMs365Settings(_prev: FormState, fd: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { message: "Sesión expirada" };
-  const settings = Object.fromEntries(["calendar_push", "calendar_pull", "mail_pull", "send_via_outlook"].map((k) => [k, fd.get(k) === "on"]));
+  const conn = await getConnection(user.id);
+  if (!conn) return { message: "No has conectado tu cuenta de Microsoft 365." };
+  const flags = Object.fromEntries(["calendar_push", "calendar_pull", "mail_pull", "send_via_outlook"].map((k) => [k, fd.get(k) === "on"]));
+  // Planner: «plan|nombre» y «depósito|nombre» elegidos en las listas.
+  const [planId, planName] = String(fd.get("planner_plan") ?? "").split("|");
+  const [bucketId, bucketName] = String(fd.get("planner_bucket") ?? "").split("|");
+  const planner = planId
+    ? { planner_plan_id: planId, planner_plan_name: planName, planner_bucket_id: planId === conn.settings.planner_plan_id ? bucketId || undefined : undefined, planner_bucket_name: planId === conn.settings.planner_plan_id ? bucketName || undefined : undefined }
+    : { planner_plan_id: undefined, planner_plan_name: undefined, planner_bucket_id: undefined, planner_bucket_name: undefined };
+  const settings = { ...flags, ...planner };
   const supabase = await createClient();
   const { error } = await supabase.from("ms365_connections").update({ settings }).eq("user_id", user.id);
   if (error) return { message: error.message };
@@ -77,4 +89,58 @@ export async function testTeamsChannel(id: string): Promise<FormState> {
   } catch (e) {
     return { message: `Teams no aceptó el mensaje: ${(e as Error).message}` };
   }
+}
+
+// ---------------------------------------------------------------- SharePoint
+type FolderObject = keyof typeof FOLDER_BY_OBJECT;
+const recordPath = (object: FolderObject, id: string) => `/${object === "accounts" ? "cuentas" : "oportunidades"}/${id}`;
+
+export async function saveSharePointSite(_prev: FormState, fd: FormData): Promise<FormState> {
+  const supabase = await admin();
+  if (!supabase) return { message: "No tienes permiso para esta configuración." };
+  const value = Object.fromEntries(["site_id", "site_name", "site_url", "drive_id", "drive_name"].map((k) => [k, String(fd.get(k) ?? "")]));
+  if (!value.site_id || !value.drive_id) return { message: "Elige el sitio y la biblioteca." };
+  const { error } = await supabase.from("integration_settings").upsert({ key: "sharepoint", value, updated_at: new Date().toISOString() });
+  if (error) return { message: error.message };
+  revalidatePath("/configuracion/microsoft-365");
+  return { ok: true, message: "Biblioteca de SharePoint guardada" };
+}
+
+async function sharePointContext() {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Sesión expirada" };
+  const [conn, sp] = await Promise.all([getConnection(user.id), getSharePointSettings()]);
+  if (!sp) return { error: "Administración todavía no eligió la biblioteca de SharePoint." };
+  if (!conn || !hasScope(conn.scopes, "Files.ReadWrite.All")) return { error: "Conecta (o vuelve a conectar) tu cuenta de Microsoft 365 en Mis preferencias." };
+  return { conn, sp };
+}
+
+export async function createFolderForRecord(object: FolderObject, id: string, name: string): Promise<FormState> {
+  const ctx = await sharePointContext();
+  if ("error" in ctx) return { message: ctx.error };
+  if (await getRecordFolder(object, id)) return { ok: true, message: "La carpeta ya existe" };
+  try {
+    await createRecordFolder(ctx.conn!, ctx.sp!, object, id, name);
+  } catch (e) {
+    return { message: `SharePoint no pudo crear la carpeta: ${(e as Error).message}` };
+  }
+  revalidatePath(recordPath(object, id));
+  return { ok: true, message: "Carpeta creada en SharePoint" };
+}
+
+export async function uploadDocument(object: FolderObject, id: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const ctx = await sharePointContext();
+  if ("error" in ctx) return { message: ctx.error };
+  const folder = await getRecordFolder(object, id);
+  if (!folder) return { message: "Primero crea la carpeta en SharePoint." };
+  const file = fd.get("file");
+  if (!(file instanceof File) || !file.size) return { message: "Elige un archivo" };
+  if (file.size > MAX_UPLOAD_BYTES) return { message: "El archivo supera 4 MB: súbelo directamente en SharePoint." };
+  try {
+    await uploadToFolder(ctx.conn!, folder.drive_id, folder.item_id, file);
+  } catch (e) {
+    return { message: `SharePoint no aceptó el archivo: ${(e as Error).message}` };
+  }
+  revalidatePath(recordPath(object, id));
+  return { ok: true, message: "Archivo subido" };
 }

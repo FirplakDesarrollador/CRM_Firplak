@@ -13,6 +13,7 @@ import { FieldHistory } from "@/components/records/FieldHistory";
 import { StagePath } from "@/components/opportunities/StagePath";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { TeamCard } from "@/components/teams/TeamCard";
+import { DocumentsCard } from "@/components/ms365/DocumentsCard";
 import { SplitsCard, getSplits } from "@/components/splits/SplitsCard";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getPipelines, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
@@ -56,7 +57,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
   const orderRows = (ordersRes.data ?? []) as unknown as Row[];
   const quoteRows = (quotesRes.data ?? []) as unknown as Row[];
   const stages = pipelines.find((p) => p.id === row.pipeline_id)?.stages ?? [];
-  const tab = (["historial", "cotizaciones", "pedidos", "equipo", "cambios"] as const).find((k) => k === sp.tab) ?? "detalles";
+  const tab = (["historial", "cotizaciones", "pedidos", "equipo", "documentos", "cambios"] as const).find((k) => k === sp.tab) ?? "detalles";
   const owner = row.owner as { full_name?: string; email?: string } | null;
   const path = `/oportunidades/${id}`;
   const locale = await getLocale();
@@ -105,12 +106,15 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
               { key: "cotizaciones", label: "Cotizaciones", count: quoteRows.length },
               ...(can(user.access, "orders", "read") ? [{ key: "pedidos", label: "Pedidos", count: orderRows.length }] : []),
               { key: "equipo", label: "Equipo y reparto" },
+              { key: "documentos", label: "Documentos" },
               { key: "historial", label: "Historial de etapas", count: history.data?.length ?? 0 },
               { key: "cambios", label: "Historial de cambios" },
             ]} />
           </div>
           {tab === "cambios" ? (
             <FieldHistory object="opportunities" recordId={id} />
+          ) : tab === "documentos" ? (
+            <DocumentsCard object="opportunities" recordId={id} recordName={String(row.name)} userId={user.id} />
           ) : tab === "equipo" ? (
             <>
               <SplitsCard opportunityId={id} ownerId={(row.owner_id as string | null) ?? null}

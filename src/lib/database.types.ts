@@ -1241,6 +1241,7 @@ export type Database = {
       }
       external_links: {
         Row: {
+          etag: string | null
           external_id: string
           external_updated_at: string | null
           id: string
@@ -1254,6 +1255,7 @@ export type Database = {
           web_url: string | null
         }
         Insert: {
+          etag?: string | null
           external_id: string
           external_updated_at?: string | null
           id?: string
@@ -1267,6 +1269,7 @@ export type Database = {
           web_url?: string | null
         }
         Update: {
+          etag?: string | null
           external_id?: string
           external_updated_at?: string | null
           id?: string
@@ -1487,6 +1490,35 @@ export type Database = {
           {
             foreignKeyName: "import_jobs_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_settings_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3228,6 +3260,44 @@ export type Database = {
             columns: ["price_book_id"]
             isOneToOne: false
             referencedRelation: "price_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      record_folders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          drive_id: string
+          item_id: string
+          object: string
+          record_id: string
+          web_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          drive_id: string
+          item_id: string
+          object: string
+          record_id: string
+          web_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          drive_id?: string
+          item_id?: string
+          object?: string
+          record_id?: string
+          web_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

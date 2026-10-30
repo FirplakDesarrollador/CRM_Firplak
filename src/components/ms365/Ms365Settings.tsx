@@ -5,8 +5,8 @@ import { Fmt } from "@/components/ui/Fmt";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Tr } from "@/components/ui/Tr";
 import { getT } from "@/lib/i18n/server";
-import { ms365Configured } from "@/lib/ms365/config";
-import { getConnection } from "@/lib/ms365/graph";
+import { hasScope, ms365Configured } from "@/lib/ms365/config";
+import { getConnection, graph, type Connection } from "@/lib/ms365/graph";
 import { disconnectMs365, saveMs365Settings, syncMs365Now } from "@/lib/ms365/actions";
 
 const OPTIONS = [
@@ -24,6 +24,20 @@ const ERRORS: Record<string, string> = {
   save: "No se pudo guardar la conexión.",
 };
 
+type Option = { id: string; name: string };
+
+/** Planes de Planner de la persona y depósitos del plan elegido (vacío si Graph falla). */
+async function plannerOptions(conn: Connection): Promise<{ plans: Option[]; buckets: Option[] }> {
+  try {
+    const { value: plans } = await graph<{ value: { id: string; title: string }[] }>(conn, "/me/planner/plans");
+    const planId = conn.settings.planner_plan_id;
+    const buckets = planId ? (await graph<{ value: { id: string; name: string }[] }>(conn, `/planner/plans/${planId}/buckets`)).value : [];
+    return { plans: plans.map((p) => ({ id: p.id, name: p.title })), buckets: buckets.map((b) => ({ id: b.id, name: b.name })) };
+  } catch {
+    return { plans: [], buckets: [] };
+  }
+}
+
 /** Mis preferencias → Microsoft 365. */
 export async function Ms365Settings({ userId, status }: { userId: string; status: { error?: string; connected?: boolean } }) {
   const t = await getT();
@@ -31,6 +45,8 @@ export async function Ms365Settings({ userId, status }: { userId: string; status
     return <div className="p-4"><Alert tone="info">{t("Administración debe configurar la integración con Microsoft 365 (Configuración → Microsoft 365) antes de que puedas conectar tu cuenta.")}</Alert></div>;
   }
   const conn = await getConnection(userId);
+  const needsReconnect = Boolean(conn && !hasScope(conn.scopes, "Tasks.ReadWrite"));
+  const planner = conn && !needsReconnect ? await plannerOptions(conn) : { plans: [], buckets: [] };
 
   return (
     <div className="space-y-4 p-4">
@@ -63,6 +79,12 @@ export async function Ms365Settings({ userId, status }: { userId: string; status
               </ConfirmSubmit>
             </ActionForm>
           </div>
+          {needsReconnect && (
+            <Alert tone="warning">
+              {t("Vuelve a conectar tu cuenta para activar Planner y los documentos de SharePoint.")}{" "}
+              <a href="/api/ms365/connect" className="link font-semibold">{t("Volver a conectar")}</a>
+            </Alert>
+          )}
           <ActionForm action={saveMs365Settings} className="space-y-2">
             {OPTIONS.map((o) => (
               <label key={o.key} className="flex items-start gap-2 text-sm">
@@ -70,6 +92,27 @@ export async function Ms365Settings({ userId, status }: { userId: string; status
               </label>
             ))}
             <p className="text-xs text-muted"><Tr>Las reuniones del CRM llegan a tu calendario sin invitar a nadie: si quieres invitar al cliente, hazlo desde Outlook.</Tr></p>
+            {!needsReconnect && (
+              <fieldset className="grid gap-2 border-t border-line pt-3 sm:grid-cols-2">
+                <legend className="mb-1 text-sm font-semibold"><Tr>Planner: tus tareas del CRM en un plan</Tr></legend>
+                <div>
+                  <label className="label" htmlFor="ms-plan"><Tr>Plan</Tr></label>
+                  <select id="ms-plan" name="planner_plan" className="select" defaultValue={conn.settings.planner_plan_id ? `${conn.settings.planner_plan_id}|${conn.settings.planner_plan_name ?? ""}` : ""}>
+                    <option value="">{t("Sin Planner")}</option>
+                    {planner.plans.map((p) => <option key={p.id} value={`${p.id}|${p.name}`}>{p.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="ms-bucket"><Tr>Depósito</Tr></label>
+                  <select id="ms-bucket" name="planner_bucket" className="select" disabled={!conn.settings.planner_plan_id}
+                    defaultValue={conn.settings.planner_bucket_id ? `${conn.settings.planner_bucket_id}|${conn.settings.planner_bucket_name ?? ""}` : ""}>
+                    <option value="">{t(conn.settings.planner_plan_id ? "Selecciona…" : "Primero elige el plan y guarda")}</option>
+                    {planner.buckets.map((b) => <option key={b.id} value={`${b.id}|${b.name}`}>{b.name}</option>)}
+                  </select>
+                </div>
+                <p className="text-xs text-muted sm:col-span-2"><Tr>Las tareas pendientes que tienes en el CRM se crean en ese depósito, asignadas a ti; al completarlas en Planner o en el CRM se completan en el otro.</Tr></p>
+              </fieldset>
+            )}
             <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
           </ActionForm>
         </>

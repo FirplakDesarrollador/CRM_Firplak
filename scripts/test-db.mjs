@@ -743,4 +743,19 @@ await check('Microsoft 365: cada quien su conexión y sus vínculos; canales de 
   await q(`update activities set email_delivery = 'outlook' where id = $1`, [act.id]);
 });
 
+console.log('Fase 21');
+await check('carpetas de SharePoint: las ve quien ve el registro; los ajustes los cambia administración', async () => {
+  const [opp] = await q(`select id from opportunities where owner_id = $1 order by name limit 1`, [admin.id]);
+  await as(admin, () => q(`insert into record_folders (object, record_id, drive_id, item_id, web_url) values ('opportunities', $1, 'drv', 'itm', 'https://sp/x')`, [opp.id]));
+  // La asesora no ve esa oportunidad (privada) ni su carpeta, y no puede crearle otra.
+  const visible = await as(rep, () => count(`select count(*) n from opportunities where id = $1`, [opp.id]));
+  assert.equal(await as(rep, () => count(`select count(*) n from record_folders where record_id = $1`, [opp.id])), visible);
+  if (!visible) {
+    await assert.rejects(as(rep, () => q(`insert into record_folders (object, record_id, drive_id, item_id) values ('opportunities', $1, 'd', 'i')`, [opp.id])));
+  }
+  await assert.rejects(as(rep, () => q(`insert into integration_settings (key, value) values ('sharepoint', '{}')`)));
+  await as(admin, () => q(`insert into integration_settings (key, value) values ('sharepoint', '{"drive_id":"drv"}')`));
+  assert.equal((await as(rep, () => q(`select value from integration_settings where key = 'sharepoint'`)))[0].value.drive_id, 'drv');
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

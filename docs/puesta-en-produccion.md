@@ -129,7 +129,7 @@ Con `SUPABASE_SERVICE_ROLE_KEY` configurada (paso 3) y los permisos activos en l
 Administración ve y revoca tokens y aplicaciones conectadas y revisa el registro de uso en
 **Configuración → Asistentes de IA**.
 
-## 9. Microsoft 365: Outlook y Teams (TI con un administrador de Microsoft 365)
+## 9. Microsoft 365: Outlook, Teams, Planner y SharePoint (TI con un administrador de Microsoft 365)
 
 **Registrar la aplicación en Entra ID** ([entra.microsoft.com](https://entra.microsoft.com) → Identidad → Aplicaciones → Registros de aplicaciones → *Nuevo registro*):
 
@@ -139,8 +139,9 @@ Administración ve y revoca tokens y aplicaciones conectadas y revisa el registr
 3. **Certificados y secretos → Nuevo secreto de cliente** (24 meses). Copia el *valor* (solo se muestra
    una vez) y anota en el calendario la fecha de vencimiento para renovarlo.
 4. **Permisos de API → Microsoft Graph → Permisos delegados:** `User.Read`, `Calendars.ReadWrite`,
-   `Mail.Read`, `Mail.Send`, `offline_access`, `openid`, `profile`, `email`. Luego **Conceder
-   consentimiento de administrador** para Firplak.
+   `Mail.Read`, `Mail.Send`, `Tasks.ReadWrite`, `Files.ReadWrite.All`, `Sites.Read.All`,
+   `offline_access`, `openid`, `profile`, `email`. Luego **Conceder consentimiento de administrador**
+   para Firplak.
 5. En *Información general* copia el **Id. de directorio (inquilino)** y el **Id. de aplicación (cliente)**.
 
 **Variables en Vercel** (solo servidor):
@@ -159,9 +160,26 @@ Administración ve y revoca tokens y aplicaciones conectadas y revisa el registr
 **Configuración → Microsoft 365 → Canales de Teams** → agrégala y pulsa *Probar*. Luego, en
 **Automatizaciones**, usa la acción **Publicar en Teams** (p. ej. al ganar una oportunidad).
 
-**Cada persona:** Mis preferencias → **Microsoft 365** → *Conectar con Microsoft 365* y, la primera vez,
-*Sincronizar ahora*. Desde ese momento sus reuniones del CRM aparecen en Outlook al crearlas; las
-reuniones y correos de Outlook con clientes se traen con *Sincronizar ahora*.
+**SharePoint:** un administrador que ya conectó su cuenta va a **Configuración → Microsoft 365 →
+Documentos en SharePoint**, busca el sitio comercial y pulsa *Usar* en la biblioteca de documentos.
+Las carpetas se crean en `CRM/Cuentas/<cuenta>` y `CRM/Oportunidades/<oportunidad>`; los permisos de
+acceso a los archivos son los de SharePoint.
+
+**Sincronización automática:** agrega la variable `CRON_SECRET` (una cadena aleatoria larga, p. ej.
+`openssl rand -hex 32`) y programa una llamada a `https://crm.firplak.com/api/ms365/sync` cada 15–30
+minutos con el encabezado `Authorization: Bearer <CRON_SECRET>`:
+
+- **Vercel Pro:** *Settings → Cron Jobs* (Vercel envía ese encabezado solo si la variable se llama
+  `CRON_SECRET`). En el plan Hobby los cron solo pueden correr una vez al día.
+- **Otra opción:** cualquier programador externo (p. ej. un flujo de Power Automate con
+  «Recurrencia» + «HTTP») con el mismo encabezado.
+
+Además, cada persona se sincroniza sola al abrir **Inicio** si pasaron más de 15 minutos.
+
+**Cada persona:** Mis preferencias → **Microsoft 365** → *Conectar con Microsoft 365*, elige su **plan y
+depósito de Planner** y, la primera vez, *Sincronizar ahora*. Desde ese momento sus reuniones y tareas
+del CRM aparecen en Outlook y Planner al crearlas. Quien conectó su cuenta antes de la Fase 21 verá
+el aviso *Volver a conectar* para aceptar los permisos de Planner y SharePoint.
 
 ## 10. Lista de verificación antes de anunciarlo
 
@@ -174,6 +192,5 @@ reuniones y correos de Outlook con clientes se traen con *Sincronizar ahora*.
 
 ## Lo que sigue después de salir en vivo
 
-- **Planner** y **SharePoint**, y sincronización automática periódica con Outlook.
 - Integración con **SAP Business One** por el Service Layer: socios de negocio, pedidos, despachos
   y facturas, usando el Código SAP y la Referencia como llaves.

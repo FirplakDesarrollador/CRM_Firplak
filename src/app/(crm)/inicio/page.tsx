@@ -6,7 +6,11 @@ import { ObjectIcon } from "@/components/ui/icons";
 import { ActivityItem } from "@/components/activities/ActivityItem";
 import { getMyOpenActivities, getUpcomingMeetings } from "@/components/activities/data";
 import { StageBadge } from "@/components/records/FieldValue";
-import { createClient } from "@/lib/supabase/server";
+import { after } from "next/server";
+import { createClient, mcpSession } from "@/lib/supabase/server";
+import { ms365Configured } from "@/lib/ms365/config";
+import { getConnection } from "@/lib/ms365/graph";
+import { syncIsDue, syncUser } from "@/lib/ms365/sync";
 import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, todayISO } from "@/lib/format";
 import { resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
@@ -31,6 +35,16 @@ export default async function HomePage() {
   const today = todayISO();
   const month = resolvePeriod("this_month");
   const supabase = await createClient();
+
+  // Microsoft 365: si toca, se sincroniza después de enviar la página (no la hace esperar).
+  if (ms365Configured() && syncIsDue(await getConnection(user.id))) {
+    const { data: session } = await supabase.auth.getSession();
+    const accessToken = session.session?.access_token;
+    if (accessToken) {
+      after(() => mcpSession.run({ accessToken }, () => syncUser(user.id))
+        .catch((e) => console.error("Microsoft 365: sincronización en segundo plano", (e as Error).message)));
+    }
+  }
 
   const [{ data: dash }, tasks, meetings, { data: opps }, { data: recent }, { count: approvals }] = await Promise.all([
     supabase.rpc("crm_dashboard", { p_from: month.from, p_to: month.to, p_owner: user.id }),

@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, ms365, MS365_SCOPES, redirectUri, type Ms365Settings 
 import { decrypt, encrypt } from "./crypto";
 
 export type Connection = {
-  user_id: string; email: string | null; display_name: string | null; expires_at: string;
+  user_id: string; ms_user_id: string | null; email: string | null; display_name: string | null; expires_at: string; scopes: string | null;
   access_token_enc: string; refresh_token_enc: string; settings: Ms365Settings; last_sync_at: string | null; last_sync_summary: string | null;
 };
 
@@ -48,17 +48,23 @@ export class GraphError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-/** Llamada a Microsoft Graph como la persona conectada. */
-export async function graph<T = unknown>(conn: Connection, path: string, init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
+/**
+ * Llamada a Microsoft Graph como la persona conectada. `raw` envía bytes (subida de archivos);
+ * `body` se envía como JSON.
+ */
+export async function graph<T = unknown>(conn: Connection, path: string, init: {
+  method?: string; body?: unknown; raw?: ArrayBuffer; contentType?: string; headers?: Record<string, string>;
+} = {}): Promise<T> {
   const res = await fetch(path.startsWith("http") ? path : `${ms365.graphUrl}${path}`, {
     method: init.method ?? "GET",
     headers: {
       Authorization: `Bearer ${await accessToken(conn)}`,
       ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(init.raw ? { "Content-Type": init.contentType ?? "application/octet-stream" } : {}),
       Prefer: 'outlook.timezone="UTC"',
       ...init.headers,
     },
-    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    body: init.raw ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
   });
   if (res.status === 204 || res.status === 202) return undefined as T;
   const json = await res.json().catch(() => ({}));
