@@ -1207,6 +1207,62 @@ export type Database = {
           },
         ]
       }
+      forecast_snapshots: {
+        Row: {
+          adjustment: number | null
+          best_case: number
+          closed: number
+          commit_amount: number
+          id: string
+          open_count: number
+          period_start: string
+          period_type: string
+          pipeline: number
+          quota: number | null
+          taken_at: string
+          taken_on: string
+          user_id: string
+        }
+        Insert: {
+          adjustment?: number | null
+          best_case?: number
+          closed?: number
+          commit_amount?: number
+          id?: string
+          open_count?: number
+          period_start: string
+          period_type: string
+          pipeline?: number
+          quota?: number | null
+          taken_at?: string
+          taken_on: string
+          user_id: string
+        }
+        Update: {
+          adjustment?: number | null
+          best_case?: number
+          closed?: number
+          commit_amount?: number
+          id?: string
+          open_count?: number
+          period_start?: string
+          period_type?: string
+          pipeline?: number
+          quota?: number | null
+          taken_at?: string
+          taken_on?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forecast_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           created: number
@@ -1658,6 +1714,50 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_snapshots: {
+        Row: {
+          amount: number | null
+          close_date: string | null
+          forecast_category: string | null
+          is_closed: boolean | null
+          is_won: boolean | null
+          opportunity_id: string
+          owner_id: string | null
+          stage_id: string | null
+          taken_on: string
+        }
+        Insert: {
+          amount?: number | null
+          close_date?: string | null
+          forecast_category?: string | null
+          is_closed?: boolean | null
+          is_won?: boolean | null
+          opportunity_id: string
+          owner_id?: string | null
+          stage_id?: string | null
+          taken_on: string
+        }
+        Update: {
+          amount?: number | null
+          close_date?: string | null
+          forecast_category?: string | null
+          is_closed?: boolean | null
+          is_won?: boolean | null
+          opportunity_id?: string
+          owner_id?: string | null
+          stage_id?: string | null
+          taken_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_snapshots_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
             referencedColumns: ["id"]
           },
         ]
@@ -2847,6 +2947,22 @@ export type Database = {
           can_adjust: boolean
         }[]
       }
+      forecast_trend: {
+        Args: {
+          p_period_type: string
+          p_period_start: string
+          p_user?: string
+        }
+        Returns: {
+          taken_on: string
+          closed: number
+          commit_amount: number
+          best_case: number
+          pipeline: number
+          quota: number
+          forecast: number
+        }[]
+      }
       generate_alerts: {
         Args: never
         Returns: number
@@ -2942,6 +3058,30 @@ export type Database = {
         }
         Returns: string
       }
+      pipeline_changes: {
+        Args: {
+          p_since: string
+          p_period_type: string
+          p_period_start: string
+        }
+        Returns: {
+          opportunity_id: string
+          name: string
+          owner_id: string
+          is_new: boolean
+          amount_before: number
+          amount_after: number
+          close_before: string
+          close_after: string
+          stage_before: string
+          stage_after: string
+          category_before: string
+          category_after: string
+          was_closed: boolean
+          is_closed: boolean
+          is_won: boolean
+        }[]
+      }
       possible_duplicates: {
         Args: {
           p_object: string
@@ -3007,6 +3147,10 @@ export type Database = {
           p_quote: string
         }
         Returns: undefined
+      }
+      take_forecast_snapshot: {
+        Args: never
+        Returns: number
       }
       try_numeric: {
         Args: {

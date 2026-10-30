@@ -491,4 +491,35 @@ await check('las automatizaciones programadas también corren sobre pedidos', as
   assert.equal(await count(`select count(*) n from activities where subject = 'Confirmar entrega del pedido' and opportunity_id = $1`, [o.opportunity_id]), 1);
 });
 
+console.log('Fase 12');
+await check('las instantáneas del pronóstico guardan la tendencia y los cambios del pipeline', async () => {
+  const [{ start, today }] = await q(`select date_trunc('quarter', now() at time zone 'America/Bogota')::date::text as start,
+                                            (now() at time zone 'America/Bogota')::date::text as today`);
+  await assert.rejects(as(rep, () => q(`select take_forecast_snapshot()`)));
+  const [{ n }] = await as(admin, () => q(`select take_forecast_snapshot() n`));
+  assert.ok(Number(n) > 0);
+  // Simula que la instantánea se tomó hace una semana.
+  await q(`update forecast_snapshots set taken_on = taken_on - 7`);
+  await q(`update opportunity_snapshots set taken_on = taken_on - 7`);
+  const [opp] = await q(`select id, amount from opportunities
+                         where not is_closed and close_date between $1::date and $1::date + interval '3 months' - interval '1 day'
+                         order by name limit 1`, [start]);
+  await q(`update opportunities set amount = amount + 50000000 where id = $1`, [opp.id]);
+  await q(`insert into opportunities (name, account_id, pipeline_id, stage_id, amount, close_date, owner_id)
+           select 'Oportunidad nueva de prueba', account_id, pipeline_id, stage_id, 99000000, close_date, owner_id
+           from opportunities where id = $1`, [opp.id]);
+  await as(admin, () => q(`select take_forecast_snapshot()`));
+
+  const trend = await as(admin, () => q(`select * from forecast_trend('quarter', $1::date)`, [start]));
+  assert.equal(trend.length, 2);
+  const changes = await as(admin, () => q(`select * from pipeline_changes($1::date - 7, 'quarter', $2::date)`, [today, start]));
+  const changed = changes.find((c) => c.opportunity_id === opp.id);
+  assert.ok(changed);
+  assert.equal(Number(changed.amount_after) - Number(changed.amount_before), 50000000);
+  assert.ok(changes.some((c) => c.name === 'Oportunidad nueva de prueba' && c.is_new));
+  // El asesor solo ve su propia línea de tendencia.
+  const mine = await as(rep, () => q(`select count(distinct user_id) n from forecast_snapshots`));
+  assert.ok(Number(mine[0].n) <= 1);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

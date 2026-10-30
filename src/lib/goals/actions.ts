@@ -59,3 +59,12 @@ export async function saveForecastAdjustment(userId: string, periodType: GoalPer
   revalidatePath("/pronostico");
   return { ok: true, message: "Ajuste guardado" };
 }
+
+/** Toma ahora la instantánea del pronóstico (también corre cada lunes con pg_cron). */
+export async function takeForecastSnapshot(_prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("take_forecast_snapshot");
+  if (error) return { message: error.message.includes("No autorizado") ? "No tienes permiso para tomar instantáneas." : error.message };
+  revalidatePath("/pronostico");
+  return { ok: true, message: "Instantánea guardada" };
+}

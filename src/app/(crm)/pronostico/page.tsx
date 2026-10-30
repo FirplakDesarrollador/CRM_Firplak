@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ObjectIcon } from "@/components/ui/icons";
 import { KpiTile } from "@/components/dashboard/Charts";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
+import { TrendChart, type TrendPoint } from "@/components/forecast/TrendChart";
+import { getUsers } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { canSystem } from "@/lib/permissions";
-import { formatCompactCurrency, formatCurrency, formatMillions, formatPercent, todayISO } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatDate, formatMillions, formatPercent, todayISO } from "@/lib/format";
 import { periodEnd, periodLabel, periodStart, shiftPeriod, type GoalPeriodType } from "@/lib/goals/periods";
-import { saveForecastAdjustment } from "@/lib/goals/actions";
+import { saveForecastAdjustment, takeForecastSnapshot } from "@/lib/goals/actions";
 import { makeT } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/session";
@@ -39,9 +42,11 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
   const end = periodEnd(type, start);
 
   const supabase = await createClient();
-  const [{ data, error }, { data: companyGoal }] = await Promise.all([
+  const [{ data, error }, { data: companyGoal }, { data: trendData }, users] = await Promise.all([
     supabase.rpc("forecast_summary", { p_period_type: type, p_period_start: start }),
     supabase.from("sales_goals").select("target").is("user_id", null).eq("metric", "won_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
+    supabase.rpc("forecast_trend", { p_period_type: type, p_period_start: start }),
+    getUsers(),
   ]);
   const rows = ((data ?? []) as Row[]).map((r) => ({
     ...r,
@@ -54,6 +59,35 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
     closed: sum((r) => r.closed), commit: sum((r) => r.commit_amount), best: sum((r) => r.best_case), pipeline: sum((r) => r.pipeline),
     forecast: sum(forecastOf), quota: companyGoal ? Number(companyGoal.target) : sum((r) => r.quota ?? 0),
   };
+  // Historial: instantáneas del periodo y la fecha con la que se compara (por defecto,
+  // la última anterior a hoy).
+  const today = todayISO();
+  const trend = (trendData ?? []).map((s) => ({
+    date: s.taken_on, closed: Number(s.closed), commit: Number(s.commit_amount), best: Number(s.best_case),
+    forecast: Number(s.forecast), quota: s.quota === null ? null : Number(s.quota),
+  }));
+  const pastDates = trend.map((s) => s.date).filter((d) => d < today);
+  const compareDate = typeof sp.comparar === "string" && pastDates.includes(sp.comparar) ? sp.comparar : pastDates.at(-1) ?? null;
+  const before = trend.find((s) => s.date === compareDate);
+  const points: TrendPoint[] = trend.map((s) => ({ date: s.date, closed: s.closed, forecast: s.forecast, potential: s.closed + s.commit + s.best, quota: totals.quota || s.quota }));
+  if (!trend.some((s) => s.date === today)) {
+    points.push({ date: today, closed: totals.closed, forecast: totals.forecast, potential: totals.closed + totals.commit + totals.best, quota: totals.quota || null, live: true });
+  }
+  const { data: changes } = compareDate
+    ? await supabase.rpc("pipeline_changes", { p_since: compareDate, p_period_type: type, p_period_start: start })
+    : { data: [] };
+  const userName = (id: string | null) => users.find((u) => u.id === id)?.full_name ?? "—";
+  const canSnapshot = canSystem(user.access, "customize") || canSystem(user.access, "manage_users");
+  const delta = (now: number, prev: number | undefined) => {
+    if (prev === undefined || !compareDate) return null;
+    const d = now - prev;
+    return (
+      <span className={`block ${d > 0 ? "text-success" : d < 0 ? "text-danger" : "text-muted"}`}>
+        {d === 0 ? t("Sin cambio") : d > 0 ? `+${formatCompactCurrency(d)}` : `(${formatCompactCurrency(-d)})`} {t("vs.")} <Fmt date={compareDate} />
+      </span>
+    );
+  };
+
   const scaleMax = Math.max(1, ...rows.map((r) => Math.max(r.closed + r.commit_amount + r.best_case, r.quota ?? 0, r.adjustment ?? 0)));
 
   const qs = (patch: Record<string, string>) => `/pronostico?${new URLSearchParams({ tipo: type, inicio: start, ...patch })}`;
@@ -94,14 +128,47 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
       {error && <p className="error-text">{error.message}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <KpiTile label="Cerrado" {...formatMillions(totals.closed)} tone="success" />
-        <KpiTile label="Compromiso" {...formatMillions(totals.commit)} />
-        <KpiTile label="Mejor caso" {...formatMillions(totals.best)} sub={`Pipeline: ${formatCompactCurrency(totals.pipeline)}`} />
-        <KpiTile label="Pronóstico" {...formatMillions(totals.forecast)} sub="Cerrado + compromiso, o el ajuste del gerente" />
+        <KpiTile label="Cerrado" {...formatMillions(totals.closed)} sub={delta(totals.closed, before?.closed)} />
+        <KpiTile label="Compromiso" {...formatMillions(totals.commit)} sub={delta(totals.commit, before?.commit)} />
+        <KpiTile label="Mejor caso" {...formatMillions(totals.best)}
+          sub={<>{t("Pipeline:")} {formatCompactCurrency(totals.pipeline)}{delta(totals.best, before?.best)}</>} />
+        <KpiTile label="Pronóstico" {...formatMillions(totals.forecast)}
+          sub={<>{t("Cerrado + compromiso, o el ajuste del gerente")}{delta(totals.forecast, before?.forecast)}</>} />
         <KpiTile label="Meta" {...formatMillions(totals.quota)}
           sub={totals.quota ? `${formatPercent((totals.forecast / totals.quota) * 100)} ${t("pronosticado")}` : t("Sin meta definida")}
           tone={totals.quota ? (totals.forecast >= totals.quota ? "success" : "warning") : undefined} />
       </div>
+
+      <section className="glass p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="card-title"><Tr>Tendencia del pronóstico</Tr></h2>
+            <p className="text-xs text-muted"><Tr>Una instantánea cada lunes a las 6:00 a. m. (con pg_cron) más el valor de hoy en vivo.</Tr></p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {pastDates.length > 0 && (
+              <form method="get" action="/pronostico" className="flex items-center gap-1.5">
+                <input type="hidden" name="tipo" value={type} />
+                <input type="hidden" name="inicio" value={start} />
+                <label className="text-xs text-muted" htmlFor="comparar"><Tr>Comparar con</Tr></label>
+                <select id="comparar" name="comparar" className="select h-8 w-auto" defaultValue={compareDate ?? ""}>
+                  {[...pastDates].reverse().map((d) => <option key={d} value={d}>{formatDate(d, locale)}</option>)}
+                </select>
+                <button type="submit" className="btn btn-sm"><Tr>Ver</Tr></button>
+              </form>
+            )}
+            {canSnapshot && (
+              <ActionForm action={takeForecastSnapshot} className="flex flex-col items-end gap-1">
+                <SubmitButton className="btn btn-sm" pendingText="Guardando…"><Camera size={14} /> <Tr>Tomar instantánea</Tr></SubmitButton>
+              </ActionForm>
+            )}
+          </div>
+        </div>
+        <TrendChart points={points} />
+        {trend.length === 0 && (
+          <p className="mt-2 text-xs text-muted"><Tr>Aún no hay instantáneas de este periodo: la tendencia se irá formando semana a semana.</Tr></p>
+        )}
+      </section>
 
       <section className="card overflow-hidden">
         <div className="card-header flex-wrap">
@@ -185,6 +252,64 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
           </div>
         )}
       </section>
+      {compareDate && (
+        <section className="card overflow-hidden">
+          <div className="card-header flex-wrap">
+            <h2 className="card-title"><Tr>Cambios en el pipeline desde</Tr> <Fmt date={compareDate} /> <span className="badge">{changes?.length ?? 0}</span></h2>
+          </div>
+          {(changes ?? []).length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted"><Tr>Sin cambios en las oportunidades del periodo.</Tr></p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th><Tr>Oportunidad</Tr></th>
+                    <th><Tr>Cambio</Tr></th>
+                    <th className="text-right"><Tr>Valor</Tr></th>
+                    <th><Tr>Fecha de cierre</Tr></th>
+                    <th><Tr>Etapa</Tr></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(changes ?? []).slice(0, 50).map((c) => {
+                    const amountDiff = Number(c.amount_after ?? 0) - Number(c.amount_before ?? 0);
+                    const tags: { label: string; cls: string }[] = [];
+                    if (c.is_new) tags.push({ label: "Nueva", cls: "badge-info" });
+                    if (c.is_closed && !c.was_closed) tags.push(c.is_won ? { label: "Ganada", cls: "badge-success" } : { label: "Perdida", cls: "badge-danger" });
+                    if (!c.is_new && amountDiff !== 0) tags.push({ label: amountDiff > 0 ? "Valor ↑" : "Valor ↓", cls: amountDiff > 0 ? "badge-success" : "badge-warning" });
+                    if (!c.is_new && c.close_before !== c.close_after) {
+                      tags.push(c.close_after > end || c.close_after < start ? { label: "Salió del periodo", cls: "badge-danger" } : { label: "Fecha movida", cls: "badge-warning" });
+                    }
+                    if (!c.is_new && c.stage_before !== c.stage_after && !(c.is_closed && !c.was_closed)) tags.push({ label: "Etapa", cls: "" });
+                    return (
+                      <tr key={c.opportunity_id}>
+                        <td>
+                          <Link href={`/oportunidades/${c.opportunity_id}`} className="link font-medium">{c.name}</Link>
+                          <p className="text-xs text-muted">{userName(c.owner_id)}</p>
+                        </td>
+                        <td><span className="flex flex-wrap gap-1">{tags.map((g) => <span key={g.label} className={`badge ${g.cls}`}><Tr>{g.label}</Tr></span>)}</span></td>
+                        <td className="num whitespace-nowrap text-right">
+                          {c.is_new ? formatCompactCurrency(c.amount_after) : <>{formatCompactCurrency(c.amount_before)} → {formatCompactCurrency(c.amount_after)}</>}
+                          {!c.is_new && amountDiff !== 0 && (
+                            <span className={`block text-xs ${amountDiff > 0 ? "text-success" : "text-danger"}`}>
+                              {amountDiff > 0 ? `+${formatCompactCurrency(amountDiff)}` : `(${formatCompactCurrency(-amountDiff)})`}
+                            </span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap text-sm">
+                          {c.is_new || c.close_before === c.close_after ? <Fmt date={c.close_after} /> : <><Fmt date={c.close_before} /> → <Fmt date={c.close_after} /></>}
+                        </td>
+                        <td className="text-sm">{c.is_new || c.stage_before === c.stage_after ? c.stage_after : <>{c.stage_before} → {c.stage_after}</>}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
       <p className="text-xs text-muted">
         <Tr>La categoría de pronóstico viene de la etapa de cada oportunidad (Configuración → Pipelines y etapas) y se puede cambiar en la oportunidad.</Tr>
       </p>
