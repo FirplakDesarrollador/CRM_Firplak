@@ -452,4 +452,43 @@ await check('un asesor no ve pedidos ajenos y no puede borrar pedidos activados'
   assert.equal(await count(`select count(*) n from orders where id = $1`, [id]), 1);
 });
 
+console.log('Fase 11');
+await check('un paso cuyas condiciones no se cumplen queda omitido en el historial', async () => {
+  const [{ id }] = await q(`select id from approval_requests where record_id = $1 order by submitted_at limit 1`, [quote.id]);
+  const steps = await q(`select step_order, status from approval_request_steps where request_id = $1 order by step_order`, [id]);
+  assert.deepEqual(steps.map((x) => x.status), ['approved', 'skipped']);
+});
+await check('con más de 25 % de descuento la solicitud sube al jefe del aprobador anterior', async () => {
+  await q(`update quotes set status = 'Borrador' where id = $1`, [quote.id]);
+  await q(`update quote_line_items set discount = 30 where quote_id = $1`, [quote.id]);
+  await db.exec(`update profiles set manager_id = null where id = '${mgr.id}'`);
+  const [{ id }] = await as(rep, () => q(`select submit_approval($1, $2, 'Descuento especial') as id`, [proc.id, quote.id]));
+  // Sin jefe del gerente, el paso 2 no tiene aprobador: la aprobación del paso 1 se revierte.
+  await assert.rejects(as(mgr, () => q(`select decide_approval($1, true)`, [id])), /no tiene un aprobador activo/);
+  assert.equal((await q(`select current_step from approval_requests where id = $1`, [id]))[0].current_step, 1);
+  await db.exec(`update profiles set manager_id = '${admin.id}' where id = '${mgr.id}'`);
+  await as(mgr, () => q(`select decide_approval($1, true, 'De acuerdo')`, [id]));
+  const [r] = await q(`select status, approver_id, current_step, current_step_name from approval_requests where id = $1`, [id]);
+  assert.equal(r.status, 'pending');
+  assert.equal(r.approver_id, admin.id);
+  assert.equal(r.current_step_name, 'Gerencia comercial');
+  assert.equal((await q(`select status from quotes where id = $1`, [quote.id]))[0].status, 'En revisión');
+  await assert.rejects(as(rep, () => q(`update quotes set description = 'x' where id = $1`, [quote.id])), /bloqueado/);
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title like '%Gerencia comercial'`, [admin.id]), 1);
+  await as(admin, () => q(`select decide_approval($1, true)`, [id]));
+  assert.equal((await q(`select status from approval_requests where id = $1`, [id]))[0].status, 'approved');
+  assert.equal((await q(`select status from quotes where id = $1`, [quote.id]))[0].status, 'Aprobada');
+  assert.equal(await count(`select count(*) n from approval_request_steps where request_id = $1 and status = 'approved'`, [id]), 2);
+  assert.equal(await as(rep, () => count(`select count(*) n from approval_request_steps where request_id = $1`, [id])), 2);
+});
+await check('las automatizaciones programadas también corren sobre pedidos', async () => {
+  await q(`insert into automation_rules (object, name, trigger_on, schedule_field, schedule_offset_days, actions, created_at)
+           values ('orders', 'Entrega hoy', 'scheduled', 'requested_delivery_date', 0,
+                   '[{"type":"create_task","subject":"Confirmar entrega del pedido","due_in_days":0}]', now() - interval '1 day')`);
+  const [o] = await q(`select id, opportunity_id from orders where is_demo`);
+  await q(`update orders set requested_delivery_date = (now() at time zone 'America/Bogota')::date where id = $1`, [o.id]);
+  await q(`select run_scheduled_automations()`);
+  assert.equal(await count(`select count(*) n from activities where subject = 'Confirmar entrega del pedido' and opportunity_id = $1`, [o.opportunity_id]), 1);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

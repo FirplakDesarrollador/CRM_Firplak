@@ -39,7 +39,10 @@ export default async function ApprovalsPage() {
       <ObjectIcon object={r.object} size={14} />
       <div className="min-w-0">
         <Link href={recordHref(r)} className="link font-medium">{r.record_name ?? t("Registro")}</Link>
-        <p className="text-xs text-muted">{t(OBJECTS[r.object]?.label ?? r.object)} · {r.process_name}</p>
+        <p className="text-xs text-muted">
+          {t(OBJECTS[r.object]?.label ?? r.object)} · {r.process_name}
+          {r.status === "pending" && r.current_step_name ? ` · ${t("Paso")} ${r.current_step}: ${r.current_step_name}` : ""}
+        </p>
       </div>
     </div>
   );

@@ -6,8 +6,8 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { ConditionsEditor } from "@/components/rules/ConditionsEditor";
 import { ActionsEditor } from "@/components/rules/ActionsEditor";
 import { ObjectTabs } from "@/components/rules/ObjectTabs";
+import { StepsEditor, type ApprovalStep } from "@/components/rules/StepsEditor";
 import { Tr } from "@/components/ui/Tr";
-import { Opt } from "@/components/ui/Opt";
 import { createClient } from "@/lib/supabase/server";
 import { getObjectDef, getPipelines, getUsers } from "@/lib/records/data";
 import type { Filter, ObjectKey } from "@/lib/objects";
@@ -25,8 +25,8 @@ export const metadata: Metadata = { title: "Procesos de aprobación" };
 const OBJECTS_WITH_APPROVAL: ObjectKey[] = ["quotes", "orders", "opportunities", "accounts", "leads", "cases", "campaigns", "contacts", "products"];
 
 type Process = {
-  id: string; name: string; description: string | null; conditions: Filter[];
-  approver_type: "manager" | "user"; approver_id: string | null; lock_record: boolean;
+  id: string; name: string; description: string | null; conditions: Filter[]; lock_record: boolean;
+  steps: (ApprovalStep & { step_order: number })[];
   submit_updates: AutomationAction[]; approve_updates: AutomationAction[]; reject_updates: AutomationAction[];
   sort_order: number; is_active: boolean;
 };
@@ -40,7 +40,7 @@ export default async function ApprovalProcessesPage({ searchParams }: PageProps<
   const supabase = await createClient();
   const [def, users, pipelines, { data }, { count: pending }] = await Promise.all([
     getObjectDef(object), getUsers(), getPipelines(),
-    supabase.from("approval_processes").select("*").eq("object", object).order("sort_order"),
+    supabase.from("approval_processes").select("*, steps:approval_steps(*)").eq("object", object).order("sort_order"),
     supabase.from("approval_requests").select("id", { count: "exact", head: true }).eq("object", object).eq("status", "pending"),
   ]);
   // Las actualizaciones se guardan como { field, value }; el editor las maneja como acciones «set_field».
@@ -51,8 +51,10 @@ export default async function ApprovalProcessesPage({ searchParams }: PageProps<
     submit_updates: asUpdates(p.submit_updates),
     approve_updates: asUpdates(p.approve_updates),
     reject_updates: asUpdates(p.reject_updates),
+    steps: [...(p.steps ?? [])].sort((a, b) => a.step_order - b.step_order),
   }));
-  const activeUsers = users.filter((u) => u.is_active);
+  const approverText = (s: ApprovalStep) =>
+    s.approver_type === "user" ? userName(s.approver_id) : t(s.approver_type === "manager" ? "Jefe directo del propietario" : "Jefe del aprobador anterior");
   const userName = (id: string | null) => users.find((u) => u.id === id)?.full_name ?? "—";
   const updatesText = (list: AutomationAction[]) =>
     list
@@ -73,21 +75,9 @@ export default async function ApprovalProcessesPage({ searchParams }: PageProps<
           <span className="label"><Tr>Entra al proceso si cumple (todas las condiciones)</Tr></span>
           <ConditionsEditor name="conditions" fields={def.fields} users={users} pipelines={pipelines} initial={p?.conditions ?? []} />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor={`pa-${k}`}><Tr>Quién aprueba</Tr></label>
-            <select id={`pa-${k}`} name="approver_type" className="select" defaultValue={p?.approver_type ?? "manager"}>
-              <Opt value="manager">Jefe directo del propietario</Opt>
-              <Opt value="user">Un usuario específico</Opt>
-            </select>
-          </div>
-          <div>
-            <label className="label" htmlFor={`pu-${k}`}><Tr>Usuario que aprueba</Tr></label>
-            <select id={`pu-${k}`} name="approver_id" className="select" defaultValue={p?.approver_id ?? ""}>
-              <Opt value="">Solo si aprueba un usuario específico…</Opt>
-              {activeUsers.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-            </select>
-          </div>
+        <div>
+          <span className="label"><Tr>Pasos de aprobación (en orden)</Tr></span>
+          <StepsEditor initial={p?.steps ?? []} fields={def.fields} users={users} pipelines={pipelines} />
         </div>
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" name="lock_record" defaultChecked={p?.lock_record ?? true} className="accent-[var(--brand)]" />
@@ -136,7 +126,7 @@ export default async function ApprovalProcessesPage({ searchParams }: PageProps<
               <span className="font-medium">{p.name}</span>
               <span className="block text-xs text-muted">
                 {p.conditions?.length ? `${t("Si")} ${describeConditions(def, p.conditions, OP_LABELS)}` : t("Todos los registros")}
-                {" → "}{p.approver_type === "manager" ? t("Jefe directo del propietario") : userName(p.approver_id)}
+                {" → "}{p.steps.map((s, i) => `${i + 1}. ${s.name} (${approverText(s)}${s.conditions?.length ? `, ${t("si")} ${describeConditions(def, s.conditions, OP_LABELS)}` : ""})`).join(" → ")}
                 {p.approve_updates?.length ? ` · ${t("Al aprobar")}: ${updatesText(p.approve_updates)}` : ""}
               </span>
             </span>

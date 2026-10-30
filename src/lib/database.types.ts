@@ -311,8 +311,6 @@ export type Database = {
       approval_processes: {
         Row: {
           approve_updates: Json
-          approver_id: string | null
-          approver_type: string
           conditions: Json
           created_at: string
           description: string | null
@@ -328,8 +326,6 @@ export type Database = {
         }
         Insert: {
           approve_updates?: Json
-          approver_id?: string | null
-          approver_type?: string
           conditions?: Json
           created_at?: string
           description?: string | null
@@ -345,8 +341,6 @@ export type Database = {
         }
         Update: {
           approve_updates?: Json
-          approver_id?: string | null
-          approver_type?: string
           conditions?: Json
           created_at?: string
           description?: string | null
@@ -361,11 +355,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+        ]
+      }
+      approval_request_steps: {
+        Row: {
+          approver_id: string | null
+          comment: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          request_id: string
+          status: string
+          step_name: string
+          step_order: number
+        }
+        Insert: {
+          approver_id?: string | null
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          request_id: string
+          status?: string
+          step_name: string
+          step_order: number
+        }
+        Update: {
+          approver_id?: string | null
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          request_id?: string
+          status?: string
+          step_name?: string
+          step_order?: number
+        }
+        Relationships: [
           {
-            foreignKeyName: "approval_processes_approver_id_fkey"
+            foreignKeyName: "approval_request_steps_approver_id_fkey"
             columns: ["approver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_request_steps_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_request_steps_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -373,6 +421,8 @@ export type Database = {
       approval_requests: {
         Row: {
           approver_id: string | null
+          current_step: number | null
+          current_step_name: string | null
           decided_at: string | null
           decided_by: string | null
           decision_comment: string | null
@@ -390,6 +440,8 @@ export type Database = {
         }
         Insert: {
           approver_id?: string | null
+          current_step?: number | null
+          current_step_name?: string | null
           decided_at?: string | null
           decided_by?: string | null
           decision_comment?: string | null
@@ -407,6 +459,8 @@ export type Database = {
         }
         Update: {
           approver_id?: string | null
+          current_step?: number | null
+          current_step_name?: string | null
           decided_at?: string | null
           decided_by?: string | null
           decision_comment?: string | null
@@ -449,6 +503,51 @@ export type Database = {
             columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_steps: {
+        Row: {
+          approver_id: string | null
+          approver_type: string
+          conditions: Json
+          id: string
+          name: string
+          process_id: string
+          step_order: number
+        }
+        Insert: {
+          approver_id?: string | null
+          approver_type?: string
+          conditions?: Json
+          id?: string
+          name: string
+          process_id: string
+          step_order: number
+        }
+        Update: {
+          approver_id?: string | null
+          approver_type?: string
+          conditions?: Json
+          id?: string
+          name?: string
+          process_id?: string
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_steps_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_steps_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "approval_processes"
             referencedColumns: ["id"]
           },
         ]
@@ -2584,6 +2683,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_approval: {
+        Args: {
+          p_request: string
+          p_previous_approver: string
+        }
+        Returns: boolean
+      }
       apply_field_updates: {
         Args: {
           p_table: string

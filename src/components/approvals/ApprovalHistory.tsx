@@ -8,6 +8,13 @@ export const APPROVAL_STATUS: Record<ApprovalRequest["status"], { label: string;
   rejected: { label: "Rechazada", badge: "badge-danger" },
   recalled: { label: "Retirada", badge: "" },
 };
+const STEP_STATUS: Record<string, { label: string; badge: string }> = {
+  ...APPROVAL_STATUS,
+  approved: { label: "Aprobado", badge: "badge-success" },
+  rejected: { label: "Rechazado", badge: "badge-danger" },
+  recalled: { label: "Retirado", badge: "" },
+  skipped: { label: "Omitido", badge: "" },
+};
 
 /** Historial de solicitudes de aprobación de un registro. */
 export function ApprovalHistory({ requests }: { requests: ApprovalRequest[] }) {
@@ -37,6 +44,18 @@ export function ApprovalHistory({ requests }: { requests: ApprovalRequest[] }) {
               <td className="text-sm">
                 {r.submit_comment && <p>“{r.submit_comment}”</p>}
                 {r.decision_comment && <p className="text-muted">↳ “{r.decision_comment}”</p>}
+                {(r.steps?.length ?? 0) > 1 && (
+                  <ol className="mt-1 space-y-0.5 text-xs">
+                    {[...r.steps].sort((a, b) => a.step_order - b.step_order).map((s) => (
+                      <li key={s.id} className="flex flex-wrap items-center gap-1">
+                        <span className="text-muted">{s.step_order}. {s.step_name}</span>
+                        <span className={`badge ${STEP_STATUS[s.status]?.badge ?? ""}`}><Tr>{STEP_STATUS[s.status]?.label ?? s.status}</Tr></span>
+                        {s.decider?.full_name && <span className="text-muted">{s.decider.full_name}</span>}
+                        {s.comment && <span className="text-muted">· “{s.comment}”</span>}
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </td>
             </tr>
           ))}

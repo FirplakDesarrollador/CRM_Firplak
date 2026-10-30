@@ -12,7 +12,13 @@ export type ApprovalRequest = {
   status: "pending" | "approved" | "rejected" | "recalled"; lock_record: boolean;
   submitted_by: string | null; submitted_at: string; submit_comment: string | null;
   approver_id: string | null; decided_by: string | null; decided_at: string | null; decision_comment: string | null;
+  current_step: number | null; current_step_name: string | null;
   submitter: Person; approver: Person; decider: Person;
+  steps: ApprovalRequestStep[];
+};
+export type ApprovalRequestStep = {
+  id: string; step_order: number; step_name: string; status: "pending" | "approved" | "rejected" | "skipped" | "recalled";
+  decided_at: string | null; comment: string | null; approver: Person; decider: Person;
 };
 
 export const REQUEST_SELECT = [
@@ -20,6 +26,7 @@ export const REQUEST_SELECT = [
   "submitter:profiles!approval_requests_submitted_by_fkey(id, full_name)",
   "approver:profiles!approval_requests_approver_id_fkey(id, full_name)",
   "decider:profiles!approval_requests_decided_by_fkey(id, full_name)",
+  "steps:approval_request_steps(id, step_order, step_name, status, decided_at, comment, approver:profiles!approval_request_steps_approver_id_fkey(id, full_name), decider:profiles!approval_request_steps_decided_by_fkey(id, full_name))",
 ].join(", ");
 
 /** Solicitudes de aprobación de un registro, de la más reciente a la más antigua. */

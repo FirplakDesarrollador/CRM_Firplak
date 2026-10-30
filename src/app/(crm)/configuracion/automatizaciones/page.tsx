@@ -23,7 +23,7 @@ import { deleteAutomationRule, runScheduledAutomationsNow, saveAutomationRule } 
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Automatizaciones" };
 
-const OBJECTS_WITH_AUTOMATION: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "cases", "campaigns"];
+const OBJECTS_WITH_AUTOMATION: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "orders", "cases", "campaigns"];
 const ACTION_LABELS: Record<string, string> = { create_task: "crear tarea", notify: "notificar", assign_owner: "asignar propietario", set_field: "actualizar campo" };
 
 type Rule = {

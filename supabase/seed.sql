@@ -606,11 +606,11 @@ where not exists (
 -- ===========================================================================
 -- Fase 8: proceso de aprobación de ejemplo (descuento alto en cotizaciones)
 -- ===========================================================================
-insert into public.approval_processes (object, name, description, conditions, approver_type, lock_record,
+insert into public.approval_processes (object, name, description, conditions, lock_record,
                                        submit_updates, approve_updates, reject_updates, sort_order)
 select 'quotes', 'Descuento superior al 15 %',
        'Las cotizaciones en borrador con más de 15 % de descuento las aprueba el jefe directo del asesor antes de presentarlas.',
-       '[{"field":"discount_percent","op":"gt","value":"15"},{"field":"status","op":"eq","value":"Borrador"}]', 'manager', true,
+       '[{"field":"discount_percent","op":"gt","value":"15"},{"field":"status","op":"eq","value":"Borrador"}]', true,
        '[{"field":"status","value":"En revisión"}]',
        '[{"field":"status","value":"Aprobada"}]',
        '[{"field":"status","value":"Borrador"}]', 1
@@ -659,3 +659,15 @@ begin
   update public.orders set status = 'En producción' where id = v_order;
 end
 $$;
+
+-- ===========================================================================
+-- Fase 11: pasos del proceso de ejemplo (jefe directo; gerencia si supera 25 %)
+-- ===========================================================================
+insert into public.approval_steps (process_id, step_order, name, conditions, approver_type)
+select p.id, v.step_order, v.name, v.conditions::jsonb, v.approver_type
+from public.approval_processes p,
+  (values (1, 'Jefe directo', '[]', 'manager'),
+          (2, 'Gerencia comercial', '[{"field":"discount_percent","op":"gt","value":"25"}]', 'previous_manager')
+  ) as v(step_order, name, conditions, approver_type)
+where p.object = 'quotes' and p.name = 'Descuento superior al 15 %'
+  and not exists (select 1 from public.approval_steps s where s.process_id = p.id);

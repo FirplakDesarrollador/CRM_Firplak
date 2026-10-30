@@ -404,15 +404,21 @@ export async function saveApprovalProcess(object: string, id: string | null, _pr
   if (!APPROVAL_OBJECTS.includes(object)) return { message: "Objeto no válido" };
   const name = str(fd, "name");
   if (!name) return { message: "Ponle un nombre al proceso" };
-  const approverType = str(fd, "approver_type") === "user" ? "user" : "manager";
-  const approverId = approverType === "user" ? nullable(fd, "approver_id") : null;
-  if (approverType === "user" && !approverId) return { message: "Elige el usuario que aprueba" };
+
+  const steps = parseJsonArray(str(fd, "steps")).map((s, i) => ({
+    step_order: i + 1,
+    name: String(s?.name ?? "").trim() || `Paso ${i + 1}`,
+    approver_type: ["manager", "previous_manager", "user"].includes(s?.approver_type) ? s.approver_type : "manager",
+    approver_id: s?.approver_type === "user" && typeof s?.approver_id === "string" && s.approver_id ? s.approver_id : null,
+    conditions: parseJsonArray(str(fd, `step_conditions_${String(s?.key ?? "")}`)),
+  }));
+  if (!steps.length) return { message: "Agrega al menos un paso" };
+  if (steps.some((s) => s.approver_type === "user" && !s.approver_id)) return { message: "Elige el usuario que aprueba en cada paso" };
+
   const payload = {
     object, name,
     description: nullable(fd, "description"),
     conditions: parseJsonArray(str(fd, "conditions")),
-    approver_type: approverType,
-    approver_id: approverId,
     lock_record: fd.get("lock_record") === "on",
     submit_updates: fieldUpdates(str(fd, "submit_updates")),
     approve_updates: fieldUpdates(str(fd, "approve_updates")),
@@ -420,10 +426,16 @@ export async function saveApprovalProcess(object: string, id: string | null, _pr
     sort_order: Number(str(fd, "sort_order")) || 0,
     is_active: id ? fd.get("is_active") === "on" : true,
   };
-  const { error } = id
-    ? await g.supabase.from("approval_processes").update(payload).eq("id", id)
-    : await g.supabase.from("approval_processes").insert(payload);
-  return error ? fail(error) : done(id ? "Proceso actualizado" : "Proceso creado");
+  const saved = id
+    ? await g.supabase.from("approval_processes").update(payload).eq("id", id).select("id").single()
+    : await g.supabase.from("approval_processes").insert(payload).select("id").single();
+  if (saved.error) return fail(saved.error);
+  // Los pasos se reemplazan completos; las solicitudes guardan su propio historial.
+  const processId = saved.data.id;
+  const del = await g.supabase.from("approval_steps").delete().eq("process_id", processId);
+  if (del.error) return fail(del.error);
+  const ins = await g.supabase.from("approval_steps").insert(steps.map((s) => ({ ...s, process_id: processId })));
+  return ins.error ? fail(ins.error) : done(id ? "Proceso actualizado" : "Proceso creado");
 }
 
 export async function deleteApprovalProcess(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {

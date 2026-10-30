@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 10)
+## Módulos incluidos (Fases 1 a 11)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -25,11 +25,11 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Correo | Redactor desde contacto, prospecto, oportunidad o caso con plantillas y campos combinados (`{{contacto.nombre}}`, `{{cuenta.nombre}}`…); envío con Resend si está configurado o apertura del cliente de correo; siempre queda registrado como actividad. |
 | Listas de valores | Personalización de las listas de selección (tipos, sectores, orígenes, motivos de pérdida, tipos de caso, familias…): agregar, ordenar, desactivar o restablecer. |
 | Reglas de validación | Bloquean el guardado cuando el registro cumple condiciones (p. ej. «Cliente requiere NIT», «Motivo de pérdida obligatorio»); se aplican en formularios, pipeline y rutas de estado. |
-| Automatizaciones | Al crear/actualizar (opcionalmente solo si cambia un campo) o **programadas por fecha** (N días antes o después de una fecha del registro, p. ej. 3 días antes del cierre o 1 día después del vencimiento de una cotización), si se cumplen condiciones: asignar propietario, crear tarea, notificar (propietario, jefe o usuario) o actualizar un campo. Las programadas corren cada día a las 6:30 a. m. con pg_cron (o con «Ejecutar programadas ahora») y se disparan una sola vez por registro y fecha. Notificaciones en la campana de la cabecera. |
+| Automatizaciones | Al crear/actualizar (opcionalmente solo si cambia un campo) o **programadas por fecha** (también en pedidos) (N días antes o después de una fecha del registro, p. ej. 3 días antes del cierre o 1 día después del vencimiento de una cotización), si se cumplen condiciones: asignar propietario, crear tarea, notificar (propietario, jefe o usuario) o actualizar un campo. Las programadas corren cada día a las 6:30 a. m. con pg_cron (o con «Ejecutar programadas ahora») y se disparan una sola vez por registro y fecha. Notificaciones en la campana de la cabecera. |
 | Auditoría | Historial de cambios por campo en cada ficha (registrado por triggers de la base) y vista global en Configuración → Auditoría de cambios. |
 | Metas | Cuotas por asesor o de la compañía, por mes, trimestre o año (ventas ganadas, negocios ganados, oportunidades y prospectos nuevos, actividades). Avance con ritmo esperado, brecha y estado; resumen en Inicio e Indicadores. Las define administración o el gerente para su equipo (nadie la propia). |
 | Pronóstico | Por mes, trimestre o año: cerrado, compromiso, mejor caso y pipeline por asesor (según la categoría de pronóstico de cada oportunidad) frente a su meta de ventas, con barra apilada y marca de la meta. El gerente (o administración) registra un **ajuste** con nota que reemplaza el pronóstico calculado; cada cifra abre la lista de oportunidades filtrada. |
-| Aprobaciones | Procesos configurables por objeto (Configuración → Procesos de aprobación): condiciones de entrada, aprobador (jefe directo del propietario o un usuario), bloqueo del registro mientras espera y cambios de campos al enviar, aprobar y rechazar o retirar. Se envían desde la ficha con comentario; el aprobador decide desde la ficha o la **bandeja de aprobaciones** (rechazar exige motivo) y recibe avisos en la campana. Historial en la pestaña Aprobaciones. Ejemplo incluido: cotizaciones en borrador con más de 15 % de descuento (`discount_percent`) las aprueba el jefe directo y pasan a «Aprobada». |
+| Aprobaciones | Procesos configurables por objeto (Configuración → Procesos de aprobación) con **varios pasos en orden**: cada paso tiene sus condiciones (si no se cumplen, se omite) y su aprobador (jefe directo del propietario, jefe del aprobador anterior o un usuario). Además: condiciones de entrada, bloqueo del registro mientras espera y cambios de campos al enviar, aprobar y rechazar o retirar. Se envían desde la ficha con comentario; cada aprobador decide desde la ficha o la **bandeja de aprobaciones** (rechazar exige motivo) y recibe avisos en la campana. Historial por paso en la pestaña Aprobaciones. Ejemplo incluido: cotizaciones en borrador con más de 15 % de descuento las aprueba el jefe directo y, si superan 25 %, también su jefe (gerencia comercial); al final pasan a «Aprobada». |
 | Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas (meses, «hoy», «en N días»), las opciones de listas fijas y los mensajes del servidor. Los datos (etapas, valores de listas, campos personalizados, mensajes de reglas) se muestran como se crearon, y las etiquetas de agrupación por fecha de los informes salen en español. |
 | Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
 | Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
@@ -118,6 +118,5 @@ fuentes ni código.
 
 ## Próximos pasos sugeridos
 - Contratos y facturación (integración con el ERP para estados de pedido y despachos).
-- Aprobaciones en varios pasos (p. ej. jefe y luego gerencia comercial según el monto).
 - Historial del pronóstico (instantáneas semanales) para comparar contra semanas anteriores.
 - Traducción de valores de listas de selección por idioma (etiqueta en español e inglés).

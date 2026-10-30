@@ -36,12 +36,19 @@ export function ApprovalBar({
             <p className="flex items-center gap-1.5 font-semibold">
               {pending.lock_record && <Lock size={15} strokeWidth={1.5} aria-hidden />}
               <Tr>En aprobación</Tr> · {pending.process_name}
+              {pending.current_step_name && <span className="badge badge-warning ml-1"><Tr>Paso</Tr> {pending.current_step} · {pending.current_step_name}</span>}
             </p>
             <p className="text-xs text-muted">
               <Tr>Enviada por</Tr> {pending.submitter?.full_name ?? "—"} · <Fmt datetime={pending.submitted_at} /> · <Tr>Aprobador:</Tr>{" "}
               <span className="font-semibold text-ink-2">{pending.approver?.full_name ?? "—"}</span>
             </p>
             {pending.submit_comment && <p className="mt-1 text-sm">“{pending.submit_comment}”</p>}
+            {(pending.steps ?? []).filter((s) => s.status === "approved").sort((a, b) => a.step_order - b.step_order).map((s) => (
+              <p key={s.id} className="mt-1 flex items-center gap-1 text-xs text-muted">
+                <CheckCircle2 size={13} strokeWidth={1.5} className="text-success" aria-hidden />
+                {s.step_name}: <Tr>aprobado por</Tr> {s.decider?.full_name ?? "—"}{s.comment && <> · “{s.comment}”</>}
+              </p>
+            ))}
           </div>
           {canRecall && !canDecide && (
             <ActionForm action={recallApproval.bind(null, pending.id, path)} className="flex flex-col items-end gap-1">
