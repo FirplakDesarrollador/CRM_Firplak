@@ -28,7 +28,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
 
   const supabase = await createClient();
   const [access, users, activities, { data: memberships }] = await Promise.all([
-    getRecordAccess("leads", row.owner_id as string | null),
+    getRecordAccess("leads", row.owner_id as string | null, row.id),
     getUsers(),
     getActivitiesFor({ lead_id: id }),
     supabase.from("campaign_members").select("id, status, created_at, campaign:campaigns!campaign_members_campaign_id_fkey(id, name, status)").eq("lead_id", id),

@@ -1,6 +1,6 @@
 import {
   Building2, CalendarCheck, PieChart, Flag, LineChart, Gauge, Home, Settings, Target, UserRound, UserPlus, Package, FileText, LifeBuoy, Megaphone,
-  Phone, Users, Mail, StickyNote, CheckSquare, type LucideIcon,
+  Phone, Users, Mail, StickyNote, CheckSquare, BadgeCheck, type LucideIcon,
 } from "lucide-react";
 
 export const OBJECT_ICONS: Record<string, LucideIcon> = {
@@ -18,6 +18,7 @@ export const OBJECT_ICONS: Record<string, LucideIcon> = {
   reports: PieChart,
   goals: Flag,
   forecast: LineChart,
+  approvals: BadgeCheck,
   settings: Settings,
 };
 

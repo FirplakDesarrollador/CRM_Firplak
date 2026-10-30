@@ -308,6 +308,151 @@ export type Database = {
         Relationships: [
         ]
       }
+      approval_processes: {
+        Row: {
+          approve_updates: Json
+          approver_id: string | null
+          approver_type: string
+          conditions: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          lock_record: boolean
+          name: string
+          object: string
+          reject_updates: Json
+          sort_order: number
+          submit_updates: Json
+          updated_at: string
+        }
+        Insert: {
+          approve_updates?: Json
+          approver_id?: string | null
+          approver_type?: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          lock_record?: boolean
+          name: string
+          object: string
+          reject_updates?: Json
+          sort_order?: number
+          submit_updates?: Json
+          updated_at?: string
+        }
+        Update: {
+          approve_updates?: Json
+          approver_id?: string | null
+          approver_type?: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          lock_record?: boolean
+          name?: string
+          object?: string
+          reject_updates?: Json
+          sort_order?: number
+          submit_updates?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_processes_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_requests: {
+        Row: {
+          approver_id: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_comment: string | null
+          id: string
+          lock_record: boolean
+          object: string
+          process_id: string | null
+          process_name: string
+          record_id: string
+          record_name: string | null
+          status: string
+          submit_comment: string | null
+          submitted_at: string
+          submitted_by: string | null
+        }
+        Insert: {
+          approver_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_comment?: string | null
+          id?: string
+          lock_record?: boolean
+          object: string
+          process_id?: string | null
+          process_name: string
+          record_id: string
+          record_name?: string | null
+          status?: string
+          submit_comment?: string | null
+          submitted_at?: string
+          submitted_by?: string | null
+        }
+        Update: {
+          approver_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_comment?: string | null
+          id?: string
+          lock_record?: boolean
+          object?: string
+          process_id?: string | null
+          process_name?: string
+          record_id?: string
+          record_name?: string | null
+          status?: string
+          submit_comment?: string | null
+          submitted_at?: string
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "approval_processes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rules: {
         Row: {
           actions: Json
@@ -1858,6 +2003,7 @@ export type Database = {
           custom_fields: Json
           delivery_terms: string | null
           description: string | null
+          discount_percent: number | null
           discount_total: number
           expiration_date: string | null
           grand_total: number
@@ -1889,6 +2035,7 @@ export type Database = {
           custom_fields?: Json
           delivery_terms?: string | null
           description?: string | null
+          discount_percent?: never
           discount_total?: number
           expiration_date?: string | null
           grand_total?: number
@@ -1920,6 +2067,7 @@ export type Database = {
           custom_fields?: Json
           delivery_terms?: string | null
           description?: string | null
+          discount_percent?: never
           discount_total?: number
           expiration_date?: string | null
           grand_total?: number
@@ -2189,6 +2337,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_field_updates: {
+        Args: {
+          p_table: string
+          p_id: string
+          p_updates: Json
+        }
+        Returns: undefined
+      }
       can_access_owner: {
         Args: {
           p_owner: string
@@ -2272,6 +2428,14 @@ export type Database = {
         }
         Returns: Json
       }
+      decide_approval: {
+        Args: {
+          p_request: string
+          p_approve: boolean
+          p_comment?: string
+        }
+        Returns: undefined
+      }
       find_duplicates: {
         Args: {
           p_object: string
@@ -2352,6 +2516,13 @@ export type Database = {
         Args: never
         Returns: boolean
       }
+      is_record_locked: {
+        Args: {
+          p_object: string
+          p_id: string
+        }
+        Returns: boolean
+      }
       mark_automation_run: {
         Args: {
           p_rule: string
@@ -2403,9 +2574,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      recall_approval: {
+        Args: {
+          p_request: string
+        }
+        Returns: undefined
+      }
+      record_path: {
+        Args: {
+          p_object: string
+        }
+        Returns: string
+      }
       sharing_access: {
         Args: {
           p_object: string
+        }
+        Returns: string
+      }
+      submit_approval: {
+        Args: {
+          p_process: string
+          p_record: string
+          p_comment?: string
         }
         Returns: string
       }

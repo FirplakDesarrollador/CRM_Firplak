@@ -342,4 +342,41 @@ await check('forecast_summary agrupa por categoría y el gerente puede ajustar a
   await assert.rejects(as(rep, () => q(`update forecast_adjustments set amount = 1 where user_id = $1 returning id`, [rep.id]).then((r) => { if (!r.length) throw new Error('bloqueado'); })));
 });
 
+console.log('Fase 8');
+const [quote] = await q(`select id, discount_percent from quotes where name like 'Remodelación 180 habitaciones%'`);
+const [proc] = await q(`select id from approval_processes where object = 'quotes'`);
+await check('las cotizaciones calculan su porcentaje de descuento', async () => {
+  assert.ok(Number(quote.discount_percent) > 15);
+});
+await check('un asesor envía a aprobación: se bloquea el registro y se notifica al jefe', async () => {
+  await db.exec(`update profiles set manager_id = '${mgr.id}' where id = '${rep.id}'`);
+  await q(`update quotes set owner_id = $1, status = 'Borrador' where id = $2`, [rep.id, quote.id]);
+  await as(rep, () => q(`select submit_approval($1, $2, 'Pedido por volumen')`, [proc.id, quote.id]));
+  const [r] = await q(`select status, approver_id from approval_requests where record_id = $1`, [quote.id]);
+  assert.equal(r.status, 'pending');
+  assert.equal(r.approver_id, mgr.id);
+  assert.equal((await q(`select status from quotes where id = $1`, [quote.id]))[0].status, 'En revisión');
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title like 'Aprobación pendiente%'`, [mgr.id]), 1);
+  await assert.rejects(as(rep, () => q(`update quotes set description = 'cambio' where id = $1`, [quote.id])), /bloqueado/);
+  await assert.rejects(as(rep, () => q(`update quote_line_items set quantity = quantity + 1 where quote_id = $1`, [quote.id])), /bloqueada/);
+  await assert.rejects(as(rep, () => q(`select submit_approval($1, $2)`, [proc.id, quote.id])), /pendiente/);
+  assert.equal(await as(rep, () => count(`select count(*) n from approval_requests where record_id = $1`, [quote.id])), 1);
+});
+await check('solo el aprobador decide; rechazar exige motivo; aprobar actualiza el estado', async () => {
+  const [{ id }] = await q(`select id from approval_requests where record_id = $1 and status = 'pending'`, [quote.id]);
+  await assert.rejects(as(rep, () => q(`select decide_approval($1, true)`, [id])));
+  await assert.rejects(as(mgr, () => q(`select decide_approval($1, false, '')`, [id])), /motivo/);
+  await as(mgr, () => q(`select decide_approval($1, true, 'Autorizado por volumen')`, [id]));
+  assert.equal((await q(`select status from quotes where id = $1`, [quote.id]))[0].status, 'Aprobada');
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title like 'Aprobado:%'`, [rep.id]), 1);
+  await as(rep, () => q(`update quotes set description = 'ya aprobada' where id = $1`, [quote.id]));
+});
+await check('quien envía puede retirar la solicitud y el registro vuelve a borrador', async () => {
+  const [{ id }] = await as(rep, () => q(`select submit_approval($1, $2) as id`, [proc.id, quote.id]));
+  await assert.rejects(as(mgr, () => q(`select recall_approval($1)`, [id])));
+  await as(rep, () => q(`select recall_approval($1)`, [id]));
+  assert.equal((await q(`select status from quotes where id = $1`, [quote.id]))[0].status, 'Borrador');
+  assert.equal((await q(`select status from approval_requests where id = $1`, [id]))[0].status, 'recalled');
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

@@ -386,6 +386,48 @@ export async function deleteAutomationRule(id: string, _prev?: FormState, _fd?: 
   return error ? fail(error) : done("Automatización eliminada");
 }
 
+// ---------------------------------------------------------------- Procesos de aprobación
+const APPROVAL_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "quotes", "cases", "campaigns", "products"];
+const fieldUpdates = (raw: string) =>
+  parseJsonArray(raw)
+    .filter((u) => u && typeof u.field === "string" && u.field)
+    .map((u) => ({ type: "set_field", field: String(u.field), value: String(u.value ?? "") }));
+
+export async function saveApprovalProcess(object: string, id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  if (!APPROVAL_OBJECTS.includes(object)) return { message: "Objeto no válido" };
+  const name = str(fd, "name");
+  if (!name) return { message: "Ponle un nombre al proceso" };
+  const approverType = str(fd, "approver_type") === "user" ? "user" : "manager";
+  const approverId = approverType === "user" ? nullable(fd, "approver_id") : null;
+  if (approverType === "user" && !approverId) return { message: "Elige el usuario que aprueba" };
+  const payload = {
+    object, name,
+    description: nullable(fd, "description"),
+    conditions: parseJsonArray(str(fd, "conditions")),
+    approver_type: approverType,
+    approver_id: approverId,
+    lock_record: fd.get("lock_record") === "on",
+    submit_updates: fieldUpdates(str(fd, "submit_updates")),
+    approve_updates: fieldUpdates(str(fd, "approve_updates")),
+    reject_updates: fieldUpdates(str(fd, "reject_updates")),
+    sort_order: Number(str(fd, "sort_order")) || 0,
+    is_active: id ? fd.get("is_active") === "on" : true,
+  };
+  const { error } = id
+    ? await g.supabase.from("approval_processes").update(payload).eq("id", id)
+    : await g.supabase.from("approval_processes").insert(payload);
+  return error ? fail(error) : done(id ? "Proceso actualizado" : "Proceso creado");
+}
+
+export async function deleteApprovalProcess(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("approval_processes").delete().eq("id", id);
+  return error ? fail(error) : done("Proceso eliminado");
+}
+
 // ---------------------------------------------------------------- Duplicados
 export async function mergeDuplicates(object: string, a: string, b: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const g = await guard("customize");

@@ -22,7 +22,7 @@ export default async function CaseDetailPage({ params, searchParams }: PageProps
   const row = await getRecord(def, id);
   if (!row) notFound();
   const [access, users, activities] = await Promise.all([
-    getRecordAccess("cases", row.owner_id as string | null),
+    getRecordAccess("cases", row.owner_id as string | null, row.id),
     getUsers(),
     getActivitiesFor({ case_id: id }),
   ]);

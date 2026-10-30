@@ -29,7 +29,7 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
 
   const db = await untypedClient();
   const [access, users, activities, opps, reports, cases] = await Promise.all([
-    getRecordAccess("contacts", row.owner_id as string | null),
+    getRecordAccess("contacts", row.owner_id as string | null, row.id),
     getUsers(),
     getActivitiesFor({ contact_id: id }),
     db.from("opportunities").select(oppsDef.select).eq("contact_id", id).order("close_date", { ascending: false }).limit(50),

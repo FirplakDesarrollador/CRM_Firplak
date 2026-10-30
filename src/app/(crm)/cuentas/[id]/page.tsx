@@ -32,7 +32,7 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
 
   const db = await untypedClient();
   const [access, users, activities, contacts, opps, children, quotes, cases] = await Promise.all([
-    getRecordAccess("accounts", row.owner_id as string | null),
+    getRecordAccess("accounts", row.owner_id as string | null, row.id),
     getUsers(),
     getActivitiesFor({ account_id: id }),
     db.from("contacts").select(contactsDef.select).eq("account_id", id).order("last_name").limit(50),

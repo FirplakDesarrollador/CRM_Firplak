@@ -111,18 +111,25 @@ export async function getRecord(def: ObjectDef, id: string): Promise<Row | null>
 }
 
 /** Comprueba en la base si el usuario actual puede editar/eliminar el registro. */
-export async function getRecordAccess(object: ObjectKey, ownerId: string | null) {
+/**
+ * Permisos del usuario sobre un registro. Con `recordId`, un registro bloqueado por una
+ * aprobación pendiente no se puede editar ni eliminar (salvo el aprobador o administración).
+ */
+export async function getRecordAccess(object: ObjectKey, ownerId: string | null, recordId?: string) {
   const supabase = await createClient();
-  if (object === "products") {
-    const [edit, del] = await Promise.all([
+  const locked = recordId && object !== "activities"
+    ? supabase.rpc("is_record_locked", { p_object: object, p_id: recordId }).then((r) => Boolean(r.data))
+    : Promise.resolve(false);
+  const [edit, del, isLocked] = await Promise.all(object === "products"
+    ? [
       supabase.rpc("has_perm", { p_object: "products", p_action: "edit" }),
       supabase.rpc("has_perm", { p_object: "products", p_action: "delete" }),
+      locked,
+    ]
+    : [
+      supabase.rpc("can_edit_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
+      supabase.rpc("can_delete_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
+      locked,
     ]);
-    return { canEdit: Boolean(edit.data), canDelete: Boolean(del.data) };
-  }
-  const [edit, del] = await Promise.all([
-    supabase.rpc("can_edit_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
-    supabase.rpc("can_delete_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
-  ]);
-  return { canEdit: Boolean(edit.data), canDelete: Boolean(del.data) };
+  return { canEdit: Boolean(edit.data) && !isLocked, canDelete: Boolean(del.data) && !isLocked, locked: isLocked };
 }

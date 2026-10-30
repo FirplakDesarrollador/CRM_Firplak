@@ -41,6 +41,7 @@ export const quotes: ObjectDef = {
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
     { name: "subtotal", label: "Subtotal", type: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "discount_total", label: "Descuentos", type: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "discount_percent", label: "Descuento (%)", type: "percent", readOnly: true, formHidden: true, section: "totals" },
     { name: "net_total", label: "Total neto", type: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "tax_rate", label: "IVA (%)", type: "percent", section: "totals" },
     { name: "tax", label: "IVA", type: "currency", readOnly: true, formHidden: true, section: "totals" },

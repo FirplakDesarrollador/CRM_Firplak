@@ -23,7 +23,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   if (!row) notFound();
   const supabase = await createClient();
   const [access, { data: books }, { data: entries }, { data: cases }] = await Promise.all([
-    getRecordAccess("products", null),
+    getRecordAccess("products", null, row.id),
     supabase.from("price_books").select("id, name, is_standard, is_active").order("is_standard", { ascending: false }).order("name"),
     supabase.from("price_book_entries").select("id, price_book_id, unit_price, is_active").eq("product_id", id),
     supabase.from("cases").select("id, case_number, subject, status, created_at").eq("product_id", id).order("created_at", { ascending: false }).limit(20),

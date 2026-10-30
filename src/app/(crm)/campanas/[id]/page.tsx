@@ -28,7 +28,7 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
   const supabase = await createClient();
   const db = await untypedClient();
   const [access, { data: members }, opps, leads] = await Promise.all([
-    getRecordAccess("campaigns", row.owner_id as string | null),
+    getRecordAccess("campaigns", row.owner_id as string | null, row.id),
     supabase
       .from("campaign_members")
       .select("id, status, lead:leads!campaign_members_lead_id_fkey(id, full_name, company), contact:contacts!campaign_members_contact_id_fkey(id, full_name, account:accounts!contacts_account_id_fkey(name))")

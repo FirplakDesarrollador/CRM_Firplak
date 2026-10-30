@@ -23,7 +23,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
   if (!row) notFound();
   const supabase = await createClient();
   const [access, { data: lines }] = await Promise.all([
-    getRecordAccess("quotes", row.owner_id as string | null),
+    getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
       .select("id, description, quantity, unit_price, discount, line_total, product:products!quote_line_items_product_id_fkey(id, name, product_code, unit)")

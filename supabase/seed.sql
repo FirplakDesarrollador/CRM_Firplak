@@ -464,7 +464,7 @@ begin
   select v.name, o.id, v.status, current_date + v.exp, v.payment, v.delivery, true, now() - (v.age || ' days')::interval
   from (values
     ('Torre 3 · propuesta muebles de baño', 'Altos del Valle · Torre 3 muebles de baño', 'Presentada', 20, '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 15),
-    ('Remodelación 180 habitaciones · opción A', 'Mirador de la Bahía · Remodelación 180 hab.', 'En revisión', 25, '30 días', 'Instalación incluida', 6),
+    ('Remodelación 180 habitaciones · opción A', 'Mirador de la Bahía · Remodelación 180 hab.', 'Borrador', 25, '30 días', 'Instalación incluida', 6),
     ('Surtido 2027 · propuesta inicial', 'Casa Viva · Surtido 2027 muebles de baño', 'Borrador', 30, '60 días', 'Entrega en centro de distribución', 2)
   ) as v(name, opp, status, exp, payment, delivery, age)
   join public.opportunities o on o.name = v.opp and o.is_demo;
@@ -475,9 +475,9 @@ begin
     ('Torre 3 · propuesta muebles de baño', 'DEMO-MB-060', 168, 6, 1),
     ('Torre 3 · propuesta muebles de baño', 'DEMO-AC-ESP', 168, 6, 2),
     ('Torre 3 · propuesta muebles de baño', 'DEMO-DU-090', 168, 4, 3),
-    ('Remodelación 180 habitaciones · opción A', 'DEMO-MB-080', 180, 5, 1),
-    ('Remodelación 180 habitaciones · opción A', 'DEMO-LV-RC', 180, 5, 2),
-    ('Remodelación 180 habitaciones · opción A', 'DEMO-AC-KIT', 180, 0, 3),
+    ('Remodelación 180 habitaciones · opción A', 'DEMO-MB-080', 180, 20, 1),
+    ('Remodelación 180 habitaciones · opción A', 'DEMO-LV-RC', 180, 18, 2),
+    ('Remodelación 180 habitaciones · opción A', 'DEMO-AC-KIT', 180, 10, 3),
     ('Surtido 2027 · propuesta inicial', 'DEMO-MB-060', 400, 0, 1),
     ('Surtido 2027 · propuesta inicial', 'DEMO-MB-080', 300, 0, 2),
     ('Surtido 2027 · propuesta inicial', 'DEMO-LV-RD', 500, 0, 3)
@@ -602,3 +602,16 @@ where not exists (
     and g.period_start = date_trunc(case v.period_type when 'month' then 'month' when 'quarter' then 'quarter' else 'year' end,
                                     (now() at time zone 'America/Bogota'))::date
 );
+
+-- ===========================================================================
+-- Fase 8: proceso de aprobación de ejemplo (descuento alto en cotizaciones)
+-- ===========================================================================
+insert into public.approval_processes (object, name, description, conditions, approver_type, lock_record,
+                                       submit_updates, approve_updates, reject_updates, sort_order)
+select 'quotes', 'Descuento superior al 15 %',
+       'Las cotizaciones en borrador con más de 15 % de descuento las aprueba el jefe directo del asesor antes de presentarlas.',
+       '[{"field":"discount_percent","op":"gt","value":"15"},{"field":"status","op":"eq","value":"Borrador"}]', 'manager', true,
+       '[{"field":"status","value":"En revisión"}]',
+       '[{"field":"status","value":"Aprobada"}]',
+       '[{"field":"status","value":"Borrador"}]', 1
+where not exists (select 1 from public.approval_processes where object = 'quotes' and name = 'Descuento superior al 15 %');

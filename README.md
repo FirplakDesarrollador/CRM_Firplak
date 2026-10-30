@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 7)
+## Módulos incluidos (Fases 1 a 8)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -28,6 +28,7 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Auditoría | Historial de cambios por campo en cada ficha (registrado por triggers de la base) y vista global en Configuración → Auditoría de cambios. |
 | Metas | Cuotas por asesor o de la compañía, por mes, trimestre o año (ventas ganadas, negocios ganados, oportunidades y prospectos nuevos, actividades). Avance con ritmo esperado, brecha y estado; resumen en Inicio e Indicadores. Las define administración o el gerente para su equipo (nadie la propia). |
 | Pronóstico | Por mes, trimestre o año: cerrado, compromiso, mejor caso y pipeline por asesor (según la categoría de pronóstico de cada oportunidad) frente a su meta de ventas, con barra apilada y marca de la meta. El gerente (o administración) registra un **ajuste** con nota que reemplaza el pronóstico calculado; cada cifra abre la lista de oportunidades filtrada. |
+| Aprobaciones | Procesos configurables por objeto (Configuración → Procesos de aprobación): condiciones de entrada, aprobador (jefe directo del propietario o un usuario), bloqueo del registro mientras espera y cambios de campos al enviar, aprobar y rechazar o retirar. Se envían desde la ficha con comentario; el aprobador decide desde la ficha o la **bandeja de aprobaciones** (rechazar exige motivo) y recibe avisos en la campana. Historial en la pestaña Aprobaciones. Ejemplo incluido: cotizaciones en borrador con más de 15 % de descuento (`discount_percent`) las aprueba el jefe directo y pasan a «Aprobada». |
 | Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas (meses, «hoy», «en N días»), las opciones de listas fijas y los mensajes del servidor. Los datos (etapas, valores de listas, campos personalizados, mensajes de reglas) se muestran como se crearon, y las etiquetas de agrupación por fecha de los informes salen en español. |
 | Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
 | Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
@@ -116,5 +117,6 @@ fuentes ni código.
 
 ## Próximos pasos sugeridos
 - Automatizaciones programadas (acciones a N días de una fecha del registro) con Supabase Cron.
+- Aprobaciones en varios pasos (p. ej. jefe y luego gerencia comercial según el monto).
 - Historial del pronóstico (instantáneas semanales) para comparar contra semanas anteriores.
 - Traducción de valores de listas de selección por idioma (etiqueta en español e inglés).

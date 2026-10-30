@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { KpiTile } from "@/components/dashboard/Charts";
+import { ObjectIcon } from "@/components/ui/icons";
 import { ActivityItem } from "@/components/activities/ActivityItem";
 import { getMyOpenActivities, getUpcomingMeetings } from "@/components/activities/data";
 import { StageBadge } from "@/components/records/FieldValue";
@@ -31,7 +32,7 @@ export default async function HomePage() {
   const month = resolvePeriod("this_month");
   const supabase = await createClient();
 
-  const [{ data: dash }, tasks, meetings, { data: opps }, { data: recent }] = await Promise.all([
+  const [{ data: dash }, tasks, meetings, { data: opps }, { data: recent }, { count: approvals }] = await Promise.all([
     supabase.rpc("crm_dashboard", { p_from: month.from, p_to: month.to, p_owner: user.id }),
     getMyOpenActivities(user.id, { until: addDaysISO(today, 1), limit: 12 }),
     getUpcomingMeetings(user.id, new Date().toISOString(), `${addDaysISO(today, 7)}T23:59:59-05:00`),
@@ -48,6 +49,7 @@ export default async function HomePage() {
       .eq("owner_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(6),
+    supabase.from("approval_requests").select("id", { count: "exact", head: true }).eq("approver_id", user.id).eq("status", "pending"),
   ]);
   const k = ((dash as { kpis?: Record<string, number> } | null)?.kpis ?? {}) as Record<string, number>;
   const firstName = user.fullName.split(" ")[0];
@@ -59,6 +61,16 @@ export default async function HomePage() {
         <h1 className="editorial mt-1 text-3xl">{greeting(locale)}, {firstName}</h1>
         <p className="text-sm text-muted">{t("Este es tu resumen de")} {new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-CO", { month: "long", timeZone: "UTC" }).format(new Date(`${today}T00:00:00Z`))}.</p>
       </div>
+
+      {Boolean(approvals) && (
+        <Link href="/aprobaciones" className="glass flex items-center justify-between gap-3 px-5 py-3 no-underline hover:text-ink">
+          <span className="flex items-center gap-3">
+            <ObjectIcon object="approvals" size={16} />
+            <span className="font-semibold">{approvals} {t(approvals === 1 ? "solicitud espera tu aprobación" : "solicitudes esperan tu aprobación")}</span>
+          </span>
+          <span className="flex items-center gap-1 text-sm font-semibold text-brand"><Tr>Revisar</Tr> <ArrowRight size={14} /></span>
+        </Link>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiTile label="Mis ventas del mes" {...formatMillions(k.won_amount ?? 0)} sub={`${k.won_count ?? 0} ${t("oportunidades ganadas")}`} tone="success" />

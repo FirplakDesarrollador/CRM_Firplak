@@ -18,7 +18,7 @@ export default async function ConvertLeadPage({ params }: PageProps<"/prospectos
   const { data: lead } = await supabase.from("leads").select("id, full_name, company, owner_id, is_converted").eq("id", id).maybeSingle();
   if (!lead) notFound();
   if (lead.is_converted) redirect(`/prospectos/${id}`);
-  const { canEdit } = await getRecordAccess("leads", lead.owner_id);
+  const { canEdit } = await getRecordAccess("leads", lead.owner_id, lead.id);
   if (!canEdit) redirect(`/prospectos/${id}`);
 
   const [pipelines, users, { data: matches }] = await Promise.all([

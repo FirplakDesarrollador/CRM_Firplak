@@ -528,6 +528,7 @@ svg.lucide {
   .obj-cases { background: #7a5a3a; }
   .obj-campaigns { background: var(--navy-800); }
   .obj-home, .obj-settings { background: var(--navy-600); }
+  .obj-approvals { background: var(--sage-600); }
 
   .lift {
     transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);

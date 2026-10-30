@@ -33,7 +33,7 @@ export async function RecordFormPage({
   if (id) {
     record = await getRecord(def, id);
     if (!record) notFound();
-    const { canEdit } = await getRecordAccess(object, (record.owner_id as string) ?? null);
+    const { canEdit } = await getRecordAccess(object, (record.owner_id as string) ?? null, id);
     if (!canEdit) redirect(`${def.path}/${id}`);
   } else {
     if (!can(user.access, def.permission, "create")) redirect(def.path);

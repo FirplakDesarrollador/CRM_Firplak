@@ -37,7 +37,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
   const supabase = await createClient();
   const db = await untypedClient();
   const [access, users, pipelines, activities, history, quotesRes] = await Promise.all([
-    getRecordAccess("opportunities", row.owner_id as string | null),
+    getRecordAccess("opportunities", row.owner_id as string | null, row.id),
     getUsers(),
     getPipelines(),
     getActivitiesFor({ opportunity_id: id }),
