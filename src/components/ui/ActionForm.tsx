@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import type { FormState } from "@/lib/records/form";
+import { useT } from "@/lib/i18n/client";
 
 /** Formulario ligado a una Server Action que muestra el resultado en línea. */
 export function ActionForm({
@@ -17,6 +18,7 @@ export function ActionForm({
 }) {
   const [state, formAction] = useActionState(action, {});
   const ref = useRef<HTMLFormElement>(null);
+  const t = useT();
   useEffect(() => {
     if (state.ok && resetOnSuccess) ref.current?.reset();
   }, [state, resetOnSuccess]);
@@ -24,7 +26,7 @@ export function ActionForm({
     <form ref={ref} action={formAction} className={className}>
       {children}
       {state.message && (
-        <p role="status" className={`text-xs font-semibold ${state.ok ? "text-success" : "text-danger"} basis-full`}>{state.message}</p>
+        <p role="status" className={`text-xs font-semibold ${state.ok ? "text-success" : "text-danger"} basis-full`}>{t(state.message)}</p>
       )}
     </form>
   );

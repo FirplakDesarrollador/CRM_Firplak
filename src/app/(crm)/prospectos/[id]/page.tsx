@@ -11,10 +11,11 @@ import { getObjectDef, getRecord, getRecordAccess, getUsers } from "@/lib/record
 import { createClient } from "@/lib/supabase/server";
 import { LEAD_STATUSES } from "@/lib/objects/picklists";
 import { can } from "@/lib/permissions";
-import { formatDate } from "@/lib/format";
+
 import { requireUser } from "@/lib/session";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Prospecto" };
 
 type Rel = { id: string; name?: string; full_name?: string } | null;
@@ -60,7 +61,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
         converted ? (
           <div className="border-t border-line px-5 py-3">
             <Alert tone="success">
-              Convertido el {formatDate(String(row.converted_at))} en{" "}
+              Convertido el <Fmt date={String(row.converted_at)} /> en{" "}
               {(row.converted_account as Rel) && <Link className="link" href={`/cuentas/${(row.converted_account as Rel)!.id}`}>{(row.converted_account as Rel)!.name}</Link>}
               {(row.converted_contact as Rel) && <> · <Link className="link" href={`/contactos/${(row.converted_contact as Rel)!.id}`}>{(row.converted_contact as Rel)!.full_name}</Link></>}
               {(row.converted_opportunity as Rel) && <> · <Link className="link" href={`/oportunidades/${(row.converted_opportunity as Rel)!.id}`}>{(row.converted_opportunity as Rel)!.name}</Link></>}
@@ -88,7 +89,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                       <td>{m.campaign && <Link className="link" href={`/campanas/${m.campaign.id}`}>{m.campaign.name}</Link>}</td>
                       <td>{m.campaign?.status}</td>
                       <td><span className="badge">{m.status}</span></td>
-                      <td>{formatDate(m.created_at)}</td>
+                      <td><Fmt date={m.created_at} /></td>
                     </tr>
                   ))}
                 </tbody>

@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPipelines, getUsers } from "@/lib/records/data";
 import { canSystem } from "@/lib/permissions";
 import { ACTIVITY_TYPES } from "@/lib/objects/picklists";
-import { addDaysISO, formatCompactCurrency, formatCurrency, formatDate, formatMillions, formatNumber, formatPercent, todayISO } from "@/lib/format";
+import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, formatNumber, formatPercent, todayISO } from "@/lib/format";
 import { PERIODS, resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
@@ -17,6 +17,7 @@ import { GoalSummary } from "@/components/goals/GoalSummary";
 import type { GoalPeriodType } from "@/lib/goals/periods";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Indicadores" };
 
 type Dashboard = {
@@ -70,7 +71,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
           <ObjectIcon object="dashboard" />
           <div>
             <p className="eyebrow"><Tr>Indicadores comerciales</Tr></p>
-            <h1 className="text-xl font-medium">{t(PERIODS[period])} · {formatDate(from)} – {formatDate(to)}</h1>
+            <h1 className="text-xl font-medium">{t(PERIODS[period])} · <Fmt date={from} /> – <Fmt date={to} /></h1>
           </div>
         </div>
         <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"} pipeline={pipeline?.id ?? ""}
@@ -181,7 +182,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
                     <td><Link href={`/oportunidades/${o.id}`} className="link">{o.name}</Link><p className="text-xs text-muted">{o.account?.name}</p></td>
                     <td><StageBadge stage={o.stage as never} /></td>
                     <td className="num text-right">{formatCurrency(o.amount)}</td>
-                    <td className={o.close_date < today ? "font-semibold text-danger" : undefined}>{formatDate(o.close_date)}</td>
+                    <td className={o.close_date < today ? "font-semibold text-danger" : undefined}><Fmt date={o.close_date} /></td>
                     <td>{o.owner?.full_name}</td>
                   </tr>
                 ))}

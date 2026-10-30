@@ -7,15 +7,19 @@ import { createClient } from "@/lib/supabase/server";
 import { getUsers } from "@/lib/records/data";
 import { ACTIVITY_TYPES } from "@/lib/objects/picklists";
 import { can } from "@/lib/permissions";
-import { addDaysISO, formatTime, todayISO } from "@/lib/format";
+import { addDaysISO, todayISO } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/server";
 import { OwnerSelect } from "./OwnerSelect";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Calendario" };
 
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const WEEKDAYS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TONE: Record<string, string> = {
   meeting: "bg-[var(--navy-700)] text-[var(--cream-50)]",
   call: "bg-success-soft text-success",
@@ -33,7 +37,8 @@ const weekdayIndex = (iso: string) => (new Date(`${iso}T00:00:00Z`).getUTCDay() 
 const bogotaDay = (ts: string) => new Date(Date.parse(ts) - 5 * 3600000).toISOString().slice(0, 10);
 
 export default async function CalendarPage({ searchParams }: PageProps<"/actividades/calendario">) {
-  const [user, sp, users] = await Promise.all([requireUser(), searchParams, getUsers()]);
+  const [user, sp, users, locale] = await Promise.all([requireUser(), searchParams, getUsers(), getLocale()]);
+  const monthNames = locale === "en" ? MONTHS_EN : MONTHS;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const view = one(sp.vista) === "semana" ? "semana" : "mes";
   const today = todayISO();
@@ -53,7 +58,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
     start = addDaysISO(first, -weekdayIndex(first));
     const last = `${y}-${String(m).padStart(2, "0")}-${lastDay}`;
     days = Math.round((Date.parse(addDaysISO(last, 6 - weekdayIndex(last))) - Date.parse(start)) / 86400000) + 1;
-    title = `${MONTHS[m - 1]} ${y}`;
+    title = `${monthNames[m - 1]} ${y}`;
     prev = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 10);
     next = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
   } else {
@@ -62,7 +67,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
     const end = addDaysISO(start, 6);
     const [, sm, sd] = start.split("-").map(Number);
     const [ey, em, ed] = end.split("-").map(Number);
-    title = `${sd} ${MONTHS[sm - 1].slice(0, 3)} – ${ed} ${MONTHS[em - 1].slice(0, 3)} ${ey}`;
+    title = `${sd} ${monthNames[sm - 1].slice(0, 3)} – ${ed} ${monthNames[em - 1].slice(0, 3)} ${ey}`;
     prev = addDaysISO(start, -7);
     next = addDaysISO(start, 7);
   }
@@ -122,7 +127,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
           {(["mes", "semana"] as const).map((v) => (
             <Link key={v} href={qs({ vista: v })} aria-current={view === v ? "page" : undefined}
               className={`btn btn-sm border-0 ${view === v ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}>
-              {v === "mes" ? "Mes" : "Semana"}
+              <Tr>{v === "mes" ? "Mes" : "Semana"}</Tr>
             </Link>
           ))}
         </div>
@@ -136,7 +141,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
 
       <section className="card overflow-x-auto">
         <div className="grid min-w-[52rem] grid-cols-7 border-b border-line bg-surface-2">
-          {WEEKDAYS.map((d) => <div key={d} className="px-2 py-2 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted">{d}</div>)}
+          {(locale === "en" ? WEEKDAYS_EN : WEEKDAYS).map((d) => <div key={d} className="px-2 py-2 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted">{d}</div>)}
         </div>
         <div className="grid min-w-[52rem] grid-cols-7">
           {cells.map((day) => {
@@ -162,7 +167,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
                     <li key={a.id}>
                       <Link href={`/actividades/${a.id}`} title={`${ACTIVITY_TYPES[a.activity_type]} · ${a.subject}${a.owner ? ` · ${a.owner.full_name}` : ""}`}
                         className={`block truncate rounded-md px-1.5 py-0.5 text-[0.72rem] font-medium no-underline ${TONE[a.activity_type]} ${a.status === "completed" ? "line-through opacity-60" : ""}`}>
-                        {a.start_at && <span className="mr-1 opacity-80">{formatTime(a.start_at)}</span>}
+                        {a.start_at && <span className="mr-1 opacity-80"><Fmt time={a.start_at} /></span>}
                         {a.subject}
                       </Link>
                     </li>

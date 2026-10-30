@@ -15,6 +15,7 @@ import { requireUser } from "@/lib/session";
 import { deleteValidationRule, saveValidationRule } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 export const metadata: Metadata = { title: "Reglas de validación" };
 
 type Rule = { id: string; name: string; description: string | null; conditions: Filter[]; error_message: string; error_field: string | null; is_active: boolean };
@@ -46,7 +47,7 @@ export default async function ValidationRulesPage({ searchParams }: PageProps<"/
         <div>
           <label className="label" htmlFor={`vf-${r?.id ?? "new"}`}><Tr>Mostrar junto al campo</Tr></label>
           <select id={`vf-${r?.id ?? "new"}`} name="error_field" className="select" defaultValue={r?.error_field ?? ""}>
-            <option value="">Arriba del formulario</option>
+            <Opt value="">Arriba del formulario</Opt>
             {editableFields.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
           </select>
         </div>

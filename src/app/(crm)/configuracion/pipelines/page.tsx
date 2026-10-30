@@ -83,10 +83,10 @@ export default async function PipelinesPage() {
                 <input id={`pd-${p.id}`} name="description" className="input" defaultValue={p.description ?? ""} />
               </div>
               <label className="flex items-center gap-1.5 pb-2 text-sm font-semibold">
-                <input type="checkbox" name="is_default" defaultChecked={p.is_default} className="accent-[var(--brand)]" /> Por defecto
+                <input type="checkbox" name="is_default" defaultChecked={p.is_default} className="accent-[var(--brand)]" /> <Tr>Por defecto</Tr>
               </label>
               <label className="flex items-center gap-1.5 pb-2 text-sm font-semibold">
-                <input type="checkbox" name="is_active" defaultChecked={p.is_active} className="accent-[var(--brand)]" /> Activo
+                <input type="checkbox" name="is_active" defaultChecked={p.is_active} className="accent-[var(--brand)]" /> <Tr>Activo</Tr>
               </label>
               <SubmitButton className="btn btn-sm mb-1" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
             </div>

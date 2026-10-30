@@ -15,9 +15,12 @@ import type { AutomationAction } from "@/lib/rules/automation-types";
 import { canSystem } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/server";
+import { makeT } from "@/lib/i18n";
 import { deleteAutomationRule, saveAutomationRule } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 export const metadata: Metadata = { title: "Automatizaciones" };
 
 const OBJECTS_WITH_AUTOMATION: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "cases", "campaigns"];
@@ -32,6 +35,8 @@ type Rule = {
 export default async function AutomationsPage({ searchParams }: PageProps<"/configuracion/automatizaciones">) {
   const [me, sp] = await Promise.all([requireUser(), searchParams]);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
+  const locale = await getLocale();
+  const t = makeT(locale);
   const object = (OBJECTS_WITH_AUTOMATION.includes(sp.objeto as ObjectKey) ? sp.objeto : "leads") as ObjectKey;
   const supabase = await createClient();
   const [def, users, pipelines, { data }] = await Promise.all([
@@ -60,7 +65,7 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
           <div>
             <label className="label" htmlFor={`aw-${k}`}><Tr>Al actualizar, solo si cambia</Tr></label>
             <select id={`aw-${k}`} name="watch_field" className="select" defaultValue={r?.watch_field ?? ""}>
-              <option value="">Cualquier cambio</option>
+              <Opt value="">Cualquier cambio</Opt>
               {watchable.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
             </select>
           </div>
@@ -102,7 +107,7 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
               </span>
             </span>
             <span className="flex flex-wrap gap-1.5">
-              <span className="badge">{r.run_count} ejecuciones{r.last_run_at ? ` · última ${formatDateTime(r.last_run_at)}` : ""}</span>
+              <span className="badge">{r.run_count} {t("ejecuciones")}{r.last_run_at ? ` · ${t("última")} ${formatDateTime(r.last_run_at, locale)}` : ""}</span>
               <span className={`badge ${r.is_active ? "badge-success" : ""}`}>{r.is_active ? "Activa" : "Inactiva"}</span>
             </span>
           </summary>

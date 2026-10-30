@@ -328,4 +328,18 @@ await check('un gerente fija metas a su equipo, pero nadie se fija la propia', a
   assert.equal(await as(rep, () => count(`select count(*) n from sales_goals where user_id = $1`, [mgr.id])), 0);
 });
 
+console.log('Fase 7');
+await check('forecast_summary agrupa por categoría y el gerente puede ajustar a su equipo', async () => {
+  const [{ start }] = await q(`select date_trunc('quarter', now() at time zone 'America/Bogota')::date::text as start`);
+  const rows = await as(admin, () => q(`select * from forecast_summary('quarter', $1::date)`, [start]));
+  assert.ok(rows.length >= 1);
+  const total = rows.reduce((s, r) => s + Number(r.closed) + Number(r.commit_amount) + Number(r.best_case) + Number(r.pipeline), 0);
+  assert.ok(total > 0);
+  await as(mgr, () => q(`insert into forecast_adjustments (user_id, period_type, period_start, amount, note) values ($1, 'quarter', $2, 5000000, 'Ajuste')`, [rep.id, start]));
+  const [mine] = await as(rep, () => q(`select adjustment, can_adjust from forecast_summary('quarter', $1::date) where user_id = $2`, [start, rep.id]));
+  assert.equal(Number(mine.adjustment), 5000000);
+  assert.equal(mine.can_adjust, false);
+  await assert.rejects(as(rep, () => q(`update forecast_adjustments set amount = 1 where user_id = $1 returning id`, [rep.id]).then((r) => { if (!r.length) throw new Error('bloqueado'); })));
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

@@ -8,6 +8,7 @@ import { updatePassword } from "@/app/(auth)/actions";
 import type { Preferences } from "@/lib/session";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 export function PreferencesForm({ prefs }: { prefs: Preferences }) {
   const [state, action] = useActionState(savePreferences, {});
   return (
@@ -27,19 +28,19 @@ export function PreferencesForm({ prefs }: { prefs: Preferences }) {
         <div>
           <label className="label" htmlFor="home_page"><Tr>Página de inicio</Tr></label>
           <select id="home_page" name="home_page" className="select" defaultValue={prefs.home_page}>
-            <option value="/inicio">Inicio (mi resumen)</option>
-            <option value="/oportunidades/pipeline">Pipeline de oportunidades</option>
-            <option value="/indicadores">Indicadores</option>
-            <option value="/actividades">Mi agenda</option>
-            <option value="/cuentas">Cuentas</option>
-            <option value="/oportunidades">Lista de oportunidades</option>
+            <Opt value="/inicio">Inicio (mi resumen)</Opt>
+            <Opt value="/oportunidades/pipeline">Pipeline de oportunidades</Opt>
+            <Opt value="/indicadores">Indicadores</Opt>
+            <Opt value="/actividades">Mi agenda</Opt>
+            <Opt value="/cuentas">Cuentas</Opt>
+            <Opt value="/oportunidades">Lista de oportunidades</Opt>
           </select>
         </div>
         <div>
           <label className="label" htmlFor="density"><Tr>Densidad de las listas</Tr></label>
           <select id="density" name="density" className="select" defaultValue={prefs.density}>
-            <option value="comfortable">Cómoda</option>
-            <option value="compact">Compacta</option>
+            <Opt value="comfortable">Cómoda</Opt>
+            <Opt value="compact">Compacta</Opt>
           </select>
         </div>
         <div>
@@ -51,8 +52,8 @@ export function PreferencesForm({ prefs }: { prefs: Preferences }) {
         <div>
           <label className="label" htmlFor="language"><Tr>Idioma</Tr></label>
           <select id="language" name="language" className="select" defaultValue={prefs.language}>
-            <option value="es">Español (Colombia)</option>
-            <option value="en">English</option>
+            <Opt value="es">Español (Colombia)</Opt>
+            <Opt value="en">English</Opt>
           </select>
           <p className="help"><Tr>Cambia toda la interfaz. Los datos (etapas, valores de listas, campos personalizados y mensajes de reglas) se muestran tal como se crearon.</Tr></p>
         </div>

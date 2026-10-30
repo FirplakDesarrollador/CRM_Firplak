@@ -15,10 +15,13 @@ import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getPipelines, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import { formatCurrency, formatDateTime, relativeDays } from "@/lib/format";
+import { formatCurrency, relativeDays } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/server";
+import { makeT } from "@/lib/i18n";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export async function generateMetadata({ params }: PageProps<"/oportunidades/[id]">): Promise<Metadata> {
   const { id } = await params;
   const row = await getRecord(await getObjectDef("opportunities"), id);
@@ -49,7 +52,9 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
   const stages = pipelines.find((p) => p.id === row.pipeline_id)?.stages ?? [];
   const tab = sp.tab === "historial" ? "historial" : sp.tab === "cotizaciones" ? "cotizaciones" : sp.tab === "cambios" ? "cambios" : "detalles";
   const path = `/oportunidades/${id}`;
-  const closeIn = !row.is_closed ? relativeDays(String(row.close_date)) : null;
+  const locale = await getLocale();
+  const t = makeT(locale);
+  const closeIn = !row.is_closed ? relativeDays(String(row.close_date), locale) : null;
   const late = !row.is_closed && String(row.close_date) < new Date().toISOString().slice(0, 10);
 
   return (
@@ -61,7 +66,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
         badges={
           <>
             <StageBadge stage={row.stage as never} />
-            {closeIn && <span className={`badge ${late ? "badge-danger" : "badge-info"}`}>{late ? "Cierre vencido" : `Cierra: ${closeIn.toLowerCase()}`}</span>}
+            {closeIn && <span className={`badge ${late ? "badge-danger" : "badge-info"}`}>{late ? t("Cierre vencido") : `${t("Cierra:")} ${closeIn.toLowerCase()}`}</span>}
           </>
         }
         actions={
@@ -102,7 +107,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
                 <tbody>
                   {(history.data ?? []).map((h) => (
                     <tr key={h.id}>
-                      <td className="whitespace-nowrap">{formatDateTime(h.changed_at)}</td>
+                      <td className="whitespace-nowrap"><Fmt datetime={h.changed_at} /></td>
                       <td>{h.from ? <StageBadge stage={h.from as never} /> : <span className="text-muted"><Tr>Creación</Tr></span>}</td>
                       <td><StageBadge stage={h.to as never} /></td>
                       <td className="num text-right">{formatCurrency(h.amount)}</td>

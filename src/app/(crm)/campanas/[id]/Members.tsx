@@ -10,6 +10,7 @@ import { CAMPAIGN_MEMBER_STATUSES } from "@/lib/objects/picklists";
 import type { FormState } from "@/lib/records/form";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 export type Member = {
   id: string;
   status: string;
@@ -72,8 +73,8 @@ export function Members({ campaignId, members, canEdit }: { campaignId: string; 
           <div>
             <label className="label" htmlFor="member-kind"><Tr>Agregar</Tr></label>
             <select id="member-kind" className="select" value={kind} onChange={(e) => setKind(e.target.value as "contacts" | "leads")}>
-              <option value="contacts">Contacto</option>
-              <option value="leads">Prospecto</option>
+              <Opt value="contacts">Contacto</Opt>
+              <Opt value="leads">Prospecto</Opt>
             </select>
           </div>
           <div>

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { fieldValue, OBJECTS, type FieldDef } from "@/lib/objects";
-import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from "@/lib/format";
+import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 type Rel = { id?: string; name?: string; full_name?: string; email?: string; color?: string; category?: string } | null;
 
 export function StageBadge({ stage }: { stage: Rel }) {
@@ -53,11 +54,11 @@ export function FieldValue({ field, row, linkName }: { field: FieldDef; row: Rec
     case "percent":
       return <span className="num">{formatPercent(value as number)}</span>;
     case "date":
-      return <span>{formatDate(String(value))}</span>;
+      return <span><Fmt date={String(value)} /></span>;
     case "datetime":
-      return <span>{formatDateTime(String(value))}</span>;
+      return <span><Fmt datetime={String(value)} /></span>;
     case "checkbox":
-      return <span>{value === true || value === "true" ? "Sí" : "No"}</span>;
+      return <span><Tr>{value === true || value === "true" ? "Sí" : "No"}</Tr></span>;
     case "email":
       return <a href={`mailto:${value}`} className="link">{String(value)}</a>;
     case "phone":

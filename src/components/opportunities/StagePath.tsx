@@ -6,6 +6,7 @@ import { moveOpportunityStage } from "@/lib/records/actions";
 import type { StageRow } from "@/lib/records/data";
 import { LossDialog } from "./LossDialog";
 
+import { Tr } from "@/components/ui/Tr";
 /** Ruta de etapas de la oportunidad: clic en una etapa para avanzar o retroceder. */
 export function StagePath({ opportunityId, stages, currentStageId, canEdit, lossReasons }: {
   opportunityId: string; stages: StageRow[]; currentStageId: string; canEdit: boolean; lossReasons?: string[];
@@ -64,12 +65,12 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit, loss
           <div className="flex gap-2">
             {won && (
               <button type="button" className={`btn btn-sm ${current?.id === won.id ? "btn-primary" : ""}`} disabled={pending || current?.id === won.id} onClick={() => move(won.id)}>
-                <Trophy size={14} /> {current?.id === won.id ? "Ganada" : "Marcar ganada"}
+                <Trophy size={14} /> <Tr>{current?.id === won.id ? "Ganada" : "Marcar ganada"}</Tr>
               </button>
             )}
             {lost && (
               <button type="button" className="btn btn-sm btn-danger" disabled={pending || current?.id === lost.id} onClick={() => setAskLoss(lost.id)}>
-                <XCircle size={14} /> {current?.id === lost.id ? "Perdida" : "Marcar perdida"}
+                <XCircle size={14} /> <Tr>{current?.id === lost.id ? "Perdida" : "Marcar perdida"}</Tr>
               </button>
             )}
           </div>

@@ -12,6 +12,7 @@ import { saveReport } from "@/lib/reports/actions";
 import { groupableFields, numericFields, type ReportDefinition } from "@/lib/reports/types";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 type Meta = { name: string; folder: string; description: string; isShared: boolean };
 
 export function ReportBuilder({
@@ -72,14 +73,14 @@ export function ReportBuilder({
           <div>
             <label className="label" htmlFor="rb-g1"><Tr>Agrupar filas por</Tr></label>
             <select id="rb-g1" className="select" value={def.groupBy ?? ""} onChange={(e) => set({ groupBy: e.target.value || undefined })}>
-              <option value="">— Sin agrupar —</option>
+              <Opt value="">— Sin agrupar —</Opt>
               {groupable.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
             </select>
           </div>
           <div>
             <label className="label" htmlFor="rb-g2"><Tr>Agrupar columnas por</Tr></label>
             <select id="rb-g2" className="select" value={def.groupBy2 ?? ""} onChange={(e) => set({ groupBy2: e.target.value || undefined })} disabled={!def.groupBy}>
-              <option value="">— Ninguna —</option>
+              <Opt value="">— Ninguna —</Opt>
               {groupable.filter((f) => f.name !== def.groupBy).map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
             </select>
           </div>
@@ -87,9 +88,9 @@ export function ReportBuilder({
             <div>
               <label className="label" htmlFor="rb-date"><Tr>Agrupar fechas por</Tr></label>
               <select id="rb-date" className="select" value={def.dateGrouping ?? "month"} onChange={(e) => set({ dateGrouping: e.target.value as ReportDefinition["dateGrouping"] })}>
-                <option value="month">Mes</option>
-                <option value="quarter">Trimestre</option>
-                <option value="year">Año</option>
+                <Opt value="month">Mes</Opt>
+                <Opt value="quarter">Trimestre</Opt>
+                <Opt value="year">Año</Opt>
               </select>
             </div>
           )}
@@ -101,9 +102,9 @@ export function ReportBuilder({
                   const fn = e.target.value as "count" | "sum" | "avg";
                   set({ aggregate: { fn, field: fn === "count" ? undefined : def.aggregate?.field ?? numeric[0]?.name } });
                 }}>
-                <option value="count">Contar</option>
-                {numeric.length > 0 && <option value="sum">Sumar</option>}
-                {numeric.length > 0 && <option value="avg">Promedio</option>}
+                <Opt value="count">Contar</Opt>
+                {numeric.length > 0 && <Opt value="sum">Sumar</Opt>}
+                {numeric.length > 0 && <Opt value="avg">Promedio</Opt>}
               </select>
               {def.aggregate?.fn && def.aggregate.fn !== "count" && (
                 <select aria-label="Campo de la medida" className="select" value={def.aggregate.field ?? ""}

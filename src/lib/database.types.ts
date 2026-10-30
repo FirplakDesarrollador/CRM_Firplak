@@ -877,6 +877,57 @@ export type Database = {
           },
         ]
       }
+      forecast_adjustments: {
+        Row: {
+          adjusted_by: string | null
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          period_start: string
+          period_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adjusted_by?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          period_start: string
+          period_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adjusted_by?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          period_start?: string
+          period_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forecast_adjustments_adjusted_by_fkey"
+            columns: ["adjusted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forecast_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           created: number
@@ -2231,6 +2282,25 @@ export type Database = {
           id_b: string
           name_b: string
           reason: string
+        }[]
+      }
+      forecast_summary: {
+        Args: {
+          p_period_type: string
+          p_period_start: string
+        }
+        Returns: {
+          user_id: string
+          user_name: string
+          closed: number
+          commit_amount: number
+          best_case: number
+          pipeline: number
+          open_count: number
+          quota: number
+          adjustment: number
+          adjustment_note: string
+          can_adjust: boolean
         }[]
       }
       generate_alerts: {

@@ -5,10 +5,11 @@ import { useOptimistic, useState, useTransition } from "react";
 import { CalendarDays, GripVertical } from "lucide-react";
 import { moveOpportunityStage } from "@/lib/records/actions";
 import type { StageRow } from "@/lib/records/data";
-import { formatCompactCurrency, formatCurrency, formatDate, todayISO } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, todayISO } from "@/lib/format";
 import { LossDialog } from "./LossDialog";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export type KanbanCard = {
   id: string;
   name: string;
@@ -99,7 +100,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                       <div className="mt-2 flex items-center justify-between gap-2 text-xs">
                         <span className="num font-semibold" title={formatCurrency(card.amount)}>{formatCompactCurrency(card.amount)}</span>
                         <span className={`inline-flex items-center gap-1 ${late ? "font-semibold text-danger" : "text-muted"}`}>
-                          <CalendarDays size={12} /> {formatDate(card.close_date)}
+                          <CalendarDays size={12} /> <Fmt date={card.close_date} />
                         </span>
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-2">

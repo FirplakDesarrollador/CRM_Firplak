@@ -5,11 +5,13 @@ import { hasServiceRole } from "@/lib/supabase/admin";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { canSystem } from "@/lib/permissions";
-import { formatDate, initials } from "@/lib/format";
+import { initials } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { inviteUser, updateUser } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
+import { Opt } from "@/components/ui/Opt";
 export const metadata: Metadata = { title: "Usuarios" };
 
 export default async function UsersPage() {
@@ -40,7 +42,7 @@ export default async function UsersPage() {
             <div>
               <label className="label" htmlFor="inv-role"><Tr>Rol</Tr></label>
               <select id="inv-role" name="role_id" className="select" defaultValue="">
-                <option value="">— Sin rol —</option>
+                <Opt value="">— Sin rol —</Opt>
                 {(roles ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
@@ -58,7 +60,7 @@ export default async function UsersPage() {
                   <span className="avatar">{initials(u.full_name || u.email)}</span>
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{u.full_name || u.email}{u.id === me.id && <span className="badge ml-1.5"><Tr>Tú</Tr></span>}</p>
-                    <p className="truncate text-xs text-muted">{u.email} · desde {formatDate(u.created_at)}</p>
+                    <p className="truncate text-xs text-muted">{u.email} · desde <Fmt date={u.created_at} /></p>
                   </div>
                 </div>
                 <div>
@@ -68,14 +70,14 @@ export default async function UsersPage() {
                 <div>
                   <label className="label" htmlFor={`r-${u.id}`}><Tr>Rol</Tr></label>
                   <select id={`r-${u.id}`} name="role_id" className="select" defaultValue={u.role_id ?? ""}>
-                    <option value="">— Sin rol —</option>
+                    <Opt value="">— Sin rol —</Opt>
                     {(roles ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label" htmlFor={`p-${u.id}`}><Tr>Perfil</Tr></label>
                   <select id={`p-${u.id}`} name="permission_profile_id" className="select" defaultValue={u.permission_profile_id ?? ""}>
-                    <option value="">— Sin perfil —</option>
+                    <Opt value="">— Sin perfil —</Opt>
                     {(profiles ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
@@ -88,7 +90,7 @@ export default async function UsersPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-1.5 text-sm font-semibold">
-                    <input type="checkbox" name="is_active" defaultChecked={u.is_active} className="accent-[var(--brand)]" /> Activo
+                    <input type="checkbox" name="is_active" defaultChecked={u.is_active} className="accent-[var(--brand)]" /> <Tr>Activo</Tr>
                   </label>
                   <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
                 </div>

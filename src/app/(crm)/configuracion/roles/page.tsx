@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/session";
 import { deleteRole, saveRole } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 export const metadata: Metadata = { title: "Jerarquía de roles" };
 
 type Role = { id: string; name: string; description: string | null; parent_id: string | null; sort_order: number };
@@ -46,7 +47,7 @@ export default async function RolesPage() {
           <div>
             <label className="label" htmlFor="role-parent"><Tr>Depende de</Tr></label>
             <select id="role-parent" name="parent_id" className="select">
-              <option value="">— Raíz —</option>
+              <Opt value="">— Raíz —</Opt>
               {tree.map((r) => <option key={r.id} value={r.id}>{"· ".repeat(r.depth)}{r.name}</option>)}
             </select>
           </div>
@@ -65,7 +66,7 @@ export default async function RolesPage() {
                 <div className="min-w-48">
                   <label className="sr-only" htmlFor={`rp-${r.id}`}><Tr>Depende de</Tr></label>
                   <select id={`rp-${r.id}`} name="parent_id" className="select" defaultValue={r.parent_id ?? ""}>
-                    <option value="">— Raíz —</option>
+                    <Opt value="">— Raíz —</Opt>
                     {tree.filter((x) => x.id !== r.id).map((x) => <option key={x.id} value={x.id}>{"· ".repeat(x.depth)}{x.name}</option>)}
                   </select>
                 </div>

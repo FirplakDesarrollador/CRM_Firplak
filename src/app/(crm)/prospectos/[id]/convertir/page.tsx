@@ -31,7 +31,7 @@ export default async function ConvertLeadPage({ params }: PageProps<"/prospectos
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Link href={`/prospectos/${id}`} className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink">
-        <ChevronLeft size={16} /> Volver al prospecto
+        <ChevronLeft size={16} /> <Tr>Volver al prospecto</Tr>
       </Link>
       <div className="flex items-center gap-3">
         <ObjectIcon object="leads" />

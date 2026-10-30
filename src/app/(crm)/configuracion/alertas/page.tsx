@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { canSystem } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/server";
+import { makeT } from "@/lib/i18n";
 import { runAlertsNow, saveAlertSettings } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
@@ -13,6 +15,8 @@ export const metadata: Metadata = { title: "Alertas programadas" };
 
 export default async function AlertsPage() {
   const me = await requireUser();
+  const locale = await getLocale();
+  const t = makeT(locale);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const supabase = await createClient();
   const { data: s } = await supabase.from("alert_settings").select("*").eq("id", 1).maybeSingle();
@@ -31,7 +35,7 @@ export default async function AlertsPage() {
           <label className="flex items-center gap-2 font-medium"><input type="checkbox" name="enabled" defaultChecked={s?.enabled ?? true} className="accent-[var(--brand)]" /> <Tr>Alertas activas</Tr></label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="notify_overdue_close" defaultChecked={s?.notify_overdue_close ?? true} className="accent-[var(--brand)]" /> <Tr>Oportunidades abiertas con fecha de cierre vencida</Tr></label>
           <label className="flex flex-wrap items-center gap-2 text-sm">
-            <input type="checkbox" name="notify_stale" defaultChecked={s?.notify_stale ?? true} className="accent-[var(--brand)]" /> Oportunidades sin actividad ni cambio de etapa en
+            <input type="checkbox" name="notify_stale" defaultChecked={s?.notify_stale ?? true} className="accent-[var(--brand)]" /> <Tr>Oportunidades sin actividad ni cambio de etapa en</Tr>
             <input name="stale_days" type="number" min={3} max={180} className="input h-8 w-20" defaultValue={s?.stale_days ?? 14} aria-label="Días sin actividad" /> días (aviso semanal)
           </label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="notify_overdue_tasks" defaultChecked={s?.notify_overdue_tasks ?? true} className="accent-[var(--brand)]" /> <Tr>Resumen diario de tareas y llamadas vencidas</Tr></label>
@@ -40,7 +44,7 @@ export default async function AlertsPage() {
       </section>
       <section className="card flex flex-wrap items-center justify-between gap-3 p-5">
         <p className="text-sm text-ink-2">
-          Última ejecución: {s?.last_run_at ? `${formatDateTime(s.last_run_at)} · ${s.last_run_count ?? 0} aviso(s)` : "nunca"}
+          <Tr>Última ejecución:</Tr> {s?.last_run_at ? `${formatDateTime(s.last_run_at, locale)} · ${s.last_run_count ?? 0} ${t("aviso(s)")}` : t("nunca")}
         </p>
         <ActionForm action={runAlertsNow} className="flex flex-col items-end gap-1">
           <SubmitButton className="btn" pendingText="Ejecutando…"><Tr>Ejecutar ahora</Tr></SubmitButton>

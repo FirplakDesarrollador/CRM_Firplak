@@ -5,6 +5,7 @@ import type { PipelineWithStages, UserOption } from "@/lib/records/data";
 import { LookupInput } from "./LookupInput";
 import { useT } from "@/lib/i18n/client";
 
+import { Opt } from "@/components/ui/Opt";
 export type FieldInputContext = {
   users: UserOption[];
   pipelines: PipelineWithStages[];
@@ -120,7 +121,7 @@ export function FieldInput({
     case "stage":
       control = (
         <select {...common} className="select" defaultValue={str}>
-          <option value="">— Selecciona la etapa —</option>
+          <Opt value="">— Selecciona la etapa —</Opt>
           {ctx.pipelines.filter((p) => p.is_active || p.stages.some((s) => s.id === str)).map((p) => (
             <optgroup key={p.id} label={p.name}>
               {p.stages.map((s) => (
@@ -152,7 +153,7 @@ export function FieldInput({
         {field.required && <span className="text-danger"> *</span>}
       </label>
       {control}
-      {error ? <p className="error-text">{error}</p> : field.help ? <p className="help">{field.help}</p> : null}
+      {error ? <p className="error-text">{t(error)}</p> : field.help ? <p className="help">{t(field.help)}</p> : null}
     </div>
   );
 }

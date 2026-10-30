@@ -10,6 +10,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 type Template = { id: string; name: string; category: string; subject: string; body: string };
 
 export function EmailComposer({ to, related, merge, templates, returnTo, providerReady }: {
@@ -57,7 +58,7 @@ export function EmailComposer({ to, related, merge, templates, returnTo, provide
             setSubject(renderTemplate(t.subject, merge));
             setBody(renderTemplate(t.body, merge));
           }}>
-            <option value="">— Sin plantilla —</option>
+            <Opt value="">— Sin plantilla —</Opt>
             {categories.map((c) => (
               <optgroup key={c} label={c}>{templates.filter((t) => t.category === c).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>
             ))}
@@ -90,7 +91,7 @@ export function EmailComposer({ to, related, merge, templates, returnTo, provide
         <Link href="/correo/plantillas" className="link text-sm"><Tr>Gestionar plantillas</Tr></Link>
         <div className="flex gap-2">
           <Link href={returnTo} className="btn"><Tr>Cancelar</Tr></Link>
-          <SubmitButton pendingText="Enviando…"><Send size={15} /> {providerReady ? "Enviar" : "Registrar y abrir correo"}</SubmitButton>
+          <SubmitButton pendingText="Enviando…"><Send size={15} /> <Tr>{providerReady ? "Enviar" : "Registrar y abrir correo"}</Tr></SubmitButton>
         </div>
       </div>
     </form>

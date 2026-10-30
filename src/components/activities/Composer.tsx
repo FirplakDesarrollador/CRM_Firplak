@@ -121,12 +121,12 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
             )}
             {tab === "call" && (
               <label className="flex items-center gap-1.5 text-xs font-semibold">
-                <input type="checkbox" name="completed" defaultChecked className="accent-[var(--brand)]" /> Ya realizada
+                <input type="checkbox" name="completed" defaultChecked className="accent-[var(--brand)]" /> <Tr>Ya realizada</Tr>
               </label>
             )}
           </div>
           <SubmitButton className="btn btn-primary btn-sm" pendingText="Guardando…">
-            {tab === "note" ? "Guardar nota" : tab === "email" ? "Registrar correo" : "Guardar"}
+            <Tr>{tab === "note" ? "Guardar nota" : tab === "email" ? "Registrar correo" : "Guardar"}</Tr>
           </SubmitButton>
         </div>
       </form>

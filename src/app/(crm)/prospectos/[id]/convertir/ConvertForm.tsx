@@ -59,7 +59,7 @@ export function ConvertForm(props: Props) {
       <section className="glass p-5">
         <label className="card-title cursor-pointer">
           <input type="checkbox" name="create_opportunity" checked={createOpp} onChange={(e) => setCreateOpp(e.target.checked)} className="accent-[var(--brand)]" />
-          <Target size={17} /> Crear oportunidad
+          <Target size={17} /> <Tr>Crear oportunidad</Tr>
         </label>
         {createOpp && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">

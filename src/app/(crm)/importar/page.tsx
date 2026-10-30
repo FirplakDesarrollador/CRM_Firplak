@@ -5,10 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { OBJECTS, isObjectKey } from "@/lib/objects";
 import { IMPORTABLE } from "@/lib/import/config";
 import { can } from "@/lib/permissions";
-import { formatDateTime } from "@/lib/format";
+
 import { requireUser } from "@/lib/session";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Importar datos" };
 
 const HINTS: Record<string, string> = {
@@ -55,7 +56,7 @@ export default async function ImportPage() {
             <tbody>
               {(jobs ?? []).map((j) => (
                 <tr key={j.id}>
-                  <td className="whitespace-nowrap">{formatDateTime(j.created_at)}</td>
+                  <td className="whitespace-nowrap"><Fmt datetime={j.created_at} /></td>
                   <td>{isObjectKey(j.object) ? OBJECTS[j.object].plural : j.object}</td>
                   <td className="max-w-56 truncate">{j.file_name}</td>
                   <td className="num text-right">{j.total}</td>

@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 6)
+## Módulos incluidos (Fases 1 a 7)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -27,7 +27,8 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Automatizaciones | Al crear/actualizar (opcionalmente solo si cambia un campo) y si se cumplen condiciones: asignar propietario, crear tarea, notificar (propietario, jefe o usuario) o actualizar un campo. Notificaciones en la campana de la cabecera. |
 | Auditoría | Historial de cambios por campo en cada ficha (registrado por triggers de la base) y vista global en Configuración → Auditoría de cambios. |
 | Metas | Cuotas por asesor o de la compañía, por mes, trimestre o año (ventas ganadas, negocios ganados, oportunidades y prospectos nuevos, actividades). Avance con ritmo esperado, brecha y estado; resumen en Inicio e Indicadores. Las define administración o el gerente para su equipo (nadie la propia). |
-| Idioma | Español o inglés por usuario (Mis preferencias). Toda la interfaz se traduce; los datos (etapas, valores de listas, campos personalizados, mensajes de reglas) se muestran como se crearon. Pendiente: nombres de meses en fechas y algunas opciones de listas desplegables. |
+| Pronóstico | Por mes, trimestre o año: cerrado, compromiso, mejor caso y pipeline por asesor (según la categoría de pronóstico de cada oportunidad) frente a su meta de ventas, con barra apilada y marca de la meta. El gerente (o administración) registra un **ajuste** con nota que reemplaza el pronóstico calculado; cada cifra abre la lista de oportunidades filtrada. |
+| Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas (meses, «hoy», «en N días»), las opciones de listas fijas y los mensajes del servidor. Los datos (etapas, valores de listas, campos personalizados, mensajes de reglas) se muestran como se crearon, y las etiquetas de agrupación por fecha de los informes salen en español. |
 | Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
 | Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
 | Alertas programadas | Avisos diarios en la campana: cierres vencidos, oportunidades sin actividad (N días) y resumen de tareas vencidas. Se programan con pg_cron a las 7:00 a. m. de Colombia si la extensión está disponible; también se pueden ejecutar a mano. |
@@ -114,6 +115,6 @@ línea de tiempo) toma como referencia funcional la documentación pública de S
 fuentes ni código.
 
 ## Próximos pasos sugeridos
-- Fechas y opciones de listas en inglés; mensajes de error del servidor traducidos.
-- Pronóstico de ventas por categoría (compromiso / mejor caso) frente a la meta.
-- Automatizaciones programadas (p. ej. oportunidades sin actividad en N días) con Supabase Cron.
+- Automatizaciones programadas (acciones a N días de una fecha del registro) con Supabase Cron.
+- Historial del pronóstico (instantáneas semanales) para comparar contra semanas anteriores.
+- Traducción de valores de listas de selección por idioma (etiqueta en español e inglés).

@@ -112,7 +112,7 @@ export default async function ProfilesPage({ searchParams }: PageProps<"/configu
       {!isNew && selected && !selected.is_admin && (
         <ActionForm action={deletePermissionProfile.bind(null, selected.id)} className="flex flex-col items-end gap-1">
           <ConfirmSubmit message={`¿Eliminar el perfil “${selected.name}”?`} className="btn btn-sm btn-danger">
-            <Trash2 size={14} /> Eliminar perfil
+            <Trash2 size={14} /> <Tr>Eliminar perfil</Tr>
           </ConfirmSubmit>
         </ActionForm>
       )}

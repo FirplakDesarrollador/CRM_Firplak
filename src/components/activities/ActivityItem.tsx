@@ -7,6 +7,7 @@ import { ACTIVITY_ICONS } from "@/components/ui/icons";
 import { ACTIVITY_TYPES, PRIORITIES } from "@/lib/objects/picklists";
 import { deleteActivity, setActivityStatus } from "@/lib/records/actions";
 import { formatDate, formatDateTime, formatTime, relativeDays, todayISO } from "@/lib/format";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 export type ActivityItemData = {
   id: string;
@@ -43,18 +44,20 @@ const TYPE_TONE: Record<string, string> = {
 export function ActivityItem({ activity, showRelated = true, canEdit = true }: { activity: ActivityItemData; showRelated?: boolean; canEdit?: boolean }) {
   const [pending, start] = useTransition();
   const [status, setStatus] = useOptimistic(activity.status);
+  const locale = useLocale();
+  const t = useT();
   const Icon = ACTIVITY_ICONS[activity.activity_type];
   const done = status === "completed";
   const checkable = ["task", "call", "meeting"].includes(activity.activity_type);
   const overdue = !done && activity.due_date && activity.due_date < todayISO();
 
   const when = activity.start_at
-    ? `${formatDateTime(activity.start_at)}${activity.end_at ? ` – ${formatTime(activity.end_at)}` : ""}`
+    ? `${formatDateTime(activity.start_at, locale)}${activity.end_at ? ` – ${formatTime(activity.end_at, locale)}` : ""}`
     : activity.due_date
-      ? `${formatDate(activity.due_date)} · ${relativeDays(activity.due_date)}`
+      ? `${formatDate(activity.due_date, locale)} · ${relativeDays(activity.due_date, locale)}`
       : done
-        ? `Completada ${formatDateTime(activity.completed_at ?? activity.created_at)}`
-        : formatDateTime(activity.created_at);
+        ? `${t("Completada")} ${formatDateTime(activity.completed_at ?? activity.created_at, locale)}`
+        : formatDateTime(activity.created_at, locale);
 
   return (
     <li className={`group flex gap-3 py-3 ${pending ? "opacity-60" : ""}`}>
@@ -66,7 +69,7 @@ export function ActivityItem({ activity, showRelated = true, canEdit = true }: {
           {checkable && canEdit && (
             <input
               type="checkbox"
-              aria-label={done ? "Marcar como pendiente" : "Marcar como completada"}
+              aria-label={t(done ? "Marcar como pendiente" : "Marcar como completada")}
               className="mt-1 h-4 w-4 flex-none accent-[var(--success)]"
               checked={done}
               onChange={(e) => {
@@ -92,7 +95,7 @@ export function ActivityItem({ activity, showRelated = true, canEdit = true }: {
           )}
         </div>
         <p className={`mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs ${overdue ? "font-semibold text-danger" : "text-muted"}`}>
-          <span className="inline-flex items-center gap-1"><Clock size={12} /> {ACTIVITY_TYPES[activity.activity_type]} · {when}</span>
+          <span className="inline-flex items-center gap-1"><Clock size={12} /> {t(ACTIVITY_TYPES[activity.activity_type])} · {when}</span>
           {activity.location && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {activity.location}</span>}
           {activity.owner && <span>{activity.owner.full_name || activity.owner.email}</span>}
         </p>

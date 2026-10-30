@@ -38,3 +38,24 @@ export async function saveGoals(periodType: GoalPeriodType, start: string, _prev
   if (errors.length) return { message: [...new Set(errors)].join(" · ") };
   return { ok: true, message: `${saved} meta(s) guardada(s)` };
 }
+
+/** Ajuste del gerente al pronóstico de un asesor (vacío = quitar el ajuste). */
+export async function saveForecastAdjustment(userId: string, periodType: GoalPeriodType, start: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const supabase = await createClient();
+  const raw = String(fd.get("amount") ?? "").trim();
+  const note = String(fd.get("note") ?? "").trim() || null;
+  if (!raw) {
+    await supabase.from("forecast_adjustments").delete().eq("user_id", userId).eq("period_type", periodType).eq("period_start", start);
+    revalidatePath("/pronostico");
+    return { ok: true, message: "Ajuste eliminado" };
+  }
+  const amount = parseAmount(raw);
+  if (amount === null || amount < 0) return { message: "Valor no válido" };
+  const { error } = await supabase.from("forecast_adjustments").upsert(
+    { user_id: userId, period_type: periodType, period_start: start, amount, note },
+    { onConflict: "user_id,period_type,period_start" },
+  );
+  if (error) return { message: error.message.includes("row-level security") ? "Solo el gerente puede ajustar este pronóstico." : error.message };
+  revalidatePath("/pronostico");
+  return { ok: true, message: "Ajuste guardado" };
+}

@@ -9,10 +9,11 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { removeProductPrice, saveProductPrice } from "@/lib/records/phase2-actions";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
@@ -57,7 +58,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                       <div className="min-w-48 flex-1">
                         <p className="font-medium">{b.name}</p>
                         <p className="text-xs text-muted">
-                          {b.is_standard ? "Lista estándar" : "Lista personalizada"}{b.is_active ? "" : " · inactiva"}
+                          <Tr>{b.is_standard ? "Lista estándar" : "Lista personalizada"}</Tr>{b.is_active ? "" : <> · <Tr>inactiva</Tr></>}
                           {entry ? ` · ${formatCurrency(entry.unit_price)}` : " · sin precio"}
                         </p>
                       </div>
@@ -68,7 +69,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                             <input id={`price-${b.id}`} name="unit_price" inputMode="decimal" className="input num w-40"
                               defaultValue={entry ? String(entry.unit_price) : ""} placeholder="Precio COP" />
                             <label className="flex items-center gap-1.5 text-xs font-medium">
-                              <input type="checkbox" name="is_active" defaultChecked={entry?.is_active ?? true} className="accent-[var(--brand)]" /> Activo
+                              <input type="checkbox" name="is_active" defaultChecked={entry?.is_active ?? true} className="accent-[var(--brand)]" /> <Tr>Activo</Tr>
                             </label>
                             <SubmitButton className="btn btn-sm" pendingText="…">{entry ? "Guardar" : "Agregar"}</SubmitButton>
                           </ActionForm>
@@ -95,7 +96,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                         <td><Link href={`/casos/${c.id}`} className="link">{c.case_number}</Link></td>
                         <td>{c.subject}</td>
                         <td><span className="badge">{c.status}</span></td>
-                        <td>{formatDate(c.created_at)}</td>
+                        <td><Fmt date={c.created_at} /></td>
                       </tr>
                     ))}
                   </tbody>

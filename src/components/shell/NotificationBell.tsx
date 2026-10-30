@@ -5,9 +5,10 @@ import { useTransition } from "react";
 import { Bell } from "lucide-react";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { markAllNotificationsRead, markNotificationRead } from "@/lib/notifications/actions";
-import { formatDateTime } from "@/lib/format";
+
 import { useT } from "@/lib/i18n/client";
 
+import { Fmt } from "@/components/ui/Fmt";
 export type NotificationItem = { id: string; title: string; body: string | null; link: string | null; is_read: boolean; created_at: string };
 
 export function NotificationBell({ items, unread }: { items: NotificationItem[]; unread: number }) {
@@ -44,7 +45,7 @@ export function NotificationBell({ items, unread }: { items: NotificationItem[];
             <>
               <p className={`text-sm ${n.is_read ? "text-ink-2" : "font-medium text-ink"}`}>{n.title}</p>
               {n.body && <p className="line-clamp-2 text-xs text-muted">{n.body}</p>}
-              <p className="mt-0.5 text-[0.68rem] text-muted">{formatDateTime(n.created_at)}</p>
+              <p className="mt-0.5 text-[0.68rem] text-muted"><Fmt datetime={n.created_at} /></p>
             </>
           );
           const cls = `block rounded-md px-2.5 py-2 no-underline hover:bg-surface-3 ${n.is_read ? "" : "bg-brand-soft/60"}`;

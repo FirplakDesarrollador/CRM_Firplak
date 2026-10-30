@@ -6,16 +6,20 @@ import { ObjectListPage } from "@/components/records/ObjectListPage";
 import { ObjectIcon } from "@/components/ui/icons";
 import { ActivityItem } from "@/components/activities/ActivityItem";
 import { activityDate, getMyOpenActivities, getUpcomingMeetings, type ActivityRow } from "@/components/activities/data";
-import { addDaysISO, formatDate, todayISO } from "@/lib/format";
+import { addDaysISO, todayISO } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/server";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Actividades" };
 
-const weekday = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const weekdayFmt = (locale: "es" | "en") =>
+  new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
 export default async function ActivitiesPage({ searchParams }: PageProps<"/actividades">) {
+  const locale = await getLocale();
   const [user, sp] = await Promise.all([requireUser(), searchParams]);
   const list = sp.vista === "lista";
   const switcher = <ActivityViewSwitcher active={list ? "lista" : "agenda"} />;
@@ -82,12 +86,12 @@ export default async function ActivitiesPage({ searchParams }: PageProps<"/activ
             {[...byDay.entries()].map(([day, items]) => (
               <div key={day}>
                 <h3 className={`text-[0.7rem] font-medium uppercase tracking-[0.18em] ${day === today ? "text-brand" : "text-muted"}`}>
-                  {day === today ? "Hoy · " : ""}{weekday.format(new Date(`${day}T00:00:00Z`))}
+                  {day === today ? <><Tr>Hoy</Tr> · </> : ""}{weekdayFmt(locale).format(new Date(`${day}T00:00:00Z`))}
                 </h3>
                 <ul className="divide-y divide-[var(--border)]">{items.map((a) => <ActivityItem key={a.id} activity={a} />)}</ul>
               </div>
             ))}
-            <p className="text-xs text-muted">Hasta el {formatDate(addDaysISO(today, 14))}.</p>
+            <p className="text-xs text-muted">Hasta el <Fmt date={addDaysISO(today, 14)} />.</p>
           </div>
         </section>
       </div>

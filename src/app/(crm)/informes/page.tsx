@@ -6,10 +6,11 @@ import { Dropdown, menuItemClass } from "@/components/ui/Dropdown";
 import { createClient } from "@/lib/supabase/server";
 import { OBJECTS, isObjectKey } from "@/lib/objects";
 import { can } from "@/lib/permissions";
-import { formatDate } from "@/lib/format";
+
 import { requireUser } from "@/lib/session";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Informes" };
 
 export default async function ReportsPage() {
@@ -58,7 +59,7 @@ export default async function ReportsPage() {
                     <td>{isObjectKey(r.object) ? OBJECTS[r.object].plural : r.object}</td>
                     <td className="max-w-md truncate text-muted">{r.description ?? "—"}</td>
                     <td>{r.owner?.full_name ?? "Firplak CRM"}</td>
-                    <td>{formatDate(r.updated_at)}</td>
+                    <td><Fmt date={r.updated_at} /></td>
                   </tr>
                 ))}
               </tbody>

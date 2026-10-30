@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { deleteRecord } from "@/lib/records/actions";
 import type { ObjectKey } from "@/lib/objects";
 
+import { Tr } from "@/components/ui/Tr";
 export function DeleteButton({ object, id, label }: { object: ObjectKey; id: string; label: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export function DeleteButton({ object, id, label }: { object: ObjectKey; id: str
           });
         }}
       >
-        <Trash2 size={15} /> {pending ? "Eliminando…" : "Eliminar"}
+        <Trash2 size={15} /> <Tr>{pending ? "Eliminando…" : "Eliminar"}</Tr>
       </button>
       {error && <span className="error-text">{error}</span>}
     </span>

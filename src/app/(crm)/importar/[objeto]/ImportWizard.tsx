@@ -9,6 +9,7 @@ import { importChunk, logImport, type ChunkResult } from "@/lib/import/actions";
 import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 type Field = { name: string; label: string; type: string; required: boolean };
 
 export function ImportWizard({ object, label, plural, path, fields, matchFields, canUpdate }: {
@@ -137,7 +138,7 @@ export function ImportWizard({ object, label, plural, path, fields, matchFields,
                       <td>
                         <select className="select h-9" aria-label={`Campo para ${h}`} value={mapping[String(i)] ?? ""}
                           onChange={(e) => setMapping({ ...mapping, [String(i)]: e.target.value })}>
-                          <option value="">— No importar —</option>
+                          <Opt value="">— No importar —</Opt>
                           {fields.map((f) => (
                             <option key={f.name} value={f.name} disabled={mappedFields.has(f.name) && mapping[String(i)] !== f.name}>
                               {f.label}{f.required ? " *" : ""}

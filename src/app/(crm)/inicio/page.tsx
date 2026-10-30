@@ -6,23 +6,26 @@ import { ActivityItem } from "@/components/activities/ActivityItem";
 import { getMyOpenActivities, getUpcomingMeetings } from "@/components/activities/data";
 import { StageBadge } from "@/components/records/FieldValue";
 import { createClient } from "@/lib/supabase/server";
-import { addDaysISO, formatCompactCurrency, formatCurrency, formatDate, formatDateTime, formatMillions, todayISO } from "@/lib/format";
+import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, todayISO } from "@/lib/format";
 import { resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
-import { getT } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { GoalSummary } from "@/components/goals/GoalSummary";
 import { periodStart } from "@/lib/goals/periods";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Inicio" };
 
-function greeting() {
+function greeting(locale: "es" | "en") {
   const hour = Number(new Intl.DateTimeFormat("es-CO", { hour: "numeric", hour12: false, timeZone: "America/Bogota" }).format(new Date()));
+  if (locale === "en") return hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
   return hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 }
 
 export default async function HomePage() {
   const t = await getT();
+  const locale = await getLocale();
   const user = await requireUser();
   const today = todayISO();
   const month = resolvePeriod("this_month");
@@ -53,8 +56,8 @@ export default async function HomePage() {
     <div className="space-y-5">
       <div>
         <p className="eyebrow"><Tr>Inicio</Tr></p>
-        <h1 className="editorial mt-1 text-3xl">{greeting()}, {firstName}</h1>
-        <p className="text-sm text-muted">Este es tu resumen de {new Intl.DateTimeFormat("es-CO", { month: "long", timeZone: "UTC" }).format(new Date(`${today}T00:00:00Z`))}.</p>
+        <h1 className="editorial mt-1 text-3xl">{greeting(locale)}, {firstName}</h1>
+        <p className="text-sm text-muted">{t("Este es tu resumen de")} {new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-CO", { month: "long", timeZone: "UTC" }).format(new Date(`${today}T00:00:00Z`))}.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -84,7 +87,7 @@ export default async function HomePage() {
                     <td><Link href={`/oportunidades/${o.id}`} className="link">{o.name}</Link><p className="text-xs text-muted">{o.account?.name}</p></td>
                     <td><StageBadge stage={o.stage as never} /></td>
                     <td className="num text-right">{formatCurrency(o.amount)}</td>
-                    <td className={o.close_date < today ? "font-semibold text-danger" : undefined}>{formatDate(o.close_date)}</td>
+                    <td className={o.close_date < today ? "font-semibold text-danger" : undefined}><Fmt date={o.close_date} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -115,7 +118,7 @@ export default async function HomePage() {
                   <p className="truncate font-semibold">{m.subject}</p>
                   <p className="truncate text-xs text-muted">{m.location ?? m.account?.name ?? ""}</p>
                 </div>
-                <span className="badge badge-accent whitespace-nowrap">{formatDateTime(m.start_at)}</span>
+                <span className="badge badge-accent whitespace-nowrap"><Fmt datetime={m.start_at} /></span>
               </li>
             ))}
           </ul>
@@ -133,7 +136,7 @@ export default async function HomePage() {
                   <Link href={`/cuentas/${a.id}`} className="link">{a.name}</Link>
                   <p className="text-xs text-muted">{[a.account_type, a.billing_city].filter(Boolean).join(" · ")}</p>
                 </div>
-                <span className="text-xs text-muted">{formatDate(a.updated_at)}</span>
+                <span className="text-xs text-muted"><Fmt date={a.updated_at} /></span>
               </li>
             ))}
           </ul>

@@ -57,10 +57,10 @@ export default async function PriceBooksPage() {
                   <input id={`d-${b.id}`} name="description" className="input" defaultValue={b.description ?? ""} disabled={!canEdit} />
                 </div>
                 <label className="flex items-center gap-1.5 pb-2 text-sm font-medium">
-                  <input type="checkbox" name="is_standard" defaultChecked={b.is_standard} disabled={!canEdit} className="accent-[var(--brand)]" /> Estándar
+                  <input type="checkbox" name="is_standard" defaultChecked={b.is_standard} disabled={!canEdit} className="accent-[var(--brand)]" /> <Tr>Estándar</Tr>
                 </label>
                 <label className="flex items-center gap-1.5 pb-2 text-sm font-medium">
-                  <input type="checkbox" name="is_active" defaultChecked={b.is_active} disabled={!canEdit} className="accent-[var(--brand)]" /> Activa
+                  <input type="checkbox" name="is_active" defaultChecked={b.is_active} disabled={!canEdit} className="accent-[var(--brand)]" /> <Tr>Activa</Tr>
                 </label>
                 {canEdit && <SubmitButton className="btn btn-sm mb-1" pendingText="…"><Tr>Guardar</Tr></SubmitButton>}
               </ActionForm>

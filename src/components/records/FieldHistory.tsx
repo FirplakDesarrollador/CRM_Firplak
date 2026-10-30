@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getObjectDef, untypedClient } from "@/lib/records/data";
+import { getLocale } from "@/lib/i18n/server";
 import { OBJECTS, isObjectKey, type FieldDef, type ObjectKey } from "@/lib/objects";
 import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 type HistoryRow = {
   id: number; object: string; record_id: string; field: string; old_value: string | null; new_value: string | null;
   operation: "insert" | "update" | "delete"; changed_at: string; by: { full_name: string } | null;
 };
 
-function display(field: FieldDef | undefined, raw: string | null, names: Map<string, string>) {
+function display(field: FieldDef | undefined, raw: string | null, names: Map<string, string>, locale: "es" | "en") {
   if (raw === null || raw === "") return <span className="text-muted">—</span>;
   if (!field) return raw;
   if (["user", "lookup", "stage"].includes(field.type) || field.name === "pipeline_id") return names.get(raw) ?? "(registro eliminado o sin acceso)";
@@ -18,9 +20,9 @@ function display(field: FieldDef | undefined, raw: string | null, names: Map<str
     case "currency": return formatCurrency(Number(raw));
     case "number": return formatNumber(Number(raw));
     case "percent": return formatPercent(Number(raw));
-    case "date": return formatDate(raw);
-    case "datetime": return formatDateTime(raw);
-    case "checkbox": return raw === "true" ? "Sí" : "No";
+    case "date": return formatDate(raw, locale);
+    case "datetime": return formatDateTime(raw, locale);
+    case "checkbox": return raw === "true" ? (locale === "en" ? "Yes" : "Sí") : "No";
     case "multiselect": {
       try { return (JSON.parse(raw) as string[]).join(", "); } catch { return raw; }
     }
@@ -34,6 +36,7 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
   object?: ObjectKey; recordId?: string; limit?: number; global?: boolean; userId?: string;
 }) {
   const supabase = await createClient();
+  const locale = await getLocale();
   let query = supabase
     .from("field_history")
     .select("id, object, record_id, field, old_value, new_value, operation, changed_at, by:profiles!field_history_changed_by_fkey(full_name)")
@@ -92,7 +95,7 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
               const objectDef = isObjectKey(r.object) ? OBJECTS[r.object] : null;
               return (
                 <tr key={r.id}>
-                  <td className="whitespace-nowrap">{formatDateTime(r.changed_at)}</td>
+                  <td className="whitespace-nowrap"><Fmt datetime={r.changed_at} /></td>
                   {global && (
                     <td>
                       {objectDef && r.operation !== "delete"
@@ -107,8 +110,8 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
                   ) : (
                     <>
                       <td className="font-medium">{f?.label ?? r.field}</td>
-                      <td className="max-w-64 text-ink-2">{display(f, r.old_value, names)}</td>
-                      <td className="max-w-64">{display(f, r.new_value, names)}</td>
+                      <td className="max-w-64 text-ink-2">{display(f, r.old_value, names, locale)}</td>
+                      <td className="max-w-64">{display(f, r.new_value, names, locale)}</td>
                     </>
                   )}
                   <td className="whitespace-nowrap">{r.by?.full_name ?? "Sistema"}</td>

@@ -1,6 +1,7 @@
-import { formatCompactCurrency, formatCurrency, formatMonth } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
+import { Fmt } from "@/components/ui/Fmt";
 export function KpiTile({ label, value, unit, sub, tone }: {
   label: string; value: string; unit?: string; sub?: React.ReactNode; tone?: "success" | "danger" | "warning";
 }) {
@@ -78,14 +79,14 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
                 <div key={d.month} className="group relative flex h-full flex-1 items-end justify-center">
                   <div className="w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${h}%` }} />
                   <div role="tooltip" className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block">
-                    {formatMonth(d.month)}: {formatCurrency(d.won_amount)} · {d.won_count} ganadas
+                    <Fmt month={d.month} />: {formatCurrency(d.won_amount)} · {d.won_count} ganadas
                   </div>
                 </div>
               );
             })}
           </div>
           <div className="absolute inset-x-0 bottom-0 flex justify-around text-[0.68rem] text-muted">
-            {data.map((d) => <span key={d.month} className="flex-1 text-center">{formatMonth(d.month)}</span>)}
+            {data.map((d) => <span key={d.month} className="flex-1 text-center"><Fmt month={d.month} /></span>)}
           </div>
         </div>
       </div>
@@ -96,7 +97,7 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
           <tbody>
             {data.map((d) => (
               <tr key={d.month}>
-                <td>{formatMonth(d.month)}</td>
+                <td><Fmt month={d.month} /></td>
                 <td className="num text-right">{formatCurrency(d.won_amount)}</td>
                 <td className="num text-right">{d.won_count}</td>
                 <td className="num text-right">{formatCurrency(d.created_amount)}</td>

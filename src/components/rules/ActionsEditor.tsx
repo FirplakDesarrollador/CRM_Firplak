@@ -8,6 +8,7 @@ import type { AutomationAction } from "@/lib/rules/automation-types";
 import { useT } from "@/lib/i18n/client";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 const TYPES: Record<AutomationAction["type"], string> = {
   create_task: "Crear tarea",
   notify: "Enviar notificación",
@@ -48,10 +49,10 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
                   <input type="number" min={0} className="input h-8 w-20" value={a.due_in_days ?? 1} onChange={(e) => update(i, { due_in_days: Number(e.target.value) })} /> días
                 </label>
                 <select className="select" value={a.priority ?? "normal"} aria-label="Prioridad" onChange={(e) => update(i, { priority: e.target.value as "high" })}>
-                  <option value="high">Prioridad alta</option><option value="normal">Prioridad normal</option><option value="low">Prioridad baja</option>
+                  <Opt value="high">Prioridad alta</Opt><Opt value="normal">Prioridad normal</Opt><Opt value="low">Prioridad baja</Opt>
                 </select>
                 <select className="select sm:col-span-2" value={a.assign_to ?? "owner"} aria-label="Asignar a" onChange={(e) => update(i, { assign_to: e.target.value })}>
-                  <option value="owner">Asignar al propietario del registro</option>
+                  <Opt value="owner">Asignar al propietario del registro</Opt>
                   {activeUsers.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                 </select>
               </>
@@ -59,8 +60,8 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
             {a.type === "notify" && (
               <>
                 <select className="select" value={a.to} aria-label="Destinatario" onChange={(e) => update(i, { to: e.target.value })}>
-                  <option value="owner">Propietario del registro</option>
-                  <option value="manager">Jefe directo del propietario</option>
+                  <Opt value="owner">Propietario del registro</Opt>
+                  <Opt value="manager">Jefe directo del propietario</Opt>
                   {activeUsers.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                 </select>
                 <input className="input" placeholder="Título" value={a.title} onChange={(e) => update(i, { title: e.target.value })} />
@@ -69,7 +70,7 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
             )}
             {a.type === "assign_owner" && (
               <select className="select sm:col-span-2" value={a.user_id} aria-label="Nuevo propietario" onChange={(e) => update(i, { user_id: e.target.value })}>
-                <option value="">Selecciona un usuario…</option>
+                <Opt value="">Selecciona un usuario…</Opt>
                 {activeUsers.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
               </select>
             )}
@@ -78,17 +79,17 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
               return (
                 <>
                   <select className="select" value={a.field} aria-label="Campo" onChange={(e) => update(i, { field: e.target.value, value: "" })}>
-                    <option value="">Campo…</option>
+                    <Opt value="">Campo…</Opt>
                     {settable.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
                   </select>
                   {field?.type === "select" ? (
                     <select className="select" value={a.value} aria-label="Valor" onChange={(e) => update(i, { value: e.target.value })}>
-                      <option value="">— Vacío —</option>
+                      <Opt value="">— Vacío —</Opt>
                       {(field.options ?? []).map((o) => <option key={o} value={o}>{field.optionLabels?.[o] ?? o}</option>)}
                     </select>
                   ) : field?.type === "checkbox" ? (
                     <select className="select" value={a.value} aria-label="Valor" onChange={(e) => update(i, { value: e.target.value })}>
-                      <option value="true">Sí</option><option value="false">No</option>
+                      <Opt value="true">Sí</Opt><Opt value="false">No</Opt>
                     </select>
                   ) : (
                     <input className="input" placeholder="Valor" value={a.value} onChange={(e) => update(i, { value: e.target.value })} />
