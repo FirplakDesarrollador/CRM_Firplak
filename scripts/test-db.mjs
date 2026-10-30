@@ -243,4 +243,34 @@ await check('un correo registrado queda como actividad con destinatario', async 
   });
 });
 
+console.log('Fase 4');
+await check('la auditoría registra cambios de campos y campos personalizados', async () => {
+  await as(admin, async () => {
+    const [a] = await q(`select id from accounts where name = 'Almacenes Casa Viva'`);
+    await q(`update accounts set phone = '+57 601 000 0000', custom_fields = custom_fields || '{"canal":"Distribuidor"}' where id = $1`, [a.id]);
+    const rows = await q(`select field, new_value from field_history where record_id = $1 and operation = 'update' order by field`, [a.id]);
+    assert.ok(rows.some((r) => r.field === 'phone' && r.new_value === '+57 601 000 0000'));
+    assert.ok(rows.some((r) => r.field === 'cf.canal' && r.new_value === 'Distribuidor'));
+  });
+});
+await check('el historial solo es visible si se ve el registro', async () => {
+  const [o] = await q(`select id from opportunities where owner_id = $1 limit 1`, [admin.id]);
+  await as(admin, () => q(`update opportunities set next_step = 'Paso auditado' where id = $1`, [o.id]));
+  assert.ok((await as(admin, () => count(`select count(*) n from field_history where record_id = $1`, [o.id]))) > 0);
+  assert.equal(await as(rep, () => count(`select count(*) n from field_history where record_id = $1`, [o.id])), 0);
+});
+await check('notify_user crea avisos solo visibles para su destinatario', async () => {
+  await as(admin, () => q(`select notify_user($1, 'Hola', 'Prueba', '/inicio')`, [rep.id]));
+  assert.equal(await as(rep, () => count(`select count(*) n from notifications`)), 1);
+  assert.equal(await as(mgr, () => count(`select count(*) n from notifications`)), 0);
+  await assert.rejects(as(admin, () => q(`select notify_user($1, 'x', null, 'https://malo.example')`, [rep.id])));
+});
+await check('solo personalización edita listas, validaciones y automatizaciones', async () => {
+  await as(rep, async () => {
+    await assert.rejects(q(`insert into picklist_values (object, field, value) values ('accounts', 'account_type', 'X')`));
+    assert.equal((await q(`update validation_rules set is_active = false returning id`)).length, 0);
+    assert.ok((await count(`select count(*) n from automation_rules`)) >= 3);
+  });
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

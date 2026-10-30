@@ -9,6 +9,8 @@ import { getListViews, getObjectDef, getPipelines, getUsers, listRecords } from 
 import { parseListParams } from "@/lib/records/filters";
 import { ListTable } from "./ListTable";
 import { ListToolbar } from "./ListToolbar";
+import { getLocale } from "@/lib/i18n/server";
+import { makeT } from "@/lib/i18n";
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -38,7 +40,12 @@ export async function ObjectListPage({
   extraActions?: React.ReactNode;
   defaultViewName?: string;
 }) {
-  const [def, views, users, pipelines] = await Promise.all([getObjectDef(object), getListViews(object), getUsers(), getPipelines()]);
+  const [def, views, users, pipelines, locale] = await Promise.all([getObjectDef(object), getListViews(object), getUsers(), getPipelines(), getLocale()]);
+  const t = makeT(locale);
+  if (locale === "en") {
+    defaultViewName = `All ${def.plural.toLowerCase()}`;
+    newLabel = `New ${def.label.toLowerCase()}`;
+  }
   const current = flatParams(searchParams);
   const view = views.find((v) => v.id === current.view) ?? null;
   const params = parseListParams(def, searchParams, view?.definition ?? null, user.preferences.page_size);
@@ -82,7 +89,7 @@ export async function ObjectListPage({
         exportHref={`/api/export/${object}${exportQs ? `?${exportQs}` : ""}`}
       />
       {error && <Alert tone="error">No se pudo cargar la lista: {error}</Alert>}
-      <ListTable def={def} rows={rows} count={count} params={params} current={current} basePath={def.path} />
+      <ListTable def={def} rows={rows} count={count} params={params} current={current} basePath={def.path} t={t} />
     </div>
   );
 }

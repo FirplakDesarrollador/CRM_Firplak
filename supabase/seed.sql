@@ -547,3 +547,36 @@ from (values
    E'Hola {{contacto.nombre}},\n\nEs un gusto darle la bienvenida a {{cuenta.nombre}} como distribuidor. En los próximos días te enviaremos el catálogo actualizado, la lista de precios y el material de exhibición.\n\nCualquier inquietud, escríbeme.\n\n{{usuario.nombre}}\n{{usuario.correo}}')
 ) as v(name, category, subject, body)
 where not exists (select 1 from public.email_templates t where t.name = v.name and t.is_shared);
+
+-- ===========================================================================
+-- Fase 4: reglas de validación y automatizaciones de ejemplo
+-- ===========================================================================
+insert into public.validation_rules (object, name, description, conditions, error_message, error_field)
+select v.object, v.name, v.description, v.conditions::jsonb, v.message, v.field
+from (values
+  ('accounts', 'Cliente requiere NIT', 'Las cuentas de tipo Cliente deben tener NIT para facturar.',
+   '[{"field":"account_type","op":"eq","value":"Cliente"},{"field":"tax_id","op":"empty","value":""}]',
+   'Las cuentas de tipo Cliente requieren NIT.', 'tax_id'),
+  ('opportunities', 'Motivo de pérdida obligatorio', 'Toda oportunidad perdida debe indicar el motivo.',
+   '[{"field":"is_closed","op":"eq","value":"true"},{"field":"is_won","op":"eq","value":"false"},{"field":"loss_reason","op":"empty","value":""}]',
+   'Indica el motivo de pérdida antes de cerrar la oportunidad como perdida.', 'loss_reason'),
+  ('opportunities', 'Valor obligatorio desde cotización', 'Desde la etapa de cotización la oportunidad debe tener valor.',
+   '[{"field":"probability","op":"gte","value":"50"},{"field":"amount","op":"lte","value":"0"}]',
+   'Ingresa el valor de la oportunidad: a partir de la cotización es obligatorio.', 'amount')
+) as v(object, name, description, conditions, message, field)
+where not exists (select 1 from public.validation_rules r where r.object = v.object and r.name = v.name);
+
+insert into public.automation_rules (object, name, description, trigger_on, watch_field, conditions, actions, sort_order)
+select v.object, v.name, v.description, v.trigger_on, v.watch, v.conditions::jsonb, v.actions::jsonb, v.ord
+from (values
+  ('leads', 'Prospecto web: contactar en 24 horas', 'Crea una tarea de alta prioridad y avisa al propietario.', 'create', null,
+   '[{"field":"lead_source","op":"eq","value":"Web"}]',
+   '[{"type":"create_task","subject":"Contactar prospecto web en 24 horas","due_in_days":1,"assign_to":"owner","priority":"high"},{"type":"notify","to":"owner","title":"Nuevo prospecto desde la web","body":"Contáctalo antes de 24 horas."}]', 1),
+  ('opportunities', 'Oportunidad ganada: coordinar entrega', 'Al ganar, avisa al jefe directo y crea la tarea de coordinación.', 'update', 'stage_id',
+   '[{"field":"is_won","op":"eq","value":"true"}]',
+   '[{"type":"notify","to":"manager","title":"¡Oportunidad ganada!","body":"Revisa el negocio y felicita al equipo."},{"type":"create_task","subject":"Coordinar entrega e instalación","due_in_days":3,"assign_to":"owner","priority":"normal"}]', 2),
+  ('cases', 'Caso de prioridad alta', 'Notifica al propietario cuando entra un caso de prioridad alta.', 'create_or_update', 'priority',
+   '[{"field":"priority","op":"eq","value":"Alta"},{"field":"is_closed","op":"eq","value":"false"}]',
+   '[{"type":"notify","to":"owner","title":"Caso de prioridad alta","body":"Atiéndelo hoy."}]', 3)
+) as v(object, name, description, trigger_on, watch, conditions, actions, ord)
+where not exists (select 1 from public.automation_rules r where r.object = v.object and r.name = v.name);

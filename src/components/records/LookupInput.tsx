@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 type Option = { id: string; label: string; sub?: string };
 
@@ -31,6 +32,7 @@ export function LookupInput({
   const [active, setActive] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
   const listId = useId();
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -92,7 +94,7 @@ export function LookupInput({
             aria-controls={listId}
             aria-invalid={invalid}
             value={term}
-            placeholder={placeholder ?? "Buscar…"}
+            placeholder={placeholder ?? t("Buscar…")}
             onFocus={() => setOpen(true)}
             onChange={(e) => {
               setTerm(e.target.value);
@@ -115,8 +117,8 @@ export function LookupInput({
       )}
       {open && !selected && (
         <ul id={listId} role="listbox" className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-line bg-surface p-1 shadow-[var(--shadow-lg)]">
-          {loading && results.length === 0 && <li className="px-3 py-2 text-sm text-muted">Buscando…</li>}
-          {!loading && results.length === 0 && <li className="px-3 py-2 text-sm text-muted">Sin resultados</li>}
+          {loading && results.length === 0 && <li className="px-3 py-2 text-sm text-muted">{t("Buscando…")}</li>}
+          {!loading && results.length === 0 && <li className="px-3 py-2 text-sm text-muted">{t("Sin resultados")}</li>}
           {results.map((r, i) => (
             <li
               key={r.id}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { List, Plus } from "lucide-react";
 import { Kanban, type KanbanCard } from "@/components/opportunities/Kanban";
 import { ObjectIcon } from "@/components/ui/icons";
-import { getPipelines, getUsers } from "@/lib/records/data";
+import { getObjectDef, getPipelines, getUsers } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
 import { formatCompactCurrency, addDaysISO, todayISO } from "@/lib/format";
@@ -13,7 +13,7 @@ import { PipelineFilters } from "./PipelineFilters";
 export const metadata: Metadata = { title: "Pipeline" };
 
 export default async function PipelinePage({ searchParams }: PageProps<"/oportunidades/pipeline">) {
-  const [user, sp, pipelines, users] = await Promise.all([requireUser(), searchParams, getPipelines(), getUsers()]);
+  const [user, sp, pipelines, users, oppDef] = await Promise.all([requireUser(), searchParams, getPipelines(), getUsers(), getObjectDef("opportunities")]);
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const pipeline = pipelines.find((p) => p.id === one(sp.pipeline)) ?? pipelines.find((p) => p.is_default) ?? pipelines[0];
   const owner = one(sp.owner) || "all";
@@ -94,7 +94,8 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
           <span className="num font-semibold text-ink">{formatCompactCurrency(weighted)}</span>
         </p>
       </div>
-      <Kanban key={`${pipeline.id}-${owner}-${closed}`} stages={pipeline.stages} cards={cards} />
+      <Kanban key={`${pipeline.id}-${owner}-${closed}`} stages={pipeline.stages} cards={cards}
+        lossReasons={oppDef.fields.find((f) => f.name === "loss_reason")?.options} />
     </div>
   );
 }

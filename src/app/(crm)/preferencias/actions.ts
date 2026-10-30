@@ -19,7 +19,7 @@ export async function savePreferences(_prev: FormState, formData: FormData): Pro
     ...user.preferences,
     theme: pick("theme", ["light", "dark", "system"] as const, "system"),
     density: pick("density", ["comfortable", "compact"] as const, "comfortable"),
-    language: pick("language", ["es"] as const, "es"),
+    language: pick("language", ["es", "en"] as const, "es"),
     home_page: pick("home_page", ["/inicio", "/oportunidades/pipeline", "/indicadores", "/actividades", "/cuentas", "/oportunidades"] as const, "/inicio"),
     page_size: [10, 25, 50, 100].includes(Number(formData.get("page_size"))) ? Number(formData.get("page_size")) : 25,
   };
@@ -30,6 +30,7 @@ export async function savePreferences(_prev: FormState, formData: FormData): Pro
   const store = await cookies();
   store.set("fp-theme", preferences.theme, { path: "/", maxAge: YEAR, sameSite: "lax" });
   store.set("fp-density", preferences.density, { path: "/", maxAge: YEAR, sameSite: "lax" });
+  store.set("fp-lang", preferences.language, { path: "/", maxAge: YEAR, sameSite: "lax" });
   revalidatePath("/", "layout");
   return { ok: true, message: "Preferencias guardadas" };
 }

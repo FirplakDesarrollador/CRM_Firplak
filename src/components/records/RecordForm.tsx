@@ -7,6 +7,7 @@ import type { FormState } from "@/lib/records/form";
 import { Alert } from "@/components/ui/Alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FieldInput, type FieldInputContext } from "./FieldInput";
+import { useT } from "@/lib/i18n/client";
 
 type Props = {
   def: Pick<ObjectDef, "sections" | "label">;
@@ -20,6 +21,7 @@ type Props = {
 
 export function RecordForm({ def, fields, record, ctx, action, cancelHref, returnTo }: Props) {
   const [state, formAction] = useActionState(action, {});
+  const t = useT();
   const custom = (record?.custom_fields ?? {}) as Record<string, unknown>;
 
   return (
@@ -50,8 +52,8 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
         );
       })}
       <div className="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
-        <Link href={cancelHref} className="btn">Cancelar</Link>
-        <SubmitButton pendingText="Guardando…">Guardar {def.label.toLowerCase()}</SubmitButton>
+        <Link href={cancelHref} className="btn">{t("Cancelar")}</Link>
+        <SubmitButton pendingText={t("Guardando…")}>{t("Guardar")} {def.label.toLowerCase()}</SubmitButton>
       </div>
     </form>
   );

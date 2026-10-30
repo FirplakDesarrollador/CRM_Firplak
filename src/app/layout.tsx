@@ -23,10 +23,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const store = await cookies();
   const theme = store.get("fp-theme")?.value;
   const density = store.get("fp-density")?.value;
+  const lang = store.get("fp-lang")?.value === "en" ? "en" : "es-CO";
 
   return (
     <html
-      lang="es-CO"
+      lang={lang}
       className={`${outfit.variable} ${fraunces.variable}`}
       data-theme={theme === "light" || theme === "dark" ? theme : undefined}
       data-density={density === "compact" ? "compact" : undefined}

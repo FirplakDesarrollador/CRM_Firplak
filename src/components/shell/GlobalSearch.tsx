@@ -3,9 +3,11 @@
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 export function GlobalSearch() {
   const router = useRouter();
+  const t = useT();
   const pathname = usePathname();
   const params = useSearchParams();
   const [value, setValue] = useState(pathname === "/buscar" ? params.get("q") ?? "" : "");
@@ -37,7 +39,7 @@ export function GlobalSearch() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="input h-9 rounded-full bg-surface-2 pl-9 pr-14"
-        placeholder="Buscar cuentas, contactos, oportunidades…"
+        placeholder={t("Buscar cuentas, contactos, oportunidades…")}
         aria-label="Búsqueda global"
       />
       <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-line px-1.5 text-[0.65rem] font-semibold text-muted sm:block">

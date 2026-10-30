@@ -8,16 +8,18 @@ import { signOut } from "@/app/(auth)/actions";
 import { can, canSystem } from "@/lib/permissions";
 import { initials } from "@/lib/format";
 import type { CurrentUser } from "@/lib/session";
+import type { T } from "@/lib/i18n";
 import { GlobalSearch } from "./GlobalSearch";
+import { NotificationBell, type NotificationItem } from "./NotificationBell";
 
-export function AppHeader({ user }: { user: CurrentUser }) {
+export function AppHeader({ user, notifications, unread, t }: { user: CurrentUser; notifications: NotificationItem[]; unread: number; t: T }) {
   const quick = [
-    { href: "/prospectos/nuevo", label: "Prospecto", icon: "leads", ok: can(user.access, "leads", "create") },
-    { href: "/cuentas/nueva", label: "Cuenta", icon: "accounts", ok: can(user.access, "accounts", "create") },
-    { href: "/contactos/nuevo", label: "Contacto", icon: "contacts", ok: can(user.access, "contacts", "create") },
-    { href: "/oportunidades/nueva", label: "Oportunidad", icon: "opportunities", ok: can(user.access, "opportunities", "create") },
-    { href: "/casos/nuevo", label: "Caso", icon: "cases", ok: can(user.access, "cases", "create") },
-    { href: "/actividades/nueva", label: "Actividad", icon: "activities", ok: can(user.access, "activities", "create") },
+    { href: "/prospectos/nuevo", label: t("Prospecto"), icon: "leads", ok: can(user.access, "leads", "create") },
+    { href: "/cuentas/nueva", label: t("Cuenta"), icon: "accounts", ok: can(user.access, "accounts", "create") },
+    { href: "/contactos/nuevo", label: t("Contacto"), icon: "contacts", ok: can(user.access, "contacts", "create") },
+    { href: "/oportunidades/nueva", label: t("Oportunidad"), icon: "opportunities", ok: can(user.access, "opportunities", "create") },
+    { href: "/casos/nuevo", label: t("Caso"), icon: "cases", ok: can(user.access, "cases", "create") },
+    { href: "/actividades/nueva", label: t("Actividad"), icon: "activities", ok: can(user.access, "activities", "create") },
   ].filter((q) => q.ok);
 
   return (
@@ -33,8 +35,8 @@ export function AppHeader({ user }: { user: CurrentUser }) {
           </Suspense>
         </div>
         {quick.length > 0 && (
-          <Dropdown label="Crear" className="btn btn-primary btn-icon sm:w-auto sm:px-3" trigger={<><Plus size={16} /><span className="hidden sm:inline">Nuevo</span></>}>
-            <p className="px-2.5 pb-1 pt-1.5 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-muted">Crear</p>
+          <Dropdown label="Crear" className="btn btn-primary btn-icon sm:w-auto sm:px-3" trigger={<><Plus size={16} /><span className="hidden sm:inline">{t("Nuevo")}</span></>}>
+            <p className="px-2.5 pb-1 pt-1.5 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-muted">{t("Crear")}</p>
             {quick.map((q) => {
               const Icon = OBJECT_ICONS[q.icon];
               return (
@@ -45,6 +47,7 @@ export function AppHeader({ user }: { user: CurrentUser }) {
             })}
           </Dropdown>
         )}
+        <NotificationBell items={notifications} unread={unread} />
         <Dropdown
           label="Menú de usuario"
           className="flex items-center gap-2 rounded-full p-0.5 pr-1.5 hover:bg-surface-3"
@@ -58,17 +61,17 @@ export function AppHeader({ user }: { user: CurrentUser }) {
           <div className="border-b border-line px-2.5 pb-2 pt-1.5">
             <p className="truncate text-sm font-semibold">{user.fullName}</p>
             <p className="truncate text-xs text-muted">{user.email}</p>
-            <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-accent">{user.access.profile ?? "Sin perfil"}{user.roleName ? ` · ${user.roleName}` : ""}</p>
+            <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-accent">{user.access.profile ?? t("Sin perfil")}{user.roleName ? ` · ${user.roleName}` : ""}</p>
           </div>
           <div className="pt-1">
-            <Link href="/preferencias" className={menuItemClass}><SlidersHorizontal size={15} className="text-muted" /> Mis preferencias</Link>
-            <Link href="/preferencias?tab=perfil" className={menuItemClass}><UserRound size={15} className="text-muted" /> Mi perfil</Link>
-            <Link href="/correo/plantillas" className={menuItemClass}><Mail size={15} className="text-muted" /> Plantillas de correo</Link>
+            <Link href="/preferencias" className={menuItemClass}><SlidersHorizontal size={15} className="text-muted" /> {t("Mis preferencias")}</Link>
+            <Link href="/preferencias?tab=perfil" className={menuItemClass}><UserRound size={15} className="text-muted" /> {t("Mi perfil")}</Link>
+            <Link href="/correo/plantillas" className={menuItemClass}><Mail size={15} className="text-muted" /> {t("Plantillas de correo")}</Link>
             {(canSystem(user.access, "customize") || canSystem(user.access, "manage_users")) && (
-              <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> Configuración</Link>
+              <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> {t("Configuración")}</Link>
             )}
             <form action={signOut}>
-              <button type="submit" className={`${menuItemClass} text-danger`}><LogOut size={15} /> Cerrar sesión</button>
+              <button type="submit" className={`${menuItemClass} text-danger`}><LogOut size={15} /> {t("Cerrar sesión")}</button>
             </form>
           </div>
         </Dropdown>

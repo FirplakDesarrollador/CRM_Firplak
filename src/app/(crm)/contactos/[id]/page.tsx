@@ -7,6 +7,7 @@ import { DetailSections } from "@/components/records/DetailSections";
 import { RelatedList } from "@/components/records/RelatedList";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
+import { FieldHistory } from "@/components/records/FieldHistory";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
@@ -34,7 +35,7 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
     db.from("contacts").select(def.select).eq("reports_to_id", id).order("last_name").limit(50),
     db.from("cases").select(casesDef.select).eq("contact_id", id).order("created_at", { ascending: false }).limit(50),
   ]);
-  const tab = sp.tab === "detalles" ? "detalles" : "relacionado";
+  const tab = sp.tab === "detalles" ? "detalles" : sp.tab === "historial" ? "historial" : "relacionado";
   const path = `/contactos/${id}`;
   const accountId = (row.account_id as string | null) ?? null;
   const flags = [row.do_not_call && "No llamar", row.email_opt_out && "No enviar correos"].filter(Boolean) as string[];
@@ -65,9 +66,11 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-4">
           <div className="card">
-            <Tabs basePath={path} active={tab} tabs={[{ key: "relacionado", label: "Relacionado" }, { key: "detalles", label: "Detalles" }]} />
+            <Tabs basePath={path} active={tab} tabs={[{ key: "relacionado", label: "Relacionado" }, { key: "detalles", label: "Detalles" }, { key: "historial", label: "Historial de cambios" }]} />
           </div>
-          {tab === "detalles" ? (
+          {tab === "historial" ? (
+            <FieldHistory object="contacts" recordId={id} />
+          ) : tab === "detalles" ? (
             <DetailSections def={def} row={row} />
           ) : (
             <>

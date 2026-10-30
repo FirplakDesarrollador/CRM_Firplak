@@ -20,7 +20,7 @@ export type KanbanCard = {
   canEdit: boolean;
 };
 
-export function Kanban({ stages, cards: initial }: { stages: StageRow[]; cards: KanbanCard[] }) {
+export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageRow[]; cards: KanbanCard[]; lossReasons?: string[] }) {
   const [pending, start] = useTransition();
   const [cards, moveCard] = useOptimistic(initial, (state, { id, stageId }: { id: string; stageId: string }) =>
     state.map((c) => (c.id === id ? { ...c, stage_id: stageId } : c)),
@@ -124,6 +124,7 @@ export function Kanban({ stages, cards: initial }: { stages: StageRow[]; cards: 
         })}
       </div>
       <LossDialog
+        reasons={lossReasons}
         open={pendingLoss !== null}
         onCancel={() => setPendingLoss(null)}
         onConfirm={(reason) => {

@@ -49,10 +49,11 @@ export function PreferencesForm({ prefs }: { prefs: Preferences }) {
         </div>
         <div>
           <label className="label" htmlFor="language">Idioma</label>
-          <select id="language" name="language" className="select" defaultValue="es">
+          <select id="language" name="language" className="select" defaultValue={prefs.language}>
             <option value="es">Español (Colombia)</option>
-            <option value="en" disabled>English (próximamente)</option>
+            <option value="en">English</option>
           </select>
+          <p className="help">En inglés se traducen la navegación, las listas, los formularios y los nombres de campos; algunas pantallas siguen en español.</p>
         </div>
       </div>
       <div className="flex justify-end"><SubmitButton pendingText="Guardando…">Guardar preferencias</SubmitButton></div>

@@ -11,6 +11,8 @@ import { Dropdown, menuItemClass } from "@/components/ui/Dropdown";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { UserOption, PipelineWithStages } from "@/lib/records/data";
 import type { FormState } from "@/lib/records/form";
+import { useLocale, useT } from "@/lib/i18n/client";
+import { opLabels } from "@/lib/i18n";
 
 type View = { id: string; name: string; owner_id: string | null; is_shared: boolean; definition: ListDefinition };
 
@@ -37,6 +39,8 @@ type Props = {
 export function ListToolbar(props: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useT();
+  const OPS = opLabels(useLocale(), OP_LABELS);
   const [panel, setPanel] = useState<"filters" | "columns" | "save" | null>(null);
   const [draft, setDraft] = useState<Filter[]>(props.filters);
   const [cols, setCols] = useState<string[]>(props.columns);
@@ -73,7 +77,7 @@ export function ListToolbar(props: Props) {
             <Link key={v.id} href={`${pathname}?view=${v.id}`} className={menuItemClass}>
               {v.id === props.currentViewId ? <Check size={14} /> : <span className="w-3.5" />}
               <span className="flex-1 truncate">{v.name}</span>
-              {v.is_shared && <span className="badge">Compartida</span>}
+              {v.is_shared && <span className="badge">{t("Compartida")}</span>}
             </Link>
           ))}
         </Dropdown>
@@ -86,27 +90,27 @@ export function ListToolbar(props: Props) {
           }}
         >
           <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="input pl-8" placeholder="Buscar en esta lista…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input pl-8" placeholder={t("Buscar en esta lista…")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </form>
 
         {props.hasOwner !== false && <div className="inline-flex rounded-lg border border-line-strong p-0.5" role="group" aria-label="Alcance">
           {(["all", "mine"] as const).map((s) => (
             <button key={s} type="button" onClick={() => push({ scope: s === "all" ? null : s })}
               className={`rounded-md px-3 py-1.5 text-xs font-semibold ${props.scope === s ? "bg-brand text-[var(--brand-contrast)]" : "text-muted hover:text-ink"}`}>
-              {s === "all" ? "Todos" : "Míos"}
+              {s === "all" ? t("Todos") : t("Míos")}
             </button>
           ))}
         </div>}
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <button type="button" className="btn" aria-expanded={panel === "filters"} onClick={() => setPanel(panel === "filters" ? null : "filters")}>
-            <FilterIcon size={15} /> Filtros{props.filters.length ? ` (${props.filters.length})` : ""}
+            <FilterIcon size={15} /> {t("Filtros")}{props.filters.length ? ` (${props.filters.length})` : ""}
           </button>
           <button type="button" className="btn btn-icon sm:w-auto sm:px-3" aria-label="Columnas" onClick={() => setPanel(panel === "columns" ? null : "columns")}>
-            <Columns3 size={15} /> <span className="hidden sm:inline">Columnas</span>
+            <Columns3 size={15} /> <span className="hidden sm:inline">{t("Columnas")}</span>
           </button>
           <button type="button" className="btn btn-icon sm:w-auto sm:px-3" aria-label="Guardar vista" onClick={() => setPanel(panel === "save" ? null : "save")}>
-            <Save size={15} /> <span className="hidden sm:inline">Guardar vista</span>
+            <Save size={15} /> <span className="hidden sm:inline">{t("Guardar vista")}</span>
           </button>
           {props.canExport && (
             <a className="btn btn-icon" href={props.exportHref} aria-label="Exportar CSV" title="Exportar CSV"><Download size={15} /></a>
@@ -120,21 +124,21 @@ export function ListToolbar(props: Props) {
             const field = props.fields.find((x) => x.name === f.field);
             return (
               <span key={i} className="badge badge-brand py-1">
-                {field?.label} {OP_LABELS[f.op]} {VALUELESS_OPS.includes(f.op) ? "" : `“${displayValue(field, f.value, props)}”`}
+                {field?.label} {OPS[f.op]} {VALUELESS_OPS.includes(f.op) ? "" : `“${displayValue(field, f.value, props)}”`}
                 <button type="button" aria-label="Quitar filtro" onClick={() => push({ f: JSON.stringify(props.filters.filter((_, j) => j !== i)) || null })}>
                   <X size={12} />
                 </button>
               </span>
             );
           })}
-          <button type="button" className="text-xs font-semibold text-muted hover:text-danger" onClick={() => push({ f: "[]" })}>Quitar todos</button>
+          <button type="button" className="text-xs font-semibold text-muted hover:text-danger" onClick={() => push({ f: "[]" })}>{t("Quitar todos")}</button>
         </div>
       )}
 
       {panel === "filters" && (
         <div className="card p-4">
           <div className="space-y-2">
-            {draft.length === 0 && <p className="text-sm text-muted">Sin filtros. Agrega uno para acotar la lista.</p>}
+            {draft.length === 0 && <p className="text-sm text-muted">{t("Sin filtros. Agrega uno para acotar la lista.")}</p>}
             {draft.map((f, i) => (
               <FilterRow key={i} filter={f} fields={filterable} ctx={props}
                 onChange={(nf) => setDraft(draft.map((d, j) => (j === i ? nf : d)))}
@@ -146,12 +150,12 @@ export function ListToolbar(props: Props) {
               const first = filterable[0];
               setDraft([...draft, { field: first.name, op: opsForField(first)[0], value: "" }]);
             }}>
-              <Plus size={14} /> Agregar filtro
+              <Plus size={14} /> {t("Agregar filtro")}
             </button>
             <div className="flex gap-2">
-              <button type="button" className="btn btn-sm" onClick={() => { setDraft(props.filters); setPanel(null); }}>Cancelar</button>
+              <button type="button" className="btn btn-sm" onClick={() => { setDraft(props.filters); setPanel(null); }}>{t("Cancelar")}</button>
               <button type="button" className="btn btn-sm btn-primary" onClick={() => { push({ f: JSON.stringify(draft) }); setPanel(null); }}>
-                Aplicar filtros
+                {t("Aplicar filtros")}
               </button>
             </div>
           </div>
@@ -160,7 +164,7 @@ export function ListToolbar(props: Props) {
 
       {panel === "columns" && (
         <div className="card p-4">
-          <p className="mb-2 text-sm font-semibold">Columnas visibles (la primera enlaza al registro)</p>
+          <p className="mb-2 text-sm font-semibold">{t("Columnas visibles (la primera enlaza al registro)")}</p>
           <div className="grid gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
             {props.fields.filter((f) => f.type !== "textarea").map((f) => (
               <label key={f.name} className="flex items-center gap-2 text-sm">
@@ -171,9 +175,9 @@ export function ListToolbar(props: Props) {
             ))}
           </div>
           <div className="mt-3 flex justify-end gap-2">
-            <button type="button" className="btn btn-sm" onClick={() => setPanel(null)}>Cancelar</button>
+            <button type="button" className="btn btn-sm" onClick={() => setPanel(null)}>{t("Cancelar")}</button>
             <button type="button" className="btn btn-sm btn-primary" disabled={!cols.length}
-              onClick={() => { push({ cols: cols.join(",") }); setPanel(null); }}>Aplicar</button>
+              onClick={() => { push({ cols: cols.join(",") }); setPanel(null); }}>{t("Aplicar")}</button>
           </div>
         </div>
       )}
@@ -200,6 +204,8 @@ export function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
 }) {
   const field = fields.find((f) => f.name === filter.field) ?? fields[0];
   const ops = opsForField(field);
+  const t = useT();
+  const OPS = opLabels(useLocale(), OP_LABELS);
   const needsValue = !VALUELESS_OPS.includes(filter.op);
 
   let valueInput: React.ReactNode = null;
@@ -208,28 +214,28 @@ export function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
     if (field.type === "select" || field.type === "multiselect") {
       valueInput = (
         <select className="select" value={filter.value} onChange={(e) => set(e.target.value)}>
-          <option value="">Selecciona…</option>
+          <option value="">{t("Selecciona…")}</option>
           {(field.options ?? []).map((o) => <option key={o} value={o}>{field.optionLabels?.[o] ?? o}</option>)}
         </select>
       );
     } else if (field.type === "checkbox") {
       valueInput = (
         <select className="select" value={filter.value || "true"} onChange={(e) => set(e.target.value)}>
-          <option value="true">Sí</option>
-          <option value="false">No</option>
+          <option value="true">{t("Sí")}</option>
+          <option value="false">{t("No")}</option>
         </select>
       );
     } else if (field.type === "user") {
       valueInput = (
         <select className="select" value={filter.value} onChange={(e) => set(e.target.value)}>
-          <option value="">Selecciona…</option>
+          <option value="">{t("Selecciona…")}</option>
           {ctx.users.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
         </select>
       );
     } else if (field.type === "stage") {
       valueInput = (
         <select className="select" value={filter.value} onChange={(e) => set(e.target.value)}>
-          <option value="">Selecciona…</option>
+          <option value="">{t("Selecciona…")}</option>
           {ctx.pipelines.map((p) => (
             <optgroup key={p.id} label={p.name}>
               {p.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -240,9 +246,9 @@ export function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
     } else if ((field.type === "date" || field.type === "datetime") && !["last_n_days", "next_n_days"].includes(filter.op)) {
       valueInput = <input type="date" className="input" value={filter.value} onChange={(e) => set(e.target.value)} />;
     } else if (["last_n_days", "next_n_days"].includes(filter.op)) {
-      valueInput = <input type="number" min={1} className="input" placeholder="Días" value={filter.value} onChange={(e) => set(e.target.value)} />;
+      valueInput = <input type="number" min={1} className="input" placeholder={t("Días")} value={filter.value} onChange={(e) => set(e.target.value)} />;
     } else {
-      valueInput = <input className="input" value={filter.value} onChange={(e) => set(e.target.value)} placeholder="Valor" />;
+      valueInput = <input className="input" value={filter.value} onChange={(e) => set(e.target.value)} placeholder={t("Valor")} />;
     }
   }
 
@@ -256,7 +262,7 @@ export function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
         {fields.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
       </select>
       <select className="select" value={filter.op} aria-label="Operador" onChange={(e) => onChange({ ...filter, op: e.target.value as FilterOp })}>
-        {ops.map((op) => <option key={op} value={op}>{OP_LABELS[op]}</option>)}
+        {ops.map((op) => <option key={op} value={op}>{OPS[op]}</option>)}
       </select>
       <div>{valueInput}</div>
       <button type="button" className="btn btn-ghost btn-icon text-danger" aria-label="Quitar filtro" onClick={onRemove}><Trash2 size={15} /></button>
@@ -275,6 +281,7 @@ function SaveViewPanel({ object, definition, view, userId, canShare, onClose }: 
     {} as FormState,
   );
   const nameRef = useRef<HTMLInputElement>(null);
+  const t = useT();
 
   return (
     <form action={action} className="card space-y-3 p-4">
@@ -288,7 +295,7 @@ function SaveViewPanel({ object, definition, view, userId, canShare, onClose }: 
       )}
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
         <div>
-          <label className="label" htmlFor="view-name">Nombre de la vista</label>
+          <label className="label" htmlFor="view-name">{t("Nombre de la vista")}</label>
           <input ref={nameRef} id="view-name" name="name" className="input" key={mode}
             defaultValue={mode === "update" ? view?.name : ""} placeholder="Ej. Constructoras de Antioquia" />
           {state.errors?.name && <p className="error-text">{state.errors.name}</p>}
@@ -305,12 +312,12 @@ function SaveViewPanel({ object, definition, view, userId, canShare, onClose }: 
         {ownsView ? (
           <button type="submit" formAction={delAction} className="btn btn-sm btn-danger"
             onClick={(e) => { if (!confirm(`¿Eliminar la vista “${view!.name}”?`)) e.preventDefault(); }}>
-            <Trash2 size={14} /> Eliminar vista
+            <Trash2 size={14} /> {t("Eliminar vista")}
           </button>
         ) : <span />}
         <div className="flex gap-2">
-          <button type="button" className="btn btn-sm" onClick={onClose}>Cancelar</button>
-          <SubmitButton className="btn btn-sm btn-primary" pendingText="Guardando…">Guardar</SubmitButton>
+          <button type="button" className="btn btn-sm" onClick={onClose}>{t("Cancelar")}</button>
+          <SubmitButton className="btn btn-sm btn-primary" pendingText={t("Guardando…")}>{t("Guardar")}</SubmitButton>
         </div>
       </div>
     </form>

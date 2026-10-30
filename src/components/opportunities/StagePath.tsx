@@ -7,8 +7,8 @@ import type { StageRow } from "@/lib/records/data";
 import { LossDialog } from "./LossDialog";
 
 /** Ruta de etapas de la oportunidad: clic en una etapa para avanzar o retroceder. */
-export function StagePath({ opportunityId, stages, currentStageId, canEdit }: {
-  opportunityId: string; stages: StageRow[]; currentStageId: string; canEdit: boolean;
+export function StagePath({ opportunityId, stages, currentStageId, canEdit, lossReasons }: {
+  opportunityId: string; stages: StageRow[]; currentStageId: string; canEdit: boolean; lossReasons?: string[];
 }) {
   const [pending, start] = useTransition();
   const [stageId, setStageId] = useOptimistic(currentStageId);
@@ -77,6 +77,7 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit }: {
       </div>
       {error && <p className="error-text">{error}</p>}
       <LossDialog
+        reasons={lossReasons}
         open={askLoss !== null}
         onCancel={() => setAskLoss(null)}
         onConfirm={(reason) => {

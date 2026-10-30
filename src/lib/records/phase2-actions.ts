@@ -8,6 +8,8 @@ import {
   CAMPAIGN_MEMBER_STATUSES, CAMPAIGN_STATUSES, CASE_STATUSES, LEAD_STATUSES, QUOTE_STATUSES,
 } from "@/lib/objects/picklists";
 import { parseAmount, type FormState } from "./form";
+import { validateRecord } from "@/lib/rules/server";
+import { runAutomations } from "@/lib/rules/automation";
 
 function friendly(message: string) {
   if (message.includes("row-level security") || message.includes("42501")) return "No tienes permiso para realizar esta acción.";
@@ -31,10 +33,19 @@ const STATUS_FIELDS = {
 
 export async function setStatus(object: keyof typeof STATUS_FIELDS, id: string, status: string): Promise<FormState> {
   if (!(STATUS_FIELDS[object] as readonly string[]).includes(status)) return { message: "Estado no válido" };
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const supabase = await createClient();
+  const { data: before } = await supabase.from(object).select("*").eq("id", id).maybeSingle();
+  if (!before) return { message: "El registro no existe o no tienes acceso." };
+  const candidate: Record<string, unknown> = { ...before, status };
+  if (object === "cases") candidate.is_closed = status === "Cerrado";
+  const invalid = await validateRecord(object, candidate, user.id);
+  if (invalid) return { message: invalid.message };
   const { data, error } = await supabase.from(object).update({ status }).eq("id", id).select("id");
   if (error) return { message: friendly(error.message) };
   if (!data?.length) return { message: "No tienes permiso para cambiar el estado." };
+  await runAutomations(object, "update", id, before as Record<string, unknown>, user.id);
   revalidatePath("/", "layout");
   return { ok: true };
 }

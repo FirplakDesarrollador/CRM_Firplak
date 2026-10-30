@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1, 2 y 3)
+## Módulos incluidos (Fases 1 a 4)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -22,6 +22,11 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Calendario | Vista mensual y semanal de reuniones, tareas y llamadas; filtro por asesor o equipo; crear actividad desde un día. |
 | Informes | Constructor sobre cualquier objeto: filtros, agrupación por filas y columnas (fechas por mes/trimestre/año), contar/sumar/promediar, barras o columnas, tabla matriz con totales y % del total, detalle de registros, guardar en carpetas, compartir y exportar CSV. |
 | Correo | Redactor desde contacto, prospecto, oportunidad o caso con plantillas y campos combinados (`{{contacto.nombre}}`, `{{cuenta.nombre}}`…); envío con Resend si está configurado o apertura del cliente de correo; siempre queda registrado como actividad. |
+| Listas de valores | Personalización de las listas de selección (tipos, sectores, orígenes, motivos de pérdida, tipos de caso, familias…): agregar, ordenar, desactivar o restablecer. |
+| Reglas de validación | Bloquean el guardado cuando el registro cumple condiciones (p. ej. «Cliente requiere NIT», «Motivo de pérdida obligatorio»); se aplican en formularios, pipeline y rutas de estado. |
+| Automatizaciones | Al crear/actualizar (opcionalmente solo si cambia un campo) y si se cumplen condiciones: asignar propietario, crear tarea, notificar (propietario, jefe o usuario) o actualizar un campo. Notificaciones en la campana de la cabecera. |
+| Auditoría | Historial de cambios por campo en cada ficha (registrado por triggers de la base) y vista global en Configuración → Auditoría de cambios. |
+| Idioma | Español o inglés por usuario (Mis preferencias). En inglés se traducen navegación, listas, filtros, formularios y nombres de objetos y campos; algunas pantallas (indicadores, configuración) siguen en español. |
 | Configuración | Usuarios, jerarquía de roles, perfiles y permisos (matriz por objeto), compartir por defecto, pipelines y etapas editables, campos personalizados por objeto. |
 | Preferencias | Tema (claro/oscuro/sistema), página de inicio, densidad, registros por página, perfil y contraseña. |
 
@@ -103,5 +108,7 @@ La estructura (barra de objetos, ficha de registro con datos destacados, ruta de
 línea de tiempo) toma como referencia funcional la documentación pública de Salesforce; no se usan su marca, íconos,
 fuentes ni código.
 
-## Próximas fases
-- **Fase 4:** listas de valores editables desde Configuración, reglas de validación, automatizaciones (asignación y alertas), idioma inglés y auditoría de cambios.
+## Próximos pasos sugeridos
+- Completar la traducción al inglés de indicadores, configuración y textos de las fichas.
+- Automatizaciones programadas (p. ej. oportunidades sin actividad en N días) con Supabase Cron.
+- Importación masiva desde Excel/CSV y deduplicación de cuentas y contactos.

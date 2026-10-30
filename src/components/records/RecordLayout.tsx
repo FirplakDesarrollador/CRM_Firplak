@@ -4,6 +4,7 @@ import type { UserOption } from "@/lib/records/data";
 import type { ActivityRow } from "@/components/activities/data";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { DetailSections } from "./DetailSections";
+import { FieldHistory } from "./FieldHistory";
 import { RecordHeader } from "./RecordHeader";
 import { Tabs } from "./Tabs";
 
@@ -39,7 +40,11 @@ export function RecordLayout({
     canCreate: boolean;
   } | null;
 }) {
-  const allTabs: Tab[] = [...tabs, { key: "detalles", label: "Detalles", content: <DetailSections def={def} row={row} /> }];
+  const allTabs: Tab[] = [
+    ...tabs,
+    { key: "detalles", label: "Detalles", content: <DetailSections def={def} row={row} /> },
+    { key: "historial", label: "Historial de cambios", content: <FieldHistory object={def.key} recordId={row.id} /> },
+  ];
   const current = allTabs.find((t) => t.key === activeTab) ?? allTabs[0];
 
   return (

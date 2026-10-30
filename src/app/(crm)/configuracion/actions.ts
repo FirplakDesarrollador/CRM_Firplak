@@ -275,3 +275,113 @@ export async function saveSharing(_prev: FormState, fd: FormData): Promise<FormS
   const { error } = await supabase.from("sharing_settings").upsert(rows);
   return error ? fail(error) : done("Reglas de compartir actualizadas");
 }
+
+// ---------------------------------------------------------------- Listas de valores
+export async function customizePicklist(object: string, field: string, defaults: string[]): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const rows = defaults.map((value, i) => ({ object, field, value, sort_order: (i + 1) * 10 }));
+  const { error } = await g.supabase.from("picklist_values").upsert(rows, { onConflict: "object,field,value", ignoreDuplicates: true });
+  return error ? fail(error) : done("Ya puedes personalizar esta lista");
+}
+
+export async function addPicklistValue(object: string, field: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const value = str(fd, "value");
+  if (!value) return { message: "Escribe el valor" };
+  const { data: last } = await g.supabase.from("picklist_values").select("sort_order")
+    .eq("object", object).eq("field", field).order("sort_order", { ascending: false }).limit(1).maybeSingle();
+  const { error } = await g.supabase.from("picklist_values").insert({ object, field, value, sort_order: (last?.sort_order ?? 0) + 10 });
+  return error ? fail(error) : done(`“${value}” agregado`);
+}
+
+export async function updatePicklistValue(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("picklist_values")
+    .update({ sort_order: Number(str(fd, "sort_order")) || 0, is_active: fd.get("is_active") === "on" }).eq("id", id);
+  return error ? fail(error) : done("Valor actualizado");
+}
+
+export async function deletePicklistValue(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("picklist_values").delete().eq("id", id);
+  return error ? fail(error) : done("Valor eliminado; los registros que lo usan lo conservan.");
+}
+
+export async function resetPicklist(object: string, field: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("picklist_values").delete().eq("object", object).eq("field", field);
+  return error ? fail(error) : done("Lista restablecida a los valores estándar");
+}
+
+// ---------------------------------------------------------------- Reglas de validación
+function parseJsonArray(raw: string) {
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveValidationRule(object: string, id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const name = str(fd, "name");
+  const message = str(fd, "error_message");
+  const conditions = parseJsonArray(str(fd, "conditions"));
+  if (!name) return { message: "Ponle un nombre a la regla" };
+  if (!message) return { message: "Escribe el mensaje de error que verá el usuario" };
+  if (!conditions.length) return { message: "Agrega al menos una condición" };
+  const payload = {
+    object, name, conditions, error_message: message,
+    description: nullable(fd, "description"),
+    error_field: nullable(fd, "error_field"),
+    is_active: id ? fd.get("is_active") === "on" : true,
+  };
+  const { error } = id
+    ? await g.supabase.from("validation_rules").update(payload).eq("id", id)
+    : await g.supabase.from("validation_rules").insert(payload);
+  return error ? fail(error) : done(id ? "Regla actualizada" : "Regla creada");
+}
+
+export async function deleteValidationRule(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("validation_rules").delete().eq("id", id);
+  return error ? fail(error) : done("Regla eliminada");
+}
+
+// ---------------------------------------------------------------- Automatizaciones
+export async function saveAutomationRule(object: string, id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const name = str(fd, "name");
+  const actions = parseJsonArray(str(fd, "actions"));
+  if (!name) return { message: "Ponle un nombre a la automatización" };
+  if (!actions.length) return { message: "Agrega al menos una acción" };
+  const trigger = ["create", "update", "create_or_update"].includes(str(fd, "trigger_on")) ? str(fd, "trigger_on") : "create";
+  const payload = {
+    object, name, actions, trigger_on: trigger,
+    description: nullable(fd, "description"),
+    conditions: parseJsonArray(str(fd, "conditions")),
+    watch_field: trigger === "create" ? null : nullable(fd, "watch_field"),
+    sort_order: Number(str(fd, "sort_order")) || 0,
+    is_active: id ? fd.get("is_active") === "on" : true,
+  };
+  const { error } = id
+    ? await g.supabase.from("automation_rules").update(payload).eq("id", id)
+    : await g.supabase.from("automation_rules").insert(payload);
+  return error ? fail(error) : done(id ? "Automatización actualizada" : "Automatización creada");
+}
+
+export async function deleteAutomationRule(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("automation_rules").delete().eq("id", id);
+  return error ? fail(error) : done("Automatización eliminada");
+}

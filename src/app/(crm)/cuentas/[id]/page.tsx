@@ -7,6 +7,7 @@ import { DetailSections } from "@/components/records/DetailSections";
 import { RelatedList } from "@/components/records/RelatedList";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
+import { FieldHistory } from "@/components/records/FieldHistory";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
@@ -42,7 +43,7 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
   const oppRows = (opps.data ?? []) as unknown as Row[];
   const openAmount = oppRows.filter((o) => !o.is_closed).reduce((s, o) => s + Number(o.amount), 0);
   const wonAmount = oppRows.filter((o) => o.is_won).reduce((s, o) => s + Number(o.amount), 0);
-  const tab = sp.tab === "detalles" ? "detalles" : "relacionado";
+  const tab = sp.tab === "detalles" ? "detalles" : sp.tab === "historial" ? "historial" : "relacionado";
   const path = `/cuentas/${id}`;
 
   return (
@@ -77,10 +78,12 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
           <div className="card">
             <Tabs basePath={path} active={tab} tabs={[
               { key: "relacionado", label: "Relacionado" },
-              { key: "detalles", label: "Detalles" },
+              { key: "detalles", label: "Detalles" }, { key: "historial", label: "Historial de cambios" },
             ]} />
           </div>
-          {tab === "detalles" ? (
+          {tab === "historial" ? (
+            <FieldHistory object="accounts" recordId={id} />
+          ) : tab === "detalles" ? (
             <DetailSections def={def} row={row} />
           ) : (
             <>

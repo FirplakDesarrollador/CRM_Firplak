@@ -3,6 +3,7 @@
 import type { FieldDef } from "@/lib/objects";
 import type { PipelineWithStages, UserOption } from "@/lib/records/data";
 import { LookupInput } from "./LookupInput";
+import { useT } from "@/lib/i18n/client";
 
 export type FieldInputContext = {
   users: UserOption[];
@@ -33,6 +34,7 @@ export function FieldInput({
   /** Valor devuelto por el servidor tras un error de validación. */
   echo?: string;
 }) {
+  const t = useT();
   const id = `f-${field.name.replace(".", "-")}`;
   const invalid = Boolean(error);
   const str = echo ?? (value === null || value === undefined ? "" : String(value));
@@ -46,10 +48,11 @@ export function FieldInput({
     case "select":
       control = (
         <select {...common} className="select" defaultValue={str}>
-          <option value="">— Ninguno —</option>
+          <option value="">{t("— Ninguno —")}</option>
           {(field.options ?? []).map((o) => (
             <option key={o} value={o}>{field.optionLabels?.[o] ?? o}</option>
           ))}
+          {str && !(field.options ?? []).includes(str) && <option value={str}>{str} (inactivo)</option>}
         </select>
       );
       break;
@@ -107,7 +110,7 @@ export function FieldInput({
     case "user":
       control = (
         <select {...common} className="select" defaultValue={str}>
-          <option value="">— Yo —</option>
+          <option value="">{t("— Yo —")}</option>
           {ctx.users.filter((u) => u.is_active || u.id === str).map((u) => (
             <option key={u.id} value={u.id}>{u.full_name}</option>
           ))}

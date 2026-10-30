@@ -8,6 +8,7 @@ import { DetailSections } from "@/components/records/DetailSections";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
 import { StageBadge } from "@/components/records/FieldValue";
+import { FieldHistory } from "@/components/records/FieldHistory";
 import { StagePath } from "@/components/opportunities/StagePath";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { getActivitiesFor } from "@/components/activities/data";
@@ -45,7 +46,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
   ]);
   const quoteRows = (quotesRes.data ?? []) as unknown as Row[];
   const stages = pipelines.find((p) => p.id === row.pipeline_id)?.stages ?? [];
-  const tab = sp.tab === "historial" ? "historial" : sp.tab === "cotizaciones" ? "cotizaciones" : "detalles";
+  const tab = sp.tab === "historial" ? "historial" : sp.tab === "cotizaciones" ? "cotizaciones" : sp.tab === "cambios" ? "cambios" : "detalles";
   const path = `/oportunidades/${id}`;
   const closeIn = !row.is_closed ? relativeDays(String(row.close_date)) : null;
   const late = !row.is_closed && String(row.close_date) < new Date().toISOString().slice(0, 10);
@@ -73,7 +74,8 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
           </>
         }
       >
-        <StagePath opportunityId={id} stages={stages} currentStageId={String(row.stage_id)} canEdit={access.canEdit} />
+        <StagePath opportunityId={id} stages={stages} currentStageId={String(row.stage_id)} canEdit={access.canEdit}
+          lossReasons={def.fields.find((f) => f.name === "loss_reason")?.options} />
       </RecordHeader>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
@@ -83,9 +85,12 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
               { key: "detalles", label: "Detalles" },
               { key: "cotizaciones", label: "Cotizaciones", count: quoteRows.length },
               { key: "historial", label: "Historial de etapas", count: history.data?.length ?? 0 },
+              { key: "cambios", label: "Historial de cambios" },
             ]} />
           </div>
-          {tab === "cotizaciones" ? (
+          {tab === "cambios" ? (
+            <FieldHistory object="opportunities" recordId={id} />
+          ) : tab === "cotizaciones" ? (
             <RelatedList def={quotesDef} title="Cotizaciones" rows={quoteRows}
               columns={["quote_number", "name", "status", "net_total", "grand_total", "is_synced", "expiration_date"]}
               newHref={can(user.access, "quotes", "create") ? `/cotizaciones/nueva?opportunity=${id}` : undefined} />

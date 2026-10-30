@@ -47,11 +47,20 @@ export function customFieldToDef(row: CustomFieldRow): FieldDef {
 }
 
 /** Definición del objeto con sus campos personalizados activos al final. */
-export function withCustomFields(def: ObjectDef, rows: CustomFieldRow[]): ObjectDef & { listCustom: string[] } {
+export function withCustomFields(
+  def: ObjectDef,
+  rows: CustomFieldRow[],
+  picklists: { object: string; field: string; value: string; sort_order: number; is_active: boolean }[] = [],
+): ObjectDef & { listCustom: string[] } {
   const active = rows.filter((r) => r.object === def.key && r.is_active).sort((a, b) => a.sort_order - b.sort_order);
+  // Listas personalizadas desde Configuración → Listas de valores.
+  const fields = def.fields.map((f) => {
+    const values = picklists.filter((p) => p.object === def.key && p.field === f.name && p.is_active).sort((a, b) => a.sort_order - b.sort_order);
+    return values.length && f.type === "select" && !f.optionLabels ? { ...f, options: values.map((v) => v.value) } : f;
+  });
   return {
     ...def,
-    fields: [...def.fields, ...active.map(customFieldToDef)],
+    fields: [...fields, ...active.map(customFieldToDef)],
     listCustom: active.filter((r) => r.show_in_list).map((r) => `cf.${r.api_name}`),
   };
 }

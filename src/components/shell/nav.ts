@@ -1,9 +1,10 @@
 import type { Access } from "@/lib/permissions";
 import { can, canSystem } from "@/lib/permissions";
+import type { T } from "@/lib/i18n";
 
 export type NavItem = { href: string; label: string; icon: string };
 
-export function navItems(access: Access): NavItem[] {
+export function navItems(access: Access, t: T = (s) => s): NavItem[] {
   const items: NavItem[] = [{ href: "/inicio", label: "Inicio", icon: "home" }];
   if (can(access, "leads", "read")) items.push({ href: "/prospectos", label: "Prospectos", icon: "leads" });
   if (can(access, "accounts", "read")) items.push({ href: "/cuentas", label: "Cuentas", icon: "accounts" });
@@ -21,5 +22,5 @@ export function navItems(access: Access): NavItem[] {
   if (canSystem(access, "customize") || canSystem(access, "manage_users")) {
     items.push({ href: "/configuracion", label: "Configuración", icon: "settings" });
   }
-  return items;
+  return items.map((i) => ({ ...i, label: t(i.label) }));
 }

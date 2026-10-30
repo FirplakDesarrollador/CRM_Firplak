@@ -8,6 +8,8 @@ import { can } from "@/lib/permissions";
 import { getObject, isObjectKey, type ListDefinition, type ObjectKey } from "@/lib/objects";
 import { getObjectDef, untypedClient } from "./data";
 import { parseRecordForm, type FormState } from "./form";
+import { validateRecord, withStageEffects } from "@/lib/rules/server";
+import { runAutomations } from "@/lib/rules/automation";
 
 function friendlyError(message: string) {
   if (message.includes("row-level security")) return "No tienes permiso para realizar esta acción.";
@@ -26,9 +28,11 @@ export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev:
 
   const db = await untypedClient();
   let existingCustom: Record<string, unknown> = {};
+  let before: Record<string, unknown> | null = null;
   if (id) {
-    const { data } = await db.from(def.table).select("custom_fields").eq("id", id).maybeSingle();
+    const { data } = await db.from(def.table).select("*").eq("id", id).maybeSingle();
     if (!data) return { message: "El registro no existe o no tienes acceso." };
+    before = data as Record<string, unknown>;
     existingCustom = (data.custom_fields ?? {}) as Record<string, unknown>;
   }
 
@@ -46,6 +50,18 @@ export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev:
   }
   if (!values.owner_id) delete values.owner_id;
 
+  // Reglas de validación sobre el estado final del registro.
+  let candidate: Record<string, unknown> = { ...(before ?? {}), owner_id: before?.owner_id ?? user.id, ...values };
+  if (objectKey === "opportunities") candidate = await withStageEffects(candidate, !before || before.stage_id !== values.stage_id);
+  const invalid = await validateRecord(objectKey, candidate, user.id);
+  if (invalid) {
+    return {
+      values: echo,
+      message: invalid.message,
+      errors: invalid.field ? { [invalid.field]: invalid.message } : undefined,
+    };
+  }
+
   const result = id
     ? await db.from(def.table).update(values).eq("id", id).select("id").maybeSingle()
     : await db.from(def.table).insert(values).select("id").single();
@@ -57,6 +73,7 @@ export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev:
     };
   }
 
+  await runAutomations(objectKey, id ? "update" : "create", result.data.id, before, user.id);
   revalidatePath("/", "layout");
   const returnTo = String(formData.get("_return") ?? "");
   redirect(returnTo.startsWith("/") ? returnTo : `${def.path}/${result.data.id}`);
@@ -73,12 +90,20 @@ export async function deleteRecord(objectKey: ObjectKey, id: string): Promise<Fo
 }
 
 export async function moveOpportunityStage(id: string, stageId: string, lossReason?: string): Promise<FormState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const supabase = await createClient();
+  const { data: before } = await supabase.from("opportunities").select("*").eq("id", id).maybeSingle();
+  if (!before) return { message: "La oportunidad no existe o no tienes acceso." };
   const patch: { stage_id: string; loss_reason?: string } = { stage_id: stageId };
   if (lossReason) patch.loss_reason = lossReason;
+  const candidate = await withStageEffects({ ...before, ...patch }, true);
+  const invalid = await validateRecord("opportunities", candidate, user.id);
+  if (invalid) return { message: invalid.message };
   const { data, error } = await supabase.from("opportunities").update(patch).eq("id", id).select("id");
   if (error) return { message: friendlyError(error.message) };
   if (!data?.length) return { message: "No tienes permiso para mover esta oportunidad." };
+  await runAutomations("opportunities", "update", id, before, user.id);
   revalidatePath("/", "layout");
   return { ok: true };
 }

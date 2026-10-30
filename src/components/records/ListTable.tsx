@@ -4,6 +4,7 @@ import type { FieldDef, ObjectDef } from "@/lib/objects";
 import type { ListParams } from "@/lib/records/filters";
 import type { Row } from "@/lib/records/data";
 import { FieldValue } from "./FieldValue";
+import type { T } from "@/lib/i18n";
 
 export function hrefWith(path: string, current: Record<string, string>, patch: Record<string, string | null>) {
   const qs = new URLSearchParams(current);
@@ -25,6 +26,7 @@ export function ListTable({
   current,
   basePath,
   emptyText,
+  t = (s) => s,
 }: {
   def: ObjectDef;
   rows: Row[];
@@ -33,6 +35,7 @@ export function ListTable({
   current: Record<string, string>;
   basePath: string;
   emptyText?: string;
+  t?: T;
 }) {
   const columns = params.columns
     .map((c) => def.fields.find((f) => f.name === c))
@@ -71,7 +74,7 @@ export function ListTable({
             {rows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="py-14 text-center text-muted">
-                  {emptyText ?? "No hay registros que coincidan con esta vista."}
+                  {emptyText ?? t("No hay registros que coincidan con esta vista.")}
                 </td>
               </tr>
             )}
@@ -88,13 +91,13 @@ export function ListTable({
         </table>
       </div>
       <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-sm text-muted">
-        <span>{count === 0 ? "0 registros" : `${from}–${to} de ${count.toLocaleString("es-CO")}`}</span>
+        <span>{count === 0 ? `0 ${t("registros")}` : `${from}–${to} ${t("de")} ${count.toLocaleString("en-US")}`}</span>
         <div className="flex items-center gap-1">
-          <PageLink disabled={params.page <= 1} href={hrefWith(basePath, current, { page: String(params.page - 1) })} label="Anterior">
+          <PageLink disabled={params.page <= 1} href={hrefWith(basePath, current, { page: String(params.page - 1) })} label={t("Anterior")}>
             <ChevronLeft size={15} />
           </PageLink>
-          <span className="px-2">Página {params.page} de {pages}</span>
-          <PageLink disabled={params.page >= pages} href={hrefWith(basePath, current, { page: String(params.page + 1) })} label="Siguiente">
+          <span className="px-2">{t("Página")} {params.page} {t("de")} {pages}</span>
+          <PageLink disabled={params.page >= pages} href={hrefWith(basePath, current, { page: String(params.page + 1) })} label={t("Siguiente")}>
             <ChevronRight size={15} />
           </PageLink>
         </div>

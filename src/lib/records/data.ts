@@ -12,6 +12,9 @@ import {
   type ObjectKey,
 } from "@/lib/objects";
 import { applyFilter, applySearch, type ListParams } from "./filters";
+import type { PicklistRow } from "@/lib/objects/picklist-config";
+import { translateObjectDef } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 export type Row = Record<string, unknown> & { id: string };
 export type UserOption = { id: string; full_name: string; email: string; is_active: boolean };
@@ -35,8 +38,15 @@ export const getCustomFieldRows = cache(async (): Promise<CustomFieldRow[]> => {
   return (data ?? []) as CustomFieldRow[];
 });
 
+export const getPicklistRows = cache(async (): Promise<PicklistRow[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("picklist_values").select("*").order("sort_order");
+  return (data ?? []) as PicklistRow[];
+});
+
 export const getObjectDef = cache(async (key: ObjectKey) => {
-  return withCustomFields(getObject(key), await getCustomFieldRows());
+  const [custom, picklists, locale] = await Promise.all([getCustomFieldRows(), getPicklistRows(), getLocale()]);
+  return translateObjectDef(withCustomFields(getObject(key), custom, picklists), locale);
 });
 
 export const getUsers = cache(async (): Promise<UserOption[]> => {

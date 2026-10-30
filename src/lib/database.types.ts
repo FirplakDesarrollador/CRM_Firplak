@@ -274,6 +274,58 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          actions: Json
+          conditions: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          name: string
+          object: string
+          run_count: number
+          sort_order: number
+          trigger_on: string
+          updated_at: string
+          watch_field: string | null
+        }
+        Insert: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name: string
+          object: string
+          run_count?: number
+          sort_order?: number
+          trigger_on?: string
+          updated_at?: string
+          watch_field?: string | null
+        }
+        Update: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name?: string
+          object?: string
+          run_count?: number
+          sort_order?: number
+          trigger_on?: string
+          updated_at?: string
+          watch_field?: string | null
+        }
+        Relationships: [
+        ]
+      }
       campaign_members: {
         Row: {
           campaign_id: string
@@ -747,6 +799,50 @@ export type Database = {
           },
         ]
       }
+      field_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          field: string
+          id: number
+          new_value: string | null
+          object: string
+          old_value: string | null
+          operation: string
+          record_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          field: string
+          id?: number
+          new_value?: string | null
+          object: string
+          old_value?: string | null
+          operation?: string
+          record_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          field?: string
+          id?: number
+          new_value?: string | null
+          object?: string
+          old_value?: string | null
+          operation?: string
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           annual_revenue: number | null
@@ -939,6 +1035,54 @@ export type Database = {
           {
             foreignKeyName: "list_views_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_read: boolean
+          link: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1190,6 +1334,37 @@ export type Database = {
           name?: string
           permissions?: Json
           updated_at?: string
+        }
+        Relationships: [
+        ]
+      }
+      picklist_values: {
+        Row: {
+          created_at: string
+          field: string
+          id: string
+          is_active: boolean
+          object: string
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          field: string
+          id?: string
+          is_active?: boolean
+          object: string
+          sort_order?: number
+          value: string
+        }
+        Update: {
+          created_at?: string
+          field?: string
+          id?: string
+          is_active?: boolean
+          object?: string
+          sort_order?: number
+          value?: string
         }
         Relationships: [
         ]
@@ -1777,6 +1952,46 @@ export type Database = {
         Relationships: [
         ]
       }
+      validation_rules: {
+        Row: {
+          conditions: Json
+          created_at: string
+          description: string | null
+          error_field: string | null
+          error_message: string
+          id: string
+          is_active: boolean
+          name: string
+          object: string
+          updated_at: string
+        }
+        Insert: {
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          error_field?: string | null
+          error_message: string
+          id?: string
+          is_active?: boolean
+          name: string
+          object: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          error_field?: string | null
+          error_message?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          object?: string
+          updated_at?: string
+        }
+        Relationships: [
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1806,6 +2021,13 @@ export type Database = {
         Args: {
           p_object: string
           p_owner: string
+        }
+        Returns: boolean
+      }
+      can_see_record: {
+        Args: {
+          p_object: string
+          p_id: string
         }
         Returns: boolean
       }
@@ -1869,9 +2091,24 @@ export type Database = {
         Args: never
         Returns: boolean
       }
+      mark_automation_run: {
+        Args: {
+          p_rule: string
+        }
+        Returns: undefined
+      }
       my_permissions: {
         Args: never
         Returns: Json
+      }
+      notify_user: {
+        Args: {
+          p_user: string
+          p_title: string
+          p_body?: string
+          p_link?: string
+        }
+        Returns: string
       }
       recalc_quote: {
         Args: {
