@@ -23,7 +23,7 @@ export type StageRow = {
   category: "open" | "won" | "lost"; forecast_category: string; color: string; name_en?: string | null;
 };
 export type PipelineWithStages = {
-  id: string; name: string; description: string | null; is_default: boolean; is_active: boolean; sort_order: number;
+  id: string; name: string; name_en?: string | null; description: string | null; is_default: boolean; is_active: boolean; sort_order: number;
   stages: StageRow[];
 };
 

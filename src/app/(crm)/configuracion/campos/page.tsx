@@ -40,12 +40,14 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
         </div>
         <ActionForm action={saveCustomField.bind(null, object, null)} resetOnSuccess className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
           <div><label className="label" htmlFor="cf-label"><Tr>Etiqueta</Tr></label><input id="cf-label" name="label" className="input" required placeholder="Ej. Tipo de proyecto" /></div>
+          <div><label className="label" htmlFor="cf-label-en"><Tr>Etiqueta en inglés (opcional)</Tr></label><input id="cf-label-en" name="label_en" className="input" placeholder="E.g. Project type" /></div>
           <div><label className="label" htmlFor="cf-api"><Tr>Nombre interno (opcional)</Tr></label><input id="cf-api" name="api_name" className="input" placeholder="tipo_proyecto" /></div>
           <div>
             <label className="label" htmlFor="cf-type"><Tr>Tipo</Tr></label>
             <select id="cf-type" name="field_type" className="select">{Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </div>
-          <div><label className="label" htmlFor="cf-order"><Tr>Orden</Tr></label><input id="cf-order" name="sort_order" type="number" className="input" defaultValue={fields.length + 1} /></div>
+          <div className="sm:col-span-2 xl:col-span-2"><label className="label" htmlFor="cf-help"><Tr>Texto de ayuda</Tr></label><input id="cf-help" name="help_text" className="input" /></div>
+          <div className="sm:col-span-2 xl:col-span-2"><label className="label" htmlFor="cf-help-en"><Tr>Ayuda en inglés (opcional)</Tr></label><input id="cf-help-en" name="help_text_en" className="input" /></div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="cf-options"><Tr>Opciones (una por línea; solo listas)</Tr></label>
             <textarea id="cf-options" name="options" className="textarea" rows={2} />
@@ -54,10 +56,9 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
             <label className="label" htmlFor="cf-options-en"><Tr>Opciones en inglés (mismo orden; opcional)</Tr></label>
             <textarea id="cf-options-en" name="options_en" className="textarea" rows={2} />
           </div>
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="cf-help"><Tr>Texto de ayuda</Tr></label>
-            <input id="cf-help" name="help_text" className="input" />
-            <div className="mt-3 flex flex-wrap items-center gap-4">
+          <div><label className="label" htmlFor="cf-order"><Tr>Orden</Tr></label><input id="cf-order" name="sort_order" type="number" className="input" defaultValue={fields.length + 1} /></div>
+          <div className="flex items-end sm:col-span-1 xl:col-span-3">
+            <div className="flex w-full flex-wrap items-center gap-4 pb-2">
               <label className="flex items-center gap-1.5 text-sm font-semibold"><input type="checkbox" name="is_required" className="accent-[var(--brand)]" /> <Tr>Obligatorio</Tr></label>
               <label className="flex items-center gap-1.5 text-sm font-semibold"><input type="checkbox" name="show_in_list" className="accent-[var(--brand)]" /> <Tr>Columna en listas</Tr></label>
               <SubmitButton className="btn btn-primary ml-auto" pendingText="Creando…"><Tr>Crear campo</Tr></SubmitButton>
@@ -76,6 +77,8 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
                 <div>
                   <label className="label" htmlFor={`l-${f.id}`}><Tr>Etiqueta ·</Tr> <code className="text-[0.7rem]">{f.api_name}</code></label>
                   <input id={`l-${f.id}`} name="label" className="input font-semibold" defaultValue={f.label} />
+                  <label className="label mt-2" htmlFor={`le-${f.id}`}><Tr>En inglés</Tr></label>
+                  <input id={`le-${f.id}`} name="label_en" className="input" defaultValue={f.label_en ?? ""} placeholder="English label" />
                 </div>
                 <div>
                   <span className="label"><Tr>Tipo</Tr></span>
@@ -90,7 +93,7 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
                     <>
                       <label className="label mt-2" htmlFor={`oe-${f.id}`}><Tr>En inglés (mismo orden)</Tr></label>
                       <input id={`oe-${f.id}`} name="options_en" className="input"
-                        defaultValue={Array.isArray(f.options)
+                        defaultValue={Object.keys((f.option_labels_en ?? {}) as object).length && Array.isArray(f.options)
                           ? (f.options as string[]).map((o) => ((f.option_labels_en ?? {}) as Record<string, string>)[o] ?? "").join(", ")
                           : ""}
                         placeholder={Array.isArray(f.options) ? (f.options as string[]).map((o) => VALUES_EN[o] ?? o).join(", ") : ""} />
@@ -101,8 +104,17 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
                   <label className="label" htmlFor={`s-${f.id}`}><Tr>Orden</Tr></label>
                   <input id={`s-${f.id}`} name="sort_order" type="number" className="input" defaultValue={f.sort_order} />
                 </div>
+                <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 xl:order-last xl:col-span-5">
+                  <div>
+                    <label className="label" htmlFor={`h-${f.id}`}><Tr>Texto de ayuda</Tr></label>
+                    <input id={`h-${f.id}`} name="help_text" className="input" defaultValue={f.help_text ?? ""} />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor={`he-${f.id}`}><Tr>Ayuda en inglés</Tr></label>
+                    <input id={`he-${f.id}`} name="help_text_en" className="input" defaultValue={f.help_text_en ?? ""} />
+                  </div>
+                </div>
                 <div className="flex flex-wrap items-center gap-3 pb-1">
-                  <input type="hidden" name="help_text" value={f.help_text ?? ""} />
                   <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="is_required" defaultChecked={f.is_required} className="accent-[var(--brand)]" /> <Tr>Oblig.</Tr></label>
                   <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="show_in_list" defaultChecked={f.show_in_list} className="accent-[var(--brand)]" /> <Tr>Lista</Tr></label>
                   <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="is_active" defaultChecked={f.is_active} className="accent-[var(--brand)]" /> <Tr>Activo</Tr></label>

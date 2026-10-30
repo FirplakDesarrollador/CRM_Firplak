@@ -48,7 +48,7 @@ export function translateObjectDef<D extends ObjectDef>(def: D, locale: Locale, 
     })),
     fields: def.fields.map((f) =>
       f.custom
-        ? { ...f, optionLabels: f.optionLabels ?? valueLabels(f) }
+        ? { ...f, label: f.labelEn ?? f.label, help: f.helpEn ?? f.help, optionLabels: f.optionLabels ?? valueLabels(f) }
         : {
             ...f,
             label: FIELD_OVERRIDES_EN[`${def.key}.${f.name}`] ?? FIELDS_EN[f.name] ?? f.label,

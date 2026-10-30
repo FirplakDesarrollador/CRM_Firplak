@@ -1022,10 +1022,12 @@ export type Database = {
           created_at: string
           field_type: string
           help_text: string | null
+          help_text_en: string | null
           id: string
           is_active: boolean
           is_required: boolean
           label: string
+          label_en: string | null
           object: string
           option_labels_en: Json
           options: Json
@@ -1038,10 +1040,12 @@ export type Database = {
           created_at?: string
           field_type: string
           help_text?: string | null
+          help_text_en?: string | null
           id?: string
           is_active?: boolean
           is_required?: boolean
           label: string
+          label_en?: string | null
           object: string
           option_labels_en?: Json
           options?: Json
@@ -1054,10 +1058,12 @@ export type Database = {
           created_at?: string
           field_type?: string
           help_text?: string | null
+          help_text_en?: string | null
           id?: string
           is_active?: boolean
           is_required?: boolean
           label?: string
+          label_en?: string | null
           object?: string
           option_labels_en?: Json
           options?: Json
@@ -2165,6 +2171,7 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           name: string
+          name_en: string | null
           sort_order: number
           updated_at: string
         }
@@ -2175,6 +2182,7 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name: string
+          name_en?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -2185,6 +2193,7 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name?: string
+          name_en?: string | null
           sort_order?: number
           updated_at?: string
         }

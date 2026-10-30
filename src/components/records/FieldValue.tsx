@@ -42,6 +42,7 @@ export function FieldValue({ field, row, linkName }: { field: FieldDef; row: Rec
       break;
   }
 
+  if (field.name === "pipeline_id" && rel?.name) return <span><Val>{rel.name}</Val></span>;
   if (field.relation && rel) return <span>{rel.name ?? rel.full_name}</span>;
   if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
     return field.type === "checkbox" ? <span><Tr>No</Tr></span> : <span className="text-muted">—</span>;

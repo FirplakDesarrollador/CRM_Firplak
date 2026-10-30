@@ -152,7 +152,7 @@ export async function savePipeline(id: string | null, _prev: FormState, fd: Form
   const { supabase } = g;
   const name = str(fd, "name");
   if (!name) return { message: "Escribe el nombre del pipeline" };
-  const payload = { name, description: nullable(fd, "description"), is_active: id ? fd.get("is_active") === "on" : true };
+  const payload = { name, name_en: nullable(fd, "name_en"), description: nullable(fd, "description"), is_active: id ? fd.get("is_active") === "on" : true };
   const result = id
     ? await supabase.from("pipelines").update(payload).eq("id", id).select("id").single()
     : await supabase.from("pipelines").insert({ ...payload, sort_order: 99 }).select("id").single();
@@ -245,6 +245,8 @@ export async function saveCustomField(object: string, id: string | null, _prev: 
   const base = {
     option_labels_en,
     label,
+    label_en: nullable(fd, "label_en"),
+    help_text_en: nullable(fd, "help_text_en"),
     options,
     is_required: fd.get("is_required") === "on",
     show_in_list: fd.get("show_in_list") === "on",

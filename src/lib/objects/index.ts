@@ -44,6 +44,8 @@ export function customFieldToDef(row: CustomFieldRow): FieldDef {
     wide: row.field_type === "textarea",
     help: row.help_text ?? undefined,
     custom: true,
+    labelEn: row.label_en || undefined,
+    helpEn: row.help_text_en || undefined,
   };
 }
 

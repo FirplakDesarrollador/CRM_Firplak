@@ -72,6 +72,7 @@ export default async function PipelinesPage() {
         <div className="card-header"><h2 className="card-title"><Tr>Nuevo pipeline</Tr></h2></div>
         <ActionForm action={savePipeline.bind(null, null)} resetOnSuccess className="flex flex-wrap items-end gap-3 p-4">
           <div className="min-w-48 flex-1"><label className="label" htmlFor="np-name"><Tr>Nombre</Tr></label><input id="np-name" name="name" className="input" required /></div>
+          <div className="min-w-40 flex-1"><label className="label" htmlFor="np-en"><Tr>En inglés (opcional)</Tr></label><input id="np-en" name="name_en" className="input" placeholder="English name" /></div>
           <div className="min-w-48 flex-1"><label className="label" htmlFor="np-desc"><Tr>Descripción</Tr></label><input id="np-desc" name="description" className="input" /></div>
           <SubmitButton pendingText="Creando…"><Tr>Crear pipeline</Tr></SubmitButton>
         </ActionForm>
@@ -84,6 +85,11 @@ export default async function PipelinesPage() {
               <div className="min-w-48 flex-1">
                 <label className="label" htmlFor={`pn-${p.id}`}><Tr>Pipeline</Tr></label>
                 <input id={`pn-${p.id}`} name="name" className="input font-semibold" defaultValue={p.name} />
+              </div>
+              <div className="min-w-40 flex-1">
+                <label className="label" htmlFor={`pe-${p.id}`}><Tr>En inglés</Tr></label>
+                <input id={`pe-${p.id}`} name="name_en" className="input" defaultValue={p.name_en ?? ""}
+                  placeholder={VALUES_EN[p.name] || "English name"} />
               </div>
               <div className="min-w-48 flex-1">
                 <label className="label" htmlFor={`pd-${p.id}`}><Tr>Descripción</Tr></label>

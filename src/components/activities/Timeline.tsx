@@ -30,7 +30,7 @@ export function Timeline({ activities, showRelated = false }: { activities: Acti
 function Group({ title, items, tone = "text-muted", showRelated }: { title: string; items: ActivityRow[]; tone?: string; showRelated: boolean }) {
   return (
     <div>
-      <h3 className={`text-[0.7rem] font-medium uppercase tracking-[0.18em] ${tone}`}>{title} · {items.length}</h3>
+      <h3 className={`text-[0.7rem] font-medium uppercase tracking-[0.18em] ${tone}`}><Tr>{title}</Tr> · {items.length}</h3>
       <ul className="divide-y divide-[var(--border)]">
         {items.map((a) => <ActivityItem key={a.id} activity={a} showRelated={showRelated} />)}
       </ul>

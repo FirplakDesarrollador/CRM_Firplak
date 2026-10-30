@@ -32,6 +32,9 @@ export type FieldDef = {
   wide?: boolean;
   help?: string;
   custom?: boolean;
+  /** Etiqueta y ayuda en inglés de un campo personalizado (Configuración → Campos). */
+  labelEn?: string;
+  helpEn?: string;
   /** Se puede ordenar la lista por este campo. */
   sortable?: boolean;
 };
@@ -76,12 +79,14 @@ export type CustomFieldRow = {
   object: string;
   api_name: string;
   label: string;
+  label_en?: string | null;
   field_type: string;
   options: unknown;
   option_labels_en?: unknown;
   is_required: boolean;
   show_in_list: boolean;
   help_text: string | null;
+  help_text_en?: string | null;
   sort_order: number;
   is_active: boolean;
 };

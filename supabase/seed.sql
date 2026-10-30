@@ -132,6 +132,21 @@ insert into public.custom_field_definitions (object, api_name, label, field_type
 ('opportunities', 'competidor', 'Competidor principal', 'text', '[]', false, 4, null)
 on conflict (object, api_name) do nothing;
 
+-- Fase 14: etiquetas y ayudas en inglés de los campos de ejemplo.
+update public.custom_field_definitions f set label_en = v.label_en, help_text_en = v.help_en
+from (values
+  ('accounts', 'canal', 'Channel', null),
+  ('accounts', 'zona_comercial', 'Sales region', null),
+  ('accounts', 'cupo_credito', 'Credit limit', 'Limit approved by credit and collections, in COP.'),
+  ('contacts', 'rol_compra', 'Buying role', null),
+  ('contacts', 'canal_preferido', 'Preferred channel', null),
+  ('opportunities', 'lineas_producto', 'Product lines', null),
+  ('opportunities', 'proyecto_obra', 'Project / site', 'Name of the construction site or real estate project.'),
+  ('opportunities', 'unidades', 'Units (homes / rooms)', null),
+  ('opportunities', 'competidor', 'Main competitor', null)
+) as v (object, api_name, label_en, help_en)
+where f.object = v.object and f.api_name = v.api_name and f.label_en is null;
+
 -- ---------------------------------------------------------------------------
 -- Vistas de lista compartidas
 -- ---------------------------------------------------------------------------

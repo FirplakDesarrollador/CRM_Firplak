@@ -82,7 +82,7 @@ export function ActivityItem({ activity, showRelated = true, canEdit = true }: {
             />
           )}
           <p className={`min-w-0 flex-1 font-semibold ${done && checkable ? "text-muted line-through" : ""}`}>{activity.subject}</p>
-          {activity.priority === "high" && !done && <span className="badge badge-danger">{PRIORITIES.high}</span>}
+          {activity.priority === "high" && !done && <span className="badge badge-danger">{t(PRIORITIES.high)}</span>}
           {canEdit && (
             <button
               type="button"

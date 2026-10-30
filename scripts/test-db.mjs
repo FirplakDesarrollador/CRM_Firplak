@@ -522,4 +522,18 @@ await check('las instantáneas del pronóstico guardan la tendencia y los cambio
   assert.ok(Number(mine[0].n) <= 1);
 });
 
+console.log('Fases 13 y 14');
+await check('los nombres en inglés de campos y pipelines solo los cambia quien personaliza', async () => {
+  const [cf] = await q(`select label_en, help_text_en from custom_field_definitions where object = 'accounts' and api_name = 'cupo_credito'`);
+  assert.equal(cf.label_en, 'Credit limit');
+  assert.ok(cf.help_text_en);
+  await as(rep, () => q(`update custom_field_definitions set label_en = 'Hack' where api_name = 'cupo_credito'`)).catch(() => {});
+  await as(rep, () => q(`update pipelines set name_en = 'Hack'`)).catch(() => {});
+  const [after] = await q(`select label_en from custom_field_definitions where api_name = 'cupo_credito'`);
+  assert.equal(after.label_en, 'Credit limit');
+  assert.equal(Number((await q(`select count(*) n from pipelines where name_en = 'Hack'`))[0].n), 0);
+  await as(admin, () => q(`update pipelines set name_en = 'Projects and builders' where is_default`));
+  assert.equal((await q(`select name_en from pipelines where is_default`))[0].name_en, 'Projects and builders');
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

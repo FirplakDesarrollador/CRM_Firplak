@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getObjectDef, untypedClient } from "@/lib/records/data";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getValueLabel } from "@/lib/i18n/server";
 import { OBJECTS, isObjectKey, type FieldDef, type ObjectKey } from "@/lib/objects";
 import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from "@/lib/format";
 
@@ -24,7 +24,7 @@ function display(field: FieldDef | undefined, raw: string | null, names: Map<str
     case "datetime": return formatDateTime(raw, locale);
     case "checkbox": return raw === "true" ? (locale === "en" ? "Yes" : "Sí") : "No";
     case "multiselect": {
-      try { return (JSON.parse(raw) as string[]).join(", "); } catch { return raw; }
+      try { return (JSON.parse(raw) as string[]).map((o) => field.optionLabels?.[o] ?? o).join(", "); } catch { return raw; }
     }
     case "select": return field.optionLabels?.[raw] ?? raw;
     default: return raw.length > 140 ? `${raw.slice(0, 140)}…` : raw;
@@ -36,7 +36,7 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
   object?: ObjectKey; recordId?: string; limit?: number; global?: boolean; userId?: string;
 }) {
   const supabase = await createClient();
-  const locale = await getLocale();
+  const [locale, value] = await Promise.all([getLocale(), getValueLabel()]);
   let query = supabase
     .from("field_history")
     .select("id, object, record_id, field, old_value, new_value, operation, changed_at, by:profiles!field_history_changed_by_fkey(full_name)")
@@ -72,7 +72,9 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
   await Promise.all([...wanted.entries()].map(async ([table, ids]) => {
     const col = nameCol[table] ?? "name";
     const { data: found } = await db.from(table).select(`id, ${col}`).in("id", [...ids]);
-    for (const row of (found ?? []) as unknown as Record<string, string>[]) names.set(row.id, row[col]);
+    // Pipelines y etapas se muestran con su nombre en inglés si lo tienen.
+    const translate = table === "pipelines" || table === "pipeline_stages";
+    for (const row of (found ?? []) as unknown as Record<string, string>[]) names.set(row.id, translate ? value(row[col]) : row[col]);
   }));
 
   if (!rows.length) return <section className="card px-4 py-8 text-center text-sm text-muted"><Tr>Sin cambios registrados.</Tr></section>;

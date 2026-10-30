@@ -7,6 +7,7 @@ import { CALL_RESULTS, PRIORITIES } from "@/lib/objects/picklists";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 import type { UserOption } from "@/lib/records/data";
+import { useT, useValueLabel } from "@/lib/i18n/client";
 
 import { Tr } from "@/components/ui/Tr";
 const TABS = [
@@ -20,6 +21,8 @@ const TABS = [
 type Related = { account_id?: string | null; contact_id?: string | null; opportunity_id?: string | null; lead_id?: string | null; case_id?: string | null };
 
 export function Composer({ related, users, currentUserId }: { related: Related; users: UserOption[]; currentUserId: string }) {
+  const t = useT();
+  const value = useValueLabel();
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("task");
   const [state, action] = useActionState(createActivity, {});
   const formRef = useRef<HTMLFormElement>(null);
@@ -39,11 +42,11 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
   return (
     <div>
       <div role="tablist" className="flex overflow-x-auto border-b border-line [scrollbar-width:none]">
-        {TABS.map((t) => {
-          const Icon = ACTIVITY_ICONS[t.key];
+        {TABS.map((item) => {
+          const Icon = ACTIVITY_ICONS[item.key];
           return (
-            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className="tab mr-3.5 text-sm" onClick={() => setTab(t.key)}>
-              <Icon size={14} /> {t.label}
+            <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} className="tab mr-3.5 text-sm" onClick={() => setTab(item.key)}>
+              <Icon size={14} /> {t(item.label)}
             </button>
           );
         })}
@@ -58,7 +61,7 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
         {state.message && <Alert tone={state.ok ? "success" : "error"}>{state.message}</Alert>}
         <div>
           <label className="label" htmlFor="act-subject"><Tr>Asunto</Tr></label>
-          <input id="act-subject" name="subject" className="input" placeholder={placeholder[tab]} />
+          <input id="act-subject" name="subject" className="input" placeholder={t(placeholder[tab])} />
           {state.errors?.subject && <p className="error-text">{state.errors.subject}</p>}
         </div>
         {tab === "meeting" && (
@@ -75,7 +78,7 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
             </div>
             <div className="col-span-2">
               <label className="label" htmlFor="act-location"><Tr>Lugar</Tr></label>
-              <input id="act-location" name="location" className="input" placeholder="Obra, oficina del cliente, showroom, videollamada…" />
+              <input id="act-location" name="location" className="input" placeholder={t("Obra, oficina del cliente, showroom, videollamada…")} />
             </div>
           </div>
         )}
@@ -85,7 +88,7 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
               <label className="label" htmlFor="act-result"><Tr>Resultado</Tr></label>
               <select id="act-result" name="call_result" className="select">
                 <option value="">—</option>
-                {CALL_RESULTS.map((r) => <option key={r}>{r}</option>)}
+                {CALL_RESULTS.map((r) => <option key={r} value={r}>{value(r)}</option>)}
               </select>
             </div>
             <div>
@@ -97,26 +100,26 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
         {(tab === "task" || tab === "call") && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="act-due">{tab === "call" ? "Fecha" : "Fecha límite"}</label>
+              <label className="label" htmlFor="act-due">{t(tab === "call" ? "Fecha" : "Fecha límite")}</label>
               <input id="act-due" name="due_date" type="date" className="input" />
             </div>
             <div>
               <label className="label" htmlFor="act-priority"><Tr>Prioridad</Tr></label>
               <select id="act-priority" name="priority" className="select" defaultValue="normal">
-                {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{value(v)}</option>)}
               </select>
             </div>
           </div>
         )}
         <div>
-          <label className="label" htmlFor="act-desc">{tab === "note" ? "Nota" : "Descripción"}</label>
+          <label className="label" htmlFor="act-desc">{t(tab === "note" ? "Nota" : "Descripción")}</label>
           <textarea id="act-desc" name="description" className="textarea" rows={tab === "note" || tab === "email" ? 4 : 2} />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             {(tab === "task" || tab === "meeting") && (
-              <select name="owner_id" className="select h-8 w-auto text-xs" defaultValue={currentUserId} aria-label="Asignar a">
-                {users.filter((u) => u.is_active).map((u) => <option key={u.id} value={u.id}>{u.id === currentUserId ? "Asignada a mí" : u.full_name}</option>)}
+              <select name="owner_id" className="select h-8 w-auto text-xs" defaultValue={currentUserId} aria-label={t("Asignar a")}>
+                {users.filter((u) => u.is_active).map((u) => <option key={u.id} value={u.id}>{u.id === currentUserId ? t("Asignada a mí") : u.full_name}</option>)}
               </select>
             )}
             {tab === "call" && (
