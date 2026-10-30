@@ -13,6 +13,7 @@ import { FieldHistory } from "@/components/records/FieldHistory";
 import { StagePath } from "@/components/opportunities/StagePath";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { TeamCard } from "@/components/teams/TeamCard";
+import { SplitsCard, getSplits } from "@/components/splits/SplitsCard";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getPipelines, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
@@ -38,7 +39,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
 
   const supabase = await createClient();
   const db = await untypedClient();
-  const [access, users, pipelines, activities, history, quotesRes, ordersRes] = await Promise.all([
+  const [access, users, pipelines, activities, history, quotesRes, ordersRes, splits] = await Promise.all([
     getRecordAccess("opportunities", row.owner_id as string | null, row.id),
     getUsers(),
     getPipelines(),
@@ -50,6 +51,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
       .order("changed_at", { ascending: false }),
     db.from("quotes").select(quotesDef.select).eq("opportunity_id", id).order("created_at", { ascending: false }),
     db.from("orders").select(ordersDef.select).eq("opportunity_id", id).order("order_date", { ascending: false }),
+    getSplits(id),
   ]);
   const orderRows = (ordersRes.data ?? []) as unknown as Row[];
   const quoteRows = (quotesRes.data ?? []) as unknown as Row[];
@@ -71,6 +73,11 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
         badges={
           <>
             <StageBadge stage={row.stage as never} />
+            {splits.length > 1 && (
+              <span className="badge badge-brand" title={splits.map((s) => `${s.user?.full_name ?? ""} ${Number(s.percent)} %`).join(" · ")}>
+                {t("Compartida")} {splits.map((s) => Number(s.percent)).join("/")}
+              </span>
+            )}
             {closeIn && <span className={`badge ${late ? "badge-danger" : "badge-info"}`}>{late ? t("Cierre vencido") : `${t("Cierra:")} ${closeIn.toLowerCase()}`}</span>}
           </>
         }
@@ -97,7 +104,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
               { key: "detalles", label: "Detalles" },
               { key: "cotizaciones", label: "Cotizaciones", count: quoteRows.length },
               ...(can(user.access, "orders", "read") ? [{ key: "pedidos", label: "Pedidos", count: orderRows.length }] : []),
-              { key: "equipo", label: "Equipo" },
+              { key: "equipo", label: "Equipo y reparto" },
               { key: "historial", label: "Historial de etapas", count: history.data?.length ?? 0 },
               { key: "cambios", label: "Historial de cambios" },
             ]} />
@@ -105,8 +112,12 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
           {tab === "cambios" ? (
             <FieldHistory object="opportunities" recordId={id} />
           ) : tab === "equipo" ? (
-            <TeamCard object="opportunities" recordId={id} ownerId={(row.owner_id as string | null) ?? null}
-              ownerName={owner?.full_name || owner?.email || null} />
+            <>
+              <SplitsCard opportunityId={id} ownerId={(row.owner_id as string | null) ?? null}
+                ownerName={owner?.full_name || owner?.email || null} amount={Number(row.amount) || 0} />
+              <TeamCard object="opportunities" recordId={id} ownerId={(row.owner_id as string | null) ?? null}
+                ownerName={owner?.full_name || owner?.email || null} />
+            </>
           ) : tab === "cotizaciones" ? (
             <RelatedList def={quotesDef} title="Cotizaciones" rows={quoteRows}
               columns={["quote_number", "name", "status", "net_total", "grand_total", "is_synced", "expiration_date"]}

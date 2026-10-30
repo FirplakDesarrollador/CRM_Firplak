@@ -93,13 +93,13 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
 
   const qs = (patch: Record<string, string>) => `/pronostico?${new URLSearchParams({ tipo: type, inicio: start, ...patch })}`;
   const drill = (ownerId: string, extra: { field: string; op: string; value: string }[]) => {
+    // Por crédito (propietario o parte del reparto), no solo por propietario.
     const f = [
-      { field: "owner_id", op: "eq", value: ownerId },
       { field: "close_date", op: "gt", value: shiftDay(start, -1) },
       { field: "close_date", op: "lt", value: shiftDay(end, 1) },
       ...extra,
     ];
-    return `/oportunidades?f=${encodeURIComponent(JSON.stringify(f))}`;
+    return `/oportunidades?credito=${ownerId}&f=${encodeURIComponent(JSON.stringify(f))}`;
   };
 
   return (

@@ -70,6 +70,7 @@ export async function runReport(def: ObjectDef, report: ReportDefinition, userId
     columns: def.defaultColumns,
     sort: def.defaultSort,
     scope: report.scope === "mine" ? "mine" : "all",
+    credit: null,
     page: 1,
     pageSize: MAX_ROWS,
   };

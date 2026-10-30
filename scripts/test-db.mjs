@@ -585,4 +585,41 @@ await check('el equipo predeterminado se agrega al crear una oportunidad si el p
   assert.equal((await as(rep, () => q(`select add_default_team('opportunities', $1) n`, [first.id])))[0].n, 1);
 });
 
+console.log('Fase 16');
+await check('el reparto 50/50 acredita a cada vendedor la mitad en metas, pronóstico e Indicadores', async () => {
+  const [opp] = await q(`select id, amount, close_date from opportunities
+                         where owner_id = $1 and is_won and amount > 0 order by close_date desc limit 1`, [admin.id]);
+  const start = (await q(`select date_trunc('month', $1::date)::date::text d`, [opp.close_date]))[0].d;
+  await q(`insert into sales_goals (user_id, metric, period_type, period_start, target)
+           values ($1, 'won_amount', 'month', $2, 1) on conflict do nothing`, [rep.id, start]);
+  const repWon = async () => Number((await as(admin, () => q(`select actual from goal_progress('month', $1::date) where user_id = $2 and metric = 'won_amount'`, [start, rep.id])))[0]?.actual ?? 0);
+  const before = await repWon();
+  assert.equal(await as(rep, () => count(`select count(*) n from opportunities where id = $1`, [opp.id])), 0);
+
+  // Validaciones: suma distinta de 100, usuario repetido, quien no gestiona el equipo.
+  await assert.rejects(as(admin, () => q(`select set_opportunity_splits($1, $2)`, [opp.id, JSON.stringify([{ user_id: admin.id, percent: 50 }, { user_id: rep.id, percent: 40 }])])));
+  await assert.rejects(as(admin, () => q(`select set_opportunity_splits($1, $2)`, [opp.id, JSON.stringify([{ user_id: rep.id, percent: 50 }, { user_id: rep.id, percent: 50 }])])));
+  await assert.rejects(as(rep, () => q(`select set_opportunity_splits($1, $2)`, [opp.id, JSON.stringify([{ user_id: rep.id, percent: 100 }])])));
+  await assert.rejects(q(`insert into opportunity_splits (opportunity_id, user_id, percent) values ($1, $2, 0)`, [opp.id, rep.id]));
+
+  await as(admin, () => q(`select set_opportunity_splits($1, $2)`, [opp.id, JSON.stringify([
+    { user_id: admin.id, percent: 50 }, { user_id: rep.id, percent: 50, note: 'Obra en su zona' }])]));
+  // La asesora entra al equipo (lectura), ve el negocio y recibe aviso; su meta suma la mitad.
+  assert.equal(await as(rep, () => count(`select count(*) n from opportunities where id = $1`, [opp.id])), 1);
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title like 'Participas con 50 %%'`, [rep.id]), 1);
+  assert.equal(await repWon() - before, Number(opp.amount) / 2);
+  const fs = await as(admin, () => q(`select user_id, closed from forecast_summary('month', $1::date)`, [start]));
+  assert.ok(Number(fs.find((r) => r.user_id === rep.id).closed) >= Number(opp.amount) / 2);
+  const dash = await as(admin, () => q(`select crm_dashboard($1::date, ($1::date + interval '1 month' - interval '1 day')::date, $2) d`, [start, rep.id]));
+  assert.ok(Number(dash[0].d.kpis.won_amount) >= Number(opp.amount) / 2);
+
+  // Al cambiar el propietario, su 50 % pasa al nuevo (que ya tenía 50 %: queda con 100 %).
+  await q(`update opportunities set owner_id = $2 where id = $1`, [opp.id, rep.id]);
+  const splits = await q(`select user_id, percent from opportunity_splits where opportunity_id = $1`, [opp.id]);
+  assert.deepEqual(splits.map((r) => [r.user_id, Number(r.percent)]), [[rep.id, 100]]);
+  await q(`update opportunities set owner_id = $2 where id = $1`, [opp.id, admin.id]);
+  await as(admin, () => q(`select set_opportunity_splits($1, '[]')`, [opp.id]));
+  assert.equal(await count(`select count(*) n from opportunity_credit where opportunity_id = $1 and user_id = $2 and percent = 100`, [opp.id, admin.id]), 1);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

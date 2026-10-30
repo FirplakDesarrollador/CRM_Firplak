@@ -1886,6 +1886,58 @@ export type Database = {
           },
         ]
       }
+      opportunity_splits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          opportunity_id: string
+          percent: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          opportunity_id: string
+          percent: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          opportunity_id?: string
+          percent?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_splits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_splits_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_splits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opportunity_stage_history: {
         Row: {
           amount: number | null
@@ -3350,6 +3402,13 @@ export type Database = {
       run_scheduled_automations: {
         Args: never
         Returns: number
+      }
+      set_opportunity_splits: {
+        Args: {
+          p_opportunity: string
+          p_splits: Json
+        }
+        Returns: undefined
       }
       sharing_access: {
         Args: {

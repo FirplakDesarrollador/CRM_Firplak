@@ -61,6 +61,12 @@ export async function ObjectListPage({
           <div>
             <p className="eyebrow">{def.plural}</p>
             <h1 className="text-xl font-medium">{view?.name ?? defaultViewName ?? `Todas las ${def.plural.toLowerCase()}`}</h1>
+            {params.credit && (
+              <p className="mt-0.5 text-xs text-muted">
+                {t("Negocios con participación de")} <strong className="text-ink">{users.find((u) => u.id === params.credit)?.full_name ?? "—"}</strong>
+                {" "}({t("propietario o reparto de ingresos")}) · <Link href={def.path} className="link">{t("Quitar")}</Link>
+              </p>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

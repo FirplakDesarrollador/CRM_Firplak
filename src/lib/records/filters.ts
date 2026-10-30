@@ -165,6 +165,8 @@ export type ListParams = {
   columns: string[];
   sort: { field: string; dir: "asc" | "desc" };
   scope: "mine" | "team" | "all";
+  /** Oportunidades donde este usuario tiene parte del valor (reparto de ingresos o propietario). */
+  credit: string | null;
   page: number;
   pageSize: number;
 };
@@ -212,6 +214,7 @@ export function parseListParams(def: ObjectDef & { listCustom?: string[] }, sp: 
     columns,
     sort: { field: sortField, dir },
     scope,
+    credit: def.key === "opportunities" && /^[0-9a-f-]{36}$/i.test(one(sp.credito)) ? one(sp.credito) : null,
     page,
     pageSize,
   };

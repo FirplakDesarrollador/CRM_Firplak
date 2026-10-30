@@ -84,6 +84,11 @@ export async function listRecords(def: ObjectDef, params: ListParams, userId: st
   let query = db.from(def.table).select(def.select, { count: "exact" });
 
   if (params.scope === "mine" && def.hasOwner !== false) query = query.eq("owner_id", userId);
+  if (params.credit) {
+    const { data: credited } = await db.from("opportunity_credit").select("opportunity_id").eq("user_id", params.credit);
+    const ids = ((credited ?? []) as { opportunity_id: string }[]).map((r) => r.opportunity_id);
+    query = query.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  }
   if (params.scope === "team") {
     // Cuentas de cuyo equipo hace parte; oportunidades de su equipo o de esas cuentas (si el
     // equipo de cuenta le da acceso a sus oportunidades).
