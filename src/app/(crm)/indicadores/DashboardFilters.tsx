@@ -36,7 +36,7 @@ export function DashboardFilters({ period, from, to, owner, pipeline, users, pip
         </select>
       )}
       <select aria-label="Pipeline del embudo" className="select w-auto" value={pipeline} onChange={(e) => set({ pipeline: e.target.value })}>
-        {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        {pipelines.map((p) => <option key={p.id} value={p.id}>{t(p.name)}</option>)}
       </select>
     </div>
   );

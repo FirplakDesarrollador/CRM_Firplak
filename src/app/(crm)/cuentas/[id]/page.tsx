@@ -17,6 +17,7 @@ import { formatCompactCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 import { Tr } from "@/components/ui/Tr";
+import { Val } from "@/components/ui/Val";
 export async function generateMetadata({ params }: PageProps<"/cuentas/[id]">): Promise<Metadata> {
   const { id } = await params;
   const row = await getRecord(await getObjectDef("accounts"), id);
@@ -56,7 +57,7 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
         def={def}
         row={row}
         title={String(row.name)}
-        badges={row.rating ? <span className={`badge ${row.rating === "Caliente" ? "badge-danger" : row.rating === "Templada" ? "badge-warning" : "badge-info"}`}>{String(row.rating)}</span> : null}
+        badges={row.rating ? <span className={`badge ${row.rating === "Caliente" ? "badge-danger" : row.rating === "Templada" ? "badge-warning" : "badge-info"}`}><Val>{String(row.rating)}</Val></span> : null}
         actions={
           <>
             {can(user.access, "opportunities", "create") && (

@@ -7,6 +7,7 @@ import { formatCompactCurrency, formatCurrency, formatMillions, formatNumber, fo
 import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
+import { Val } from "@/components/ui/Val";
 export function ReportResults({ def, report, result }: { def: ObjectDef; report: ReportDefinition; result: ReportResult }) {
   const fmtShort = (v: number) => (result.isMoney ? formatCompactCurrency(v) : formatNumber(Math.round(v * 10) / 10));
   const fmtLong = (v: number) => (result.isMoney ? formatCurrency(v) : formatNumber(Math.round(v * 100) / 100));
@@ -24,12 +25,12 @@ export function ReportResults({ def, report, result }: { def: ObjectDef; report:
       <div className="grid gap-3 sm:grid-cols-3">
         <KpiTile label={result.measureLabel} {...(result.isMoney ? formatMillions(result.total) : { value: formatNumber(Math.round(result.total * 10) / 10) })} />
         <KpiTile label="Registros" value={formatNumber(result.count)} />
-        <KpiTile label="Grupos" value={g1 ? formatNumber(result.groups.length) : "—"} sub={g1 ? `por ${g1.label.toLowerCase()}${g2 ? ` y ${g2.label.toLowerCase()}` : ""}` : "Sin agrupación"} />
+        <KpiTile label="Grupos" value={g1 ? formatNumber(result.groups.length) : "—"} sub={g1 ? <><Tr>por</Tr> {g1.label.toLowerCase()}{g2 ? <> <Tr>y</Tr> {g2.label.toLowerCase()}</> : null}</> : "Sin agrupación"} />
       </div>
 
       {g1 && report.chart !== "table" && (
         <section className="glass">
-          <div className="card-header"><h2 className="card-title">{result.measureLabel} por {g1.label.toLowerCase()}</h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>{result.measureLabel}</Tr> <Tr>por</Tr> {g1.label.toLowerCase()}</h2></div>
           <div className="p-5">
             {report.chart === "column"
               ? <ColumnChart items={items} format={fmtShort} />
@@ -46,7 +47,7 @@ export function ReportResults({ def, report, result }: { def: ObjectDef; report:
               <thead>
                 <tr>
                   <th>{g1.label}</th>
-                  {g2 && result.columns.map((c) => <th key={c.key} className="text-right">{c.label}</th>)}
+                  {g2 && result.columns.map((c) => <th key={c.key} className="text-right"><Val>{c.label}</Val></th>)}
                   <th className="text-right">{g2 ? "Total" : result.measureLabel}</th>
                   <th className="text-right"><Tr>Registros</Tr></th>
                   {sumLike && <th className="text-right"><Tr>% del total</Tr></th>}
@@ -55,7 +56,7 @@ export function ReportResults({ def, report, result }: { def: ObjectDef; report:
               <tbody>
                 {result.groups.map((g) => (
                   <tr key={g.key}>
-                    <td className="font-medium">{g.label}</td>
+                    <td className="font-medium"><Val>{g.label}</Val></td>
                     {g2 && result.columns.map((c) => (
                       <td key={c.key} className="num text-right">{g.cells[c.key] ? fmtLong(g.cells[c.key].value) : <span className="text-muted">—</span>}</td>
                     ))}

@@ -123,9 +123,9 @@ export function FieldInput({
         <select {...common} className="select" defaultValue={str}>
           <Opt value="">— Selecciona la etapa —</Opt>
           {ctx.pipelines.filter((p) => p.is_active || p.stages.some((s) => s.id === str)).map((p) => (
-            <optgroup key={p.id} label={p.name}>
+            <optgroup key={p.id} label={t(p.name)}>
               {p.stages.map((s) => (
-                <option key={s.id} value={s.id}>{s.name} ({s.probability}%)</option>
+                <option key={s.id} value={s.id}>{t(s.name)} ({s.probability}%)</option>
               ))}
             </optgroup>
           ))}

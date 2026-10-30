@@ -39,7 +39,7 @@ export default async function ReportsPage() {
         <Dropdown label="Nuevo informe" className="btn btn-primary" trigger={<><Plus size={16} /> <Tr>Nuevo informe</Tr> <ChevronDown size={14} /></>}>
           <p className="px-2.5 pb-1 pt-1.5 text-[0.68rem] font-medium uppercase tracking-[0.18em] text-muted"><Tr>Informe de…</Tr></p>
           {objects.map((o) => (
-            <Link key={o} href={`/informes/nuevo?objeto=${o}`} className={menuItemClass}>{OBJECTS[o].plural}</Link>
+            <Link key={o} href={`/informes/nuevo?objeto=${o}`} className={menuItemClass}><Tr>{OBJECTS[o].plural}</Tr></Link>
           ))}
         </Dropdown>
       </div>
@@ -56,7 +56,7 @@ export default async function ReportsPage() {
                 {list.map((r) => (
                   <tr key={r.id}>
                     <td><Link href={`/informes/${r.id}`} className="link">{r.name}</Link>{r.is_shared && <span className="badge ml-2"><Tr>Compartido</Tr></span>}</td>
-                    <td>{isObjectKey(r.object) ? OBJECTS[r.object].plural : r.object}</td>
+                    <td>{isObjectKey(r.object) ? <Tr>{OBJECTS[r.object].plural}</Tr> : r.object}</td>
                     <td className="max-w-md truncate text-muted">{r.description ?? "—"}</td>
                     <td>{r.owner?.full_name ?? "Firplak CRM"}</td>
                     <td><Fmt date={r.updated_at} /></td>

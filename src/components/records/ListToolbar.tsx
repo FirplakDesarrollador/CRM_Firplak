@@ -125,7 +125,7 @@ export function ListToolbar(props: Props) {
             const field = props.fields.find((x) => x.name === f.field);
             return (
               <span key={i} className="badge badge-brand py-1">
-                {field?.label} {OPS[f.op]} {VALUELESS_OPS.includes(f.op) ? "" : `“${displayValue(field, f.value, props)}”`}
+                {field?.label} {OPS[f.op]} {VALUELESS_OPS.includes(f.op) ? "" : `“${t(displayValue(field, f.value, props))}”`}
                 <button type="button" aria-label="Quitar filtro" onClick={() => push({ f: JSON.stringify(props.filters.filter((_, j) => j !== i)) || null })}>
                   <X size={12} />
                 </button>
@@ -238,8 +238,8 @@ export function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
         <select className="select" value={filter.value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("Selecciona…")}</option>
           {ctx.pipelines.map((p) => (
-            <optgroup key={p.id} label={p.name}>
-              {p.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <optgroup key={p.id} label={t(p.name)}>
+              {p.stages.map((s) => <option key={s.id} value={s.id}>{t(s.name)}</option>)}
             </optgroup>
           ))}
         </select>

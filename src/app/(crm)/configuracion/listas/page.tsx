@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { getPicklistRows } from "@/lib/records/data";
+import { getObjectDef, getPicklistRows } from "@/lib/records/data";
 import { OBJECTS, getObject, type ObjectKey } from "@/lib/objects";
 import { EDITABLE_PICKLISTS } from "@/lib/objects/picklist-config";
 import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { VALUES_EN } from "@/lib/i18n/values-en";
 import { addPicklistValue, customizePicklist, deletePicklistValue, resetPicklist, updatePicklistValue } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
@@ -19,21 +20,23 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const objects = Object.keys(EDITABLE_PICKLISTS) as ObjectKey[];
   const object = (objects.includes(sp.objeto as ObjectKey) ? sp.objeto : objects[0]) as ObjectKey;
-  const def = getObject(object);
-  const rows = (await getPicklistRows()).filter((r) => r.object === object);
+  // Etiquetas de campo traducidas; las opciones estándar salen de la definición del código.
+  const [def, rows] = await Promise.all([getObjectDef(object), getPicklistRows().then((all) => all.filter((r) => r.object === object))]);
+  const standard = getObject(object);
 
   return (
     <>
       <div>
         <h1 className="text-xl font-medium"><Tr>Listas de valores</Tr></h1>
         <p className="text-sm text-muted">
-          Personaliza las opciones de las listas de selección. Desactivar un valor lo oculta en los formularios; los registros que ya lo usan lo conservan.
+          <Tr>Personaliza las opciones de las listas de selección. Desactivar un valor lo oculta en los formularios; los registros que ya lo usan lo conservan.</Tr>{" "}
+          <Tr>La etiqueta en inglés es lo que ven quienes usan la aplicación en inglés; si se deja vacía, se usa la traducción estándar.</Tr>
         </p>
       </div>
       <div className="card">
         <div role="tablist" className="flex overflow-x-auto border-b border-line px-4">
           {objects.map((o) => (
-            <Link key={o} role="tab" href={`/configuracion/listas?objeto=${o}`} aria-selected={o === object} className="tab">{OBJECTS[o].plural}</Link>
+            <Link key={o} role="tab" href={`/configuracion/listas?objeto=${o}`} aria-selected={o === object} className="tab"><Tr>{OBJECTS[o].plural}</Tr></Link>
           ))}
         </div>
       </div>
@@ -42,6 +45,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
         if (!field) return null;
         const values = rows.filter((r) => r.field === fieldName).sort((a, b) => a.sort_order - b.sort_order);
         const customized = values.length > 0;
+        const stdOptions = standard.fields.find((f) => f.name === fieldName)?.options ?? [];
         return (
           <section key={fieldName} className="card overflow-hidden">
             <div className="card-header">
@@ -54,8 +58,12 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
             </div>
             {!customized ? (
               <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <p className="flex flex-wrap gap-1.5">{(field.options ?? []).map((o) => <span key={o} className="badge">{o}</span>)}</p>
-                <ActionForm action={async () => { "use server"; return customizePicklist(object, fieldName, field.options ?? []); }}>
+                <p className="flex flex-wrap gap-1.5">
+                  {stdOptions.map((o) => (
+                    <span key={o} className="badge">{o}{VALUES_EN[o] && VALUES_EN[o] !== o ? <span className="text-muted"> · {VALUES_EN[o]}</span> : null}</span>
+                  ))}
+                </p>
+                <ActionForm action={async () => { "use server"; return customizePicklist(object, fieldName, stdOptions); }}>
                   <SubmitButton className="btn btn-sm btn-primary" pendingText="…"><Tr>Personalizar</Tr></SubmitButton>
                 </ActionForm>
               </div>
@@ -66,6 +74,9 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                     <li key={v.id} className="flex flex-wrap items-center gap-3 px-4 py-2">
                       <span className={`min-w-40 flex-1 font-medium ${v.is_active ? "" : "text-muted line-through"}`}>{v.value}</span>
                       <ActionForm action={updatePicklistValue.bind(null, v.id)} className="flex items-center gap-2">
+                        <label className="sr-only" htmlFor={`en-${v.id}`}><Tr>Etiqueta en inglés</Tr></label>
+                        <input id={`en-${v.id}`} name="label_en" className="input h-8 w-44" defaultValue={v.label_en ?? ""}
+                          placeholder={VALUES_EN[v.value] ?? "English label"} />
                         <label className="sr-only" htmlFor={`o-${v.id}`}><Tr>Orden</Tr></label>
                         <input id={`o-${v.id}`} name="sort_order" type="number" className="input h-8 w-20" defaultValue={v.sort_order} />
                         <label className="flex items-center gap-1 text-xs font-medium"><input type="checkbox" name="is_active" defaultChecked={v.is_active} className="accent-[var(--brand)]" /> <Tr>Activo</Tr></label>
@@ -81,6 +92,10 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                   <div className="min-w-48 flex-1">
                     <label className="label" htmlFor={`nv-${fieldName}`}><Tr>Nuevo valor</Tr></label>
                     <input id={`nv-${fieldName}`} name="value" className="input" />
+                  </div>
+                  <div className="min-w-40 flex-1">
+                    <label className="label" htmlFor={`ne-${fieldName}`}><Tr>En inglés (opcional)</Tr></label>
+                    <input id={`ne-${fieldName}`} name="label_en" className="input" />
                   </div>
                   <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Agregar</Tr></SubmitButton>
                 </ActionForm>

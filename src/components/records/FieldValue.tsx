@@ -5,6 +5,7 @@ import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { Val } from "@/components/ui/Val";
 type Rel = { id?: string; name?: string; full_name?: string; email?: string; color?: string; category?: string } | null;
 
 export function StageBadge({ stage }: { stage: Rel }) {
@@ -13,7 +14,7 @@ export function StageBadge({ stage }: { stage: Rel }) {
   return (
     <span className={`badge ${tone}`}>
       {stage.category === "open" && <span className="h-2 w-2 rounded-full" style={{ background: stage.color }} />}
-      {stage.name}
+      <Val>{stage.name}</Val>
     </span>
   );
 }

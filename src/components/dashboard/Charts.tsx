@@ -2,6 +2,7 @@ import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { Val } from "@/components/ui/Val";
 export function KpiTile({ label, value, unit, sub, tone }: {
   label: string; value: string; unit?: string; sub?: React.ReactNode; tone?: "success" | "danger" | "warning";
 }) {
@@ -31,7 +32,7 @@ export function BarList({
     <ul className="space-y-2.5">
       {items.map((item) => (
         <li key={item.key} className="group relative grid grid-cols-[minmax(6rem,11rem)_1fr] items-center gap-3">
-          <span className="truncate text-sm font-medium text-ink-2">{item.label}</span>
+          <span className="truncate text-sm font-medium text-ink-2"><Val>{item.label}</Val></span>
           <span className="flex items-center gap-2">
             <span
               className="h-[18px] rounded-r-[4px] transition-opacity group-hover:opacity-80"
@@ -120,7 +121,7 @@ export function Funnel({ stages }: { stages: { id: string; name: string; color: 
         const w = Math.max(6, (Number(s.amount) / max) * 100);
         return (
           <li key={s.id} className="group relative grid grid-cols-[minmax(6rem,10rem)_1fr_auto] items-center gap-3">
-            <span className="truncate text-sm font-medium text-ink-2">{s.name}</span>
+            <span className="truncate text-sm font-medium text-ink-2"><Val>{s.name}</Val></span>
             <span className="flex justify-center">
               <span className="h-6 rounded-[4px] transition-opacity group-hover:opacity-80"
                 style={{ width: `${w}%`, background: s.category === "won" ? "var(--success)" : s.color }} />
@@ -164,7 +165,7 @@ export function ColumnChart({ items, format }: { items: { key: string; label: st
           ))}
         </div>
         <div className="absolute inset-x-0 bottom-0 flex h-10 justify-around text-[0.68rem] text-muted">
-          {items.map((d) => <span key={d.key} className="line-clamp-2 flex-1 px-0.5 pt-1 text-center leading-tight">{d.label}</span>)}
+          {items.map((d) => <span key={d.key} className="line-clamp-2 flex-1 px-0.5 pt-1 text-center leading-tight"><Val>{d.label}</Val></span>)}
         </div>
       </div>
     </div>

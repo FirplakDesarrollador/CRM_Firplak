@@ -10,6 +10,7 @@ import { LossDialog } from "./LossDialog";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { useValueLabel } from "@/lib/i18n/client";
 export type KanbanCard = {
   id: string;
   name: string;
@@ -24,6 +25,7 @@ export type KanbanCard = {
 
 export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageRow[]; cards: KanbanCard[]; lossReasons?: string[] }) {
   const [pending, start] = useTransition();
+  const valueLabel = useValueLabel();
   const [cards, moveCard] = useOptimistic(initial, (state, { id, stageId }: { id: string; stageId: string }) =>
     state.map((c) => (c.id === id ? { ...c, stage_id: stageId } : c)),
   );
@@ -61,7 +63,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
           return (
             <section
               key={stage.id}
-              aria-label={stage.name}
+              aria-label={valueLabel(stage.name)}
               onDragOver={(e) => { e.preventDefault(); setOver(stage.id); }}
               onDragLeave={() => setOver((o) => (o === stage.id ? null : o))}
               onDrop={(e) => {
@@ -76,7 +78,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
             >
               <header className="px-3 pb-2 pt-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="truncate text-sm font-medium">{stage.name}</h2>
+                  <h2 className="truncate text-sm font-medium">{valueLabel(stage.name)}</h2>
                   <span className="badge">{column.length}</span>
                 </div>
                 <p className="num text-xs font-semibold text-muted">{formatCompactCurrency(total)} · {stage.probability}%</p>
@@ -112,7 +114,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                             value={card.stage_id}
                             onChange={(e) => requestMove(card.id, e.target.value)}
                           >
-                            {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {stages.map((s) => <option key={s.id} value={s.id}>{valueLabel(s.name)}</option>)}
                           </select>
                         )}
                       </div>

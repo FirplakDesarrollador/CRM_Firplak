@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/session";
 import { PipelineFilters } from "./PipelineFilters";
 
 import { Tr } from "@/components/ui/Tr";
+import { Val } from "@/components/ui/Val";
 export const metadata: Metadata = { title: "Pipeline" };
 
 export default async function PipelinePage({ searchParams }: PageProps<"/oportunidades/pipeline">) {
@@ -72,7 +73,7 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
           <ObjectIcon object="opportunities" />
           <div>
             <p className="eyebrow"><Tr>Pipeline de ventas</Tr></p>
-            <h1 className="text-xl font-medium">{pipeline.name}</h1>
+            <h1 className="text-xl font-medium"><Val>{pipeline.name}</Val></h1>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -91,7 +92,7 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
           closed={closed}
         />
         <p className="text-sm text-muted">
-          {openCards.length} abiertas · <span className="num font-semibold text-ink">{formatCompactCurrency(openTotal)}</span> · ponderado{" "}
+          {openCards.length} <Tr>abiertas</Tr> · <span className="num font-semibold text-ink">{formatCompactCurrency(openTotal)}</span> · <Tr>ponderado</Tr>{" "}
           <span className="num font-semibold text-ink">{formatCompactCurrency(weighted)}</span>
         </p>
       </div>

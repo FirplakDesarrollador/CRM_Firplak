@@ -7,11 +7,13 @@ import type { StageRow } from "@/lib/records/data";
 import { LossDialog } from "./LossDialog";
 
 import { Tr } from "@/components/ui/Tr";
+import { useValueLabel } from "@/lib/i18n/client";
 /** Ruta de etapas de la oportunidad: clic en una etapa para avanzar o retroceder. */
 export function StagePath({ opportunityId, stages, currentStageId, canEdit, lossReasons }: {
   opportunityId: string; stages: StageRow[]; currentStageId: string; canEdit: boolean; lossReasons?: string[];
 }) {
   const [pending, start] = useTransition();
+  const valueLabel = useValueLabel();
   const [stageId, setStageId] = useOptimistic(currentStageId);
   const [error, setError] = useState<string | null>(null);
   const [askLoss, setAskLoss] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit, loss
                   type="button"
                   disabled={!canEdit || pending || isCurrent}
                   onClick={() => move(s.id)}
-                  title={`${s.name} · ${s.probability}%`}
+                  title={`${valueLabel(s.name)} · ${s.probability}%`}
                   className={`flex h-8 w-full items-center justify-center gap-1 truncate rounded-full px-3 text-xs font-semibold transition ${
                     isCurrent
                       ? "bg-brand text-[var(--brand-contrast)]"
@@ -55,7 +57,7 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit, loss
                   } disabled:cursor-default`}
                 >
                   {(isDone || (closed && current?.category === "won")) && <Check size={13} />}
-                  <span className="truncate">{s.name}</span>
+                  <span className="truncate">{valueLabel(s.name)}</span>
                 </button>
               </li>
             );

@@ -78,6 +78,7 @@ export type CustomFieldRow = {
   label: string;
   field_type: string;
   options: unknown;
+  option_labels_en?: unknown;
   is_required: boolean;
   show_in_list: boolean;
   help_text: string | null;

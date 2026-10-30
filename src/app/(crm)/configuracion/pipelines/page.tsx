@@ -7,14 +7,16 @@ import { getPipelines } from "@/lib/records/data";
 import { canSystem } from "@/lib/permissions";
 import { FORECAST_CATEGORIES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
+import { VALUES_EN } from "@/lib/i18n/values-en";
 import { deletePipeline, deleteStage, savePipeline, saveStage } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
+import { Opt } from "@/components/ui/Opt";
 export const metadata: Metadata = { title: "Pipelines y etapas" };
 
 const CATEGORIES = { open: "Abierta", won: "Ganada", lost: "Perdida" };
 
-function StageFields({ stage }: { stage?: { id: string; name: string; probability: number; category: string; forecast_category: string; color: string; sort_order: number } }) {
+function StageFields({ stage }: { stage?: { id: string; name: string; name_en?: string | null; probability: number; category: string; forecast_category: string; color: string; sort_order: number } }) {
   const id = stage?.id ?? "new";
   return (
     <>
@@ -26,6 +28,11 @@ function StageFields({ stage }: { stage?: { id: string; name: string; probabilit
         <label className="label" htmlFor={`sn-${id}`}><Tr>Etapa</Tr></label>
         <input id={`sn-${id}`} name="name" className="input font-semibold" defaultValue={stage?.name} required />
       </div>
+      <div className="min-w-36 flex-1">
+        <label className="label" htmlFor={`se-${id}`}><Tr>En inglés</Tr></label>
+        <input id={`se-${id}`} name="name_en" className="input" defaultValue={stage?.name_en ?? ""}
+          placeholder={(stage && VALUES_EN[stage.name]) || "English name"} />
+      </div>
       <div className="w-24">
         <label className="label" htmlFor={`sp-${id}`}><Tr>Prob. %</Tr></label>
         <input id={`sp-${id}`} name="probability" type="number" min={0} max={100} className="input" defaultValue={stage?.probability ?? 20} />
@@ -33,13 +40,13 @@ function StageFields({ stage }: { stage?: { id: string; name: string; probabilit
       <div className="w-32">
         <label className="label" htmlFor={`sc-${id}`}><Tr>Tipo</Tr></label>
         <select id={`sc-${id}`} name="category" className="select" defaultValue={stage?.category ?? "open"}>
-          {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {Object.entries(CATEGORIES).map(([k, v]) => <Opt key={k} value={k}>{v}</Opt>)}
         </select>
       </div>
       <div className="w-36">
         <label className="label" htmlFor={`sf-${id}`}><Tr>Pronóstico</Tr></label>
         <select id={`sf-${id}`} name="forecast_category" className="select" defaultValue={stage?.forecast_category ?? "pipeline"}>
-          {Object.entries(FORECAST_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {Object.entries(FORECAST_CATEGORIES).map(([k, v]) => <Opt key={k} value={k}>{v}</Opt>)}
         </select>
       </div>
       <div className="w-16">

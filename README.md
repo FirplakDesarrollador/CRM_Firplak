@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 12)
+## Módulos incluidos (Fases 1 a 13)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -30,7 +30,7 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Metas | Cuotas por asesor o de la compañía, por mes, trimestre o año (ventas ganadas, negocios ganados, oportunidades y prospectos nuevos, actividades). Avance con ritmo esperado, brecha y estado; resumen en Inicio e Indicadores. Las define administración o el gerente para su equipo (nadie la propia). |
 | Pronóstico | Por mes, trimestre o año: cerrado, compromiso, mejor caso y pipeline por asesor (según la categoría de pronóstico de cada oportunidad) frente a su meta de ventas, con barra apilada y marca de la meta. El gerente (o administración) registra un **ajuste** con nota que reemplaza el pronóstico calculado; cada cifra abre la lista de oportunidades filtrada. **Historial:** instantánea semanal (lunes 6:00 a. m. con pg_cron, o «Tomar instantánea» para administración) por asesor y de cada oportunidad; gráfico de tendencia (cerrado, pronóstico y potencial frente a la meta, con el valor de hoy en vivo), variación de cada cifra frente a la instantánea elegida y **cambios en el pipeline** desde esa fecha (nuevas, valor ↑/↓, fecha movida o fuera del periodo, cambio de etapa, ganadas o perdidas). |
 | Aprobaciones | Procesos configurables por objeto (Configuración → Procesos de aprobación) con **varios pasos en orden**: cada paso tiene sus condiciones (si no se cumplen, se omite) y su aprobador (jefe directo del propietario, jefe del aprobador anterior o un usuario). Además: condiciones de entrada, bloqueo del registro mientras espera y cambios de campos al enviar, aprobar y rechazar o retirar. Se envían desde la ficha con comentario; cada aprobador decide desde la ficha o la **bandeja de aprobaciones** (rechazar exige motivo) y recibe avisos en la campana. Historial por paso en la pestaña Aprobaciones. Ejemplo incluido: cotizaciones en borrador con más de 15 % de descuento las aprueba el jefe directo y, si superan 25 %, también su jefe (gerencia comercial); al final pasan a «Aprobada». |
-| Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas (meses, «hoy», «en N días»), las opciones de listas fijas y los mensajes del servidor. Los datos (etapas, valores de listas, campos personalizados, mensajes de reglas) se muestran como se crearon, y las etiquetas de agrupación por fecha de los informes salen en español. |
+| Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas, los mensajes del servidor y los **valores de las listas**: tipos, estados, orígenes, etapas, pipelines y opciones de campos personalizados, en listas, fichas, filtros, formularios, Kanban, informes e indicadores. Los valores se guardan en español; el inglés usa un diccionario estándar y se puede ajustar en Configuración (Listas de valores, Pipelines y etapas, Campos personalizados). Siguen como se escribieron los textos libres (nombres de registros, notas, mensajes de reglas, nombres de informes y de campos personalizados). |
 | Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
 | Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
 | Alertas programadas | Avisos diarios en la campana: cierres vencidos, oportunidades sin actividad (N días) y resumen de tareas vencidas. Se programan con pg_cron a las 7:00 a. m. de Colombia si la extensión está disponible; también se pueden ejecutar a mano. |
@@ -117,5 +117,5 @@ línea de tiempo) toma como referencia funcional la documentación pública de S
 fuentes ni código.
 
 ## Próximos pasos sugeridos
-- Contratos y facturación (integración con el ERP para estados de pedido y despachos).
-- Traducción de valores de listas de selección por idioma (etiqueta en español e inglés).
+- Contratos y facturación integrados con el ERP (estados de pedido y despachos): **pendiente de que Luis indique qué ERP usa Firplak**.
+- Etiquetas en inglés para los nombres de campos personalizados y de pipelines creados en Configuración.

@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/session";
 import { deleteCustomField, saveCustomField } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
+import { VALUES_EN } from "@/lib/i18n/values-en";
 export const metadata: Metadata = { title: "Campos personalizados" };
 
 const TYPES: Record<string, string> = {
@@ -46,8 +47,12 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
           </div>
           <div><label className="label" htmlFor="cf-order"><Tr>Orden</Tr></label><input id="cf-order" name="sort_order" type="number" className="input" defaultValue={fields.length + 1} /></div>
           <div className="sm:col-span-2">
-            <label className="label" htmlFor="cf-options">Opciones (una por línea; solo listas)</label>
+            <label className="label" htmlFor="cf-options"><Tr>Opciones (una por línea; solo listas)</Tr></label>
             <textarea id="cf-options" name="options" className="textarea" rows={2} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="cf-options-en"><Tr>Opciones en inglés (mismo orden; opcional)</Tr></label>
+            <textarea id="cf-options-en" name="options_en" className="textarea" rows={2} />
           </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="cf-help"><Tr>Texto de ayuda</Tr></label>
@@ -81,6 +86,16 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
                   <label className="label" htmlFor={`o-${f.id}`}><Tr>Opciones</Tr></label>
                   <input id={`o-${f.id}`} name="options" className="input" disabled={!["select", "multiselect"].includes(f.field_type)}
                     defaultValue={Array.isArray(f.options) ? (f.options as string[]).join(", ") : ""} />
+                  {["select", "multiselect"].includes(f.field_type) && (
+                    <>
+                      <label className="label mt-2" htmlFor={`oe-${f.id}`}><Tr>En inglés (mismo orden)</Tr></label>
+                      <input id={`oe-${f.id}`} name="options_en" className="input"
+                        defaultValue={Array.isArray(f.options)
+                          ? (f.options as string[]).map((o) => ((f.option_labels_en ?? {}) as Record<string, string>)[o] ?? "").join(", ")
+                          : ""}
+                        placeholder={Array.isArray(f.options) ? (f.options as string[]).map((o) => VALUES_EN[o] ?? o).join(", ") : ""} />
+                    </>
+                  )}
                 </div>
                 <div>
                   <label className="label" htmlFor={`s-${f.id}`}><Tr>Orden</Tr></label>

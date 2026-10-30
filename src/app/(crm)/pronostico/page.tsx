@@ -19,6 +19,7 @@ import { makeT } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/session";
 
+import { Val } from "@/components/ui/Val";
 export const metadata: Metadata = { title: "Pronóstico" };
 
 type Row = {
@@ -300,7 +301,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
                         <td className="whitespace-nowrap text-sm">
                           {c.is_new || c.close_before === c.close_after ? <Fmt date={c.close_after} /> : <><Fmt date={c.close_before} /> → <Fmt date={c.close_after} /></>}
                         </td>
-                        <td className="text-sm">{c.is_new || c.stage_before === c.stage_after ? c.stage_after : <>{c.stage_before} → {c.stage_after}</>}</td>
+                        <td className="text-sm">{c.is_new || c.stage_before === c.stage_after ? <Val>{c.stage_after}</Val> : <><Val>{c.stage_before}</Val> → <Val>{c.stage_after}</Val></>}</td>
                       </tr>
                     );
                   })}

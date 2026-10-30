@@ -1027,6 +1027,7 @@ export type Database = {
           is_required: boolean
           label: string
           object: string
+          option_labels_en: Json
           options: Json
           show_in_list: boolean
           sort_order: number
@@ -1042,6 +1043,7 @@ export type Database = {
           is_required?: boolean
           label: string
           object: string
+          option_labels_en?: Json
           options?: Json
           show_in_list?: boolean
           sort_order?: number
@@ -1057,6 +1059,7 @@ export type Database = {
           is_required?: boolean
           label?: string
           object?: string
+          option_labels_en?: Json
           options?: Json
           show_in_list?: boolean
           sort_order?: number
@@ -2076,6 +2079,7 @@ export type Database = {
           field: string
           id: string
           is_active: boolean
+          label_en: string | null
           object: string
           sort_order: number
           value: string
@@ -2085,6 +2089,7 @@ export type Database = {
           field: string
           id?: string
           is_active?: boolean
+          label_en?: string | null
           object: string
           sort_order?: number
           value: string
@@ -2094,6 +2099,7 @@ export type Database = {
           field?: string
           id?: string
           is_active?: boolean
+          label_en?: string | null
           object?: string
           sort_order?: number
           value?: string
@@ -2109,6 +2115,7 @@ export type Database = {
           forecast_category: string
           id: string
           name: string
+          name_en: string | null
           pipeline_id: string
           probability: number
           sort_order: number
@@ -2121,6 +2128,7 @@ export type Database = {
           forecast_category?: string
           id?: string
           name: string
+          name_en?: string | null
           pipeline_id: string
           probability?: number
           sort_order?: number
@@ -2133,6 +2141,7 @@ export type Database = {
           forecast_category?: string
           id?: string
           name?: string
+          name_en?: string | null
           pipeline_id?: string
           probability?: number
           sort_order?: number

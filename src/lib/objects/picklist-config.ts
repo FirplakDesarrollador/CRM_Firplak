@@ -16,4 +16,4 @@ export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
   activities: ["call_result"],
 };
 
-export type PicklistRow = { id: string; object: string; field: string; value: string; sort_order: number; is_active: boolean };
+export type PicklistRow = { id: string; object: string; field: string; value: string; sort_order: number; is_active: boolean; label_en: string | null };

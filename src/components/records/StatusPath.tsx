@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import { setStatus } from "@/lib/records/phase2-actions";
 
+import { useValueLabel } from "@/lib/i18n/client";
 /** Ruta de estados (prospectos, cotizaciones, casos, campañas): clic para cambiar. */
 export function StatusPath({ object, id, options, current, canEdit, negative = [] }: {
   object: "leads" | "quotes" | "orders" | "cases" | "campaigns";
@@ -15,6 +16,7 @@ export function StatusPath({ object, id, options, current, canEdit, negative = [
   negative?: string[];
 }) {
   const [pending, start] = useTransition();
+  const valueLabel = useValueLabel();
   const [value, setValue] = useOptimistic(current);
   const [error, setError] = useState<string | null>(null);
   const index = options.indexOf(value);
@@ -50,7 +52,7 @@ export function StatusPath({ object, id, options, current, canEdit, negative = [
                 } disabled:cursor-default`}
               >
                 {done && <Check size={13} />}
-                <span className="truncate">{option}</span>
+                <span className="truncate">{valueLabel(option)}</span>
               </button>
             </li>
           );

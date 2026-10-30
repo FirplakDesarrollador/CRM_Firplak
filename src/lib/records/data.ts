@@ -14,13 +14,13 @@ import {
 import { applyFilter, applySearch, type ListParams } from "./filters";
 import type { PicklistRow } from "@/lib/objects/picklist-config";
 import { translateObjectDef } from "@/lib/i18n";
-import { getLocale } from "@/lib/i18n/server";
+import { getDataLabels, getLocale } from "@/lib/i18n/server";
 
 export type Row = Record<string, unknown> & { id: string };
 export type UserOption = { id: string; full_name: string; email: string; is_active: boolean };
 export type StageRow = {
   id: string; pipeline_id: string; name: string; sort_order: number; probability: number;
-  category: "open" | "won" | "lost"; forecast_category: string; color: string;
+  category: "open" | "won" | "lost"; forecast_category: string; color: string; name_en?: string | null;
 };
 export type PipelineWithStages = {
   id: string; name: string; description: string | null; is_default: boolean; is_active: boolean; sort_order: number;
@@ -45,8 +45,8 @@ export const getPicklistRows = cache(async (): Promise<PicklistRow[]> => {
 });
 
 export const getObjectDef = cache(async (key: ObjectKey) => {
-  const [custom, picklists, locale] = await Promise.all([getCustomFieldRows(), getPicklistRows(), getLocale()]);
-  return translateObjectDef(withCustomFields(getObject(key), custom, picklists), locale);
+  const [custom, picklists, locale, labels] = await Promise.all([getCustomFieldRows(), getPicklistRows(), getLocale(), getDataLabels()]);
+  return translateObjectDef(withCustomFields(getObject(key), custom, picklists), locale, labels);
 });
 
 export const getUsers = cache(async (): Promise<UserOption[]> => {

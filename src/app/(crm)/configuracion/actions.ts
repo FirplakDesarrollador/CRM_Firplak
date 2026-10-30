@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/session";
 import { canSystem, OBJECT_ACTIONS, PERMISSION_OBJECTS, SYSTEM_PERMISSIONS, type PermissionMap } from "@/lib/permissions";
 import { siteUrl } from "@/lib/env";
 import type { FormState } from "@/lib/records/form";
+import { VALUES_EN } from "@/lib/i18n/values-en";
 
 type Perm = "manage_users" | "customize";
 
@@ -194,6 +195,7 @@ export async function saveStage(pipelineId: string, id: string | null, _prev: Fo
   const payload = {
     pipeline_id: pipelineId,
     name,
+    name_en: nullable(fd, "name_en"),
     probability,
     category,
     forecast_category: forecast,
@@ -237,7 +239,11 @@ export async function saveCustomField(object: string, id: string | null, _prev: 
   const options = str(fd, "options").split(/\n|,/).map((o) => o.trim()).filter(Boolean);
   const type = str(fd, "field_type");
   if (["select", "multiselect"].includes(type) && options.length === 0) return { message: "Agrega al menos una opción" };
+  // Etiquetas en inglés en el mismo orden de las opciones (vacías = traducción estándar).
+  const english = str(fd, "options_en").split(/\n|,/).map((o) => o.trim());
+  const option_labels_en = Object.fromEntries(options.map((o, i) => [o, english[i] ?? ""]).filter(([, en]) => en));
   const base = {
+    option_labels_en,
     label,
     options,
     is_required: fd.get("is_required") === "on",
@@ -280,7 +286,7 @@ export async function saveSharing(_prev: FormState, fd: FormData): Promise<FormS
 export async function customizePicklist(object: string, field: string, defaults: string[]): Promise<FormState> {
   const g = await guard("customize");
   if ("denied" in g) return g.denied!;
-  const rows = defaults.map((value, i) => ({ object, field, value, sort_order: (i + 1) * 10 }));
+  const rows = defaults.map((value, i) => ({ object, field, value, sort_order: (i + 1) * 10, label_en: VALUES_EN[value] ?? null }));
   const { error } = await g.supabase.from("picklist_values").upsert(rows, { onConflict: "object,field,value", ignoreDuplicates: true });
   return error ? fail(error) : done("Ya puedes personalizar esta lista");
 }
@@ -292,15 +298,17 @@ export async function addPicklistValue(object: string, field: string, _prev: For
   if (!value) return { message: "Escribe el valor" };
   const { data: last } = await g.supabase.from("picklist_values").select("sort_order")
     .eq("object", object).eq("field", field).order("sort_order", { ascending: false }).limit(1).maybeSingle();
-  const { error } = await g.supabase.from("picklist_values").insert({ object, field, value, sort_order: (last?.sort_order ?? 0) + 10 });
-  return error ? fail(error) : done(`“${value}” agregado`);
+  const { error } = await g.supabase.from("picklist_values")
+    .insert({ object, field, value, label_en: nullable(fd, "label_en"), sort_order: (last?.sort_order ?? 0) + 10 });
+  return error ? fail(error) : done("Valor agregado");
 }
 
 export async function updatePicklistValue(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const g = await guard("customize");
   if ("denied" in g) return g.denied!;
   const { error } = await g.supabase.from("picklist_values")
-    .update({ sort_order: Number(str(fd, "sort_order")) || 0, is_active: fd.get("is_active") === "on" }).eq("id", id);
+    .update({ sort_order: Number(str(fd, "sort_order")) || 0, is_active: fd.get("is_active") === "on", label_en: nullable(fd, "label_en") })
+    .eq("id", id);
   return error ? fail(error) : done("Valor actualizado");
 }
 

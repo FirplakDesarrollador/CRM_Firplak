@@ -18,6 +18,7 @@ import type { GoalPeriodType } from "@/lib/goals/periods";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { Val } from "@/components/ui/Val";
 export const metadata: Metadata = { title: "Indicadores" };
 
 type Dashboard = {
@@ -117,7 +118,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
 
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="glass">
-          <div className="card-header"><h2 className="card-title">Embudo de ventas · {pipeline?.name}</h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Embudo de ventas</Tr> · <Val>{pipeline?.name}</Val></h2></div>
           <div className="p-4"><Funnel stages={d?.funnel ?? []} /></div>
           <p className="px-4 pb-3 text-xs text-muted"><Tr>Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</Tr></p>
         </section>

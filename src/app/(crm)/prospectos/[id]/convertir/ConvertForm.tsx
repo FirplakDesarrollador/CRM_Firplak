@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
+import { useValueLabel } from "@/lib/i18n/client";
 type Props = {
   leadId: string;
   company: string;
@@ -23,6 +24,7 @@ type Props = {
 
 export function ConvertForm(props: Props) {
   const [state, action] = useActionState(convertLead.bind(null, props.leadId), {});
+  const valueLabel = useValueLabel();
   const [mode, setMode] = useState<"new" | "existing">(props.matches.length ? "existing" : "new");
   const [createOpp, setCreateOpp] = useState(true);
 
@@ -71,7 +73,7 @@ export function ConvertForm(props: Props) {
               <label className="label" htmlFor="stage_id"><Tr>Etapa</Tr></label>
               <select id="stage_id" name="stage_id" className="select" defaultValue={props.defaultStage}>
                 {props.pipelines.map((p) => (
-                  <optgroup key={p.id} label={p.name}>{p.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup>
+                  <optgroup key={p.id} label={valueLabel(p.name)}>{p.stages.map((s) => <option key={s.id} value={s.id}>{valueLabel(s.name)}</option>)}</optgroup>
                 ))}
               </select>
               {state.errors?.stage_id && <p className="error-text">{state.errors.stage_id}</p>}
