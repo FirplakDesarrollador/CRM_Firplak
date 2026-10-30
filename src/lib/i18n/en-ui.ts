@@ -547,6 +547,13 @@ export const UI_EN: Record<string, string> = {
   "Hacer cambios con asistentes de IA": "Make changes with AI assistants",
   "Código del socio de negocio en SAP Business One (p. ej. C00123). No se repite entre cuentas.": "Business partner code in SAP Business One (e.g. C00123). Must be unique across accounts.",
   "Ese código SAP ya está asignado a otra cuenta.": "That SAP code is already assigned to another account.",
+  // Fase 18 · salida en vivo
+  "Datos de ejemplo": "Sample data",
+  "Antes de cargar tus datos reales, bórralos: se conservan los usuarios y toda la configuración (perfiles, roles, pipelines, campos, listas, reglas, procesos, informes y plantillas).": "Before loading your real data, delete them: users and all configuration are kept (profiles, roles, pipelines, fields, picklists, rules, processes, reports and templates).",
+  "¿Borrar todos los datos de ejemplo? Esta acción no se puede deshacer.": "Delete all sample data? This can't be undone.",
+  "Borrar datos de ejemplo": "Delete sample data",
+  "Datos de ejemplo borrados. La configuración se conservó.": "Sample data deleted. Configuration was kept.",
+  "Solo administración puede borrar los datos de ejemplo": "Only administrators can delete the sample data",
   "Asignada a mí": "Assigned to me",
   "Ej. Enviar cotización ajustada": "E.g. Send revised quote",
   "Ej. Seguimiento a la propuesta": "E.g. Follow up on the proposal",

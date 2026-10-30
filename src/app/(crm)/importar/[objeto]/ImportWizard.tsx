@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { CheckCircle2, Download, FileUp, Upload } from "lucide-react";
 import { parseCsv, normalizeHeader, toCsv } from "@/lib/import/csv";
-import { CHUNK_SIZE, MAX_ROWS } from "@/lib/import/config";
+import { CHUNK_SIZE, HEADER_ALIASES, MAX_ROWS } from "@/lib/import/config";
+import type { ObjectKey } from "@/lib/objects";
 import { importChunk, logImport, type ChunkResult } from "@/lib/import/actions";
 import { Alert } from "@/components/ui/Alert";
 
@@ -33,6 +34,9 @@ export function ImportWizard({ object, label, plural, path, fields, matchFields,
 
   const autoMap = (hs: string[]) => {
     const byKey = new Map<string, string>();
+    // Primero los encabezados de SAP; las etiquetas y nombres del CRM tienen prioridad.
+    const names = new Set(fields.map((f) => f.name));
+    Object.entries(HEADER_ALIASES[object as ObjectKey] ?? {}).forEach(([h, f]) => { if (names.has(f)) byKey.set(normalizeHeader(h), f); });
     fields.forEach((f) => { byKey.set(normalizeHeader(f.label), f.name); byKey.set(normalizeHeader(f.name), f.name); });
     const used = new Set<string>();
     const map: Record<string, string> = {};

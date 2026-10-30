@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 17)
+## Módulos incluidos (Fases 1 a 18)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -34,6 +34,7 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Reparto de ingresos | En la pestaña «Equipo y reparto» de la oportunidad, el valor se reparte entre vendedores en porcentajes que suman 100 % (p. ej. 50/50 cuando el cliente es de un asesor y la obra está en la zona de otro), con motivo opcional y botón «Partes iguales». Cada vendedor recibe su parte en **metas** (ventas y negocios ganados), **pronóstico** e instantáneas, y en el filtro por asesor y el ranking de **Indicadores**; las cifras del pronóstico abren los negocios donde la persona tiene participación. Quien recibe una parte entra al equipo (lectura) y recibe aviso; si cambia el propietario, su parte pasa al nuevo. Sin reparto, el 100 % es del propietario. Lo editan el propietario, su jerarquía y quien modifica todo. |
 | Asistentes de IA (MCP) | Servidor MCP en `/api/mcp` para usar el CRM desde Claude (Code y Desktop), Cursor, Antigravity o Grok. Cada persona crea su token en **Mis preferencias → Asistentes de IA** (se muestra una vez, con la configuración de cada asistente) y el asistente actúa como ella: mismos permisos y visibilidad. Herramientas: buscar, listar con filtros, ver registro, describir campos, mis pendientes, pronóstico, metas e indicadores; y, con permiso, crear y actualizar registros, mover oportunidades de etapa y completar actividades. **Todo cambio pide confirmación:** la primera llamada devuelve una vista previa y solo se aplica al repetirla con el código de confirmación (10 minutos, un solo uso). Se activa por perfil (**Usar asistentes de IA** y **Hacer cambios con asistentes de IA**); administración ve y revoca tokens y revisa el registro de uso en Configuración → Asistentes de IA. |
 | Código SAP | Campo **Código SAP (CardCode)** en cuentas para vincular cada cliente con su socio de negocio en SAP Business One: se guarda en mayúsculas y sin espacios, no se repite entre cuentas, se busca en las listas y se importa por CSV. |
+| Salida en vivo | Instalación limpia sin datos de ejemplo (`npm run db:bundle:produccion`) o botón **Borrar datos de ejemplo** en Configuración → Resumen (conserva usuarios y configuración). La importación reconoce los encabezados de las exportaciones de **SAP Business One** (CardCode, CardName, LicTradNum, ItemCode…) y enlaza contactos y oportunidades con su cuenta por el código SAP; las cuentas se pueden crear o actualizar por Código SAP. Regla «Cliente requiere código SAP» lista para activar. Guía completa en [docs/puesta-en-produccion.md](docs/puesta-en-produccion.md). |
 | Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas, los mensajes del servidor y los **valores de las listas**: tipos, estados, orígenes, etapas, pipelines y opciones de campos personalizados, en listas, fichas, filtros, formularios, Kanban, informes e indicadores. Los valores se guardan en español; el inglés usa un diccionario estándar y se puede ajustar en Configuración (Listas de valores, Pipelines y etapas, Campos personalizados). Los campos personalizados y los pipelines también tienen **nombre (y ayuda) en inglés** opcional. Siguen como se escribieron los textos libres (nombres de registros, notas, mensajes de reglas y nombres de informes). |
 | Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
 | Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
@@ -50,6 +51,10 @@ Los objetos se describen con metadatos en `src/lib/objects/*.ts` (campos, seccio
   visibilidad por **jerarquía de roles** (un gerente ve lo de su equipo) y **compartir por defecto** por objeto.
 - Un usuario no puede cambiar su propio rol, perfil ni estado (trigger en base de datos).
 - Las claves van en `.env.local` (no versionado). La `service_role` solo se usa en el servidor y es opcional.
+
+## Salir en vivo
+
+Sigue [docs/puesta-en-produccion.md](docs/puesta-en-produccion.md): Supabase, base limpia (`npm run db:bundle:produccion`), publicación en Vercel, primer administrador, estructura comercial y carga de datos desde SAP Business One.
 
 ## Probar sin Supabase (modo demo)
 
@@ -130,6 +135,7 @@ En el modo demo ya está configurado: al arrancar se imprime un token de Luis pa
 | `npm run db:types:local` | Regenera `src/lib/database.types.ts` desde las migraciones (sin Docker). |
 | `npm run db:types` | Regenera los tipos desde el proyecto enlazado con la CLI de Supabase. |
 | `npm run db:bundle` | Genera `supabase/setup.sql` (migraciones + semilla) para el SQL Editor. |
+| `npm run db:bundle:produccion` | Genera `supabase/setup-produccion.sql`: lo mismo, sin los datos de ejemplo (instalación limpia). |
 | `npm run db:push` | Aplica migraciones y semilla al proyecto enlazado. |
 
 ## Estructura

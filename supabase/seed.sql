@@ -686,3 +686,14 @@ from public.approval_processes p,
   ) as v(step_order, name, conditions, approver_type)
 where p.object = 'quotes' and p.name = 'Descuento superior al 15 %'
   and not exists (select 1 from public.approval_steps s where s.process_id = p.id);
+
+-- ===========================================================================
+-- Fase 18: regla lista para la salida en vivo (inactiva: se activa cuando todos los
+-- clientes tengan su código SAP)
+-- ===========================================================================
+insert into public.validation_rules (object, name, description, conditions, error_message, error_field, is_active)
+select 'accounts', 'Cliente requiere código SAP',
+  'Las cuentas de tipo Cliente deben tener su código de socio de negocio en SAP Business One (CardCode).',
+  '[{"field":"account_type","op":"eq","value":"Cliente"},{"field":"sap_card_code","op":"empty","value":""}]'::jsonb,
+  'Las cuentas de tipo Cliente requieren el código SAP: créalo primero en SAP y cópialo aquí.', 'sap_card_code', false
+where not exists (select 1 from public.validation_rules r where r.object = 'accounts' and r.name = 'Cliente requiere código SAP');

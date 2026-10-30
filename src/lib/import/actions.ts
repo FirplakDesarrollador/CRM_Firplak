@@ -81,6 +81,16 @@ export async function importChunk(input: ChunkInput): Promise<ChunkResult> {
         if (hit) map.set(norm(name), hit.id);
       }
     }
+    // Cuentas: también por su código SAP (CardCode), en mayúsculas y sin espacios.
+    if (field.lookup === "accounts") {
+      const codeOf = (n: string) => n.toUpperCase().replace(/\s/g, "");
+      const pending = names.filter((n) => !map.has(norm(n)));
+      if (pending.length) {
+        const { data } = await db.from("accounts").select("id, sap_card_code").in("sap_card_code", pending.map(codeOf));
+        const byCode = new Map(((data ?? []) as { id: string; sap_card_code: string }[]).map((r) => [r.sap_card_code, r.id]));
+        for (const n of pending) if (byCode.has(codeOf(n))) map.set(norm(n), byCode.get(codeOf(n))!);
+      }
+    }
     lookupMaps.set(field.name, map);
   }
 
@@ -88,7 +98,8 @@ export async function importChunk(input: ChunkInput): Promise<ChunkResult> {
   const existing = new Map<string, Record<string, unknown>>();
   // El NIT se compara solo por sus dígitos ("860.045.998-1" = "860045998-1").
   const digits = (v: unknown) => String(v ?? "").replace(/\D/g, "");
-  const keyOf = (v: unknown) => (matchField === "tax_id" ? digits(v) : norm(String(v ?? "")));
+  const keyOf = (v: unknown) => (matchField === "tax_id" ? digits(v)
+    : matchField === "sap_card_code" ? norm(String(v ?? "").replace(/\s/g, "")) : norm(String(v ?? "")));
   if (matchField === "tax_id" && matchCol >= 0) {
     const wanted = new Set(input.rows.map((r) => digits(r[matchCol])).filter((d) => d.length >= 6));
     if (wanted.size) {
@@ -100,7 +111,9 @@ export async function importChunk(input: ChunkInput): Promise<ChunkResult> {
       }
     }
   } else if (matchField && matchCol >= 0) {
-    const keys = [...new Set(input.rows.map((r) => (r[matchCol] ?? "").trim()).filter(Boolean))];
+    // El código SAP se guarda en mayúsculas y sin espacios.
+    const sapCode = (v: string) => (matchField === "sap_card_code" ? v.toUpperCase().replace(/\s/g, "") : v);
+    const keys = [...new Set(input.rows.map((r) => sapCode((r[matchCol] ?? "").trim())).filter(Boolean))];
     if (keys.length) {
       const { data } = await db.from(def.table).select("*").in(columnFor(matchField), keys);
       for (const row of (data ?? []) as Record<string, unknown>[]) existing.set(norm(String(row[matchField] ?? "")), row);

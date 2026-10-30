@@ -493,3 +493,14 @@ export async function runAlertsNow(_prev?: FormState, _fd?: FormData): Promise<F
   const { data, error } = await g.supabase.rpc("generate_alerts");
   return error ? fail(error) : done(`${data ?? 0} aviso(s) nuevo(s) enviados`);
 }
+
+// ---------------------------------------------------------------- Salida en vivo
+/** Borra los registros de demostración (is_demo) y conserva la configuración. */
+export async function purgeDemoData(_prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("manage_users");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.rpc("purge_demo_data");
+  if (error) return fail(error);
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Datos de ejemplo borrados. La configuración se conservó." };
+}

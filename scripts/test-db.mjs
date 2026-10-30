@@ -668,4 +668,24 @@ await check('el código SAP de las cuentas se normaliza y no se repite', async (
   assert.equal((await q(`select sap_card_code from accounts where id = $1`, [a.id]))[0].sap_card_code, null);
 });
 
+console.log('Fase 18');
+await check('borrar los datos de ejemplo deja la configuración y solo lo puede hacer administración', async () => {
+  const configBefore = await q(`select (select count(*) from pipelines) p, (select count(*) from custom_field_definitions) f,
+                                       (select count(*) from permission_profiles) pp, (select count(*) from validation_rules) v`);
+  const demo = await as(admin, () => q(`select demo_data_counts() c`));
+  assert.ok(Number(demo[0].c.accounts) > 0 && Number(demo[0].c.orders) > 0);
+  // Un registro real (no demo) se conserva.
+  const [real] = await q(`insert into accounts (name, account_type, owner_id) values ('Cliente real S.A.S.', 'Cliente', $1) returning id`, [admin.id]);
+  await assert.rejects(as(rep, () => q(`select purge_demo_data()`)));
+  await as(admin, () => q(`select purge_demo_data()`));
+  const after = await as(admin, () => q(`select demo_data_counts() c`));
+  assert.ok(Object.values(after[0].c).every((n) => Number(n) === 0));
+  assert.equal(await count(`select count(*) n from accounts where id = $1`, [real.id]), 1);
+  assert.deepEqual(await q(`select (select count(*) from pipelines) p, (select count(*) from custom_field_definitions) f,
+                                   (select count(*) from permission_profiles) pp, (select count(*) from validation_rules) v`), configBefore);
+  // Los bloqueos vuelven a estar activos: un pedido activado no se puede borrar.
+  const [acc] = await q(`select id from accounts where id = $1`, [real.id]);
+  assert.ok(acc);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

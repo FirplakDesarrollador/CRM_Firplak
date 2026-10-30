@@ -3336,6 +3336,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      demo_data_counts: {
+        Args: never
+        Returns: Json
+      }
       execute_automation_actions: {
         Args: {
           p_rule: string
@@ -3531,6 +3535,10 @@ export type Database = {
           id: string
           label: string
         }[]
+      }
+      purge_demo_data: {
+        Args: never
+        Returns: Json
       }
       recalc_order: {
         Args: {

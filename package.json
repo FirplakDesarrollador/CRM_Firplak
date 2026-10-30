@@ -13,6 +13,7 @@
     "db:types:local": "node scripts/gen-types-local.mjs",
     "db:test": "node scripts/test-db.mjs",
     "db:bundle": "node scripts/bundle-sql.mjs",
+    "db:bundle:produccion": "node scripts/bundle-sql.mjs --produccion",
     "db:push": "supabase db push --include-seed"
   },
   "dependencies": {
