@@ -1,0 +1,58 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState } from "react";
+import type { FieldDef, ObjectDef } from "@/lib/objects";
+import type { FormState } from "@/lib/records/form";
+import { Alert } from "@/components/ui/Alert";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FieldInput, type FieldInputContext } from "./FieldInput";
+
+type Props = {
+  def: Pick<ObjectDef, "sections" | "label">;
+  fields: FieldDef[];
+  record: Record<string, unknown> | null;
+  ctx: FieldInputContext;
+  action: (prev: FormState, formData: FormData) => Promise<FormState>;
+  cancelHref: string;
+  returnTo?: string;
+};
+
+export function RecordForm({ def, fields, record, ctx, action, cancelHref, returnTo }: Props) {
+  const [state, formAction] = useActionState(action, {});
+  const custom = (record?.custom_fields ?? {}) as Record<string, unknown>;
+
+  return (
+    <form action={formAction} className="space-y-5" noValidate>
+      {returnTo && <input type="hidden" name="_return" value={returnTo} />}
+      {state.message && <Alert tone="error">{state.message}</Alert>}
+      {def.sections.map((section) => {
+        const sectionFields = fields.filter((f) => (f.section ?? "info") === section.key);
+        if (!sectionFields.length) return null;
+        return (
+          <section key={section.key} className="card">
+            <div className="card-header"><h2 className="card-title">{section.label}</h2></div>
+            <div className="grid gap-x-5 gap-y-4 p-4 sm:grid-cols-2">
+              {sectionFields.map((field) => (
+                <div key={field.name} className={field.wide ? "sm:col-span-2" : undefined}>
+                  <FieldInput
+                    field={field}
+                    ctx={ctx}
+                    value={field.custom ? custom[field.name.slice(3)] : record?.[field.name]}
+                    relation={field.relation ? (record?.[field.relation] as never) : null}
+                    error={state.errors?.[field.name]}
+                    echo={state.values?.[field.name]}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+      <div className="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
+        <Link href={cancelHref} className="btn">Cancelar</Link>
+        <SubmitButton pendingText="Guardando…">Guardar {def.label.toLowerCase()}</SubmitButton>
+      </div>
+    </form>
+  );
+}

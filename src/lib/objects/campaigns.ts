@@ -1,0 +1,41 @@
+import type { ObjectDef } from "./types";
+import { CAMPAIGN_STATUSES, CAMPAIGN_TYPES } from "./picklists";
+
+export const campaigns: ObjectDef = {
+  key: "campaigns",
+  table: "campaigns",
+  label: "Campaña",
+  plural: "Campañas",
+  path: "/campanas",
+  permission: "campaigns",
+  nameField: "name",
+  select: "*, owner:profiles!campaigns_owner_id_fkey(id, full_name, email), parent:parent_id(id, name)",
+  searchColumns: ["name", "campaign_type"],
+  defaultColumns: ["name", "campaign_type", "status", "start_date", "end_date", "owner_id"],
+  defaultSort: { field: "start_date", dir: "desc" },
+  highlightFields: ["campaign_type", "status", "start_date", "end_date", "owner_id"],
+  sections: [
+    { key: "info", label: "Información de la campaña" },
+    { key: "budget", label: "Presupuesto y metas" },
+    { key: "custom", label: "Información adicional" },
+    { key: "description", label: "Descripción" },
+    { key: "system", label: "Sistema" },
+  ],
+  fields: [
+    { name: "name", label: "Nombre de la campaña", type: "text", required: true, section: "info" },
+    { name: "campaign_type", label: "Tipo", type: "select", options: CAMPAIGN_TYPES, required: true, section: "info" },
+    { name: "status", label: "Estado", type: "select", options: CAMPAIGN_STATUSES, required: true, section: "info" },
+    { name: "start_date", label: "Fecha de inicio", type: "date", section: "info" },
+    { name: "end_date", label: "Fecha de fin", type: "date", section: "info" },
+    { name: "parent_id", label: "Campaña principal", type: "lookup", lookup: "campaigns", relation: "parent", section: "info" },
+    { name: "is_active", label: "Activa", type: "checkbox", section: "info" },
+    { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
+    { name: "budgeted_cost", label: "Costo presupuestado", type: "currency", section: "budget" },
+    { name: "actual_cost", label: "Costo real", type: "currency", section: "budget" },
+    { name: "expected_revenue", label: "Ingresos esperados", type: "currency", section: "budget" },
+    { name: "expected_response", label: "Respuesta esperada", type: "percent", section: "budget" },
+    { name: "description", label: "Descripción", type: "textarea", wide: true, section: "description" },
+    { name: "created_at", label: "Creada", type: "datetime", readOnly: true, formHidden: true, section: "system" },
+    { name: "updated_at", label: "Última modificación", type: "datetime", readOnly: true, formHidden: true, section: "system" },
+  ],
+};

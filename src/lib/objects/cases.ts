@@ -1,0 +1,47 @@
+import type { ObjectDef } from "./types";
+import { CASE_ORIGINS, CASE_PRIORITIES, CASE_STATUSES, CASE_TYPES } from "./picklists";
+
+export const cases: ObjectDef = {
+  key: "cases",
+  table: "cases",
+  label: "Caso",
+  plural: "Casos",
+  path: "/casos",
+  permission: "cases",
+  nameField: "subject",
+  select: [
+    "*",
+    "owner:profiles!cases_owner_id_fkey(id, full_name, email)",
+    "account:accounts!cases_account_id_fkey(id, name)",
+    "contact:contacts!cases_contact_id_fkey(id, full_name)",
+    "product:products!cases_product_id_fkey(id, name)",
+  ].join(", "),
+  searchColumns: ["subject", "case_number", "description"],
+  defaultColumns: ["case_number", "subject", "account_id", "status", "priority", "created_at", "owner_id"],
+  defaultSort: { field: "created_at", dir: "desc" },
+  highlightFields: ["account_id", "contact_id", "priority", "origin", "owner_id"],
+  sections: [
+    { key: "info", label: "Información del caso" },
+    { key: "custom", label: "Información adicional" },
+    { key: "description", label: "Descripción y solución" },
+    { key: "system", label: "Sistema" },
+  ],
+  fields: [
+    { name: "case_number", label: "N.º de caso", type: "text", readOnly: true, section: "info" },
+    { name: "subject", label: "Asunto", type: "text", required: true, section: "info" },
+    { name: "status", label: "Estado", type: "select", options: CASE_STATUSES, required: true, section: "info" },
+    { name: "priority", label: "Prioridad", type: "select", options: CASE_PRIORITIES, required: true, section: "info" },
+    { name: "case_type", label: "Tipo", type: "select", options: CASE_TYPES, section: "info" },
+    { name: "origin", label: "Origen", type: "select", options: CASE_ORIGINS, section: "info" },
+    { name: "account_id", label: "Cuenta", type: "lookup", lookup: "accounts", relation: "account", section: "info" },
+    { name: "contact_id", label: "Contacto", type: "lookup", lookup: "contacts", relation: "contact", section: "info" },
+    { name: "product_id", label: "Producto", type: "lookup", lookup: "products", relation: "product", section: "info" },
+    { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
+    { name: "is_closed", label: "Cerrado", type: "checkbox", readOnly: true, formHidden: true, section: "info" },
+    { name: "closed_at", label: "Cerrado el", type: "datetime", readOnly: true, formHidden: true, section: "info" },
+    { name: "description", label: "Descripción", type: "textarea", wide: true, section: "description" },
+    { name: "resolution", label: "Solución", type: "textarea", wide: true, section: "description" },
+    { name: "created_at", label: "Abierto el", type: "datetime", readOnly: true, formHidden: true, section: "system" },
+    { name: "updated_at", label: "Última modificación", type: "datetime", readOnly: true, formHidden: true, section: "system" },
+  ],
+};
