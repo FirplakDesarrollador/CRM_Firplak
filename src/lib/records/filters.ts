@@ -1,3 +1,4 @@
+import { TEAM_OBJECTS, type TeamObject } from "@/lib/teams/config";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { columnFor, type FieldDef, type Filter, type FilterOp, type ListDefinition, type ObjectDef } from "@/lib/objects";
 
@@ -163,7 +164,7 @@ export type ListParams = {
   filters: Filter[];
   columns: string[];
   sort: { field: string; dir: "asc" | "desc" };
-  scope: "mine" | "all";
+  scope: "mine" | "team" | "all";
   page: number;
   pageSize: number;
 };
@@ -199,7 +200,9 @@ export function parseListParams(def: ObjectDef & { listCustom?: string[] }, sp: 
 
   const sortField = one(sp.sort) || view?.sort?.field || def.defaultSort.field;
   const dir = (one(sp.dir) || view?.sort?.dir || def.defaultSort.dir) === "desc" ? "desc" : "asc";
-  const scope = (one(sp.scope) || view?.scope || "all") === "mine" ? "mine" : "all";
+  const rawScope = one(sp.scope) || view?.scope || "all";
+  // «Equipo»: registros donde el usuario está en el equipo (solo cuentas y oportunidades).
+  const scope = rawScope === "mine" ? "mine" : rawScope === "team" && TEAM_OBJECTS.includes(def.key as TeamObject) ? "team" : "all";
   const page = Math.max(1, Number(one(sp.page)) || 1);
 
   return {

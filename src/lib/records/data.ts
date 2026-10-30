@@ -84,6 +84,21 @@ export async function listRecords(def: ObjectDef, params: ListParams, userId: st
   let query = db.from(def.table).select(def.select, { count: "exact" });
 
   if (params.scope === "mine" && def.hasOwner !== false) query = query.eq("owner_id", userId);
+  if (params.scope === "team") {
+    // Cuentas de cuyo equipo hace parte; oportunidades de su equipo o de esas cuentas (si el
+    // equipo de cuenta le da acceso a sus oportunidades).
+    const none = "00000000-0000-0000-0000-000000000000";
+    const { data: accTeams } = await db.from("account_team_members").select("account_id, opportunity_access").eq("user_id", userId);
+    const accRows = (accTeams ?? []) as { account_id: string; opportunity_access: string }[];
+    if (def.key === "accounts") {
+      query = query.in("id", accRows.length ? accRows.map((r) => r.account_id) : [none]);
+    } else {
+      const { data: oppTeams } = await db.from("opportunity_team_members").select("opportunity_id").eq("user_id", userId);
+      const oppIds = ((oppTeams ?? []) as { opportunity_id: string }[]).map((r) => r.opportunity_id);
+      const accIds = accRows.filter((r) => r.opportunity_access !== "none").map((r) => r.account_id);
+      query = query.or(`id.in.(${[none, ...oppIds].join(",")}),account_id.in.(${[none, ...accIds].join(",")})`);
+    }
+  }
   for (const filter of params.filters) query = applyFilter(query, def, filter, userId);
   if (params.q) query = applySearch(query, def, params.q);
 
@@ -127,7 +142,10 @@ export async function getRecordAccess(object: ObjectKey, ownerId: string | null,
       locked,
     ]
     : [
-      supabase.rpc("can_edit_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
+      // Con el id del registro también cuenta el acceso de edición por equipo (Fase 15).
+      recordId
+        ? supabase.rpc("can_edit_team_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000", p_id: recordId })
+        : supabase.rpc("can_edit_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
       supabase.rpc("can_delete_record", { p_object: object, p_owner: ownerId ?? "00000000-0000-0000-0000-000000000000" }),
       locked,
     ]);

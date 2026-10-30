@@ -49,4 +49,8 @@ export const VALUES_EN: Record<string, string> = {
   Santanderes: "Santanderes", Exportación: "Export",
   Decisor: "Decision maker", Influenciador: "Influencer", Especificador: "Specifier", Comprador: "Buyer", Usuario: "User",
   Llamada: "Call",
+  // Roles en equipos de cuenta y oportunidad
+  "Gerente de cuenta": "Account manager", "Asesor comercial": "Sales rep", "Asesor de proyectos": "Project advisor",
+  "Soporte técnico": "Technical support", "Gerente comercial": "Sales manager", "Ejecutivo de canal": "Channel manager",
+  "Servicio al cliente": "Customer service", "Patrocinador ejecutivo": "Executive sponsor",
 };

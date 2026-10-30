@@ -10,6 +10,7 @@ import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
 import { FieldHistory } from "@/components/records/FieldHistory";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
+import { TeamCard } from "@/components/teams/TeamCard";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
 import { can } from "@/lib/permissions";
@@ -48,7 +49,8 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
   const oppRows = (opps.data ?? []) as unknown as Row[];
   const openAmount = oppRows.filter((o) => !o.is_closed).reduce((s, o) => s + Number(o.amount), 0);
   const wonAmount = oppRows.filter((o) => o.is_won).reduce((s, o) => s + Number(o.amount), 0);
-  const tab = sp.tab === "detalles" ? "detalles" : sp.tab === "historial" ? "historial" : "relacionado";
+  const tab = (["detalles", "equipo", "historial"] as const).find((k) => k === sp.tab) ?? "relacionado";
+  const owner = row.owner as { full_name?: string; email?: string } | null;
   const path = `/cuentas/${id}`;
 
   return (
@@ -83,12 +85,15 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
         <div className="min-w-0 space-y-4">
           <div className="card">
             <Tabs basePath={path} active={tab} tabs={[
-              { key: "relacionado", label: "Relacionado" },
+              { key: "relacionado", label: "Relacionado" }, { key: "equipo", label: "Equipo" },
               { key: "detalles", label: "Detalles" }, { key: "historial", label: "Historial de cambios" },
             ]} />
           </div>
           {tab === "historial" ? (
             <FieldHistory object="accounts" recordId={id} />
+          ) : tab === "equipo" ? (
+            <TeamCard object="accounts" recordId={id} ownerId={(row.owner_id as string | null) ?? null}
+              ownerName={owner?.full_name || owner?.email || null} />
           ) : tab === "detalles" ? (
             <DetailSections def={def} row={row} />
           ) : (

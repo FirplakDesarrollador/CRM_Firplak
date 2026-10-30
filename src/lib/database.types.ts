@@ -13,6 +13,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_team_members: {
+        Row: {
+          account_access: string
+          account_id: string
+          case_access: string
+          contact_access: string
+          created_at: string
+          created_by: string | null
+          id: string
+          opportunity_access: string
+          team_role: string
+          user_id: string
+        }
+        Insert: {
+          account_access?: string
+          account_id: string
+          case_access?: string
+          contact_access?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          opportunity_access?: string
+          team_role?: string
+          user_id: string
+        }
+        Update: {
+          account_access?: string
+          account_id?: string
+          case_access?: string
+          contact_access?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          opportunity_access?: string
+          team_role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_team_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_team_members_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_number: string
@@ -1074,6 +1135,60 @@ export type Database = {
         Relationships: [
         ]
       }
+      default_team_members: {
+        Row: {
+          access: string
+          case_access: string
+          contact_access: string
+          created_at: string
+          id: string
+          object: string
+          opportunity_access: string
+          owner_id: string
+          team_role: string
+          user_id: string
+        }
+        Insert: {
+          access?: string
+          case_access?: string
+          contact_access?: string
+          created_at?: string
+          id?: string
+          object: string
+          opportunity_access?: string
+          owner_id?: string
+          team_role?: string
+          user_id: string
+        }
+        Update: {
+          access?: string
+          case_access?: string
+          contact_access?: string
+          created_at?: string
+          id?: string
+          object?: string
+          opportunity_access?: string
+          owner_id?: string
+          team_role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "default_team_members_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "default_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body: string
@@ -1829,6 +1944,58 @@ export type Database = {
             columns: ["to_stage_id"]
             isOneToOne: false
             referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_team_members: {
+        Row: {
+          access: string
+          created_at: string
+          created_by: string | null
+          id: string
+          opportunity_id: string
+          team_role: string
+          user_id: string
+        }
+        Insert: {
+          access?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          opportunity_id: string
+          team_role?: string
+          user_id: string
+        }
+        Update: {
+          access?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          opportunity_id?: string
+          team_role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_team_members_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_team_members_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2801,6 +2968,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_default_team: {
+        Args: {
+          p_object: string
+          p_id: string
+        }
+        Returns: number
+      }
       advance_approval: {
         Args: {
           p_request: string
@@ -2836,9 +3010,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_edit_team_record: {
+        Args: {
+          p_object: string
+          p_owner: string
+          p_id: string
+        }
+        Returns: boolean
+      }
       can_manage_goal: {
         Args: {
           p_user: string
+        }
+        Returns: boolean
+      }
+      can_manage_team: {
+        Args: {
+          p_object: string
+          p_id: string
         }
         Returns: boolean
       }
@@ -2846,6 +3035,14 @@ export type Database = {
         Args: {
           p_object: string
           p_owner: string
+        }
+        Returns: boolean
+      }
+      can_read_team_record: {
+        Args: {
+          p_object: string
+          p_owner: string
+          p_id: string
         }
         Returns: boolean
       }
@@ -2895,6 +3092,14 @@ export type Database = {
           p_owner?: string
         }
         Returns: Json
+      }
+      copy_default_team: {
+        Args: {
+          p_object: string
+          p_id: string
+          p_owner: string
+        }
+        Returns: number
       }
       create_order_from_quote: {
         Args: {
@@ -3169,6 +3374,13 @@ export type Database = {
       take_forecast_snapshot: {
         Args: never
         Returns: number
+      }
+      team_access: {
+        Args: {
+          p_object: string
+          p_id: string
+        }
+        Returns: string
       }
       try_numeric: {
         Args: {

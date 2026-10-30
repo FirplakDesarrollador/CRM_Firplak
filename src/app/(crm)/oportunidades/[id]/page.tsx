@@ -12,6 +12,7 @@ import { StageBadge } from "@/components/records/FieldValue";
 import { FieldHistory } from "@/components/records/FieldHistory";
 import { StagePath } from "@/components/opportunities/StagePath";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
+import { TeamCard } from "@/components/teams/TeamCard";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getPipelines, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
@@ -53,7 +54,8 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
   const orderRows = (ordersRes.data ?? []) as unknown as Row[];
   const quoteRows = (quotesRes.data ?? []) as unknown as Row[];
   const stages = pipelines.find((p) => p.id === row.pipeline_id)?.stages ?? [];
-  const tab = (["historial", "cotizaciones", "pedidos", "cambios"] as const).find((k) => k === sp.tab) ?? "detalles";
+  const tab = (["historial", "cotizaciones", "pedidos", "equipo", "cambios"] as const).find((k) => k === sp.tab) ?? "detalles";
+  const owner = row.owner as { full_name?: string; email?: string } | null;
   const path = `/oportunidades/${id}`;
   const locale = await getLocale();
   const t = makeT(locale);
@@ -95,12 +97,16 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
               { key: "detalles", label: "Detalles" },
               { key: "cotizaciones", label: "Cotizaciones", count: quoteRows.length },
               ...(can(user.access, "orders", "read") ? [{ key: "pedidos", label: "Pedidos", count: orderRows.length }] : []),
+              { key: "equipo", label: "Equipo" },
               { key: "historial", label: "Historial de etapas", count: history.data?.length ?? 0 },
               { key: "cambios", label: "Historial de cambios" },
             ]} />
           </div>
           {tab === "cambios" ? (
             <FieldHistory object="opportunities" recordId={id} />
+          ) : tab === "equipo" ? (
+            <TeamCard object="opportunities" recordId={id} ownerId={(row.owner_id as string | null) ?? null}
+              ownerName={owner?.full_name || owner?.email || null} />
           ) : tab === "cotizaciones" ? (
             <RelatedList def={quotesDef} title="Cotizaciones" rows={quoteRows}
               columns={["quote_number", "name", "status", "net_total", "grand_total", "is_synced", "expiration_date"]}

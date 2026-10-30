@@ -71,7 +71,7 @@ export type ListDefinition = {
   filters?: Filter[];
   columns?: string[];
   sort?: { field: string; dir: "asc" | "desc" };
-  scope?: "mine" | "all";
+  scope?: "mine" | "team" | "all";
 };
 
 export type CustomFieldRow = {

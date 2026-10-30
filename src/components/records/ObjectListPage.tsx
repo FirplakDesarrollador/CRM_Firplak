@@ -8,6 +8,7 @@ import type { ObjectKey } from "@/lib/objects";
 import { getListViews, getObjectDef, getPipelines, getUsers, listRecords } from "@/lib/records/data";
 import { parseListParams } from "@/lib/records/filters";
 import { ListTable } from "./ListTable";
+import { TEAM_OBJECTS, type TeamObject } from "@/lib/teams/config";
 import { ListToolbar } from "./ListToolbar";
 import { getLocale } from "@/lib/i18n/server";
 import { makeT } from "@/lib/i18n";
@@ -79,6 +80,7 @@ export async function ObjectListPage({
         canExport={canSystem(user.access, "export")}
         q={params.q}
         scope={params.scope}
+        teamScope={TEAM_OBJECTS.includes(object as TeamObject)}
         filters={params.filters}
         columns={params.columns}
         sort={params.sort}

@@ -536,4 +536,53 @@ await check('los nombres en inglés de campos y pipelines solo los cambia quien 
   assert.equal((await q(`select name_en from pipelines where is_default`))[0].name_en, 'Projects and builders');
 });
 
+console.log('Fase 15');
+await check('el equipo de cuenta da acceso a la cuenta y a sus oportunidades sin permitir eliminar', async () => {
+  const [acc] = await q(`select a.id, a.name from accounts a where a.owner_id = $1
+                         and (select count(*) from opportunities o where o.account_id = a.id) > 1
+                         and exists (select 1 from quotes x where x.account_id = a.id) order by a.name limit 1`, [admin.id]);
+  const opps = await count(`select count(*) n from opportunities where account_id = $1`, [acc.id]);
+  assert.equal(await as(rep, () => count(`select count(*) n from opportunities where account_id = $1`, [acc.id])), 0);
+  // El asesor no gestiona equipos ajenos; el propietario no entra a su propio equipo.
+  await assert.rejects(as(rep, () => q(`insert into account_team_members (account_id, user_id) values ($1, $2)`, [acc.id, rep.id])));
+  await assert.rejects(as(admin, () => q(`insert into account_team_members (account_id, user_id) values ($1, $2)`, [acc.id, admin.id])));
+  await as(admin, () => q(`insert into account_team_members (account_id, user_id, team_role, account_access, opportunity_access)
+                           values ($1, $2, 'Especificador', 'read', 'edit')`, [acc.id, rep.id]));
+  assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title like '%' || $2 || '%'`, [rep.id, acc.name]), 1);
+  assert.equal(await as(rep, () => count(`select count(*) n from opportunities where account_id = $1`, [acc.id])), opps);
+  assert.ok(await as(rep, () => count(`select count(*) n from quotes where account_id = $1`, [acc.id])) > 0);
+  // Edita las oportunidades (nivel edición) pero no la cuenta (lectura) ni las cotizaciones; no elimina.
+  await as(rep, () => q(`update opportunities set next_step = 'Revisión con especificador' where account_id = $1`, [acc.id]));
+  assert.equal(await count(`select count(*) n from opportunities where account_id = $1 and next_step = 'Revisión con especificador'`, [acc.id]), opps);
+  await as(rep, () => q(`update accounts set description = 'cambio del equipo' where id = $1`, [acc.id]));
+  assert.equal(await count(`select count(*) n from accounts where id = $1 and description = 'cambio del equipo'`, [acc.id]), 0);
+  await as(rep, () => q(`update quotes set name = 'x' where account_id = $1`, [acc.id]));
+  assert.equal(await count(`select count(*) n from quotes where account_id = $1 and name = 'x'`, [acc.id]), 0);
+  await as(rep, () => q(`delete from opportunities where account_id = $1`, [acc.id]));
+  assert.equal(await count(`select count(*) n from opportunities where account_id = $1`, [acc.id]), opps);
+  assert.equal((await as(rep, () => q(`select can_edit_team_record('opportunities', owner_id, id) ok from opportunities where account_id = $1 limit 1`, [acc.id])))[0].ok, true);
+  // Al pasarle la cuenta, sale del equipo (ya es propietario).
+  await q(`update accounts set owner_id = $2 where id = $1`, [acc.id, rep.id]);
+  assert.equal(await count(`select count(*) n from account_team_members where account_id = $1`, [acc.id]), 0);
+  await q(`update accounts set owner_id = $2 where id = $1`, [acc.id, admin.id]);
+});
+
+await check('el equipo predeterminado se agrega al crear una oportunidad si el propietario lo activa', async () => {
+  await as(rep, () => q(`insert into default_team_members (object, user_id, team_role, access) values ('opportunities', $1, 'Gerente comercial', 'edit')`, [mgr.id]));
+  await assert.rejects(as(rep, () => q(`insert into default_team_members (owner_id, object, user_id) values ($1, 'opportunities', $2)`, [admin.id, rep.id])));
+  const create = () => as(rep, () => q(`insert into opportunities (name, account_id, pipeline_id, stage_id, amount, close_date)
+    select $1, a.id, p.id, (select id from pipeline_stages where pipeline_id = p.id order by sort_order limit 1), 1000000, current_date + 30
+    from pipelines p, (select id from accounts order by name limit 1) a where p.is_default returning id`, [`Equipo auto ${Math.random()}`]));
+  const [first] = await create();
+  assert.equal(await count(`select count(*) n from opportunity_team_members where opportunity_id = $1`, [first.id]), 0);
+  await q(`update profiles set preferences = preferences || '{"team_auto_add_opportunities": true}' where id = $1`, [rep.id]);
+  const [second] = await create();
+  const [m] = await q(`select user_id, access, team_role from opportunity_team_members where opportunity_id = $1`, [second.id]);
+  assert.equal(m.user_id, mgr.id);
+  assert.equal(m.access, 'edit');
+  // El gerente ya la veía por jerarquía; un usuario ajeno con el botón no puede copiar equipos.
+  await assert.rejects(as(mgr, () => q(`select add_default_team('accounts', (select id from accounts where owner_id = $1 limit 1))`, [admin.id])));
+  assert.equal((await as(rep, () => q(`select add_default_team('opportunities', $1) n`, [first.id])))[0].n, 1);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

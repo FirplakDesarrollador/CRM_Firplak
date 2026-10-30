@@ -6,7 +6,8 @@ import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getObjectDef, getPicklistRows } from "@/lib/records/data";
 import { OBJECTS, getObject, type ObjectKey } from "@/lib/objects";
-import { EDITABLE_PICKLISTS } from "@/lib/objects/picklist-config";
+import { EDITABLE_PICKLISTS, EXTRA_PICKLISTS } from "@/lib/objects/picklist-config";
+import { getT } from "@/lib/i18n/server";
 import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { VALUES_EN } from "@/lib/i18n/values-en";
@@ -21,7 +22,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
   const objects = Object.keys(EDITABLE_PICKLISTS) as ObjectKey[];
   const object = (objects.includes(sp.objeto as ObjectKey) ? sp.objeto : objects[0]) as ObjectKey;
   // Etiquetas de campo traducidas; las opciones estándar salen de la definición del código.
-  const [def, rows] = await Promise.all([getObjectDef(object), getPicklistRows().then((all) => all.filter((r) => r.object === object))]);
+  const [def, rows, t] = await Promise.all([getObjectDef(object), getPicklistRows().then((all) => all.filter((r) => r.object === object)), getT()]);
   const standard = getObject(object);
 
   return (
@@ -41,11 +42,12 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
         </div>
       </div>
       {(EDITABLE_PICKLISTS[object] ?? []).map((fieldName) => {
-        const field = def.fields.find((f) => f.name === fieldName);
+        const extra = EXTRA_PICKLISTS[fieldName];
+        const field = def.fields.find((f) => f.name === fieldName) ?? (extra ? { label: t(extra.label) } : null);
         if (!field) return null;
         const values = rows.filter((r) => r.field === fieldName).sort((a, b) => a.sort_order - b.sort_order);
         const customized = values.length > 0;
-        const stdOptions = standard.fields.find((f) => f.name === fieldName)?.options ?? [];
+        const stdOptions = standard.fields.find((f) => f.name === fieldName)?.options ?? extra?.options ?? [];
         return (
           <section key={fieldName} className="card overflow-hidden">
             <div className="card-header">

@@ -26,7 +26,9 @@ type Props = {
   canShare: boolean;
   canExport: boolean;
   q: string;
-  scope: "mine" | "all";
+  scope: "mine" | "team" | "all";
+  /** Muestra el alcance «Equipo» (cuentas y oportunidades). */
+  teamScope?: boolean;
   filters: Filter[];
   columns: string[];
   sort: { field: string; dir: "asc" | "desc" };
@@ -95,10 +97,11 @@ export function ListToolbar(props: Props) {
         </form>
 
         {props.hasOwner !== false && <div className="inline-flex rounded-lg border border-line-strong p-0.5" role="group" aria-label="Alcance">
-          {(["all", "mine"] as const).map((s) => (
+          {(props.teamScope ? (["all", "mine", "team"] as const) : (["all", "mine"] as const)).map((s) => (
             <button key={s} type="button" onClick={() => push({ scope: s === "all" ? null : s })}
+              title={s === "team" ? t("Registros en los que estás en el equipo") : undefined}
               className={`rounded-md px-3 py-1.5 text-xs font-semibold ${props.scope === s ? "bg-brand text-[var(--brand-contrast)]" : "text-muted hover:text-ink"}`}>
-              {s === "all" ? t("Todos") : t("Míos")}
+              {s === "all" ? t("Todos") : s === "mine" ? t("Míos") : t("Mi equipo")}
             </button>
           ))}
         </div>}

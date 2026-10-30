@@ -6,11 +6,13 @@ import { ACTION_LABELS, OBJECT_ACTIONS, PERMISSION_OBJECTS } from "@/lib/permiss
 import { OBJECTS } from "@/lib/objects";
 
 import { Tr } from "@/components/ui/Tr";
+import { DefaultTeam } from "@/components/teams/DefaultTeam";
 export const metadata: Metadata = { title: "Mis preferencias" };
 
 const TABS = [
   { key: "preferencias", label: "Preferencias" },
   { key: "perfil", label: "Mi perfil" },
+  { key: "equipo", label: "Mi equipo" },
   { key: "seguridad", label: "Seguridad" },
   { key: "permisos", label: "Mis permisos" },
 ];
@@ -25,11 +27,12 @@ export default async function PreferencesPage({ searchParams }: PageProps<"/pref
       <div className="card">
         <div role="tablist" className="flex overflow-x-auto border-b border-line px-4">
           {TABS.map((t) => (
-            <Link key={t.key} role="tab" href={`/preferencias?tab=${t.key}`} aria-selected={tab === t.key} className="tab">{t.label}</Link>
+            <Link key={t.key} role="tab" href={`/preferencias?tab=${t.key}`} aria-selected={tab === t.key} className="tab"><Tr>{t.label}</Tr></Link>
           ))}
         </div>
         {tab === "preferencias" && <PreferencesForm prefs={user.preferences} />}
         {tab === "perfil" && <ProfileForm fullName={user.fullName} title={user.title} phone={user.phone} email={user.email} />}
+        {tab === "equipo" && <DefaultTeam userId={user.id} preferences={user.preferences as unknown as Record<string, unknown>} />}
         {tab === "seguridad" && <PasswordForm />}
         {tab === "permisos" && (
           <div className="space-y-3 p-4">
