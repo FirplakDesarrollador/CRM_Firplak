@@ -48,6 +48,29 @@ Los objetos se describen con metadatos en `src/lib/objects/*.ts` (campos, seccio
 - Un usuario no puede cambiar su propio rol, perfil ni estado (trigger en base de datos).
 - Las claves van en `.env.local` (no versionado). La `service_role` solo se usa en el servidor y es opcional.
 
+## Probar sin Supabase (modo demo)
+
+Para ver la app en tu equipo sin cuenta ni claves de Supabase:
+
+```bash
+cd firplak-crm
+npm install
+npm run dev:demo
+```
+
+Abre http://localhost:3000 y entra con cualquiera de estos usuarios (contraseña `demo1234`):
+
+| Usuario | Perfil |
+|---|---|
+| `luis.demo@firplak.com` | Administrador (dueño de los datos de ejemplo) |
+| `gerente.centro@firplak.com` | Gerente regional, jefe de Camila |
+| `asesora.centro@firplak.com` | Asesora comercial (en el equipo de la cuenta Almacenes Casa Viva) |
+
+- Requiere **PostgREST** (macOS: `brew install postgrest`).
+- La base de datos vive **en memoria**: se crea con las migraciones y la semilla al arrancar y se borra al cerrar con Ctrl+C. Nada se guarda ni se envía a Supabase.
+- Ignora `.env.local`: aunque tengas tus claves reales, el modo demo usa su propia base local, sin la clave `service_role` ni el envío de correos. En el modo demo no hay registro de usuarios nuevos ni recuperación de contraseña.
+- Para la base real, usa `npm run dev` con los pasos de la sección siguiente; no hay que cambiar código.
+
 ## Puesta en marcha (Supabase en la nube)
 
 1. **Variables de entorno**
@@ -88,6 +111,7 @@ Los objetos se describen con metadatos en `src/lib/objects/*.ts` (campos, seccio
 | Script | Uso |
 |---|---|
 | `npm run dev` / `build` / `start` | Desarrollo, compilación y producción. |
+| `npm run dev:demo` | App con una base de demostración en memoria (sin Supabase); ver «Probar sin Supabase». |
 | `npm run lint` / `typecheck` | Calidad de código. |
 | `npm run db:test` | Aplica migraciones + semilla en un Postgres embebido (PGlite) y prueba RLS, triggers e indicadores. |
 | `npm run db:types:local` | Regenera `src/lib/database.types.ts` desde las migraciones (sin Docker). |
