@@ -23,6 +23,7 @@ export type ActivityItemData = {
   duration_minutes: number | null;
   completed_at: string | null;
   created_at: string;
+  email_to?: string | null;
   owner: { full_name: string; email: string } | null;
   account: { id: string; name: string } | null;
   contact: { id: string; full_name: string } | null;
@@ -96,6 +97,7 @@ export function ActivityItem({ activity, showRelated = true, canEdit = true }: {
           {activity.owner && <span>{activity.owner.full_name || activity.owner.email}</span>}
         </p>
         {activity.call_result && <p className="mt-1 text-xs"><span className="badge">{activity.call_result}</span></p>}
+        {activity.email_to && <p className="mt-1 text-xs text-muted">Para: {activity.email_to}</p>}
         {activity.description && <p className="mt-1 whitespace-pre-line text-sm text-ink-2">{activity.description}</p>}
         {showRelated && (activity.opportunity || activity.account || activity.contact || activity.lead || activity.case) && (
           <p className="mt-1 flex flex-wrap gap-x-3 text-xs">

@@ -136,3 +136,35 @@ export function Funnel({ stages }: { stages: { id: string; name: string; color: 
     </ol>
   );
 }
+
+/** Columnas verticales (una serie) para categorías ordenadas, con eje Y redondeado y tooltip. */
+export function ColumnChart({ items, format }: { items: { key: string; label: string; value: number }[]; format: (v: number) => string }) {
+  const max = niceMax(Math.max(0, ...items.map((i) => i.value)));
+  const ticks = [max, max / 2, 0];
+  if (!items.length) return <p className="py-6 text-center text-sm text-muted">Sin datos.</p>;
+  return (
+    <div className="flex gap-2">
+      <div className="num flex h-56 flex-col justify-between pb-10 text-right text-[0.68rem] text-muted">
+        {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none">{format(t)}</span>)}
+      </div>
+      <div className="relative h-56 flex-1 overflow-x-auto">
+        <div className="absolute inset-x-0 top-0 bottom-10 flex flex-col justify-between" aria-hidden>
+          {ticks.map((t) => <span key={t} className="border-t border-line" />)}
+        </div>
+        <div className="absolute inset-x-0 top-0 bottom-10 flex items-end justify-around gap-[2px]">
+          {items.map((d) => (
+            <div key={d.key} className="group relative flex h-full flex-1 items-end justify-center">
+              <div className="w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${(d.value / max) * 100}%` }} />
+              <div role="tooltip" className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-medium text-[var(--surface)] shadow group-hover:block">
+                {d.label}: {format(d.value)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="absolute inset-x-0 bottom-0 flex h-10 justify-around text-[0.68rem] text-muted">
+          {items.map((d) => <span key={d.key} className="line-clamp-2 flex-1 px-0.5 pt-1 text-center leading-tight">{d.label}</span>)}
+        </div>
+      </div>
+    </div>
+  );
+}

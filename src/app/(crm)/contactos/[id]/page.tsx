@@ -52,7 +52,7 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
               <a href={`https://wa.me/${row.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="btn"><Phone size={15} /> WhatsApp</a>
             )}
             {typeof row.email === "string" && row.email && !row.email_opt_out && (
-              <a href={`mailto:${row.email}`} className="btn"><Mail size={15} /> Correo</a>
+              <Link href={`/correo/nuevo?contacto=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link>
             )}
             {can(user.access, "opportunities", "create") && (
               <Link href={`/oportunidades/nueva?contact=${id}${accountId ? `&account=${accountId}` : ""}`} className="btn"><Plus size={15} /> Oportunidad</Link>

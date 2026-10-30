@@ -145,6 +145,10 @@ export type Database = {
           description: string | null
           due_date: string | null
           duration_minutes: number | null
+          email_cc: string | null
+          email_delivery: string | null
+          email_provider_id: string | null
+          email_to: string | null
           end_at: string | null
           id: string
           is_demo: boolean
@@ -171,6 +175,10 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           duration_minutes?: number | null
+          email_cc?: string | null
+          email_delivery?: string | null
+          email_provider_id?: string | null
+          email_to?: string | null
           end_at?: string | null
           id?: string
           is_demo?: boolean
@@ -197,6 +205,10 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           duration_minutes?: number | null
+          email_cc?: string | null
+          email_delivery?: string | null
+          email_provider_id?: string | null
+          email_to?: string | null
           end_at?: string | null
           id?: string
           is_demo?: boolean
@@ -686,6 +698,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+        ]
+      }
+      email_templates: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_shared: boolean
+          name: string
+          owner_id: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_shared?: boolean
+          name: string
+          owner_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_shared?: boolean
+          name?: string
+          owner_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       leads: {
@@ -1607,6 +1666,56 @@ export type Database = {
             columns: ["price_book_id"]
             isOneToOne: false
             referencedRelation: "price_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          definition: Json
+          description: string | null
+          folder: string
+          id: string
+          is_shared: boolean
+          last_run_at: string | null
+          name: string
+          object: string
+          owner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          definition?: Json
+          description?: string | null
+          folder?: string
+          id?: string
+          is_shared?: boolean
+          last_run_at?: string | null
+          name: string
+          object: string
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          definition?: Json
+          description?: string | null
+          folder?: string
+          id?: string
+          is_shared?: boolean
+          last_run_at?: string | null
+          name?: string
+          object?: string
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

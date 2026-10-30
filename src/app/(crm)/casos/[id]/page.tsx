@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Mail, Pencil } from "lucide-react";
 import { RecordLayout } from "@/components/records/RecordLayout";
 import { StatusPath } from "@/components/records/StatusPath";
 import { DeleteButton } from "@/components/records/DeleteButton";
@@ -37,6 +37,7 @@ export default async function CaseDetailPage({ params, searchParams }: PageProps
       badges={<span className={`badge ${PRIORITY_TONE[priority] ?? ""}`}>Prioridad {priority.toLowerCase()}</span>}
       actions={
         <>
+          {row.contact_id ? <Link href={`/correo/nuevo?caso=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link> : null}
           {access.canEdit && <Link href={`/casos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
           {access.canDelete && <DeleteButton object="cases" id={id} label={`el caso ${row.case_number}`} />}
         </>

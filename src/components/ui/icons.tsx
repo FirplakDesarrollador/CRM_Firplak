@@ -1,5 +1,5 @@
 import {
-  Building2, CalendarCheck, Gauge, Home, Settings, Target, UserRound, UserPlus, Package, FileText, LifeBuoy, Megaphone,
+  Building2, CalendarCheck, PieChart, Gauge, Home, Settings, Target, UserRound, UserPlus, Package, FileText, LifeBuoy, Megaphone,
   Phone, Users, Mail, StickyNote, CheckSquare, type LucideIcon,
 } from "lucide-react";
 
@@ -15,6 +15,7 @@ export const OBJECT_ICONS: Record<string, LucideIcon> = {
   cases: LifeBuoy,
   campaigns: Megaphone,
   dashboard: Gauge,
+  reports: PieChart,
   settings: Settings,
 };
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText, Pencil } from "lucide-react";
+import { FileText, Mail, Pencil } from "lucide-react";
 import { RelatedList } from "@/components/records/RelatedList";
 import { RecordHeader } from "@/components/records/RecordHeader";
 import { DetailSections } from "@/components/records/DetailSections";
@@ -64,6 +64,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
         }
         actions={
           <>
+            {row.contact_id ? <Link href={`/correo/nuevo?oportunidad=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link> : null}
             {can(user.access, "quotes", "create") && (
               <Link href={`/cotizaciones/nueva?opportunity=${id}`} className="btn"><FileText size={15} /> Nueva cotización</Link>
             )}

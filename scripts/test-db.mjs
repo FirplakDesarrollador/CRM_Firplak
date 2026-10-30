@@ -218,4 +218,29 @@ await check('crm_dashboard_extra devuelve indicadores de prospectos, casos y cot
   assert.ok(d.quotes_open >= 1);
 });
 
+console.log('Fase 3');
+await check('informes y plantillas compartidos son visibles para el asesor', async () => {
+  await as(rep, async () => {
+    assert.equal(await count(`select count(*) n from reports where is_shared`), 6);
+    assert.equal(await count(`select count(*) n from email_templates where is_shared`), 3);
+  });
+});
+await check('el asesor guarda informes propios pero no puede compartirlos', async () => {
+  await as(rep, async () => {
+    const [r] = await q(`insert into reports (name, object, owner_id, definition) values ('Mi informe', 'leads', $1, '{}') returning id`, [rep.id]);
+    assert.ok(r.id);
+    await assert.rejects(q(`insert into reports (name, object, owner_id, is_shared) values ('Público', 'leads', $1, true)`, [rep.id]));
+    const rows = await q(`update reports set name = 'x' where is_shared returning id`);
+    assert.equal(rows.length, 0);
+  });
+  assert.equal(await as(mgr, () => count(`select count(*) n from reports where name = 'Mi informe'`)), 0);
+});
+await check('un correo registrado queda como actividad con destinatario', async () => {
+  await as(admin, async () => {
+    const [c] = await q(`select id from contacts limit 1`);
+    const [a] = await q(`insert into activities (activity_type, subject, status, email_to, email_delivery, contact_id) values ('email', 'Hola', 'completed', 'x@y.co', 'client', $1) returning email_to, account_id is not null has_account`, [c.id]);
+    assert.equal(a.email_to, 'x@y.co');
+  });
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

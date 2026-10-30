@@ -511,3 +511,39 @@ $$;
 
 select public.claim_demo_records(p.id)
 from (select id from public.profiles order by created_at limit 1) p;
+
+-- ===========================================================================
+-- Fase 3: informes y plantillas de correo compartidos
+-- ===========================================================================
+insert into public.reports (name, description, object, folder, definition, is_shared)
+select v.name, v.description, v.object, v.folder, v.definition::jsonb, true
+from (values
+  ('Pipeline abierto por etapa', 'Valor de las oportunidades abiertas en cada etapa.', 'opportunities', 'Ventas',
+   '{"filters":[{"field":"is_closed","op":"eq","value":"false"}],"groupBy":"stage_id","aggregate":{"fn":"sum","field":"amount"},"chart":"bar"}'),
+  ('Ventas ganadas por mes y asesor', 'Oportunidades ganadas este año, por mes de cierre y propietario.', 'opportunities', 'Ventas',
+   '{"filters":[{"field":"is_won","op":"eq","value":"true"},{"field":"close_date","op":"this_year","value":""}],"groupBy":"close_date","dateGrouping":"month","groupBy2":"owner_id","aggregate":{"fn":"sum","field":"amount"},"chart":"column"}'),
+  ('Pipeline abierto por tipo y origen', 'Valor del pipeline abierto según el tipo de oportunidad y su origen.', 'opportunities', 'Ventas',
+   '{"filters":[{"field":"is_closed","op":"eq","value":"false"}],"groupBy":"opportunity_type","groupBy2":"lead_source","aggregate":{"fn":"sum","field":"amount"},"chart":"table"}'),
+  ('Prospectos por origen y estado', 'De dónde vienen los prospectos y en qué estado están.', 'leads', 'Mercadeo',
+   '{"filters":[],"groupBy":"lead_source","groupBy2":"status","aggregate":{"fn":"count"},"chart":"bar"}'),
+  ('Casos abiertos por prioridad', 'Carga de servicio pendiente.', 'cases', 'Servicio',
+   '{"filters":[{"field":"is_closed","op":"eq","value":"false"}],"groupBy":"priority","groupBy2":"status","aggregate":{"fn":"count"},"chart":"bar"}'),
+  ('Actividades completadas por asesor', 'Productividad comercial del mes.', 'activities', 'Actividad comercial',
+   '{"filters":[{"field":"status","op":"eq","value":"completed"},{"field":"completed_at","op":"this_month","value":""}],"groupBy":"owner_id","groupBy2":"activity_type","aggregate":{"fn":"count"},"chart":"bar"}')
+) as v(name, description, object, folder, definition)
+where not exists (select 1 from public.reports r where r.name = v.name and r.is_shared);
+
+insert into public.email_templates (name, category, subject, body, is_shared)
+select v.name, v.category, v.subject, v.body, true
+from (values
+  ('Seguimiento después de la visita', 'Seguimiento',
+   'Seguimiento a nuestra visita · {{cuenta.nombre}}',
+   E'Hola {{contacto.nombre}},\n\nGracias por recibirnos. Como conversamos, te comparto los siguientes pasos para {{oportunidad.nombre}}:\n\n1. Revisión de especificaciones técnicas.\n2. Envío de la propuesta económica.\n3. Visita de validación en obra.\n\nQuedo atento a tus comentarios.\n\nUn saludo,\n{{usuario.nombre}}\n{{usuario.cargo}} · Firplak\n{{usuario.telefono}}'),
+  ('Envío de cotización', 'Cotizaciones',
+   'Cotización para {{oportunidad.nombre}}',
+   E'Hola {{contacto.nombre}},\n\nAdjunto encontrarás la cotización para {{oportunidad.nombre}} por un valor de {{oportunidad.valor}}. Está vigente hasta el {{oportunidad.fecha_cierre}}.\n\nSi necesitas ajustar cantidades o referencias, con gusto la actualizamos.\n\nCordialmente,\n{{usuario.nombre}}\nFirplak · inspirando hogares'),
+  ('Bienvenida a distribuidor', 'Distribución',
+   'Bienvenidos a la red de distribuidores Firplak',
+   E'Hola {{contacto.nombre}},\n\nEs un gusto darle la bienvenida a {{cuenta.nombre}} como distribuidor. En los próximos días te enviaremos el catálogo actualizado, la lista de precios y el material de exhibición.\n\nCualquier inquietud, escríbeme.\n\n{{usuario.nombre}}\n{{usuario.correo}}')
+) as v(name, category, subject, body)
+where not exists (select 1 from public.email_templates t where t.name = v.name and t.is_shared);

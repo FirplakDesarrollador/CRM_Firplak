@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 y 2)
+## Módulos incluidos (Fases 1, 2 y 3)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -19,6 +19,9 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Cotizaciones | Numeración automática, líneas desde la lista de precios con descuento, subtotal/IVA/flete/total, ruta de estados, **sincronización** con la oportunidad y vista imprimible con la marca (guardar como PDF). |
 | Casos | Servicio y garantías: número automático, estado, prioridad, origen, tipo, producto, solución y actividad. |
 | Campañas | Miembros (contactos y prospectos) con estado de respuesta, prospectos generados, oportunidades influenciadas, ventas ganadas y retorno. |
+| Calendario | Vista mensual y semanal de reuniones, tareas y llamadas; filtro por asesor o equipo; crear actividad desde un día. |
+| Informes | Constructor sobre cualquier objeto: filtros, agrupación por filas y columnas (fechas por mes/trimestre/año), contar/sumar/promediar, barras o columnas, tabla matriz con totales y % del total, detalle de registros, guardar en carpetas, compartir y exportar CSV. |
+| Correo | Redactor desde contacto, prospecto, oportunidad o caso con plantillas y campos combinados (`{{contacto.nombre}}`, `{{cuenta.nombre}}`…); envío con Resend si está configurado o apertura del cliente de correo; siempre queda registrado como actividad. |
 | Configuración | Usuarios, jerarquía de roles, perfiles y permisos (matriz por objeto), compartir por defecto, pipelines y etapas editables, campos personalizados por objeto. |
 | Preferencias | Tema (claro/oscuro/sistema), página de inicio, densidad, registros por página, perfil y contraseña. |
 
@@ -39,6 +42,7 @@ Los objetos se describen con metadatos en `src/lib/objects/*.ts` (campos, seccio
    cp .env.example .env.local
    ```
    Completa `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Supabase → Project Settings → API).
+   Opcional: `RESEND_API_KEY` y `EMAIL_FROM` para enviar correos desde el CRM (dominio verificado en Resend).
 
 2. **Base de datos.** Opción A, SQL Editor (sin instalar nada):
    ```bash
@@ -100,5 +104,4 @@ línea de tiempo) toma como referencia funcional la documentación pública de S
 fuentes ni código.
 
 ## Próximas fases
-- **Fase 3:** calendario visual de actividades, informes configurables (agrupar/totalizar por cualquier campo), correo saliente desde el CRM.
-- **Fase 4:** listas de valores editables, reglas de validación y automatizaciones, idioma inglés, auditoría de cambios.
+- **Fase 4:** listas de valores editables desde Configuración, reglas de validación, automatizaciones (asignación y alertas), idioma inglés y auditoría de cambios.

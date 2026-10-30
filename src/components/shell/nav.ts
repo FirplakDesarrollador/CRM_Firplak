@@ -14,7 +14,10 @@ export function navItems(access: Access): NavItem[] {
   if (can(access, "cases", "read")) items.push({ href: "/casos", label: "Casos", icon: "cases" });
   if (can(access, "campaigns", "read")) items.push({ href: "/campanas", label: "Campañas", icon: "campaigns" });
   if (can(access, "activities", "read")) items.push({ href: "/actividades", label: "Actividades", icon: "activities" });
-  if (canSystem(access, "view_dashboards")) items.push({ href: "/indicadores", label: "Indicadores", icon: "dashboard" });
+  if (canSystem(access, "view_dashboards")) {
+    items.push({ href: "/indicadores", label: "Indicadores", icon: "dashboard" });
+    items.push({ href: "/informes", label: "Informes", icon: "reports" });
+  }
   if (canSystem(access, "customize") || canSystem(access, "manage_users")) {
     items.push({ href: "/configuracion", label: "Configuración", icon: "settings" });
   }

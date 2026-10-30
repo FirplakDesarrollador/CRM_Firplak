@@ -47,7 +47,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
           {typeof row.mobile === "string" && row.mobile && (
             <a href={`https://wa.me/${row.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="btn"><Phone size={15} /> WhatsApp</a>
           )}
-          {typeof row.email === "string" && row.email && <a href={`mailto:${row.email}`} className="btn"><Mail size={15} /> Correo</a>}
+          {typeof row.email === "string" && row.email && !converted && <Link href={`/correo/nuevo?prospecto=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link>}
           {!converted && access.canEdit && can(user.access, "accounts", "create") && can(user.access, "contacts", "create") && (
             <Link href={`/prospectos/${id}/convertir`} className="btn btn-primary"><ArrowRightLeft size={15} /> Convertir</Link>
           )}

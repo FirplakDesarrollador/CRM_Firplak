@@ -16,6 +16,7 @@ export type ActivityRow = {
   duration_minutes: number | null;
   completed_at: string | null;
   created_at: string;
+  email_to?: string | null;
   owner_id: string | null;
   owner: { id: string; full_name: string; email: string } | null;
   account: { id: string; name: string } | null;
@@ -26,7 +27,7 @@ export type ActivityRow = {
 };
 
 const SELECT =
-  "id, activity_type, subject, description, status, priority, due_date, start_at, end_at, location, call_result, duration_minutes, completed_at, created_at, owner_id, owner:profiles!activities_owner_id_fkey(id, full_name, email), account:accounts!activities_account_id_fkey(id, name), contact:contacts!activities_contact_id_fkey(id, full_name), opportunity:opportunities!activities_opportunity_id_fkey(id, name), lead:leads!activities_lead_id_fkey(id, full_name), case:cases!activities_case_id_fkey(id, subject)";
+  "id, activity_type, subject, description, status, priority, due_date, start_at, end_at, location, call_result, duration_minutes, completed_at, created_at, email_to, owner_id, owner:profiles!activities_owner_id_fkey(id, full_name, email), account:accounts!activities_account_id_fkey(id, name), contact:contacts!activities_contact_id_fkey(id, full_name), opportunity:opportunities!activities_opportunity_id_fkey(id, name), lead:leads!activities_lead_id_fkey(id, full_name), case:cases!activities_case_id_fkey(id, subject)";
 
 export async function getActivitiesFor(filter: { account_id?: string; contact_id?: string; opportunity_id?: string; lead_id?: string; case_id?: string }) {
   const supabase = await createClient();

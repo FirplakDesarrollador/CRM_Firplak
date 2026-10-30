@@ -194,8 +194,8 @@ function displayValue(field: FieldDef | undefined, value: string, ctx: Pick<Prop
   return field.optionLabels?.[value] ?? value;
 }
 
-function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
-  filter: Filter; fields: FieldDef[]; ctx: Pick<Props, "users" | "pipelines">;
+export function FilterRow({ filter, fields, ctx, onChange, onRemove }: {
+  filter: Filter; fields: FieldDef[]; ctx: { users: UserOption[]; pipelines: PipelineWithStages[] };
   onChange: (f: Filter) => void; onRemove: () => void;
 }) {
   const field = fields.find((f) => f.name === filter.field) ?? fields[0];

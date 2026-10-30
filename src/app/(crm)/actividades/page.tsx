@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, List, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { ActivityViewSwitcher } from "@/components/activities/ViewSwitcher";
 import { ObjectListPage } from "@/components/records/ObjectListPage";
 import { ObjectIcon } from "@/components/ui/icons";
 import { ActivityItem } from "@/components/activities/ActivityItem";
@@ -16,12 +17,7 @@ const weekday = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeri
 export default async function ActivitiesPage({ searchParams }: PageProps<"/actividades">) {
   const [user, sp] = await Promise.all([requireUser(), searchParams]);
   const list = sp.vista === "lista";
-  const switcher = (
-    <div className="inline-flex rounded-lg border border-line-strong p-0.5">
-      <Link href="/actividades" className={`btn btn-sm border-0 ${!list ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}><CalendarDays size={14} /> Agenda</Link>
-      <Link href="/actividades?vista=lista" className={`btn btn-sm border-0 ${list ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}><List size={14} /> Lista</Link>
-    </div>
-  );
+  const switcher = <ActivityViewSwitcher active={list ? "lista" : "agenda"} />;
 
   if (list) {
     return (
