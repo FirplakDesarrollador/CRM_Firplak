@@ -4,7 +4,7 @@ import { getObjectDef, type Row } from "@/lib/records/data";
 import type { Filter, ObjectKey } from "@/lib/objects";
 import { matchesAll } from "@/lib/rules/evaluate";
 
-export const APPROVAL_OBJECTS: ObjectKey[] = ["accounts", "contacts", "opportunities", "leads", "quotes", "cases", "campaigns", "products"];
+export const APPROVAL_OBJECTS: ObjectKey[] = ["accounts", "contacts", "opportunities", "leads", "quotes", "cases", "campaigns", "products", "orders"];
 
 type Person = { id: string; full_name: string | null } | null;
 export type ApprovalRequest = {

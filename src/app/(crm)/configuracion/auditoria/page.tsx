@@ -10,7 +10,7 @@ import { requireUser } from "@/lib/session";
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Auditoría de cambios" };
 
-const AUDITED: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "products", "cases", "campaigns"];
+const AUDITED: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "orders", "products", "cases", "campaigns"];
 
 export default async function AuditPage({ searchParams }: PageProps<"/configuracion/auditoria">) {
   const [me, sp, users] = await Promise.all([requireUser(), searchParams, getUsers()]);

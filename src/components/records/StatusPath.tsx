@@ -6,7 +6,7 @@ import { setStatus } from "@/lib/records/phase2-actions";
 
 /** Ruta de estados (prospectos, cotizaciones, casos, campañas): clic para cambiar. */
 export function StatusPath({ object, id, options, current, canEdit, negative = [] }: {
-  object: "leads" | "quotes" | "cases" | "campaigns";
+  object: "leads" | "quotes" | "orders" | "cases" | "campaigns";
   id: string;
   options: string[];
   current: string;

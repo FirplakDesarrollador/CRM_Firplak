@@ -524,6 +524,7 @@ svg.lucide {
   .obj-dashboard { background: var(--navy-900); }
   .obj-leads { background: var(--sage-500); }
   .obj-quotes { background: var(--navy-600); }
+  .obj-orders { background: var(--navy-700); }
   .obj-products { background: var(--sage-700); }
   .obj-cases { background: #7a5a3a; }
   .obj-campaigns { background: var(--navy-800); }

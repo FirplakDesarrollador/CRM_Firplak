@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 import { RecordHeader } from "@/components/records/RecordHeader";
+import { ApprovalStrip } from "@/components/records/RecordLayout";
 import { DetailSections } from "@/components/records/DetailSections";
 import { RelatedList } from "@/components/records/RelatedList";
 import { DeleteButton } from "@/components/records/DeleteButton";
@@ -24,14 +25,15 @@ export async function generateMetadata({ params }: PageProps<"/cuentas/[id]">): 
 
 export default async function AccountDetailPage({ params, searchParams }: PageProps<"/cuentas/[id]">) {
   const [user, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
-  const [def, contactsDef, oppsDef, quotesDef, casesDef] = await Promise.all([
+  const [def, contactsDef, oppsDef, quotesDef, casesDef, ordersDef] = await Promise.all([
     getObjectDef("accounts"), getObjectDef("contacts"), getObjectDef("opportunities"), getObjectDef("quotes"), getObjectDef("cases"),
+    getObjectDef("orders"),
   ]);
   const row = await getRecord(def, id);
   if (!row) notFound();
 
   const db = await untypedClient();
-  const [access, users, activities, contacts, opps, children, quotes, cases] = await Promise.all([
+  const [access, users, activities, contacts, opps, children, quotes, cases, orders] = await Promise.all([
     getRecordAccess("accounts", row.owner_id as string | null, row.id),
     getUsers(),
     getActivitiesFor({ account_id: id }),
@@ -40,6 +42,7 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
     db.from("accounts").select(def.select).eq("parent_account_id", id).order("name").limit(50),
     db.from("quotes").select(quotesDef.select).eq("account_id", id).order("created_at", { ascending: false }).limit(50),
     db.from("cases").select(casesDef.select).eq("account_id", id).order("created_at", { ascending: false }).limit(50),
+    db.from("orders").select(ordersDef.select).eq("account_id", id).order("order_date", { ascending: false }).limit(50),
   ]);
   const oppRows = (opps.data ?? []) as unknown as Row[];
   const openAmount = oppRows.filter((o) => !o.is_closed).reduce((s, o) => s + Number(o.amount), 0);
@@ -72,6 +75,7 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
           <span><Tr>Ganado histórico:</Tr> <span className="num text-success">{formatCompactCurrency(wonAmount)}</span></span>
           <span><Tr>N.º cuenta:</Tr> <span className="text-ink">{String(row.account_number)}</span></span>
         </div>
+        <ApprovalStrip def={def} row={row} basePath={path} />
       </RecordHeader>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
@@ -96,6 +100,11 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
                 newHref={can(user.access, "contacts", "create") ? `/contactos/nuevo?account=${id}` : undefined} />
               <RelatedList def={quotesDef} title="Cotizaciones" rows={(quotes.data ?? []) as unknown as Row[]}
                 columns={["quote_number", "name", "status", "grand_total", "expiration_date"]} />
+              {can(user.access, "orders", "read") && (
+                <RelatedList def={ordersDef} title="Pedidos" rows={(orders.data ?? []) as unknown as Row[]}
+                  columns={["order_number", "name", "status", "order_date", "requested_delivery_date", "grand_total"]}
+                  newHref={can(user.access, "orders", "create") ? `/pedidos/nuevo?account=${id}` : undefined} />
+              )}
               <RelatedList def={casesDef} title="Casos" rows={(cases.data ?? []) as unknown as Row[]}
                 columns={["case_number", "subject", "status", "priority", "created_at"]}
                 newHref={can(user.access, "cases", "create") ? `/casos/nuevo?account=${id}` : undefined} />

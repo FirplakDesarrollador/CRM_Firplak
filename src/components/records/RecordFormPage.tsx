@@ -40,7 +40,7 @@ export async function RecordFormPage({
     record = defaults ?? null;
   }
 
-  const masculine = ["contacts", "leads", "products", "cases"].includes(object);
+  const masculine = ["contacts", "leads", "products", "cases", "orders"].includes(object);
   const title = id
     ? `${t("Editar:")} ${recordTitle(def, record!)}`
     : locale === "en" ? `New ${def.label.toLowerCase()}` : `${masculine ? "Nuevo" : "Nueva"} ${def.label.toLowerCase()}`;

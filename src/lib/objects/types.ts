@@ -2,7 +2,7 @@ import type { PermissionObject } from "@/lib/permissions";
 
 export type ObjectKey =
   | "accounts" | "contacts" | "opportunities" | "activities"
-  | "leads" | "products" | "quotes" | "cases" | "campaigns";
+  | "leads" | "products" | "quotes" | "orders" | "cases" | "campaigns";
 
 export type FieldType =
   | "text" | "textarea" | "email" | "phone" | "url"

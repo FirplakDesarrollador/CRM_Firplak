@@ -13,7 +13,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/buscar">)
   const q = (typeof sp.q === "string" ? sp.q : "").trim();
   const supabase = await createClient();
   const { data } = q.length >= 2 ? await supabase.rpc("global_search", { p_query: q, p_limit: 15 }) : { data: [] };
-  const groups = ["leads", "accounts", "contacts", "opportunities", "quotes", "cases", "products"].map((key) => ({
+  const groups = ["leads", "accounts", "contacts", "opportunities", "quotes", "orders", "cases", "products"].map((key) => ({
     key,
     def: OBJECTS[key as "accounts"],
     items: (data ?? []).filter((r) => r.object === key),

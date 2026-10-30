@@ -9,6 +9,7 @@ export const OBJECTS_EN: Record<string, { label: string; plural: string }> = {
   leads: { label: "Lead", plural: "Leads" },
   products: { label: "Product", plural: "Products" },
   quotes: { label: "Quote", plural: "Quotes" },
+  orders: { label: "Order", plural: "Orders" },
   cases: { label: "Case", plural: "Cases" },
   campaigns: { label: "Campaign", plural: "Campaigns" },
 };
@@ -41,6 +42,10 @@ export const FIELDS_EN: Record<string, string> = {
 };
 
 export const FIELD_OVERRIDES_EN: Record<string, string> = {
+  "orders.name": "Order name", "orders.order_number": "Order number", "orders.customer_po": "Customer PO number",
+  "orders.order_date": "Order date", "orders.requested_delivery_date": "Requested delivery", "orders.quote_id": "Quote",
+  "orders.activated_at": "Activated on", "orders.delivered_at": "Delivered on", "orders.description": "Notes",
+  "orders.contact_id": "Contact", "quotes.discount_percent": "Discount (%)",
   "accounts.name": "Account name", "opportunities.name": "Opportunity name", "quotes.name": "Quote name",
   "campaigns.name": "Campaign name", "products.name": "Product name", "activities.owner_id": "Assigned to",
   "opportunities.contact_id": "Primary contact", "opportunities.campaign_id": "Primary campaign source",

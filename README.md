@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 9)
+## Módulos incluidos (Fases 1 a 10)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -17,6 +17,7 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Prospectos | Lista, ficha con ruta de estados y **conversión** a cuenta (nueva o existente) + contacto + oportunidad; las actividades y campañas pasan al contacto. |
 | Productos y listas de precios | Catálogo con referencia, familia y unidad; precios por lista (estándar, distribuidores…) editables en la ficha. |
 | Cotizaciones | Numeración automática, líneas desde la lista de precios con descuento, subtotal/IVA/flete/total, ruta de estados, **sincronización** con la oportunidad y vista imprimible con la marca (guardar como PDF). |
+| Pedidos | Órdenes de venta con numeración automática (PED-1001…). Se crean desde una cotización **aceptada** («Crear pedido» copia cuenta, contacto, condiciones y productos) o manualmente desde la cuenta u oportunidad. Ruta de estados Borrador → Activado → En producción → Despachado → Entregado (o Cancelado): los productos solo se editan en borrador, un pedido activado no vuelve a borrador ni se elimina, y se registran fechas de activación y entrega. Orden de compra del cliente, entrega solicitada, totales con IVA y flete; aparecen en cuentas, oportunidades, cotizaciones, búsqueda global e Indicadores («Pedidos en curso»). |
 | Casos | Servicio y garantías: número automático, estado, prioridad, origen, tipo, producto, solución y actividad. |
 | Campañas | Miembros (contactos y prospectos) con estado de respuesta, prospectos generados, oportunidades influenciadas, ventas ganadas y retorno. |
 | Calendario | Vista mensual y semanal de reuniones, tareas y llamadas; filtro por asesor o equipo; crear actividad desde un día. |
@@ -116,7 +117,7 @@ línea de tiempo) toma como referencia funcional la documentación pública de S
 fuentes ni código.
 
 ## Próximos pasos sugeridos
-- Pedidos (órdenes de venta) generados desde cotizaciones aceptadas, con seguimiento de despacho.
+- Contratos y facturación (integración con el ERP para estados de pedido y despachos).
 - Aprobaciones en varios pasos (p. ej. jefe y luego gerencia comercial según el monto).
 - Historial del pronóstico (instantáneas semanales) para comparar contra semanas anteriores.
 - Traducción de valores de listas de selección por idioma (etiqueta en español e inglés).

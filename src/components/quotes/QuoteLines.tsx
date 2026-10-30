@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { addQuoteLine, removeQuoteLine, updateQuoteLine } from "@/lib/records/phase2-actions";
+import { addOrderLine, removeOrderLine, updateOrderLine } from "@/lib/orders/actions";
 import { LookupInput } from "@/components/records/LookupInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { formatCurrency, formatNumber } from "@/lib/format";
@@ -19,9 +20,16 @@ export type QuoteLine = {
   product: { id: string; name: string; product_code: string | null; unit: string } | null;
 };
 
-function LineRow({ line, canEdit }: { line: QuoteLine; canEdit: boolean }) {
-  const [state, action] = useActionState(updateQuoteLine.bind(null, line.id), {} as FormState);
-  const [delState, del] = useActionState(removeQuoteLine.bind(null, line.id), {} as FormState);
+/** Las líneas de cotización y de pedido comparten interfaz; cambian las acciones y los textos. */
+const KINDS = {
+  quote: { add: addQuoteLine, update: updateQuoteLine, remove: removeQuoteLine, title: "Productos cotizados", empty: "Agrega productos desde la lista de precios de la cotización." },
+  order: { add: addOrderLine, update: updateOrderLine, remove: removeOrderLine, title: "Productos del pedido", empty: "Agrega productos desde la lista de precios del pedido." },
+} as const;
+type Kind = keyof typeof KINDS;
+
+function LineRow({ line, canEdit, kind }: { line: QuoteLine; canEdit: boolean; kind: Kind }) {
+  const [state, action] = useActionState(KINDS[kind].update.bind(null, line.id), {} as FormState);
+  const [delState, del] = useActionState(KINDS[kind].remove.bind(null, line.id), {} as FormState);
   return (
     <li className="grid gap-2 px-4 py-3 md:grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_auto] md:items-center">
       <div className="min-w-0">
@@ -56,8 +64,8 @@ function LineRow({ line, canEdit }: { line: QuoteLine; canEdit: boolean }) {
   );
 }
 
-export function QuoteLines({ quoteId, lines, canEdit }: { quoteId: string; lines: QuoteLine[]; canEdit: boolean }) {
-  const [state, action] = useActionState(addQuoteLine.bind(null, quoteId), {} as FormState);
+export function QuoteLines({ quoteId, lines, canEdit, kind = "quote" }: { quoteId: string; lines: QuoteLine[]; canEdit: boolean; kind?: Kind }) {
+  const [state, action] = useActionState(KINDS[kind].add.bind(null, quoteId), {} as FormState);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state.ok) formRef.current?.reset();
@@ -65,14 +73,14 @@ export function QuoteLines({ quoteId, lines, canEdit }: { quoteId: string; lines
 
   return (
     <section className="card overflow-hidden">
-      <div className="card-header"><h2 className="card-title"><Tr>Productos cotizados</Tr> <span className="badge">{lines.length}</span></h2></div>
+      <div className="card-header"><h2 className="card-title"><Tr>{KINDS[kind].title}</Tr> <span className="badge">{lines.length}</span></h2></div>
       <div className="hidden grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_auto] gap-2 border-b border-line bg-surface-2 px-4 py-2 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted md:grid">
         <span><Tr>Producto</Tr></span><span className="text-right"><Tr>Cantidad</Tr></span><span className="text-right"><Tr>Precio unit.</Tr></span>
         <span className="text-right"><Tr>Desc. %</Tr></span><span className="text-right"><Tr>Total</Tr></span><span />
       </div>
       <ul className="divide-y divide-[var(--border)]">
-        {lines.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted"><Tr>Agrega productos desde la lista de precios de la cotización.</Tr></li>}
-        {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} />)}
+        {lines.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted"><Tr>{KINDS[kind].empty}</Tr></li>}
+        {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} />)}
       </ul>
       {canEdit && (
         <form ref={formRef} action={action} className="grid gap-3 border-t border-line bg-surface-2 p-4 md:grid-cols-[minmax(0,1fr)_7rem_9rem_6rem_auto] md:items-end">

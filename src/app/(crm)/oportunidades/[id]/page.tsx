@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FileText, Mail, Pencil } from "lucide-react";
 import { RelatedList } from "@/components/records/RelatedList";
 import { RecordHeader } from "@/components/records/RecordHeader";
+import { ApprovalStrip } from "@/components/records/RecordLayout";
 import { DetailSections } from "@/components/records/DetailSections";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
@@ -30,13 +31,13 @@ export async function generateMetadata({ params }: PageProps<"/oportunidades/[id
 
 export default async function OpportunityDetailPage({ params, searchParams }: PageProps<"/oportunidades/[id]">) {
   const [user, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
-  const [def, quotesDef] = await Promise.all([getObjectDef("opportunities"), getObjectDef("quotes")]);
+  const [def, quotesDef, ordersDef] = await Promise.all([getObjectDef("opportunities"), getObjectDef("quotes"), getObjectDef("orders")]);
   const row = await getRecord(def, id);
   if (!row) notFound();
 
   const supabase = await createClient();
   const db = await untypedClient();
-  const [access, users, pipelines, activities, history, quotesRes] = await Promise.all([
+  const [access, users, pipelines, activities, history, quotesRes, ordersRes] = await Promise.all([
     getRecordAccess("opportunities", row.owner_id as string | null, row.id),
     getUsers(),
     getPipelines(),
@@ -47,10 +48,12 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
       .eq("opportunity_id", id)
       .order("changed_at", { ascending: false }),
     db.from("quotes").select(quotesDef.select).eq("opportunity_id", id).order("created_at", { ascending: false }),
+    db.from("orders").select(ordersDef.select).eq("opportunity_id", id).order("order_date", { ascending: false }),
   ]);
+  const orderRows = (ordersRes.data ?? []) as unknown as Row[];
   const quoteRows = (quotesRes.data ?? []) as unknown as Row[];
   const stages = pipelines.find((p) => p.id === row.pipeline_id)?.stages ?? [];
-  const tab = sp.tab === "historial" ? "historial" : sp.tab === "cotizaciones" ? "cotizaciones" : sp.tab === "cambios" ? "cambios" : "detalles";
+  const tab = (["historial", "cotizaciones", "pedidos", "cambios"] as const).find((k) => k === sp.tab) ?? "detalles";
   const path = `/oportunidades/${id}`;
   const locale = await getLocale();
   const t = makeT(locale);
@@ -82,6 +85,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
       >
         <StagePath opportunityId={id} stages={stages} currentStageId={String(row.stage_id)} canEdit={access.canEdit}
           lossReasons={def.fields.find((f) => f.name === "loss_reason")?.options} />
+        <ApprovalStrip def={def} row={row} basePath={path} />
       </RecordHeader>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
@@ -90,6 +94,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
             <Tabs basePath={path} active={tab} tabs={[
               { key: "detalles", label: "Detalles" },
               { key: "cotizaciones", label: "Cotizaciones", count: quoteRows.length },
+              ...(can(user.access, "orders", "read") ? [{ key: "pedidos", label: "Pedidos", count: orderRows.length }] : []),
               { key: "historial", label: "Historial de etapas", count: history.data?.length ?? 0 },
               { key: "cambios", label: "Historial de cambios" },
             ]} />
@@ -100,6 +105,10 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
             <RelatedList def={quotesDef} title="Cotizaciones" rows={quoteRows}
               columns={["quote_number", "name", "status", "net_total", "grand_total", "is_synced", "expiration_date"]}
               newHref={can(user.access, "quotes", "create") ? `/cotizaciones/nueva?opportunity=${id}` : undefined} />
+          ) : tab === "pedidos" ? (
+            <RelatedList def={ordersDef} title="Pedidos" rows={orderRows}
+              columns={["order_number", "name", "status", "order_date", "requested_delivery_date", "net_total"]}
+              newHref={can(user.access, "orders", "create") ? `/pedidos/nuevo?opportunity=${id}` : undefined} />
           ) : tab === "historial" ? (
             <section className="card overflow-x-auto">
               <table className="table">

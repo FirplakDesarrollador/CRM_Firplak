@@ -1625,6 +1625,218 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount: number
+          id: string
+          line_total: number | null
+          order_id: string
+          product_id: string | null
+          quantity: number
+          sort_order: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount?: number
+          id?: string
+          line_total?: never
+          order_id: string
+          product_id?: string | null
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount?: number
+          id?: string
+          line_total?: never
+          order_id?: string
+          product_id?: string | null
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          account_id: string
+          activated_at: string | null
+          bill_to_name: string | null
+          billing_address: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          customer_po: string | null
+          delivered_at: string | null
+          delivery_terms: string | null
+          description: string | null
+          discount_total: number
+          grand_total: number
+          id: string
+          is_demo: boolean
+          name: string
+          net_total: number
+          opportunity_id: string | null
+          order_date: string
+          order_number: string
+          owner_id: string | null
+          payment_terms: string | null
+          price_book_id: string | null
+          quote_id: string | null
+          requested_delivery_date: string | null
+          shipping: number
+          shipping_address: string | null
+          status: string
+          subtotal: number
+          tax: number
+          tax_rate: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          activated_at?: string | null
+          bill_to_name?: string | null
+          billing_address?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          customer_po?: string | null
+          delivered_at?: string | null
+          delivery_terms?: string | null
+          description?: string | null
+          discount_total?: number
+          grand_total?: number
+          id?: string
+          is_demo?: boolean
+          name: string
+          net_total?: number
+          opportunity_id?: string | null
+          order_date?: string
+          order_number?: string
+          owner_id?: string | null
+          payment_terms?: string | null
+          price_book_id?: string | null
+          quote_id?: string | null
+          requested_delivery_date?: string | null
+          shipping?: number
+          shipping_address?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          tax_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          activated_at?: string | null
+          bill_to_name?: string | null
+          billing_address?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          customer_po?: string | null
+          delivered_at?: string | null
+          delivery_terms?: string | null
+          description?: string | null
+          discount_total?: number
+          grand_total?: number
+          id?: string
+          is_demo?: boolean
+          name?: string
+          net_total?: number
+          opportunity_id?: string | null
+          order_date?: string
+          order_number?: string
+          owner_id?: string | null
+          payment_terms?: string | null
+          price_book_id?: string | null
+          quote_id?: string | null
+          requested_delivery_date?: string | null
+          shipping?: number
+          shipping_address?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          tax_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_price_book_id_fkey"
+            columns: ["price_book_id"]
+            isOneToOne: false
+            referencedRelation: "price_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: true
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permission_profiles: {
         Row: {
           created_at: string
@@ -2460,6 +2672,12 @@ export type Database = {
         }
         Returns: Json
       }
+      create_order_from_quote: {
+        Args: {
+          p_quote: string
+        }
+        Returns: string
+      }
       crm_dashboard: {
         Args: {
           p_from: string
@@ -2629,6 +2847,12 @@ export type Database = {
           id: string
           label: string
         }[]
+      }
+      recalc_order: {
+        Args: {
+          p_order: string
+        }
+        Returns: undefined
       }
       recalc_quote: {
         Args: {

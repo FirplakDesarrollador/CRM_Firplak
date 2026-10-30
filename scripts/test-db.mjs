@@ -414,4 +414,42 @@ await check('las cotizaciones vencidas avisan al propietario y a su jefe', async
   assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title = 'Cotización de tu equipo vencida'`, [mgr.id]), 1);
 });
 
+console.log('Fase 10');
+await check('el pedido demo queda en producción con sus productos y totales', async () => {
+  const [o] = await q(`select status, net_total, activated_at, owner_id from orders where is_demo`);
+  assert.equal(o.status, 'En producción');
+  assert.ok(Number(o.net_total) > 0);
+  assert.ok(o.activated_at);
+  assert.equal(o.owner_id, admin.id);
+});
+await check('solo una cotización aceptada se convierte en pedido, una vez', async () => {
+  const [qt] = await q(`select id from quotes where name = 'Torre 3 · propuesta muebles de baño'`);
+  await assert.rejects(as(admin, () => q(`select create_order_from_quote($1)`, [qt.id])), /aceptadas/);
+  await q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]);
+  const [{ id }] = await as(admin, () => q(`select create_order_from_quote($1) as id`, [qt.id]));
+  const [o] = await q(`select status, net_total, account_id, order_number from orders where id = $1`, [id]);
+  const [src] = await q(`select net_total, account_id from quotes where id = $1`, [qt.id]);
+  assert.equal(o.status, 'Borrador');
+  assert.equal(Number(o.net_total), Number(src.net_total));
+  assert.equal(o.account_id, src.account_id);
+  assert.match(o.order_number, /^PED-\d+$/);
+  await assert.rejects(as(admin, () => q(`select create_order_from_quote($1)`, [qt.id])), /ya tiene un pedido/);
+});
+await check('al activar un pedido sus productos quedan fijos y no vuelve a borrador', async () => {
+  const [{ id }] = await q(`select id from orders where not is_demo limit 1`);
+  await as(admin, () => q(`update order_items set quantity = quantity + 1 where order_id = $1`, [id]));
+  await as(admin, () => q(`update orders set status = 'Activado' where id = $1`, [id]));
+  await assert.rejects(as(admin, () => q(`update order_items set quantity = quantity + 1 where order_id = $1`, [id])), /borrador/);
+  await assert.rejects(as(admin, () => q(`update orders set status = 'Borrador' where id = $1`, [id])), /no puede volver/);
+  await as(admin, () => q(`update orders set status = 'Entregado' where id = $1`, [id]));
+  assert.ok((await q(`select delivered_at from orders where id = $1`, [id]))[0].delivered_at);
+  assert.equal(await as(admin, () => count(`select count(*) n from global_search('PED-') where object = 'orders'`)), 2);
+});
+await check('un asesor no ve pedidos ajenos y no puede borrar pedidos activados', async () => {
+  assert.equal(await as(rep, () => count(`select count(*) n from orders`)), 0);
+  const [{ id }] = await q(`select id from orders where is_demo`);
+  await as(admin, () => q(`delete from orders where id = $1`, [id]));
+  assert.equal(await count(`select count(*) n from orders where id = $1`, [id]), 1);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

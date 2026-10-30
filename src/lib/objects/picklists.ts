@@ -58,6 +58,7 @@ export const PRODUCT_FAMILIES = [
   "Muebles de baño", "Lavamanos y superficies", "Duchas y bañeras", "Hidromasajes", "Cocinas", "Clósets", "Accesorios",
 ];
 export const PRODUCT_UNITS = ["Unidad", "Juego", "Metro lineal", "m²"];
+export const ORDER_STATUSES = ["Borrador", "Activado", "En producción", "Despachado", "Entregado", "Cancelado"];
 export const QUOTE_STATUSES = ["Borrador", "En revisión", "Aprobada", "Presentada", "Aceptada", "Rechazada"];
 export const CASE_STATUSES = ["Nuevo", "En proceso", "En espera", "Escalado", "Cerrado"];
 export const CASE_PRIORITIES = ["Alta", "Media", "Baja"];

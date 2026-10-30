@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     leads: "company, status",
     products: "product_code, family",
     quotes: "quote_number, status",
+    orders: "order_number, status",
     cases: "case_number, status",
     campaigns: "campaign_type, status",
   };

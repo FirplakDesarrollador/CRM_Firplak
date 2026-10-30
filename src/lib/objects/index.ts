@@ -7,12 +7,13 @@ import { campaigns } from "./campaigns";
 import { products } from "./products";
 import { quotes } from "./quotes";
 import { cases } from "./cases";
+import { orders } from "./orders";
 import type { CustomFieldRow, FieldDef, FieldType, ObjectDef, ObjectKey } from "./types";
 
 export * from "./types";
 
 export const OBJECTS: Record<ObjectKey, ObjectDef> = {
-  leads, accounts, contacts, opportunities, quotes, products, cases, campaigns, activities,
+  leads, accounts, contacts, opportunities, quotes, orders, products, cases, campaigns, activities,
 };
 
 export function getObject(key: string): ObjectDef {

@@ -11,6 +11,7 @@ export function navItems(access: Access, t: T = (s) => s): NavItem[] {
   if (can(access, "contacts", "read")) items.push({ href: "/contactos", label: "Contactos", icon: "contacts" });
   if (can(access, "opportunities", "read")) items.push({ href: "/oportunidades", label: "Oportunidades", icon: "opportunities" });
   if (can(access, "quotes", "read")) items.push({ href: "/cotizaciones", label: "Cotizaciones", icon: "quotes" });
+  if (can(access, "orders", "read")) items.push({ href: "/pedidos", label: "Pedidos", icon: "orders" });
   if (can(access, "products", "read")) items.push({ href: "/productos", label: "Productos", icon: "products" });
   if (can(access, "cases", "read")) items.push({ href: "/casos", label: "Casos", icon: "cases" });
   if (can(access, "campaigns", "read")) items.push({ href: "/campanas", label: "Campañas", icon: "campaigns" });

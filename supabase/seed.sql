@@ -630,3 +630,32 @@ from (values
    '[{"type":"notify","to":"owner","title":"Cotización vencida sin respuesta","body":"Llama al cliente o actualiza la vigencia."},{"type":"notify","to":"manager","title":"Cotización de tu equipo vencida","body":"Sin respuesta del cliente."}]', 10)
 ) as v(object, name, description, field, offset_days, conditions, actions, ord)
 where not exists (select 1 from public.automation_rules r where r.object = v.object and r.name = v.name);
+
+-- ===========================================================================
+-- Fase 10: pedido de ejemplo en producción (Torre 2 de Altos del Valle)
+-- ===========================================================================
+do $$
+declare
+  v_order uuid;
+begin
+  if exists (select 1 from public.orders where is_demo)
+     or not exists (select 1 from public.opportunities where name = 'Altos del Valle · Torre 2' and is_demo) then
+    return;
+  end if;
+  insert into public.orders (name, opportunity_id, account_id, order_date, requested_delivery_date, customer_po,
+                             payment_terms, delivery_terms, shipping_address, is_demo)
+  select 'Torre 2 · muebles de baño y duchas', o.id, o.account_id, o.close_date + 3, o.close_date + 75, 'OC-AV-2026-118',
+         '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 'Obra Altos del Valle Torre 2, Envigado', true
+  from public.opportunities o where o.name = 'Altos del Valle · Torre 2' and o.is_demo
+  returning id into v_order;
+
+  insert into public.order_items (order_id, product_id, description, quantity, unit_price, discount, sort_order)
+  select v_order, p.id, p.name, v.qty, e.unit_price, v.discount, v.ord
+  from (values ('DEMO-MB-060', 120, 8, 1), ('DEMO-DU-090', 120, 5, 2), ('DEMO-AC-ESP', 120, 0, 3)) as v(code, qty, discount, ord)
+  join public.products p on p.product_code = v.code
+  join public.price_book_entries e on e.product_id = p.id
+  join public.price_books b on b.id = e.price_book_id and b.is_standard;
+
+  update public.orders set status = 'En producción' where id = v_order;
+end
+$$;

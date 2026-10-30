@@ -22,7 +22,7 @@ import { deleteApprovalProcess, saveApprovalProcess } from "../actions";
 
 export const metadata: Metadata = { title: "Procesos de aprobación" };
 
-const OBJECTS_WITH_APPROVAL: ObjectKey[] = ["quotes", "opportunities", "accounts", "leads", "cases", "campaigns", "contacts", "products"];
+const OBJECTS_WITH_APPROVAL: ObjectKey[] = ["quotes", "orders", "opportunities", "accounts", "leads", "cases", "campaigns", "contacts", "products"];
 
 type Process = {
   id: string; name: string; description: string | null; conditions: Filter[];

@@ -103,11 +103,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         return goalType ? <GoalSummary type={goalType} start={from} userId={owner ?? undefined} perUser={!owner} /> : null;
       })()}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
         <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t("prospectos abiertos en total")}`} />
         <KpiTile label="Conversión de prospectos" value={x.lead_conversion_rate === null || x.lead_conversion_rate === undefined ? "—" : formatPercent(x.lead_conversion_rate)}
           sub={`${xn("leads_converted")} ${t("convertidos en el periodo")}`} />
         <KpiTile label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} ${t("cotizaciones ·")} ${xn("quotes_accepted")} ${t("aceptadas en el periodo")}`} />
+        <KpiTile label="Pedidos en curso" {...formatMillions(xn("orders_in_progress_amount"))}
+          sub={`${xn("orders_in_progress")} ${t("pedidos ·")} ${xn("orders_delivered")} ${t("entregados en el periodo")}`} />
         <KpiTile label="Casos abiertos" value={formatNumber(xn("cases_open"))}
           sub={xn("cases_high") ? `${xn("cases_high")} ${t("de prioridad alta")}` : x.avg_resolution_days ? `${t("Resolución promedio:")} ${formatNumber(x.avg_resolution_days)} ${t("días")}` : t("Sin casos de prioridad alta")}
           tone={xn("cases_high") ? "warning" : undefined} />

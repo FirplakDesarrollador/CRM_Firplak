@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import {
-  CAMPAIGN_MEMBER_STATUSES, CAMPAIGN_STATUSES, CASE_STATUSES, LEAD_STATUSES, QUOTE_STATUSES,
+  CAMPAIGN_MEMBER_STATUSES, CAMPAIGN_STATUSES, CASE_STATUSES, LEAD_STATUSES, ORDER_STATUSES, QUOTE_STATUSES,
 } from "@/lib/objects/picklists";
 import { parseAmount, type FormState } from "./form";
 import { validateRecord } from "@/lib/rules/server";
@@ -27,6 +27,7 @@ const isUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
 const STATUS_FIELDS = {
   leads: LEAD_STATUSES.filter((s) => s !== "Convertido"),
   quotes: QUOTE_STATUSES,
+  orders: ORDER_STATUSES,
   cases: CASE_STATUSES,
   campaigns: CAMPAIGN_STATUSES,
 } as const;

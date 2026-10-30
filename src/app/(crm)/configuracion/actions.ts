@@ -392,7 +392,7 @@ export async function deleteAutomationRule(id: string, _prev?: FormState, _fd?: 
 }
 
 // ---------------------------------------------------------------- Procesos de aprobación
-const APPROVAL_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "quotes", "cases", "campaigns", "products"];
+const APPROVAL_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "quotes", "cases", "campaigns", "products", "orders"];
 const fieldUpdates = (raw: string) =>
   parseJsonArray(raw)
     .filter((u) => u && typeof u.field === "string" && u.field)

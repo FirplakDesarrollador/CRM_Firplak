@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Mail, Pencil, Phone, Plus } from "lucide-react";
 import { RecordHeader } from "@/components/records/RecordHeader";
+import { ApprovalStrip } from "@/components/records/RecordLayout";
 import { DetailSections } from "@/components/records/DetailSections";
 import { RelatedList } from "@/components/records/RelatedList";
 import { DeleteButton } from "@/components/records/DeleteButton";
@@ -63,7 +64,9 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
             {access.canDelete && <DeleteButton object="contacts" id={id} label={`el contacto “${row.full_name}”`} />}
           </>
         }
-      />
+      >
+        <ApprovalStrip def={def} row={row} basePath={path} />
+      </RecordHeader>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-4">
           <div className="card">

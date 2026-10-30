@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Printer } from "lucide-react";
+import { ClipboardList, Pencil, Printer } from "lucide-react";
+import { ActionForm } from "@/components/ui/ActionForm";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { createOrderFromQuote } from "@/lib/orders/actions";
+import { can } from "@/lib/permissions";
 import { RecordLayout } from "@/components/records/RecordLayout";
 import { StatusPath } from "@/components/records/StatusPath";
 import { DeleteButton } from "@/components/records/DeleteButton";
@@ -17,19 +21,21 @@ import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Cotización" };
 
 export default async function QuoteDetailPage({ params, searchParams }: PageProps<"/cotizaciones/[id]">) {
-  const [, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
+  const [user, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
   const def = await getObjectDef("quotes");
   const row = await getRecord(def, id);
   if (!row) notFound();
   const supabase = await createClient();
-  const [access, { data: lines }] = await Promise.all([
+  const [access, { data: lines }, { data: order }] = await Promise.all([
     getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
       .select("id, description, quantity, unit_price, discount, line_total, product:products!quote_line_items_product_id_fkey(id, name, product_code, unit)")
       .eq("quote_id", id)
       .order("sort_order"),
+    supabase.from("orders").select("id, order_number").eq("quote_id", id).maybeSingle(),
   ]);
+  const canOrder = !order && row.status === "Aceptada" && can(user.access, "orders", "create");
 
   return (
     <RecordLayout
@@ -38,9 +44,19 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       title={`${row.quote_number} · ${row.name}`}
       basePath={`/cotizaciones/${id}`}
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
-      badges={row.is_synced ? <span className="badge badge-success"><Tr>Sincronizada</Tr></span> : null}
+      badges={
+        <>
+          {row.is_synced ? <span className="badge badge-success"><Tr>Sincronizada</Tr></span> : null}
+          {order && <Link href={`/pedidos/${order.id}`} className="badge badge-info no-underline"><Tr>Pedido</Tr> {order.order_number}</Link>}
+        </>
+      }
       actions={
         <>
+          {canOrder && (
+            <ActionForm action={createOrderFromQuote.bind(null, id)} className="flex flex-col items-end gap-1">
+              <SubmitButton className="btn btn-primary" pendingText="Creando…"><ClipboardList size={15} /> <Tr>Crear pedido</Tr></SubmitButton>
+            </ActionForm>
+          )}
           <Link href={`/imprimir/cotizacion/${id}`} target="_blank" className="btn"><Printer size={15} /> <Tr>Imprimir / PDF</Tr></Link>
           {access.canEdit && <SyncButton quoteId={id} synced={Boolean(row.is_synced)} />}
           {access.canEdit && <Link href={`/cotizaciones/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}

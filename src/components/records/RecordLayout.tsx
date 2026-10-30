@@ -97,3 +97,9 @@ async function loadApprovals(def: ObjectDef, row: Row) {
     isAdmin: canSystem(user.access, "manage_users"),
   };
 }
+
+/** Franja de aprobación para fichas que arman su propia cabecera (cuentas, contactos, oportunidades). */
+export async function ApprovalStrip({ def, row, basePath }: { def: ObjectDef; row: Row; basePath: string }) {
+  const approvals = APPROVAL_OBJECTS.includes(def.key) ? await loadApprovals(def, row) : null;
+  return approvals ? <ApprovalBar object={def.key} recordId={row.id} path={basePath} {...approvals} /> : null;
+}

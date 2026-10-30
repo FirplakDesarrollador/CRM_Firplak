@@ -1,5 +1,5 @@
 export const PERMISSION_OBJECTS = [
-  "leads", "accounts", "contacts", "opportunities", "quotes", "products", "cases", "campaigns", "activities",
+  "leads", "accounts", "contacts", "opportunities", "quotes", "orders", "products", "cases", "campaigns", "activities",
 ] as const;
 export type PermissionObject = (typeof PERMISSION_OBJECTS)[number];
 
