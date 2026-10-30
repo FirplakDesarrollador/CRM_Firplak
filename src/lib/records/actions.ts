@@ -4,100 +4,23 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
-import { can } from "@/lib/permissions";
 import { getObject, isObjectKey, type ListDefinition, type ObjectKey } from "@/lib/objects";
 import { getObjectDef, untypedClient } from "./data";
-import { parseRecordForm, type FormState } from "./form";
+import type { FormState } from "./form";
+import { friendlyError, persistRecord } from "./persist";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
-
-function friendlyError(message: string) {
-  if (message.includes("row-level security")) return "No tienes permiso para realizar esta acción.";
-  if (message.includes("violates foreign key")) return "El registro está relacionado con otros datos y no se puede completar la acción.";
-  if (message.includes("duplicate key")) return "Ya existe un registro con ese valor.";
-  return message;
-}
 
 export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev: FormState, formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const def = await getObjectDef(objectKey);
-  if (!can(user.access, def.permission, id ? "edit" : "create")) {
-    return { message: "No tienes permiso para realizar esta acción." };
-  }
+  const result = await persistRecord(objectKey, id, formData, user, { ignoreDuplicates: formData.get("_ignore_duplicates") === "1" });
+  if (!result.ok) return result.state;
 
-  const db = await untypedClient();
-  let existingCustom: Record<string, unknown> = {};
-  let before: Record<string, unknown> | null = null;
-  if (id) {
-    const { data } = await db.from(def.table).select("*").eq("id", id).maybeSingle();
-    if (!data) return { message: "El registro no existe o no tienes acceso." };
-    before = data as Record<string, unknown>;
-    existingCustom = (data.custom_fields ?? {}) as Record<string, unknown>;
-  }
-
-  const { values, errors, echo } = parseRecordForm(def, formData, existingCustom);
-  if (Object.keys(errors).length) {
-    return { errors, values: echo, message: "Revisa los campos marcados." };
-  }
-
-  if (objectKey === "opportunities" && values.stage_id) {
-    const supabase = await createClient();
-    const { data: stage } = await supabase
-      .from("pipeline_stages").select("pipeline_id").eq("id", String(values.stage_id)).maybeSingle();
-    if (!stage) return { errors: { stage_id: "Etapa no válida" }, values: echo };
-    values.pipeline_id = stage.pipeline_id;
-  }
-  if (!values.owner_id) delete values.owner_id;
-
-  // Posibles duplicados al crear cuentas, contactos o prospectos.
-  if (!id && ["accounts", "contacts", "leads"].includes(objectKey) && formData.get("_ignore_duplicates") !== "1") {
-    const supabase = await createClient();
-    const name = objectKey === "accounts" ? String(values.name ?? "")
-      : objectKey === "contacts" ? `${values.first_name ?? ""} ${values.last_name ?? ""}`
-        : `${values.first_name ?? ""} ${values.last_name ?? ""}${values.company ?? ""}`;
-    const { data: dups } = await supabase.rpc("possible_duplicates", {
-      p_object: objectKey,
-      p_name: name,
-      p_email: (values.email as string | null) ?? undefined,
-      p_tax_id: (values.tax_id as string | null) ?? undefined,
-    });
-    if (dups?.length) {
-      return {
-        values: echo,
-        message: "Encontramos registros que podrían ser el mismo. Revísalos o guarda de todas formas.",
-        duplicates: dups.map((d) => ({ id: d.id, label: d.label, href: `${def.path}/${d.id}` })),
-      };
-    }
-  }
-
-  // Reglas de validación sobre el estado final del registro.
-  let candidate: Record<string, unknown> = { ...(before ?? {}), owner_id: before?.owner_id ?? user.id, ...values };
-  if (objectKey === "opportunities") candidate = await withStageEffects(candidate, !before || before.stage_id !== values.stage_id);
-  const invalid = await validateRecord(objectKey, candidate, user.id);
-  if (invalid) {
-    return {
-      values: echo,
-      message: invalid.message,
-      errors: invalid.field ? { [invalid.field]: invalid.message } : undefined,
-    };
-  }
-
-  const result = id
-    ? await db.from(def.table).update(values).eq("id", id).select("id").maybeSingle()
-    : await db.from(def.table).insert(values).select("id").single();
-
-  if (result.error || !result.data) {
-    return {
-      values: echo,
-      message: result.error ? friendlyError(result.error.message) : "No tienes permiso para editar este registro.",
-    };
-  }
-
-  await runAutomations(objectKey, id ? "update" : "create", result.data.id, before, user.id);
   revalidatePath("/", "layout");
   const returnTo = String(formData.get("_return") ?? "");
-  redirect(returnTo.startsWith("/") ? returnTo : `${def.path}/${result.data.id}`);
+  redirect(returnTo.startsWith("/") ? returnTo : `${def.path}/${result.id}`);
 }
 
 export async function deleteRecord(objectKey: ObjectKey, id: string): Promise<FormState> {

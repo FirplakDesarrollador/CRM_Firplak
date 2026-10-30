@@ -11,7 +11,7 @@ export const accounts: ObjectDef = {
   nameField: "name",
   select:
     "*, owner:profiles!accounts_owner_id_fkey(id, full_name, email), parent:parent_account_id(id, name)",
-  searchColumns: ["name", "account_number", "tax_id", "billing_city", "email"],
+  searchColumns: ["name", "account_number", "tax_id", "sap_card_code", "billing_city", "email"],
   defaultColumns: ["name", "account_type", "billing_city", "phone", "owner_id"],
   defaultSort: { field: "name", dir: "asc" },
   highlightFields: ["account_type", "industry", "phone", "billing_city", "owner_id"],
@@ -30,6 +30,10 @@ export const accounts: ObjectDef = {
     { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "info" },
     { name: "rating", label: "Calificación", type: "select", options: RATINGS, section: "info" },
     { name: "tax_id", label: "NIT", type: "text", section: "info" },
+    {
+      name: "sap_card_code", label: "Código SAP (CardCode)", type: "text", section: "info",
+      help: "Código del socio de negocio en SAP Business One (p. ej. C00123). No se repite entre cuentas.",
+    },
     { name: "phone", label: "Teléfono", type: "phone", section: "info" },
     { name: "email", label: "Correo", type: "email", section: "info" },
     { name: "website", label: "Sitio web", type: "url", section: "info" },

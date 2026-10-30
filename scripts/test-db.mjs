@@ -622,4 +622,50 @@ await check('el reparto 50/50 acredita a cada vendedor la mitad en metas, pronó
   assert.equal(await count(`select count(*) n from opportunity_credit where opportunity_id = $1 and user_id = $2 and percent = 100`, [opp.id, admin.id]), 1);
 });
 
+console.log('Fase 17');
+await check('los tokens MCP respetan los permisos del perfil, se revocan y no se pueden alterar', async () => {
+  const insertToken = (user, hash, scope) => as(user, () => q(
+    `insert into mcp_tokens (name, token_prefix, token_hash, scope) values ('Prueba', 'fcrm_x', $1, $2) returning id`, [hash, scope]));
+  const resolve = async (hash) => {
+    await db.exec(`set role anon`);
+    try { return await q(`select * from mcp_resolve_token($1)`, [hash]); } finally { await db.exec(`reset role`); }
+  };
+  // Sin el permiso «use_mcp» el asesor no crea tokens; el administrador sí (con cambios).
+  await assert.rejects(insertToken(rep, 'hash-rep-1', 'read'));
+  const [adminToken] = await insertToken(admin, 'hash-admin-1', 'write');
+  assert.deepEqual((await resolve('hash-admin-1')).map((r) => [r.user_id, r.scope]), [[admin.id, 'write']]);
+  assert.equal((await resolve('no-existe')).length, 0);
+
+  // Con «use_mcp» pero sin «mcp_write», el asesor solo crea tokens de consulta.
+  await q(`update permission_profiles pp set permissions = pp.permissions
+             || jsonb_build_object('system', coalesce(pp.permissions -> 'system', '{}') || '{"use_mcp": true}')
+           where pp.id = (select permission_profile_id from profiles where id = $1)`, [rep.id]);
+  await assert.rejects(insertToken(rep, 'hash-rep-2', 'write'));
+  await insertToken(rep, 'hash-rep-3', 'read');
+  assert.equal((await resolve('hash-rep-3'))[0].scope, 'read');
+  // Cada quien ve sus tokens; la función de permisos por usuario no es pública.
+  assert.equal(await as(rep, () => count(`select count(*) n from mcp_tokens`)), 1);
+  await assert.rejects(as(rep, () => q(`select user_has_system_perm($1, 'use_mcp')`, [rep.id])));
+
+  // Revocar es definitivo; el alcance no se puede cambiar.
+  await assert.rejects(as(admin, () => q(`update mcp_tokens set scope = 'read' where id = $1`, [adminToken.id])));
+  await as(admin, () => q(`update mcp_tokens set revoked_at = now() where id = $1`, [adminToken.id]));
+  assert.equal((await resolve('hash-admin-1')).length, 0);
+  await assert.rejects(as(admin, () => q(`update mcp_tokens set revoked_at = null where id = $1`, [adminToken.id])));
+
+  // El registro de actividad de IA: cada quien el suyo; administración ve todo.
+  await as(rep, () => q(`insert into mcp_activity (tool, summary) values ('buscar', 'casa viva')`));
+  await assert.rejects(as(rep, () => q(`insert into mcp_activity (user_id, tool) values ($1, 'x')`, [admin.id])));
+  assert.equal(await as(admin, () => count(`select count(*) n from mcp_activity where user_id = $1`, [rep.id])), 1);
+});
+
+await check('el código SAP de las cuentas se normaliza y no se repite', async () => {
+  const [a, b] = await q(`select id from accounts order by name limit 2`);
+  await q(`update accounts set sap_card_code = ' c 00123 ' where id = $1`, [a.id]);
+  assert.equal((await q(`select sap_card_code from accounts where id = $1`, [a.id]))[0].sap_card_code, 'C00123');
+  await assert.rejects(q(`update accounts set sap_card_code = 'c00123' where id = $1`, [b.id]));
+  await q(`update accounts set sap_card_code = '' where id = $1`, [a.id]);
+  assert.equal((await q(`select sap_card_code from accounts where id = $1`, [a.id]))[0].sap_card_code, null);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

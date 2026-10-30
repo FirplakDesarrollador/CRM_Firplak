@@ -97,6 +97,7 @@ export type Database = {
           parent_account_id: string | null
           phone: string | null
           rating: string | null
+          sap_card_code: string | null
           segment: string | null
           shipping_city: string | null
           shipping_country: string | null
@@ -128,6 +129,7 @@ export type Database = {
           parent_account_id?: string | null
           phone?: string | null
           rating?: string | null
+          sap_card_code?: string | null
           segment?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
@@ -159,6 +161,7 @@ export type Database = {
           parent_account_id?: string | null
           phone?: string | null
           rating?: string | null
+          sap_card_code?: string | null
           segment?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
@@ -1632,6 +1635,155 @@ export type Database = {
           {
             foreignKeyName: "list_views_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_activity: {
+        Row: {
+          created_at: string
+          id: number
+          is_change: boolean
+          object: string | null
+          record_id: string | null
+          summary: string | null
+          token_id: string | null
+          tool: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          is_change?: boolean
+          object?: string | null
+          record_id?: string | null
+          summary?: string | null
+          token_id?: string | null
+          tool: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          is_change?: boolean
+          object?: string | null
+          record_id?: string | null
+          summary?: string | null
+          token_id?: string | null
+          tool?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_activity_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_confirmations: {
+        Row: {
+          args_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          summary: string
+          token_id: string | null
+          tool: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          args_hash: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          summary: string
+          token_id?: string | null
+          tool: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          args_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          summary?: string
+          token_id?: string | null
+          tool?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_confirmations_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_confirmations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          scope: string
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          scope?: string
+          token_hash: string
+          token_prefix: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          scope?: string
+          token_hash?: string
+          token_prefix?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_tokens_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3306,6 +3458,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      mcp_resolve_token: {
+        Args: {
+          p_hash: string
+        }
+        Returns: {
+          token_id: string
+          user_id: string
+          email: string
+          scope: string
+        }[]
+      }
       merge_records: {
         Args: {
           p_object: string
@@ -3446,6 +3609,13 @@ export type Database = {
           p: string
         }
         Returns: number
+      }
+      user_has_system_perm: {
+        Args: {
+          p_user: string
+          p_action: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

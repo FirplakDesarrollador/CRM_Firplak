@@ -4,7 +4,7 @@ CRM comercial de Firplak construido con **Next.js 16 (App Router, TypeScript)** 
 Funcionalidad inspirada en los CRM empresariales (barra de objetos, listas con vistas guardadas, fichas con listas
 relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 
-## Módulos incluidos (Fases 1 a 16)
+## Módulos incluidos (Fases 1 a 17)
 
 | Módulo | Qué incluye |
 |---|---|
@@ -32,6 +32,8 @@ relacionadas, pipeline por etapas), con identidad visual propia de Firplak.
 | Aprobaciones | Procesos configurables por objeto (Configuración → Procesos de aprobación) con **varios pasos en orden**: cada paso tiene sus condiciones (si no se cumplen, se omite) y su aprobador (jefe directo del propietario, jefe del aprobador anterior o un usuario). Además: condiciones de entrada, bloqueo del registro mientras espera y cambios de campos al enviar, aprobar y rechazar o retirar. Se envían desde la ficha con comentario; cada aprobador decide desde la ficha o la **bandeja de aprobaciones** (rechazar exige motivo) y recibe avisos en la campana. Historial por paso en la pestaña Aprobaciones. Ejemplo incluido: cotizaciones en borrador con más de 15 % de descuento las aprueba el jefe directo y, si superan 25 %, también su jefe (gerencia comercial); al final pasan a «Aprobada». |
 | Equipos de venta | **Equipo de la cuenta** y **equipo de la oportunidad** (pestaña Equipo de la ficha): personas que trabajan el registro con un rol (asesor de proyectos, especificador, soporte técnico…; lista personalizable en Listas de valores) y un nivel de acceso, sin cambiar el propietario. En cuentas se elige el acceso a la cuenta y, por separado, a sus oportunidades, casos y contactos; las cotizaciones y pedidos de esas oportunidades se ven en solo lectura. El acceso de equipo nunca permite eliminar. Lo gestionan el propietario, su jerarquía y quien modifica todo; cada persona agregada recibe un aviso. **Equipo predeterminado** en Mis preferencias → Mi equipo, que se agrega con un botón o solo al crear registros. En las listas de cuentas y oportunidades, el alcance «Mi equipo» muestra los registros donde la persona está en el equipo. |
 | Reparto de ingresos | En la pestaña «Equipo y reparto» de la oportunidad, el valor se reparte entre vendedores en porcentajes que suman 100 % (p. ej. 50/50 cuando el cliente es de un asesor y la obra está en la zona de otro), con motivo opcional y botón «Partes iguales». Cada vendedor recibe su parte en **metas** (ventas y negocios ganados), **pronóstico** e instantáneas, y en el filtro por asesor y el ranking de **Indicadores**; las cifras del pronóstico abren los negocios donde la persona tiene participación. Quien recibe una parte entra al equipo (lectura) y recibe aviso; si cambia el propietario, su parte pasa al nuevo. Sin reparto, el 100 % es del propietario. Lo editan el propietario, su jerarquía y quien modifica todo. |
+| Asistentes de IA (MCP) | Servidor MCP en `/api/mcp` para usar el CRM desde Claude (Code y Desktop), Cursor, Antigravity o Grok. Cada persona crea su token en **Mis preferencias → Asistentes de IA** (se muestra una vez, con la configuración de cada asistente) y el asistente actúa como ella: mismos permisos y visibilidad. Herramientas: buscar, listar con filtros, ver registro, describir campos, mis pendientes, pronóstico, metas e indicadores; y, con permiso, crear y actualizar registros, mover oportunidades de etapa y completar actividades. **Todo cambio pide confirmación:** la primera llamada devuelve una vista previa y solo se aplica al repetirla con el código de confirmación (10 minutos, un solo uso). Se activa por perfil (**Usar asistentes de IA** y **Hacer cambios con asistentes de IA**); administración ve y revoca tokens y revisa el registro de uso en Configuración → Asistentes de IA. |
+| Código SAP | Campo **Código SAP (CardCode)** en cuentas para vincular cada cliente con su socio de negocio en SAP Business One: se guarda en mayúsculas y sin espacios, no se repite entre cuentas, se busca en las listas y se importa por CSV. |
 | Idioma | Español o inglés por usuario (Mis preferencias). Se traducen la interfaz, las fechas, los mensajes del servidor y los **valores de las listas**: tipos, estados, orígenes, etapas, pipelines y opciones de campos personalizados, en listas, fichas, filtros, formularios, Kanban, informes e indicadores. Los valores se guardan en español; el inglés usa un diccionario estándar y se puede ajustar en Configuración (Listas de valores, Pipelines y etapas, Campos personalizados). Los campos personalizados y los pipelines también tienen **nombre (y ayuda) en inglés** opcional. Siguen como se escribieron los textos libres (nombres de registros, notas, mensajes de reglas y nombres de informes). |
 | Importar datos | Asistente CSV (Excel → CSV, `;` o `,`, UTF-8 o ANSI) para cuentas, contactos, prospectos, oportunidades y productos: mapeo automático de columnas, relaciones por nombre, propietario por nombre o correo, crear o actualizar existentes (NIT por dígitos, correo, referencia…), reglas de validación, informe y descarga de errores, historial. |
 | Duplicados | Aviso al crear cuentas, contactos o prospectos parecidos (NIT, correo o nombre normalizado) con opción de guardar de todas formas; Configuración → Duplicados lista parejas y las fusiona moviendo todos sus registros relacionados. |
@@ -71,6 +73,16 @@ Abre http://localhost:3000 y entra con cualquiera de estos usuarios (contraseña
 - La base de datos vive **en memoria**: se crea con las migraciones y la semilla al arrancar y se borra al cerrar con Ctrl+C. Nada se guarda ni se envía a Supabase.
 - Ignora `.env.local`: aunque tengas tus claves reales, el modo demo usa su propia base local, sin la clave `service_role` ni el envío de correos. En el modo demo no hay registro de usuarios nuevos ni recuperación de contraseña.
 - Para la base real, usa `npm run dev` con los pasos de la sección siguiente; no hay que cambiar código.
+
+## Asistentes de IA (MCP)
+
+1. En **Configuración → Perfiles y permisos**, activa *Usar asistentes de IA (MCP)* (y, si quieres que puedan hacer cambios, *Hacer cambios con asistentes de IA*) en los perfiles que correspondan. Administración los tiene por defecto.
+2. En el servidor, agrega **una** de estas variables (solo servidor, nunca con `NEXT_PUBLIC_`):
+   - `SUPABASE_SERVICE_ROLE_KEY` (recomendado): el servidor MCP abre una sesión normal del dueño del token.
+   - `SUPABASE_JWT_SECRET`: el *JWT Secret* heredado del proyecto (Settings → API); firma sesiones cortas.
+3. Cada persona crea su token en **Mis preferencias → Asistentes de IA** y copia la configuración de su asistente (Claude Code, Claude Desktop, Cursor, Antigravity o Grok). La dirección es `https://TU-DOMINIO/api/mcp`.
+
+En el modo demo ya está configurado: al arrancar se imprime un token de Luis para probar.
 
 ## Puesta en marcha (Supabase en la nube)
 
@@ -145,4 +157,4 @@ fuentes ni código.
 ## Próximos pasos sugeridos
 - Integración con **SAP Business One** (ERP de Firplak): socios de negocio, pedidos, despachos y facturas.
 - Sincronización con **Office 365** (Outlook, Planner, Teams y SharePoint).
-- Servidor **MCP** para usar el CRM desde asistentes de IA (Claude, Grok, Cursor, ChatGPT, Antigravity).
+- Conexión del MCP con **ChatGPT** y Claude en la web (requieren autorización OAuth en lugar de token).

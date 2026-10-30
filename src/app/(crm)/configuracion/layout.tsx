@@ -15,6 +15,7 @@ export default async function SetupLayout({ children }: { children: React.ReactN
       { href: "/configuracion/roles", label: "Jerarquía de roles", group: "Usuarios y acceso" },
       { href: "/configuracion/perfiles", label: "Perfiles y permisos", group: "Usuarios y acceso" },
       { href: "/configuracion/auditoria", label: "Auditoría de cambios", group: "Usuarios y acceso" },
+      { href: "/configuracion/asistentes", label: "Asistentes de IA", group: "Usuarios y acceso" },
     ] : []),
     ...(customize ? [
       { href: "/configuracion/compartir", label: "Compartir por defecto", group: "Usuarios y acceso" },

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, mcpSession } from "@/lib/supabase/server";
 import type { Access, PermissionMap } from "@/lib/permissions";
 import { hasSupabaseEnv } from "@/lib/env";
 
@@ -38,7 +38,7 @@ export type CurrentUser = {
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!hasSupabaseEnv()) return null;
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
+  const { data: claims } = await supabase.auth.getClaims(mcpSession.getStore()?.accessToken);
   const userId = claims?.claims?.sub;
   if (!userId) return null;
 

@@ -8,7 +8,7 @@
 
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
-import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import http from 'node:http';
@@ -113,6 +113,12 @@ for (const [days, k] of [[21, 0.62], [14, 0.78], [7, 0.9]]) {
     update public.opportunity_snapshots set taken_on = taken_on - ${days}
       where taken_on = (now() at time zone 'America/Bogota')::date;`);
 }
+
+// Token MCP de prueba para Luis (consulta y cambios), solo para esta sesión.
+const mcpToken = `fcrm_${randomBytes(32).toString('base64url')}`;
+await db.query(`insert into public.mcp_tokens (user_id, name, token_prefix, token_hash, scope)
+  select id, 'Demo', $1, $2, 'write' from public.profiles where email = 'luis.demo@firplak.com'`,
+  [mcpToken.slice(0, 12), createHash('sha256').update(mcpToken).digest('hex')]);
 
 // PGlite tiene una sola conexión, compartida con PostgREST: desde aquí ya no se consulta la base
 // directamente (se mezclaría con sus transacciones). Los usuarios quedan en memoria.
@@ -238,6 +244,8 @@ const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'd
     NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
     NEXT_PUBLIC_SITE_URL: `http://localhost:${APP_PORT}`,
     SUPABASE_SERVICE_ROLE_KEY: '',
+    // El servidor MCP firma las sesiones de los tokens con el secreto de esta base de demo.
+    SUPABASE_JWT_SECRET: SECRET,
     RESEND_API_KEY: '',
     EMAIL_FROM: '',
     ALLOWED_EMAIL_DOMAINS: '',
@@ -250,6 +258,8 @@ console.log(`
   Firplak CRM · modo demo (datos de prueba en memoria)
   Abre http://localhost:${APP_PORT}  ·  contraseña de todos: ${PASSWORD}
 ${USERS.map((u) => `    ${u.email.padEnd(30)} ${u.note}`).join('\n')}
+  MCP: http://localhost:${APP_PORT}/api/mcp  ·  token de Luis:
+    ${mcpToken}
   Al cerrar con Ctrl+C se borra todo. No toca tu Supabase real.
 ──────────────────────────────────────────────────────────────
 `);

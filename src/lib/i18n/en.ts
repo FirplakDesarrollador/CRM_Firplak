@@ -37,7 +37,7 @@ export const FIELDS_EN: Record<string, string> = {
   shipping_address: "Shipping address", shipping_city: "Shipping city", shipping_country: "Shipping country",
   shipping_state: "Shipping state", shipping_street: "Shipping street", shipping: "Shipping", stage_id: "Stage", start_at: "Start",
   start_date: "Start date", state: "State", status: "Status", street: "Street", subject: "Subject", subtotal: "Subtotal",
-  tax_id: "Tax ID (NIT)", tax_rate: "VAT (%)", tax: "VAT", title: "Title", unit: "Unit of measure", updated_at: "Last modified",
+  tax_id: "Tax ID (NIT)", sap_card_code: "SAP code (CardCode)", tax_rate: "VAT (%)", tax: "VAT", title: "Title", unit: "Unit of measure", updated_at: "Last modified",
   website: "Website", forecast_category: "Forecast category", activity_type: "Type",
 };
 
