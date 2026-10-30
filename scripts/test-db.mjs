@@ -688,4 +688,43 @@ await check('borrar los datos de ejemplo deja la configuración y solo lo puede 
   assert.ok(acc);
 });
 
+console.log('Fase 19');
+await check('OAuth: registro, código con PKCE de un solo uso, refresco rotativo y revocación al reusarlo', async () => {
+  const asAnon = async (sql, params) => {
+    await db.exec(`set role anon`);
+    try { return await q(sql, params); } finally { await db.exec(`reset role`); }
+  };
+  await assert.rejects(asAnon(`select oauth_register_client('Mala', array['http://evil.example/cb'])`));
+  await assert.rejects(asAnon(`select oauth_register_client('Mala', array['javascript:alert(1)'])`));
+  const [{ oauth_register_client: client }] = await asAnon(`select oauth_register_client('ChatGPT', array['https://chatgpt.com/connector_platform_oauth_redirect'])`);
+  const redirect = 'https://chatgpt.com/connector_platform_oauth_redirect';
+  const challenge = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+  // Redirección no registrada o permiso de cambios que el asesor no tiene: rechazado.
+  await assert.rejects(as(admin, () => q(`select oauth_create_code($1, 'https://otro.example/cb', $2, 'read', null, 'code-x')`, [client, challenge])));
+  await assert.rejects(as(rep, () => q(`select oauth_create_code($1, $2, $3, 'write', null, 'code-rep')`, [client, redirect, challenge])));
+  await as(admin, () => q(`select oauth_create_code($1, $2, $3, 'write', null, 'code-1')`, [client, redirect, challenge]));
+
+  const exchange = (code, ch) => asAnon(`select * from oauth_exchange_code($1, $2, $3, $4, 'acc-1', 'fcrm_acc1', 'ref-1')`, [code, client, redirect, ch]);
+  await assert.rejects(exchange('code-1', 'otro-reto-de-pkce-que-no-coincide-xxxxxxxxxx'));
+  const [tok] = await exchange('code-1', challenge);
+  assert.deepEqual([tok.scope, tok.expires_in], ['write', 3600]);
+  await assert.rejects(exchange('code-1', challenge));
+  assert.equal((await asAnon(`select * from mcp_resolve_token('acc-1')`))[0].user_id, admin.id);
+
+  // Refresco: rota; reusar el anterior revoca toda la aplicación conectada.
+  const refresh = (r, acc, next) => asAnon(`select * from oauth_refresh($1, $2, $3, 'fcrm_x', $4)`, [r, client, acc, next]);
+  assert.equal((await refresh('ref-1', 'acc-2', 'ref-2')).length, 1);
+  assert.equal((await asAnon(`select * from mcp_resolve_token('acc-2')`)).length, 1);
+  assert.equal((await refresh('ref-1', 'acc-3', 'ref-3')).length, 0);
+  assert.equal((await asAnon(`select * from mcp_resolve_token('acc-2')`)).length, 0);
+  assert.equal((await refresh('ref-2', 'acc-4', 'ref-4')).length, 0);
+  // Las aplicaciones se ven por su dueño; una revocada no se reactiva.
+  const [grant] = await as(admin, () => q(`select id, revoked_at from oauth_grants where client_id = $1`, [client]));
+  assert.ok(grant.revoked_at);
+  assert.equal(await as(rep, () => count(`select count(*) n from oauth_grants`)), 0);
+  assert.equal(await as(rep, () => count(`select count(*) n from oauth_clients`)), 0);
+  assert.equal((await as(admin, () => q(`select c.name from oauth_grants g join oauth_clients c on c.id = g.client_id`)))[0].name, 'ChatGPT');
+  await assert.rejects(as(admin, () => q(`update oauth_grants set revoked_at = null where id = $1`, [grant.id])));
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

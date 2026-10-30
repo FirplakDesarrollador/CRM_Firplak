@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Fmt } from "@/components/ui/Fmt";
 import { Tr } from "@/components/ui/Tr";
-import { TokenTable } from "@/components/mcp/McpSettings";
+import { GRANT_SELECT, GrantTable, TokenTable } from "@/components/mcp/McpSettings";
 import { createClient } from "@/lib/supabase/server";
 import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
@@ -19,10 +19,11 @@ export default async function AssistantsPage({ searchParams }: PageProps<"/confi
     .select("id, tool, object, record_id, summary, is_change, created_at, user:profiles!mcp_activity_user_id_fkey(full_name)")
     .order("created_at", { ascending: false }).limit(100);
   if (onlyChanges) activityQuery = activityQuery.eq("is_change", true);
-  const [{ data: tokens }, { data: activity }] = await Promise.all([
+  const [{ data: tokens }, { data: grants }, { data: activity }] = await Promise.all([
     supabase.from("mcp_tokens")
       .select("id, name, token_prefix, scope, created_at, last_used_at, expires_at, revoked_at, user:profiles!mcp_tokens_user_id_fkey(full_name)")
-      .order("created_at", { ascending: false }),
+      .is("grant_id", null).order("created_at", { ascending: false }),
+    supabase.from("oauth_grants").select(`${GRANT_SELECT}, user:profiles!oauth_grants_user_id_fkey(full_name)`).order("created_at", { ascending: false }).limit(100),
     activityQuery,
   ]);
 
@@ -37,6 +38,10 @@ export default async function AssistantsPage({ searchParams }: PageProps<"/confi
       <section className="card overflow-hidden">
         <div className="card-header"><h2 className="card-title"><Tr>Tokens</Tr> <span className="badge">{tokens?.length ?? 0}</span></h2></div>
         <TokenTable tokens={(tokens ?? []) as never} showUser path="/configuracion/asistentes" />
+      </section>
+      <section className="card overflow-hidden">
+        <div className="card-header"><h2 className="card-title"><Tr>Aplicaciones conectadas</Tr> <span className="badge">{grants?.filter((g) => !g.revoked_at).length ?? 0}</span></h2></div>
+        <GrantTable grants={(grants ?? []) as never} showUser path="/configuracion/asistentes" />
       </section>
       <section className="card overflow-hidden">
         <div className="card-header">

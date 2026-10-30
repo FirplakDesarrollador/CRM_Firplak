@@ -3,8 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { hasSupabaseEnv, supabaseAnonKey, supabaseUrl } from "@/lib/env";
 
-// /api/mcp se autentica con su propio token (Authorization: Bearer).
-const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/api/mcp"];
+// /api/mcp se autentica con su propio token; OAuth (descubrimiento, registro y tokens) es público.
+const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/api/mcp", "/api/oauth", "/.well-known"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

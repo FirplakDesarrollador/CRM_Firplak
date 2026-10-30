@@ -118,9 +118,16 @@ Consejos:
 ## 8. Asistentes de IA (opcional)
 
 Con `SUPABASE_SERVICE_ROLE_KEY` configurada (paso 3) y los permisos activos en los perfiles
-(paso 5.2), cada persona crea su token en **Mis preferencias → Asistentes de IA** y copia la
-configuración para Claude, Cursor, Antigravity o Grok. Administración ve y revoca tokens y revisa
-el registro de uso en **Configuración → Asistentes de IA**.
+(paso 5.2):
+
+- **ChatGPT y Claude en la web:** agrega un conector personalizado con la dirección
+  `https://crm.firplak.com/api/mcp`. La aplicación te lleva al CRM para iniciar sesión y autorizar
+  (solo consulta o también cambios). No hay que copiar tokens.
+- **Claude Code, Claude Desktop, Cursor, Antigravity o Grok:** cada persona crea su token en
+  **Mis preferencias → Asistentes de IA** y copia la configuración de su asistente.
+
+Administración ve y revoca tokens y aplicaciones conectadas y revisa el registro de uso en
+**Configuración → Asistentes de IA**.
 
 ## 9. Lista de verificación antes de anunciarlo
 
@@ -133,7 +140,6 @@ el registro de uso en **Configuración → Asistentes de IA**.
 
 ## Lo que sigue después de salir en vivo
 
-- Conexión del MCP con **ChatGPT** y Claude en la web (requieren OAuth).
 - Sincronización con **Office 365** (Outlook, Planner, Teams y SharePoint).
 - Integración con **SAP Business One** por el Service Layer: socios de negocio, pedidos, despachos
   y facturas, usando el Código SAP y la Referencia como llaves.

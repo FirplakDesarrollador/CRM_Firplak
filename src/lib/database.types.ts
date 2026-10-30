@@ -1747,6 +1747,7 @@ export type Database = {
         Row: {
           created_at: string
           expires_at: string | null
+          grant_id: string | null
           id: string
           last_used_at: string | null
           name: string
@@ -1759,6 +1760,7 @@ export type Database = {
         Insert: {
           created_at?: string
           expires_at?: string | null
+          grant_id?: string | null
           id?: string
           last_used_at?: string | null
           name: string
@@ -1771,6 +1773,7 @@ export type Database = {
         Update: {
           created_at?: string
           expires_at?: string | null
+          grant_id?: string | null
           id?: string
           last_used_at?: string | null
           name?: string
@@ -1781,6 +1784,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "mcp_tokens_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "oauth_grants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "mcp_tokens_user_id_fkey"
             columns: ["user_id"]
@@ -1837,6 +1847,156 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_clients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          redirect_uris: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          redirect_uris: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          redirect_uris?: string[]
+        }
+        Relationships: [
+        ]
+      }
+      oauth_codes: {
+        Row: {
+          client_id: string
+          code_challenge: string
+          code_hash: string
+          expires_at: string
+          redirect_uri: string
+          resource: string | null
+          scope: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          code_challenge: string
+          code_hash: string
+          expires_at?: string
+          redirect_uri: string
+          resource?: string | null
+          scope: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          code_challenge?: string
+          code_hash?: string
+          expires_at?: string
+          redirect_uri?: string
+          resource?: string | null
+          scope?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_codes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "oauth_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oauth_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_grants: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          last_used_at: string | null
+          revoked_at: string | null
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          scope: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          scope?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_grants_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "oauth_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oauth_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_refresh_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          grant_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          grant_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          grant_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_refresh_tokens_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "oauth_grants"
             referencedColumns: ["id"]
           },
         ]
@@ -3497,6 +3657,61 @@ export type Database = {
           p_title: string
           p_body?: string
           p_link?: string
+        }
+        Returns: string
+      }
+      oauth_client_info: {
+        Args: {
+          p_client: string
+        }
+        Returns: {
+          name: string
+          redirect_uris: string[]
+        }[]
+      }
+      oauth_create_code: {
+        Args: {
+          p_client: string
+          p_redirect_uri: string
+          p_code_challenge: string
+          p_scope: string
+          p_resource: string
+          p_code_hash: string
+        }
+        Returns: undefined
+      }
+      oauth_exchange_code: {
+        Args: {
+          p_code_hash: string
+          p_client: string
+          p_redirect_uri: string
+          p_challenge: string
+          p_access_hash: string
+          p_access_prefix: string
+          p_refresh_hash: string
+        }
+        Returns: {
+          scope: string
+          expires_in: number
+        }[]
+      }
+      oauth_refresh: {
+        Args: {
+          p_refresh_hash: string
+          p_client: string
+          p_access_hash: string
+          p_access_prefix: string
+          p_new_refresh_hash: string
+        }
+        Returns: {
+          scope: string
+          expires_in: number
+        }[]
+      }
+      oauth_register_client: {
+        Args: {
+          p_name: string
+          p_redirect_uris: string[]
         }
         Returns: string
       }

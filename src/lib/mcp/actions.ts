@@ -39,3 +39,13 @@ export async function revokeMcpToken(id: string, path: string): Promise<FormStat
   revalidatePath(path);
   return { ok: true, message: "Token revocado" };
 }
+
+/** Desconecta una aplicación OAuth (ChatGPT, Claude web…): revoca todos sus tokens. */
+export async function revokeOauthGrant(id: string, path: string): Promise<FormState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("oauth_grants").update({ revoked_at: new Date().toISOString() }).eq("id", id).is("revoked_at", null).select("id");
+  if (error) return { message: error.message };
+  if (!data?.length) return { message: "No puedes desconectar esta aplicación." };
+  revalidatePath(path);
+  return { ok: true, message: "Aplicación desconectada" };
+}
