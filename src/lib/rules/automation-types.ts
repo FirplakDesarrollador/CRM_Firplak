@@ -2,7 +2,9 @@ export type AutomationAction =
   | { type: "assign_owner"; user_id: string }
   | { type: "create_task"; subject: string; due_in_days?: number; assign_to?: string; priority?: "high" | "normal" | "low" }
   | { type: "notify"; to: string; title: string; body?: string }
-  | { type: "set_field"; field: string; value: string };
+  | { type: "set_field"; field: string; value: string }
+  /** Publica en un canal de Teams (Configuración → Microsoft 365). No corre en las programadas. */
+  | { type: "teams"; channel_id: string; title: string; body?: string };
 
 /** Cuándo corre una automatización (las «programadas» se disparan por una fecha del registro). */
 export const TRIGGERS = {

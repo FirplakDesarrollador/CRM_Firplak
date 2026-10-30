@@ -14,16 +14,20 @@ const TYPES: Record<AutomationAction["type"], string> = {
   notify: "Enviar notificación",
   assign_owner: "Asignar propietario",
   set_field: "Actualizar campo",
+  teams: "Publicar en Teams",
 };
 
 const blank = (type: AutomationAction["type"]): AutomationAction =>
   type === "create_task" ? { type, subject: "", due_in_days: 1, assign_to: "owner", priority: "normal" }
     : type === "notify" ? { type, to: "owner", title: "", body: "" }
       : type === "assign_owner" ? { type, user_id: "" }
+        : type === "teams" ? { type, channel_id: "", title: "", body: "" }
         : { type, field: "", value: "" };
 
-export function ActionsEditor({ name, fields, users, initial = [], hasOwner, types, emptyText = "Sin acciones." }: {
+export function ActionsEditor({ name, fields, users, initial = [], hasOwner, types, emptyText = "Sin acciones.", channels = [] }: {
   name: string; fields: FieldDef[]; users: UserOption[]; initial?: AutomationAction[]; hasOwner: boolean;
+  /** Canales de Teams configurados (sin ellos no se ofrece «Publicar en Teams»). */
+  channels?: { id: string; name: string }[];
   /** Tipos de acción ofrecidos (por defecto, todos). */
   types?: AutomationAction["type"][]; emptyText?: string;
 }) {
@@ -33,7 +37,8 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner, typ
     setActions(actions.map((a, j) => (j === i ? ({ ...a, ...patch } as AutomationAction) : a)));
   const settable = fields.filter((f) => !f.readOnly && !f.formHidden && ["select", "text", "checkbox"].includes(f.type));
   const activeUsers = users.filter((u) => u.is_active);
-  const offered = (Object.keys(TYPES) as AutomationAction["type"][]).filter((k) => (hasOwner || k !== "assign_owner") && (!types || types.includes(k)));
+  const offered = (Object.keys(TYPES) as AutomationAction["type"][]).filter((k) =>
+    (hasOwner || k !== "assign_owner") && (!types || types.includes(k)) && (k !== "teams" || channels.length > 0 || initial.some((a) => a.type === "teams")));
 
   return (
     <div className="space-y-2">
@@ -71,6 +76,16 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner, typ
                 </select>
                 <input className="input" placeholder="Título" value={a.title} onChange={(e) => update(i, { title: e.target.value })} />
                 <input className="input sm:col-span-2" placeholder="Mensaje (opcional)" value={a.body ?? ""} onChange={(e) => update(i, { body: e.target.value })} />
+              </>
+            )}
+            {a.type === "teams" && (
+              <>
+                <select className="select" value={a.channel_id} aria-label={t("Canal de Teams")} onChange={(e) => update(i, { channel_id: e.target.value })}>
+                  <option value="">{t("Selecciona el canal…")}</option>
+                  {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <input className="input" placeholder={t("Título (p. ej. ¡Negocio ganado!)")} value={a.title} onChange={(e) => update(i, { title: e.target.value })} />
+                <input className="input sm:col-span-2" placeholder={t("Mensaje (opcional; se agrega el nombre y el enlace del registro)")} value={a.body ?? ""} onChange={(e) => update(i, { body: e.target.value })} />
               </>
             )}
             {a.type === "assign_owner" && (

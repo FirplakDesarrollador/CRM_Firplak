@@ -8,6 +8,8 @@ import { requireUser } from "@/lib/session";
 import { EmailComposer } from "./EmailComposer";
 
 import { Tr } from "@/components/ui/Tr";
+import { ms365Configured } from "@/lib/ms365/config";
+import { getConnection } from "@/lib/ms365/graph";
 export const metadata: Metadata = { title: "Enviar correo" };
 
 const isUuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
@@ -81,7 +83,10 @@ export default async function NewEmailPage({ searchParams }: PageProps<"/correo/
 
   const { data: templates } = await supabase
     .from("email_templates").select("id, name, category, subject, body").eq("is_active", true).order("category").order("name");
-  const providerReady = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  // Con la cuenta de Microsoft conectada, el correo sale del buzón de Outlook de la persona.
+  const outlook = ms365Configured() ? await getConnection(user.id) : null;
+  const outlookFrom = outlook?.settings.send_via_outlook ? outlook.email ?? outlook.display_name ?? "Outlook" : null;
+  const providerReady = Boolean(outlookFrom || (process.env.RESEND_API_KEY && process.env.EMAIL_FROM));
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -93,7 +98,7 @@ export default async function NewEmailPage({ searchParams }: PageProps<"/correo/
           <h1 className="text-xl font-medium">{recipient ? `Escribir a ${recipient}` : "Nuevo correo"}</h1>
         </div>
       </div>
-      <EmailComposer to={to} related={related} merge={merge} templates={templates ?? []} returnTo={returnTo} providerReady={providerReady} />
+      <EmailComposer to={to} related={related} merge={merge} templates={templates ?? []} returnTo={returnTo} providerReady={providerReady} outlookFrom={outlookFrom} />
     </div>
   );
 }

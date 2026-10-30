@@ -129,7 +129,41 @@ Con `SUPABASE_SERVICE_ROLE_KEY` configurada (paso 3) y los permisos activos en l
 Administración ve y revoca tokens y aplicaciones conectadas y revisa el registro de uso en
 **Configuración → Asistentes de IA**.
 
-## 9. Lista de verificación antes de anunciarlo
+## 9. Microsoft 365: Outlook y Teams (TI con un administrador de Microsoft 365)
+
+**Registrar la aplicación en Entra ID** ([entra.microsoft.com](https://entra.microsoft.com) → Identidad → Aplicaciones → Registros de aplicaciones → *Nuevo registro*):
+
+1. Nombre: `Firplak CRM`. Tipo de cuenta: *solo este directorio (un inquilino)*.
+2. URI de redirección, plataforma **Web**: `https://crm.firplak.com/api/ms365/callback`
+   (Configuración → Microsoft 365 en el CRM muestra la dirección exacta).
+3. **Certificados y secretos → Nuevo secreto de cliente** (24 meses). Copia el *valor* (solo se muestra
+   una vez) y anota en el calendario la fecha de vencimiento para renovarlo.
+4. **Permisos de API → Microsoft Graph → Permisos delegados:** `User.Read`, `Calendars.ReadWrite`,
+   `Mail.Read`, `Mail.Send`, `offline_access`, `openid`, `profile`, `email`. Luego **Conceder
+   consentimiento de administrador** para Firplak.
+5. En *Información general* copia el **Id. de directorio (inquilino)** y el **Id. de aplicación (cliente)**.
+
+**Variables en Vercel** (solo servidor):
+
+| Variable | Valor |
+|---|---|
+| `MS365_TENANT_ID` | Id. de directorio (inquilino) |
+| `MS365_CLIENT_ID` | Id. de aplicación (cliente) |
+| `MS365_CLIENT_SECRET` | Valor del secreto de cliente |
+| `MS365_ENCRYPTION_KEY` | Clave para cifrar los tokens: genera una con `openssl rand -base64 32` y guárdala en el gestor de contraseñas. Si se pierde, cada persona debe volver a conectar su cuenta. |
+
+`SUPABASE_SERVICE_ROLE_KEY` también es necesaria para publicar en Teams.
+
+**Teams:** en cada canal que deba recibir avisos → *…* → **Flujos de trabajo** → plantilla
+«Publicar en un canal cuando se recibe una solicitud de webhook» → copia la dirección. En el CRM:
+**Configuración → Microsoft 365 → Canales de Teams** → agrégala y pulsa *Probar*. Luego, en
+**Automatizaciones**, usa la acción **Publicar en Teams** (p. ej. al ganar una oportunidad).
+
+**Cada persona:** Mis preferencias → **Microsoft 365** → *Conectar con Microsoft 365* y, la primera vez,
+*Sincronizar ahora*. Desde ese momento sus reuniones del CRM aparecen en Outlook al crearlas; las
+reuniones y correos de Outlook con clientes se traen con *Sincronizar ahora*.
+
+## 10. Lista de verificación antes de anunciarlo
 
 - [ ] Iniciar sesión, cerrar sesión y recuperar contraseña funcionan en el dominio final.
 - [ ] Un asesor solo ve lo que debe (prueba con un usuario de cada perfil).
@@ -140,6 +174,6 @@ Administración ve y revoca tokens y aplicaciones conectadas y revisa el registr
 
 ## Lo que sigue después de salir en vivo
 
-- Sincronización con **Office 365** (Outlook, Planner, Teams y SharePoint).
+- **Planner** y **SharePoint**, y sincronización automática periódica con Outlook.
 - Integración con **SAP Business One** por el Service Layer: socios de negocio, pedidos, despachos
   y facturas, usando el Código SAP y la Referencia como llaves.

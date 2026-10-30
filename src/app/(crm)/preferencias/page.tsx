@@ -8,6 +8,7 @@ import { OBJECTS } from "@/lib/objects";
 import { Tr } from "@/components/ui/Tr";
 import { DefaultTeam } from "@/components/teams/DefaultTeam";
 import { McpSettings } from "@/components/mcp/McpSettings";
+import { Ms365Settings } from "@/components/ms365/Ms365Settings";
 export const metadata: Metadata = { title: "Mis preferencias" };
 
 const TABS = [
@@ -15,6 +16,7 @@ const TABS = [
   { key: "perfil", label: "Mi perfil" },
   { key: "equipo", label: "Mi equipo" },
   { key: "ia", label: "Asistentes de IA" },
+  { key: "microsoft", label: "Microsoft 365" },
   { key: "seguridad", label: "Seguridad" },
   { key: "permisos", label: "Mis permisos" },
 ];
@@ -36,6 +38,7 @@ export default async function PreferencesPage({ searchParams }: PageProps<"/pref
         {tab === "perfil" && <ProfileForm fullName={user.fullName} title={user.title} phone={user.phone} email={user.email} />}
         {tab === "equipo" && <DefaultTeam userId={user.id} preferences={user.preferences as unknown as Record<string, unknown>} />}
         {tab === "ia" && <McpSettings user={user} />}
+        {tab === "microsoft" && <Ms365Settings userId={user.id} status={{ error: typeof sp.error === "string" ? sp.error : undefined, connected: sp.conectado === "1" }} />}
         {tab === "seguridad" && <PasswordForm />}
         {tab === "permisos" && (
           <div className="space-y-3 p-4">

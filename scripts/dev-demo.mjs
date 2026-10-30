@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, APP_PORT = 3000;
+const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, MS_PORT = 54350, APP_PORT = 3000;
 const PASSWORD = 'demo1234';
 const USERS = [
   { email: 'luis.demo@firplak.com', name: 'Luis Demo', note: 'administrador' },
@@ -35,7 +35,7 @@ const portBusy = (port) => new Promise((resolve) => {
   const s = net.createServer().once('error', () => resolve(true)).once('listening', () => s.close(() => resolve(false)));
   s.listen(port, '127.0.0.1');
 });
-for (const port of [DB_PORT, PGRST_PORT, API_PORT, APP_PORT]) {
+for (const port of [DB_PORT, PGRST_PORT, API_PORT, MS_PORT, APP_PORT]) {
   if (await portBusy(port)) {
     console.error(`\nEl puerto ${port} está ocupado. Cierra la otra instancia (¿npm run dev o dev:demo abiertos?) e inténtalo de nuevo.\n`);
     process.exit(1);
@@ -119,6 +119,9 @@ const mcpToken = `fcrm_${randomBytes(32).toString('base64url')}`;
 await db.query(`insert into public.mcp_tokens (user_id, name, token_prefix, token_hash, scope)
   select id, 'Demo', $1, $2, 'write' from public.profiles where email = 'luis.demo@firplak.com'`,
   [mcpToken.slice(0, 12), createHash('sha256').update(mcpToken).digest('hex')]);
+
+// Canal de Teams simulado (los avisos se imprimen en esta consola).
+await db.exec(`insert into public.teams_channels (name, webhook_url) values ('Ventas (simulado)', 'http://127.0.0.1:${MS_PORT}/teams/webhook/ventas')`);
 
 // PGlite tiene una sola conexión, compartida con PostgREST: desde aquí ya no se consulta la base
 // directamente (se mezclaría con sus transacciones). Los usuarios quedan en memoria.
@@ -232,9 +235,121 @@ const api = http.createServer(async (req, res) => {
 });
 await new Promise((r) => api.listen(API_PORT, '127.0.0.1', r));
 
+// ---------------------------------------------------------------- Microsoft 365 simulado
+// Inicio de sesión (Entra ID), Microsoft Graph (perfil, calendario, correo) y webhooks de Teams,
+// con un buzón de ejemplo: una reunión y un correo con Carolina Gómez (Almacenes Casa Viva).
+const MS = { tenant: 'firplak-demo', clientId: 'firplak-crm-demo', clientSecret: randomBytes(16).toString('hex') };
+const day = 86400_000;
+const at = (offsetDays, hourUtc) => { const d = new Date(Date.now() + offsetDays * day); d.setUTCHours(hourUtc, 0, 0, 0); return d; };
+const graphDate = (d) => ({ dateTime: d.toISOString().replace('Z', ''), timeZone: 'UTC' });
+const msUser = { id: 'ms-luis', displayName: 'Luis Demo', mail: 'luis.demo@firplak.com', userPrincipalName: 'luis.demo@firplak.com' };
+const person = (address) => ({ emailAddress: { address } });
+const msEvents = new Map([
+  ['evt-casaviva', { id: 'evt-casaviva', subject: 'Revisión de muestras con Carolina (Casa Viva)', bodyPreview: 'Llevar muestras de lavamanos y el catálogo 2027.',
+    start: graphDate(at(1, 15)), end: graphDate(at(1, 16)), location: { displayName: 'Showroom Firplak Bogotá' },
+    attendees: [person('luis.demo@firplak.com'), person('cgomez@casaviva.example')], webLink: 'https://outlook.office.com/calendar/item/evt-casaviva', lastModifiedDateTime: new Date().toISOString() }],
+  ['evt-interno', { id: 'evt-interno', subject: 'Comité interno de ventas', start: graphDate(at(1, 13)), end: graphDate(at(1, 14)),
+    attendees: [person('luis.demo@firplak.com'), person('gerente.centro@firplak.com')], webLink: 'https://outlook.office.com/calendar/item/evt-interno', lastModifiedDateTime: new Date().toISOString() }],
+]);
+const msMessages = [
+  { id: 'msg-casaviva', subject: 'RE: Cotización surtido 2027', bodyPreview: 'Hola Luis, revisamos la propuesta y queremos ajustar las cantidades de muebles de 60 cm.',
+    from: person('cgomez@casaviva.example'), toRecipients: [person('luis.demo@firplak.com')], ccRecipients: [person('slondono@casaviva.example')],
+    receivedDateTime: new Date(Date.now() - 2 * day).toISOString(), sentDateTime: new Date(Date.now() - 2 * day).toISOString(), webLink: 'https://outlook.office.com/mail/msg-casaviva' },
+  { id: 'msg-boletin', subject: 'Boletín de novedades', bodyPreview: 'Promociones del mes.', from: person('boletines@proveedor.example'),
+    toRecipients: [person('luis.demo@firplak.com')], receivedDateTime: new Date(Date.now() - day).toISOString(), webLink: 'https://outlook.office.com/mail/msg-boletin' },
+];
+const msCodes = new Map();
+const msTokens = new Set();
+const msRefresh = new Set();
+const json = (res, status, body) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(body === undefined ? '' : JSON.stringify(body)); };
+const readRaw = (req) => new Promise((r) => { let d = ''; req.on('data', (c) => (d += c)); req.on('end', () => r(d)); });
+const issue = () => {
+  const access = `sim-access-${randomBytes(12).toString('hex')}`;
+  const refresh = `sim-refresh-${randomBytes(12).toString('hex')}`;
+  msTokens.add(access); msRefresh.add(refresh);
+  return { token_type: 'Bearer', access_token: access, refresh_token: refresh, expires_in: 3600, scope: 'User.Read Calendars.ReadWrite Mail.Read Mail.Send' };
+};
+const ms = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://127.0.0.1:${MS_PORT}`);
+  try {
+    if (url.pathname === `/${MS.tenant}/oauth2/v2.0/authorize`) {
+      const code = `sim-code-${randomBytes(8).toString('hex')}`;
+      msCodes.set(code, url.searchParams.get('code_challenge'));
+      const back = new URL(url.searchParams.get('redirect_uri'));
+      back.searchParams.set('code', code);
+      back.searchParams.set('state', url.searchParams.get('state') ?? '');
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return res.end(`<!doctype html><meta charset="utf-8"><title>Microsoft 365 (simulado)</title>
+        <body style="font-family:system-ui;max-width:28rem;margin:4rem auto;line-height:1.5">
+        <h1 style="font-size:1.2rem">Microsoft 365 · simulado</h1>
+        <p><b>Firplak CRM (demo)</b> quiere acceder a tu perfil, calendario y correo como <b>${msUser.mail}</b>.</p>
+        <p><a href="${back}" style="background:#0f6cbd;color:#fff;padding:.5rem 1rem;border-radius:4px;text-decoration:none">Aceptar</a></p></body>`);
+    }
+    if (url.pathname === `/${MS.tenant}/oauth2/v2.0/token` && req.method === 'POST') {
+      const p = new URLSearchParams(await readRaw(req));
+      if (p.get('client_id') !== MS.clientId || p.get('client_secret') !== MS.clientSecret) return json(res, 401, { error: 'invalid_client' });
+      if (p.get('grant_type') === 'authorization_code') {
+        const challenge = msCodes.get(p.get('code'));
+        msCodes.delete(p.get('code'));
+        const ok = challenge && createHash('sha256').update(p.get('code_verifier') ?? '').digest('base64url') === challenge;
+        return ok ? json(res, 200, issue()) : json(res, 400, { error: 'invalid_grant', error_description: 'Código no válido' });
+      }
+      if (p.get('grant_type') === 'refresh_token' && msRefresh.delete(p.get('refresh_token'))) return json(res, 200, issue());
+      return json(res, 400, { error: 'invalid_grant', error_description: 'Token de refresco no válido' });
+    }
+    if (url.pathname.startsWith('/teams/webhook/') && req.method === 'POST') {
+      const card = JSON.parse(await readRaw(req));
+      const body = card.attachments?.[0]?.content?.body ?? [];
+      console.log(`\n[Teams simulado · ${url.pathname.split('/').pop()}] ${body.map((b) => b.text).filter(Boolean).join(' — ')}\n`);
+      return json(res, 202);
+    }
+    if (url.pathname.startsWith('/v1.0/')) {
+      if (!msTokens.has((req.headers.authorization ?? '').replace(/^Bearer /, ''))) return json(res, 401, { error: { code: 'InvalidAuthenticationToken', message: 'Token no válido' } });
+      const path = url.pathname.slice(5);
+      if (path === '/me') return json(res, 200, msUser);
+      if (path === '/me/calendarView') {
+        const from = new Date(url.searchParams.get('startDateTime')), to = new Date(url.searchParams.get('endDateTime'));
+        return json(res, 200, { value: [...msEvents.values()].filter((e) => new Date(`${e.start.dateTime}Z`) < to && new Date(`${e.end.dateTime}Z`) > from) });
+      }
+      if (path === '/me/events' && req.method === 'POST') {
+        const ev = { ...JSON.parse(await readRaw(req)), id: `evt-${randomBytes(6).toString('hex')}`, lastModifiedDateTime: new Date().toISOString() };
+        ev.webLink = `https://outlook.office.com/calendar/item/${ev.id}`;
+        msEvents.set(ev.id, ev);
+        console.log(`[Outlook simulado] reunión creada: ${ev.subject}`);
+        return json(res, 201, ev);
+      }
+      const evMatch = path.match(/^\/me\/events\/([^/]+)$/);
+      if (evMatch) {
+        const ev = msEvents.get(decodeURIComponent(evMatch[1]));
+        if (!ev) return json(res, 404, { error: { code: 'ErrorItemNotFound', message: 'No existe' } });
+        if (req.method === 'DELETE') { msEvents.delete(ev.id); console.log(`[Outlook simulado] reunión eliminada: ${ev.subject}`); return json(res, 204); }
+        if (req.method === 'PATCH') { Object.assign(ev, JSON.parse(await readRaw(req)), { lastModifiedDateTime: new Date().toISOString() }); return json(res, 200, ev); }
+        return json(res, 200, ev);
+      }
+      if (path === '/me/messages') {
+        const since = (url.searchParams.get('$filter') ?? '').match(/ge (\S+)/)?.[1];
+        return json(res, 200, { value: msMessages.filter((m) => !since || m.receivedDateTime >= since) });
+      }
+      if (path === '/me/sendMail' && req.method === 'POST') {
+        const { message } = JSON.parse(await readRaw(req));
+        msMessages.unshift({ ...message, id: `msg-${randomBytes(6).toString('hex')}`, from: person(msUser.mail), bodyPreview: message.body?.content?.slice(0, 120),
+          receivedDateTime: new Date().toISOString(), sentDateTime: new Date().toISOString() });
+        console.log(`[Outlook simulado] correo enviado: ${message.subject}`);
+        return json(res, 202);
+      }
+      return json(res, 404, { error: { code: 'NotFound', message: `No simulado: ${path}` } });
+    }
+    json(res, 404, { error: 'not_found' });
+  } catch (e) {
+    console.error(e);
+    json(res, 500, { error: String(e) });
+  }
+});
+await new Promise((r) => ms.listen(MS_PORT, '127.0.0.1', r));
+
 // ---------------------------------------------------------------- App
-// Estas variables tienen prioridad sobre .env.local: la app solo habla con la base de demo,
-// sin la clave service_role ni el envío de correos aunque estén configurados.
+// Estas variables tienen prioridad sobre .env.local: la app solo habla con la base de demo y con
+// el Microsoft 365 simulado; nunca usa las claves reales ni envía correos aunque estén configurados.
 const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'dev', '--hostname', 'localhost', '--port', String(APP_PORT)], {
   cwd: root,
   stdio: 'inherit',
@@ -243,7 +358,14 @@ const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'd
     NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${API_PORT}`,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
     NEXT_PUBLIC_SITE_URL: `http://localhost:${APP_PORT}`,
-    SUPABASE_SERVICE_ROLE_KEY: '',
+    // service_role de esta base de demo (no la real): la usa el servidor para publicar en Teams.
+    SUPABASE_SERVICE_ROLE_KEY: sign({ role: 'service_role', iss: 'firplak-demo', iat: Math.floor(Date.now() / 1000), exp: 4102444800 }),
+    MS365_TENANT_ID: MS.tenant,
+    MS365_CLIENT_ID: MS.clientId,
+    MS365_CLIENT_SECRET: MS.clientSecret,
+    MS365_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
+    MS365_LOGIN_URL: `http://127.0.0.1:${MS_PORT}`,
+    MS365_GRAPH_URL: `http://127.0.0.1:${MS_PORT}/v1.0`,
     // El servidor MCP firma las sesiones de los tokens con el secreto de esta base de demo.
     SUPABASE_JWT_SECRET: SECRET,
     RESEND_API_KEY: '',
@@ -258,6 +380,7 @@ console.log(`
   Firplak CRM · modo demo (datos de prueba en memoria)
   Abre http://localhost:${APP_PORT}  ·  contraseña de todos: ${PASSWORD}
 ${USERS.map((u) => `    ${u.email.padEnd(30)} ${u.note}`).join('\n')}
+  Microsoft 365 simulado: Mis preferencias → Microsoft 365 → Conectar.
   MCP: http://localhost:${APP_PORT}/api/mcp  ·  token de Luis:
     ${mcpToken}
   Al cerrar con Ctrl+C se borra todo. No toca tu Supabase real.
@@ -270,6 +393,7 @@ const stop = async () => {
   stopping = true;
   for (const c of children) c.kill();
   api.close();
+  ms.close();
   await sock.stop().catch(() => {});
   await db.close().catch(() => {});
   rmSync(tmp, { recursive: true, force: true });

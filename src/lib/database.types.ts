@@ -1239,6 +1239,56 @@ export type Database = {
           },
         ]
       }
+      external_links: {
+        Row: {
+          external_id: string
+          external_updated_at: string | null
+          id: string
+          kind: string
+          object: string
+          origin: string
+          provider: string
+          record_id: string
+          synced_at: string
+          user_id: string
+          web_url: string | null
+        }
+        Insert: {
+          external_id: string
+          external_updated_at?: string | null
+          id?: string
+          kind: string
+          object: string
+          origin?: string
+          provider?: string
+          record_id: string
+          synced_at?: string
+          user_id?: string
+          web_url?: string | null
+        }
+        Update: {
+          external_id?: string
+          external_updated_at?: string | null
+          id?: string
+          kind?: string
+          object?: string
+          origin?: string
+          provider?: string
+          record_id?: string
+          synced_at?: string
+          user_id?: string
+          web_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       field_history: {
         Row: {
           changed_at: string
@@ -1795,6 +1845,59 @@ export type Database = {
             foreignKeyName: "mcp_tokens_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ms365_connections: {
+        Row: {
+          access_token_enc: string
+          connected_at: string
+          display_name: string | null
+          email: string | null
+          expires_at: string
+          last_sync_at: string | null
+          last_sync_summary: string | null
+          ms_user_id: string | null
+          refresh_token_enc: string
+          scopes: string | null
+          settings: Json
+          user_id: string
+        }
+        Insert: {
+          access_token_enc: string
+          connected_at?: string
+          display_name?: string | null
+          email?: string | null
+          expires_at: string
+          last_sync_at?: string | null
+          last_sync_summary?: string | null
+          ms_user_id?: string | null
+          refresh_token_enc: string
+          scopes?: string | null
+          settings?: Json
+          user_id?: string
+        }
+        Update: {
+          access_token_enc?: string
+          connected_at?: string
+          display_name?: string | null
+          email?: string | null
+          expires_at?: string
+          last_sync_at?: string | null
+          last_sync_summary?: string | null
+          ms_user_id?: string | null
+          refresh_token_enc?: string
+          scopes?: string | null
+          settings?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ms365_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3283,6 +3386,28 @@ export type Database = {
           access?: string
           object?: string
           updated_at?: string
+        }
+        Relationships: [
+        ]
+      }
+      teams_channels: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          webhook_url?: string
         }
         Relationships: [
         ]

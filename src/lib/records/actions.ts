@@ -10,6 +10,7 @@ import type { FormState } from "./form";
 import { friendlyError, persistRecord } from "./persist";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
+import { syncActivityToOutlook } from "@/lib/ms365/sync";
 
 export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev: FormState, formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
@@ -74,7 +75,7 @@ export async function createActivity(_prev: FormState, formData: FormData): Prom
     : null;
 
   const supabase = await createClient();
-  const { error } = await supabase.from("activities").insert({
+  const { data: created, error } = await supabase.from("activities").insert({
     activity_type: type,
     subject,
     description: get("description"),
@@ -92,8 +93,9 @@ export async function createActivity(_prev: FormState, formData: FormData): Prom
     lead_id: get("lead_id"),
     case_id: get("case_id"),
     owner_id: get("owner_id") ?? user.id,
-  });
+  }).select("id").single();
   if (error) return { message: friendlyError(error.message) };
+  if (type === "meeting" && created) await syncActivityToOutlook(created.id);
   revalidatePath("/", "layout");
   return { ok: true, message: "Actividad registrada" };
 }
@@ -103,6 +105,7 @@ export async function setActivityStatus(id: string, status: "pending" | "complet
   const { data, error } = await supabase.from("activities").update({ status }).eq("id", id).select("id");
   if (error) return { message: friendlyError(error.message) };
   if (!data?.length) return { message: "No tienes permiso para modificar esta actividad." };
+  if (status === "cancelled") await syncActivityToOutlook(id);
   revalidatePath("/", "layout");
   return { ok: true };
 }

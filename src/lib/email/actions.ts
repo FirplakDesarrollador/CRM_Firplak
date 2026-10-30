@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import type { FormState } from "@/lib/records/form";
+import { ms365Configured } from "@/lib/ms365/config";
+import { getConnection } from "@/lib/ms365/graph";
+import { sendViaOutlook } from "@/lib/ms365/sync";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const list = (raw: string) => raw.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
@@ -33,10 +36,19 @@ export async function sendEmail(_prev: SendState, fd: FormData): Promise<SendSta
 
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
-  let delivery: "provider" | "client" = "client";
+  let delivery: "provider" | "client" | "outlook" = "client";
   let providerId: string | null = null;
+  // Con la cuenta de Microsoft conectada, sale del buzón de Outlook de la persona.
+  const outlook = ms365Configured() ? await getConnection(user.id) : null;
 
-  if (apiKey && from) {
+  if (outlook?.settings.send_via_outlook) {
+    try {
+      await sendViaOutlook(outlook, { to, cc, subject, body });
+      delivery = "outlook";
+    } catch (e) {
+      return { message: `Outlook no pudo enviar el correo: ${(e as Error).message}` };
+    }
+  } else if (apiKey && from) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -70,7 +82,7 @@ export async function sendEmail(_prev: SendState, fd: FormData): Promise<SendSta
 
   const returnTo = String(fd.get("return_to") ?? "");
   const safeReturn = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/actividades";
-  if (delivery === "provider") redirect(safeReturn);
+  if (delivery !== "client") redirect(safeReturn);
 
   const params = new URLSearchParams();
   if (cc.length) params.set("cc", cc.join(","));

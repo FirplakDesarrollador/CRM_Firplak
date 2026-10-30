@@ -13,13 +13,15 @@ import { Tr } from "@/components/ui/Tr";
 import { Opt } from "@/components/ui/Opt";
 type Template = { id: string; name: string; category: string; subject: string; body: string };
 
-export function EmailComposer({ to, related, merge, templates, returnTo, providerReady }: {
+export function EmailComposer({ to, related, merge, templates, returnTo, providerReady, outlookFrom = null }: {
   to: string;
   related: Record<string, string | undefined>;
   merge: Record<string, string>;
   templates: Template[];
   returnTo: string;
   providerReady: boolean;
+  /** Buzón de Outlook desde el que se enviará (si la persona conectó Microsoft 365). */
+  outlookFrom?: string | null;
 }) {
   const router = useRouter();
   const [state, action] = useActionState(sendEmail, {} as SendState);
@@ -43,6 +45,9 @@ export function EmailComposer({ to, related, merge, templates, returnTo, provide
       {Object.entries(related).map(([k, v]) => v && <input key={k} type="hidden" name={k} value={v} />)}
       <input type="hidden" name="return_to" value={returnTo} />
       {state.message && <Alert tone={state.ok ? "success" : "error"}>{state.message}</Alert>}
+      {outlookFrom && (
+        <Alert tone="info"><Tr>Se enviará desde tu buzón de Outlook:</Tr> <strong>{outlookFrom}</strong></Alert>
+      )}
       {!providerReady && (
         <Alert tone="info">
           El envío directo no está configurado: al enviar se registra el correo en el CRM y se abre tu cliente de correo con el mensaje listo.

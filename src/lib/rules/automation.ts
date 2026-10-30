@@ -1,4 +1,6 @@
 import "server-only";
+import { siteUrl } from "@/lib/env";
+import { postToTeams } from "@/lib/ms365/teams";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getObjectDef, untypedClient } from "@/lib/records/data";
@@ -75,6 +77,12 @@ export async function runAutomations(
             owner_id: owner,
             ...(link ? { [link]: id } : {}),
             ...(object === "opportunities" || object === "contacts" || object === "cases" ? { account_id: (row.account_id as string | null) ?? null } : {}),
+          });
+        } else if (action.type === "teams" && isUuid(action.channel_id) && action.title) {
+          await postToTeams(action.channel_id, {
+            title: action.title,
+            text: `${recordTitle(def, row)}${action.body ? ` · ${action.body}` : ""}`,
+            url: `${siteUrl}${def.path}/${id}`,
           });
         } else if (action.type === "notify" && action.title) {
           let to: string | null = null;

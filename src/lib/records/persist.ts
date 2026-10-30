@@ -5,6 +5,7 @@ import type { ObjectKey } from "@/lib/objects";
 import type { CurrentUser } from "@/lib/session";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
+import { syncActivityToOutlook } from "@/lib/ms365/sync";
 import { getObjectDef, untypedClient } from "./data";
 import { parseRecordForm, type FormState } from "./form";
 
@@ -108,5 +109,7 @@ export async function persistRecord(
   }
 
   await runAutomations(objectKey, id ? "update" : "create", result.data.id, before, user.id);
+  // Las reuniones van al calendario de Outlook del propietario, si conectó su cuenta.
+  if (objectKey === "activities") await syncActivityToOutlook(result.data.id);
   return { ok: true, id: result.data.id, values, before };
 }

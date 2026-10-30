@@ -727,4 +727,20 @@ await check('OAuth: registro, código con PKCE de un solo uso, refresco rotativo
   await assert.rejects(as(admin, () => q(`update oauth_grants set revoked_at = null where id = $1`, [grant.id])));
 });
 
+console.log('Fase 20');
+await check('Microsoft 365: cada quien su conexión y sus vínculos; canales de Teams solo para administración', async () => {
+  await as(rep, () => q(`insert into ms365_connections (access_token_enc, refresh_token_enc, expires_at, email) values ('x', 'y', now(), 'asesor@firplak.com')`));
+  await assert.rejects(as(rep, () => q(`insert into ms365_connections (user_id, access_token_enc, refresh_token_enc, expires_at) values ($1, 'x', 'y', now())`, [admin.id])));
+  assert.equal(await as(mgr, () => count(`select count(*) n from ms365_connections`)), 0);
+  assert.equal(await as(admin, () => count(`select count(*) n from ms365_connections`)), 1);
+  const [act] = await q(`select id from activities limit 1`);
+  await as(rep, () => q(`insert into external_links (kind, external_id, object, record_id, origin) values ('outlook_event', 'evt-1', 'activities', $1, 'crm')`, [act.id]));
+  await assert.rejects(as(rep, () => q(`insert into external_links (kind, external_id, object, record_id) values ('outlook_event', 'evt-1', 'activities', $1)`, [act.id])));
+  assert.equal(await as(admin, () => count(`select count(*) n from external_links`)), 0);
+  await assert.rejects(as(rep, () => q(`insert into teams_channels (name, webhook_url) values ('Ventas', 'https://example.com/hook')`)));
+  await as(admin, () => q(`insert into teams_channels (name, webhook_url) values ('Ventas', 'https://example.com/hook')`));
+  assert.equal(await as(rep, () => count(`select count(*) n from teams_channels`)), 0);
+  await q(`update activities set email_delivery = 'outlook' where id = $1`, [act.id]);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

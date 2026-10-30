@@ -39,10 +39,12 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
   const t = makeT(locale);
   const object = (OBJECTS_WITH_AUTOMATION.includes(sp.objeto as ObjectKey) ? sp.objeto : "leads") as ObjectKey;
   const supabase = await createClient();
-  const [def, users, pipelines, { data }] = await Promise.all([
+  const [def, users, pipelines, { data }, { data: channelRows }] = await Promise.all([
     getObjectDef(object), getUsers(), getPipelines(),
     supabase.from("automation_rules").select("*").eq("object", object).order("sort_order"),
+    supabase.from("teams_channels").select("id, name").order("name"),
   ]);
+  const channels = channelRows ?? [];
   const rules = (data ?? []) as unknown as Rule[];
   const watchable = def.fields.filter((f) => !["datetime"].includes(f.type) && f.type !== "textarea").map((f) => ({ name: f.name, label: f.label }));
   const dateFields = def.fields.filter((f) => f.type === "date" || f.type === "datetime").map((f) => ({ name: f.name, label: f.label }));
@@ -73,7 +75,7 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
         </div>
         <div>
           <span className="label"><Tr>Acciones</Tr></span>
-          <ActionsEditor name="actions" fields={def.fields} users={users} initial={r?.actions ?? []} hasOwner={def.hasOwner !== false} />
+          <ActionsEditor name="actions" fields={def.fields} users={users} initial={r?.actions ?? []} hasOwner={def.hasOwner !== false} channels={channels} />
         </div>
       </>
     );
