@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { QUOTE_STATUSES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Cotización" };
 
 export default async function QuoteDetailPage({ params, searchParams }: PageProps<"/cotizaciones/[id]">) {
@@ -37,12 +38,12 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       title={`${row.quote_number} · ${row.name}`}
       basePath={`/cotizaciones/${id}`}
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
-      badges={row.is_synced ? <span className="badge badge-success">Sincronizada</span> : null}
+      badges={row.is_synced ? <span className="badge badge-success"><Tr>Sincronizada</Tr></span> : null}
       actions={
         <>
-          <Link href={`/imprimir/cotizacion/${id}`} target="_blank" className="btn"><Printer size={15} /> Imprimir / PDF</Link>
+          <Link href={`/imprimir/cotizacion/${id}`} target="_blank" className="btn"><Printer size={15} /> <Tr>Imprimir / PDF</Tr></Link>
           {access.canEdit && <SyncButton quoteId={id} synced={Boolean(row.is_synced)} />}
-          {access.canEdit && <Link href={`/cotizaciones/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+          {access.canEdit && <Link href={`/cotizaciones/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="quotes" id={id} label={`la cotización ${row.quote_number}`} />}
         </>
       }

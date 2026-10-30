@@ -8,6 +8,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 import type { UserOption } from "@/lib/records/data";
 
+import { Tr } from "@/components/ui/Tr";
 const TABS = [
   { key: "task", label: "Tarea" },
   { key: "call", label: "Llamada" },
@@ -56,24 +57,24 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
         {related.case_id && <input type="hidden" name="case_id" value={related.case_id} />}
         {state.message && <Alert tone={state.ok ? "success" : "error"}>{state.message}</Alert>}
         <div>
-          <label className="label" htmlFor="act-subject">Asunto</label>
+          <label className="label" htmlFor="act-subject"><Tr>Asunto</Tr></label>
           <input id="act-subject" name="subject" className="input" placeholder={placeholder[tab]} />
           {state.errors?.subject && <p className="error-text">{state.errors.subject}</p>}
         </div>
         {tab === "meeting" && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="act-start">Inicio</label>
+              <label className="label" htmlFor="act-start"><Tr>Inicio</Tr></label>
               <input id="act-start" name="start_at" type="datetime-local" className="input" />
             </div>
             <div>
-              <label className="label" htmlFor="act-duration">Duración</label>
+              <label className="label" htmlFor="act-duration"><Tr>Duración</Tr></label>
               <select id="act-duration" name="duration_minutes" className="select" defaultValue="60">
                 {[15, 30, 45, 60, 90, 120, 180, 240].map((m) => <option key={m} value={m}>{m >= 60 ? `${m / 60} h` : `${m} min`}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label className="label" htmlFor="act-location">Lugar</label>
+              <label className="label" htmlFor="act-location"><Tr>Lugar</Tr></label>
               <input id="act-location" name="location" className="input" placeholder="Obra, oficina del cliente, showroom, videollamada…" />
             </div>
           </div>
@@ -81,14 +82,14 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
         {tab === "call" && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="act-result">Resultado</label>
+              <label className="label" htmlFor="act-result"><Tr>Resultado</Tr></label>
               <select id="act-result" name="call_result" className="select">
                 <option value="">—</option>
                 {CALL_RESULTS.map((r) => <option key={r}>{r}</option>)}
               </select>
             </div>
             <div>
-              <label className="label" htmlFor="act-mins">Duración (min)</label>
+              <label className="label" htmlFor="act-mins"><Tr>Duración (min)</Tr></label>
               <input id="act-mins" name="duration_minutes" type="number" min={0} className="input" />
             </div>
           </div>
@@ -100,7 +101,7 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
               <input id="act-due" name="due_date" type="date" className="input" />
             </div>
             <div>
-              <label className="label" htmlFor="act-priority">Prioridad</label>
+              <label className="label" htmlFor="act-priority"><Tr>Prioridad</Tr></label>
               <select id="act-priority" name="priority" className="select" defaultValue="normal">
                 {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>

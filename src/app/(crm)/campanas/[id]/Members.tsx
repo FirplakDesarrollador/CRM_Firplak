@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { CAMPAIGN_MEMBER_STATUSES } from "@/lib/objects/picklists";
 import type { FormState } from "@/lib/records/form";
 
+import { Tr } from "@/components/ui/Tr";
 export type Member = {
   id: string;
   status: string;
@@ -61,15 +62,15 @@ export function Members({ campaignId, members, canEdit }: { campaignId: string; 
   const [kind, setKind] = useState<"contacts" | "leads">("contacts");
   return (
     <section className="card overflow-hidden">
-      <div className="card-header"><h2 className="card-title">Miembros de la campaña <span className="badge">{members.length}</span></h2></div>
+      <div className="card-header"><h2 className="card-title"><Tr>Miembros de la campaña</Tr> <span className="badge">{members.length}</span></h2></div>
       <ul className="divide-y divide-[var(--border)]">
-        {members.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted">Aún no hay miembros.</li>}
+        {members.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted"><Tr>Aún no hay miembros.</Tr></li>}
         {members.map((m) => <MemberRow key={m.id} m={m} canEdit={canEdit} />)}
       </ul>
       {canEdit && (
         <form action={action} className="grid gap-3 border-t border-line bg-surface-2 p-4 md:grid-cols-[9rem_minmax(0,1fr)_10rem_auto] md:items-end">
           <div>
-            <label className="label" htmlFor="member-kind">Agregar</label>
+            <label className="label" htmlFor="member-kind"><Tr>Agregar</Tr></label>
             <select id="member-kind" className="select" value={kind} onChange={(e) => setKind(e.target.value as "contacts" | "leads")}>
               <option value="contacts">Contacto</option>
               <option value="leads">Prospecto</option>
@@ -80,12 +81,12 @@ export function Members({ campaignId, members, canEdit }: { campaignId: string; 
             <LookupInput key={`${kind}-${state.values?.nonce ?? ""}`} name={kind === "contacts" ? "contact_id" : "lead_id"} object={kind} />
           </div>
           <div>
-            <label className="label" htmlFor="member-status">Estado</label>
+            <label className="label" htmlFor="member-status"><Tr>Estado</Tr></label>
             <select id="member-status" name="status" className="select" defaultValue="Enviado">
               {CAMPAIGN_MEMBER_STATUSES.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
-          <SubmitButton pendingText="Agregando…"><UserPlus size={15} /> Agregar</SubmitButton>
+          <SubmitButton pendingText="Agregando…"><UserPlus size={15} /> <Tr>Agregar</Tr></SubmitButton>
           {state.message && <p className={`md:col-span-4 text-xs ${state.ok ? "text-success" : "text-danger"}`}>{state.message}</p>}
         </form>
       )}

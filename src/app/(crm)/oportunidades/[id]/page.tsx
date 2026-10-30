@@ -18,6 +18,7 @@ import { can } from "@/lib/permissions";
 import { formatCurrency, formatDateTime, relativeDays } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export async function generateMetadata({ params }: PageProps<"/oportunidades/[id]">): Promise<Metadata> {
   const { id } = await params;
   const row = await getRecord(await getObjectDef("opportunities"), id);
@@ -65,11 +66,11 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
         }
         actions={
           <>
-            {row.contact_id ? <Link href={`/correo/nuevo?oportunidad=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link> : null}
+            {row.contact_id ? <Link href={`/correo/nuevo?oportunidad=${id}`} className="btn"><Mail size={15} /> <Tr>Enviar correo</Tr></Link> : null}
             {can(user.access, "quotes", "create") && (
-              <Link href={`/cotizaciones/nueva?opportunity=${id}`} className="btn"><FileText size={15} /> Nueva cotización</Link>
+              <Link href={`/cotizaciones/nueva?opportunity=${id}`} className="btn"><FileText size={15} /> <Tr>Nueva cotización</Tr></Link>
             )}
-            {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+            {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
             {access.canDelete && <DeleteButton object="opportunities" id={id} label={`la oportunidad “${row.name}”`} />}
           </>
         }
@@ -97,12 +98,12 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
           ) : tab === "historial" ? (
             <section className="card overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Fecha</th><th>De</th><th>A</th><th className="text-right">Valor</th><th className="text-right">Prob.</th><th>Por</th></tr></thead>
+                <thead><tr><th><Tr>Fecha</Tr></th><th><Tr>De</Tr></th><th>A</th><th className="text-right"><Tr>Valor</Tr></th><th className="text-right"><Tr>Prob.</Tr></th><th><Tr>Por</Tr></th></tr></thead>
                 <tbody>
                   {(history.data ?? []).map((h) => (
                     <tr key={h.id}>
                       <td className="whitespace-nowrap">{formatDateTime(h.changed_at)}</td>
-                      <td>{h.from ? <StageBadge stage={h.from as never} /> : <span className="text-muted">Creación</span>}</td>
+                      <td>{h.from ? <StageBadge stage={h.from as never} /> : <span className="text-muted"><Tr>Creación</Tr></span>}</td>
                       <td><StageBadge stage={h.to as never} /></td>
                       <td className="num text-right">{formatCurrency(h.amount)}</td>
                       <td className="num text-right">{h.probability ?? "—"}%</td>

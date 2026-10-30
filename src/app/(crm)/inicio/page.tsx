@@ -9,7 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, formatCompactCurrency, formatCurrency, formatDate, formatDateTime, formatMillions, todayISO } from "@/lib/format";
 import { resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
+import { getT } from "@/lib/i18n/server";
+import { GoalSummary } from "@/components/goals/GoalSummary";
+import { periodStart } from "@/lib/goals/periods";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Inicio" };
 
 function greeting() {
@@ -18,6 +22,7 @@ function greeting() {
 }
 
 export default async function HomePage() {
+  const t = await getT();
   const user = await requireUser();
   const today = todayISO();
   const month = resolvePeriod("this_month");
@@ -47,30 +52,32 @@ export default async function HomePage() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="eyebrow">Inicio</p>
+        <p className="eyebrow"><Tr>Inicio</Tr></p>
         <h1 className="editorial mt-1 text-3xl">{greeting()}, {firstName}</h1>
         <p className="text-sm text-muted">Este es tu resumen de {new Intl.DateTimeFormat("es-CO", { month: "long", timeZone: "UTC" }).format(new Date(`${today}T00:00:00Z`))}.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiTile label="Mis ventas del mes" {...formatMillions(k.won_amount ?? 0)} sub={`${k.won_count ?? 0} oportunidades ganadas`} tone="success" />
-        <KpiTile label="Mi pipeline abierto" {...formatMillions(k.open_amount ?? 0)} sub={`${k.open_count ?? 0} oportunidades · ponderado ${formatCompactCurrency(k.weighted_amount ?? 0)}`} />
-        <KpiTile label="Cierran este mes" value={String(k.closing_this_period ?? 0)} sub={k.overdue_close ? `${k.overdue_close} con cierre vencido` : "Ninguna vencida"} tone={k.overdue_close ? "danger" : undefined} />
-        <KpiTile label="Tareas vencidas" value={String(k.tasks_overdue ?? 0)} sub={`${k.meetings_upcoming ?? 0} reuniones esta semana`} tone={k.tasks_overdue ? "warning" : "success"} />
+        <KpiTile label="Mis ventas del mes" {...formatMillions(k.won_amount ?? 0)} sub={`${k.won_count ?? 0} ${t("oportunidades ganadas")}`} tone="success" />
+        <KpiTile label="Mi pipeline abierto" {...formatMillions(k.open_amount ?? 0)} sub={`${k.open_count ?? 0} ${t("oportunidades · ponderado")} ${formatCompactCurrency(k.weighted_amount ?? 0)}`} />
+        <KpiTile label="Cierran este mes" value={String(k.closing_this_period ?? 0)} sub={k.overdue_close ? `${k.overdue_close} ${t("con cierre vencido")}` : t("Ninguna vencida")} tone={k.overdue_close ? "danger" : undefined} />
+        <KpiTile label="Tareas vencidas" value={String(k.tasks_overdue ?? 0)} sub={`${k.meetings_upcoming ?? 0} ${t("reuniones esta semana")}`} tone={k.tasks_overdue ? "warning" : "success"} />
       </div>
+
+      <GoalSummary type="month" start={periodStart("month", today)} userId={user.id} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <section className="card xl:col-span-2">
           <div className="card-header">
-            <h2 className="card-title">Mis oportunidades abiertas</h2>
-            <Link href="/oportunidades/pipeline?owner=me" className="btn btn-sm btn-ghost">Pipeline <ArrowRight size={14} /></Link>
+            <h2 className="card-title"><Tr>Mis oportunidades abiertas</Tr></h2>
+            <Link href="/oportunidades/pipeline?owner=me" className="btn btn-sm btn-ghost"><Tr>Pipeline</Tr> <ArrowRight size={14} /></Link>
           </div>
           <div className="overflow-x-auto">
             <table className="table">
-              <thead><tr><th>Oportunidad</th><th>Etapa</th><th className="text-right">Valor</th><th>Cierre</th></tr></thead>
+              <thead><tr><th><Tr>Oportunidad</Tr></th><th><Tr>Etapa</Tr></th><th className="text-right"><Tr>Valor</Tr></th><th><Tr>Cierre</Tr></th></tr></thead>
               <tbody>
                 {(opps ?? []).length === 0 && (
-                  <tr><td colSpan={4} className="py-8 text-center text-muted">No tienes oportunidades abiertas. <Link href="/oportunidades/nueva" className="link">Crea una</Link>.</td></tr>
+                  <tr><td colSpan={4} className="py-8 text-center text-muted"><Tr>No tienes oportunidades abiertas.</Tr> <Link href="/oportunidades/nueva" className="link"><Tr>Crea una</Tr></Link>.</td></tr>
                 )}
                 {(opps ?? []).map((o) => (
                   <tr key={o.id}>
@@ -87,11 +94,11 @@ export default async function HomePage() {
 
         <section className="card">
           <div className="card-header">
-            <h2 className="card-title">Para hoy</h2>
-            <Link href="/actividades" className="btn btn-sm btn-ghost">Agenda <ArrowRight size={14} /></Link>
+            <h2 className="card-title"><Tr>Para hoy</Tr></h2>
+            <Link href="/actividades" className="btn btn-sm btn-ghost"><Tr>Agenda</Tr> <ArrowRight size={14} /></Link>
           </div>
           <ul className="divide-y divide-[var(--border)] px-4">
-            {tasks.length === 0 && <li className="py-8 text-center text-sm text-muted">Nada pendiente para hoy.</li>}
+            {tasks.length === 0 && <li className="py-8 text-center text-sm text-muted"><Tr>Nada pendiente para hoy.</Tr></li>}
             {tasks.map((a) => <ActivityItem key={a.id} activity={a} />)}
           </ul>
         </section>
@@ -99,9 +106,9 @@ export default async function HomePage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="card">
-          <div className="card-header"><h2 className="card-title">Próximas reuniones</h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Próximas reuniones</Tr></h2></div>
           <ul className="divide-y divide-[var(--border)]">
-            {meetings.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted">Sin reuniones en los próximos 7 días.</li>}
+            {meetings.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted"><Tr>Sin reuniones en los próximos 7 días.</Tr></li>}
             {meetings.slice(0, 6).map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <div className="min-w-0">
@@ -115,11 +122,11 @@ export default async function HomePage() {
         </section>
         <section className="card">
           <div className="card-header">
-            <h2 className="card-title">Mis cuentas recientes</h2>
-            <Link href="/cuentas?scope=mine" className="btn btn-sm btn-ghost">Ver todas <ArrowRight size={14} /></Link>
+            <h2 className="card-title"><Tr>Mis cuentas recientes</Tr></h2>
+            <Link href="/cuentas?scope=mine" className="btn btn-sm btn-ghost"><Tr>Ver todas</Tr> <ArrowRight size={14} /></Link>
           </div>
           <ul className="divide-y divide-[var(--border)]">
-            {(recent ?? []).length === 0 && <li className="px-4 py-8 text-center text-sm text-muted">Aún no tienes cuentas asignadas.</li>}
+            {(recent ?? []).length === 0 && <li className="px-4 py-8 text-center text-sm text-muted"><Tr>Aún no tienes cuentas asignadas.</Tr></li>}
             {(recent ?? []).map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <div className="min-w-0">

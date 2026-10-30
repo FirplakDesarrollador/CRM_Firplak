@@ -6,6 +6,7 @@ import type { ReportDefinition } from "@/lib/reports/types";
 import { formatCompactCurrency, formatCurrency, formatMillions, formatNumber, formatPercent } from "@/lib/format";
 import { Alert } from "@/components/ui/Alert";
 
+import { Tr } from "@/components/ui/Tr";
 export function ReportResults({ def, report, result }: { def: ObjectDef; report: ReportDefinition; result: ReportResult }) {
   const fmtShort = (v: number) => (result.isMoney ? formatCompactCurrency(v) : formatNumber(Math.round(v * 10) / 10));
   const fmtLong = (v: number) => (result.isMoney ? formatCurrency(v) : formatNumber(Math.round(v * 100) / 100));
@@ -39,7 +40,7 @@ export function ReportResults({ def, report, result }: { def: ObjectDef; report:
 
       {g1 && (
         <section className="card overflow-hidden">
-          <div className="card-header"><h2 className="card-title">Resumen</h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Resumen</Tr></h2></div>
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
@@ -47,8 +48,8 @@ export function ReportResults({ def, report, result }: { def: ObjectDef; report:
                   <th>{g1.label}</th>
                   {g2 && result.columns.map((c) => <th key={c.key} className="text-right">{c.label}</th>)}
                   <th className="text-right">{g2 ? "Total" : result.measureLabel}</th>
-                  <th className="text-right">Registros</th>
-                  {sumLike && <th className="text-right">% del total</th>}
+                  <th className="text-right"><Tr>Registros</Tr></th>
+                  {sumLike && <th className="text-right"><Tr>% del total</Tr></th>}
                 </tr>
               </thead>
               <tbody>
@@ -66,7 +67,7 @@ export function ReportResults({ def, report, result }: { def: ObjectDef; report:
               </tbody>
               <tfoot>
                 <tr className="bg-surface-2 font-medium">
-                  <td className="px-3 py-2">Total</td>
+                  <td className="px-3 py-2"><Tr>Total</Tr></td>
                   {g2 && result.columns.map((c) => {
                     const cells = result.groups.map((g) => g.cells[c.key]).filter(Boolean);
                     const value = report.aggregate?.fn === "avg"

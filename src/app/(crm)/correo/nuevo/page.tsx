@@ -7,6 +7,7 @@ import { formatCurrency, formatDate, todayISO } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { EmailComposer } from "./EmailComposer";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Enviar correo" };
 
 const isUuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
@@ -84,11 +85,11 @@ export default async function NewEmailPage({ searchParams }: PageProps<"/correo/
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Link href={returnTo} className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> Volver</Link>
+      <Link href={returnTo} className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> <Tr>Volver</Tr></Link>
       <div className="flex items-center gap-3">
         <ObjectIcon object="activities" />
         <div>
-          <p className="eyebrow">Correo</p>
+          <p className="eyebrow"><Tr>Correo</Tr></p>
           <h1 className="text-xl font-medium">{recipient ? `Escribir a ${recipient}` : "Nuevo correo"}</h1>
         </div>
       </div>

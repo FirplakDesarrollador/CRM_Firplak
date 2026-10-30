@@ -8,6 +8,7 @@ import { can } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Importar datos" };
 
 const HINTS: Record<string, string> = {
@@ -31,9 +32,9 @@ export default async function ImportPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div>
-        <p className="eyebrow">Datos</p>
-        <h1 className="text-xl font-medium">Importar datos</h1>
-        <p className="text-sm text-muted">Carga registros desde un archivo CSV exportado de Excel u otro sistema. Recomendado: cuentas → contactos → oportunidades, para que las relaciones se encuentren.</p>
+        <p className="eyebrow"><Tr>Datos</Tr></p>
+        <h1 className="text-xl font-medium"><Tr>Importar datos</Tr></h1>
+        <p className="text-sm text-muted"><Tr>Carga registros desde un archivo CSV exportado de Excel u otro sistema. Recomendado: cuentas → contactos → oportunidades, para que las relaciones se encuentren.</Tr></p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {objects.map((o) => (
@@ -47,10 +48,10 @@ export default async function ImportPage() {
         ))}
       </div>
       <section className="card overflow-hidden">
-        <div className="card-header"><h2 className="card-title">Importaciones recientes</h2></div>
-        {(jobs ?? []).length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted">Aún no hay importaciones.</p> : (
+        <div className="card-header"><h2 className="card-title"><Tr>Importaciones recientes</Tr></h2></div>
+        {(jobs ?? []).length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted"><Tr>Aún no hay importaciones.</Tr></p> : (
           <table className="table">
-            <thead><tr><th>Fecha</th><th>Objeto</th><th>Archivo</th><th className="text-right">Filas</th><th className="text-right">Creados</th><th className="text-right">Actualizados</th><th className="text-right">Omitidos</th><th>Usuario</th></tr></thead>
+            <thead><tr><th><Tr>Fecha</Tr></th><th><Tr>Objeto</Tr></th><th><Tr>Archivo</Tr></th><th className="text-right"><Tr>Filas</Tr></th><th className="text-right"><Tr>Creados</Tr></th><th className="text-right"><Tr>Actualizados</Tr></th><th className="text-right"><Tr>Omitidos</Tr></th><th><Tr>Usuario</Tr></th></tr></thead>
             <tbody>
               {(jobs ?? []).map((j) => (
                 <tr key={j.id}>

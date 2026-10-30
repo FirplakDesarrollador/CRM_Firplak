@@ -13,6 +13,7 @@ import { OBJECTS } from "@/lib/objects";
 import { requireUser } from "@/lib/session";
 import { deletePermissionProfile, savePermissionProfile } from "../actions";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Perfiles y permisos" };
 
 export default async function ProfilesPage({ searchParams }: PageProps<"/configuracion/perfiles">) {
@@ -36,10 +37,10 @@ export default async function ProfilesPage({ searchParams }: PageProps<"/configu
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-medium">Perfiles y permisos</h1>
-          <p className="text-sm text-muted">Permisos por objeto y del sistema. La jerarquía de roles y las reglas de compartir deciden qué registros concretos se ven.</p>
+          <h1 className="text-xl font-medium"><Tr>Perfiles y permisos</Tr></h1>
+          <p className="text-sm text-muted"><Tr>Permisos por objeto y del sistema. La jerarquía de roles y las reglas de compartir deciden qué registros concretos se ven.</Tr></p>
         </div>
-        <Link href={`/configuracion/perfiles?id=nuevo${selected ? `&desde=${selected.id}` : ""}`} className="btn btn-primary"><Plus size={15} /> Nuevo perfil</Link>
+        <Link href={`/configuracion/perfiles?id=nuevo${selected ? `&desde=${selected.id}` : ""}`} className="btn btn-primary"><Plus size={15} /> <Tr>Nuevo perfil</Tr></Link>
       </div>
       <div className="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)]">
         <nav className="card p-2" aria-label="Perfiles">
@@ -48,7 +49,7 @@ export default async function ProfilesPage({ searchParams }: PageProps<"/configu
               className={`flex items-center justify-between gap-2 rounded-md px-2.5 py-2 text-sm font-semibold no-underline ${p.id === selected?.id ? "bg-brand-soft text-brand-strong" : "hover:bg-surface-3"}`}>
               <span className="truncate">{p.name}</span>
               <span className="flex gap-1">
-                {p.is_default && <span className="badge">Por defecto</span>}
+                {p.is_default && <span className="badge"><Tr>Por defecto</Tr></span>}
                 <span className="badge">{count(p.id)}</span>
               </span>
             </Link>
@@ -56,21 +57,21 @@ export default async function ProfilesPage({ searchParams }: PageProps<"/configu
         </nav>
 
         <ActionForm key={isNew ? "new" : selected?.id} action={savePermissionProfile.bind(null, isNew ? null : selected?.id ?? null)} className="card space-y-4 p-4">
-          {locked && <Alert tone="info">El perfil de administrador tiene acceso total y no se puede modificar.</Alert>}
+          {locked && <Alert tone="info"><Tr>El perfil de administrador tiene acceso total y no se puede modificar.</Tr></Alert>}
           {isNew && cloneFrom && <Alert tone="info">Nuevo perfil basado en «{cloneFrom.name}».</Alert>}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="label" htmlFor="pp-name">Nombre</label>
+              <label className="label" htmlFor="pp-name"><Tr>Nombre</Tr></label>
               <input id="pp-name" name="name" className="input" defaultValue={isNew ? "" : selected?.name} disabled={locked} required />
             </div>
             <div>
-              <label className="label" htmlFor="pp-desc">Descripción</label>
+              <label className="label" htmlFor="pp-desc"><Tr>Descripción</Tr></label>
               <input id="pp-desc" name="description" className="input" defaultValue={isNew ? "" : selected?.description ?? ""} disabled={locked} />
             </div>
           </div>
           <div className="overflow-x-auto rounded-lg border border-line">
             <table className="table">
-              <thead><tr><th>Objeto</th>{OBJECT_ACTIONS.map((a) => <th key={a} className="text-center">{ACTION_LABELS[a]}</th>)}</tr></thead>
+              <thead><tr><th><Tr>Objeto</Tr></th>{OBJECT_ACTIONS.map((a) => <th key={a} className="text-center">{ACTION_LABELS[a]}</th>)}</tr></thead>
               <tbody>
                 {PERMISSION_OBJECTS.map((o) => (
                   <tr key={o}>
@@ -87,7 +88,7 @@ export default async function ProfilesPage({ searchParams }: PageProps<"/configu
             </table>
           </div>
           <fieldset>
-            <legend className="label">Permisos del sistema</legend>
+            <legend className="label"><Tr>Permisos del sistema</Tr></legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {SYSTEM_PERMISSIONS.map((s) => (
                 <label key={s} className="flex items-center gap-2 text-sm">

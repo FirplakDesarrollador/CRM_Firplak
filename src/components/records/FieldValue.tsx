@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { fieldValue, OBJECTS, type FieldDef } from "@/lib/objects";
 import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from "@/lib/format";
 
+import { Tr } from "@/components/ui/Tr";
 type Rel = { id?: string; name?: string; full_name?: string; email?: string; color?: string; category?: string } | null;
 
 export function StageBadge({ stage }: { stage: Rel }) {
@@ -41,7 +42,7 @@ export function FieldValue({ field, row, linkName }: { field: FieldDef; row: Rec
 
   if (field.relation && rel) return <span>{rel.name ?? rel.full_name}</span>;
   if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
-    return field.type === "checkbox" ? <span>No</span> : <span className="text-muted">—</span>;
+    return field.type === "checkbox" ? <span><Tr>No</Tr></span> : <span className="text-muted">—</span>;
   }
 
   switch (field.type) {

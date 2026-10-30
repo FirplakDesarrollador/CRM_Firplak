@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasServiceRole } from "@/lib/supabase/admin";
 import { Alert } from "@/components/ui/Alert";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Configuración" };
 
 export default async function SetupHome() {
@@ -26,7 +27,7 @@ export default async function SetupHome() {
   ];
   return (
     <>
-      <h1 className="text-xl font-medium">Configuración</h1>
+      <h1 className="text-xl font-medium"><Tr>Configuración</Tr></h1>
       {!hasServiceRole() && (
         <Alert tone="info">
           Para invitar usuarios por correo desde aquí, agrega <code>SUPABASE_SERVICE_ROLE_KEY</code> en <code>.env.local</code> (solo servidor).

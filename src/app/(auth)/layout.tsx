@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/Alert";
 import { hasSupabaseEnv } from "@/lib/env";
 import markWhite from "../../../public/brand/firplak-mark-white.png";
 
+import { Tr } from "@/components/ui/Tr";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
@@ -28,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Logo height={44} onDark label={false} />
         </div>
         <div className="relative max-w-md">
-          <p className="text-[0.72rem] font-medium uppercase tracking-[0.18em] text-[var(--sage-300)]">CRM comercial</p>
+          <p className="text-[0.72rem] font-medium uppercase tracking-[0.18em] text-[var(--sage-300)]"><Tr>CRM comercial</Tr></p>
           <p className="editorial mt-4 text-4xl leading-tight">
             Cada proyecto, cada distribuidor y cada visita, en un solo lugar.
           </p>
@@ -36,7 +37,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Gestiona cuentas, oportunidades y actividades comerciales, y sigue el pipeline y las metas del equipo en tiempo real.
           </p>
         </div>
-        <p className="relative text-xs text-[#c5d2da]">Uso interno · Firplak</p>
+        <p className="relative text-xs text-[#c5d2da]"><Tr>Uso interno · Firplak</Tr></p>
       </aside>
       <main className="flex items-center justify-center px-4 py-10 sm:px-8">
         <div className="glass w-full max-w-sm p-7">

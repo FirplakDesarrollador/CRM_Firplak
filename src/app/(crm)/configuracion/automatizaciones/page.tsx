@@ -17,6 +17,7 @@ import { formatDateTime } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { deleteAutomationRule, saveAutomationRule } from "../actions";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Automatizaciones" };
 
 const OBJECTS_WITH_AUTOMATION: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "cases", "campaigns"];
@@ -45,19 +46,19 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
     return (
       <>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_6rem]">
-          <div><label className="label" htmlFor={`an-${k}`}>Nombre</label><input id={`an-${k}`} name="name" className="input" defaultValue={r?.name} /></div>
-          <div><label className="label" htmlFor={`ad-${k}`}>Descripción</label><input id={`ad-${k}`} name="description" className="input" defaultValue={r?.description ?? ""} /></div>
-          <div><label className="label" htmlFor={`ao-${k}`}>Orden</label><input id={`ao-${k}`} name="sort_order" type="number" className="input" defaultValue={r?.sort_order ?? rules.length + 1} /></div>
+          <div><label className="label" htmlFor={`an-${k}`}><Tr>Nombre</Tr></label><input id={`an-${k}`} name="name" className="input" defaultValue={r?.name} /></div>
+          <div><label className="label" htmlFor={`ad-${k}`}><Tr>Descripción</Tr></label><input id={`ad-${k}`} name="description" className="input" defaultValue={r?.description ?? ""} /></div>
+          <div><label className="label" htmlFor={`ao-${k}`}><Tr>Orden</Tr></label><input id={`ao-${k}`} name="sort_order" type="number" className="input" defaultValue={r?.sort_order ?? rules.length + 1} /></div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="label" htmlFor={`at-${k}`}>Cuándo se ejecuta</label>
+            <label className="label" htmlFor={`at-${k}`}><Tr>Cuándo se ejecuta</Tr></label>
             <select id={`at-${k}`} name="trigger_on" className="select" defaultValue={r?.trigger_on ?? "create"}>
               {Object.entries(TRIGGERS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
           <div>
-            <label className="label" htmlFor={`aw-${k}`}>Al actualizar, solo si cambia</label>
+            <label className="label" htmlFor={`aw-${k}`}><Tr>Al actualizar, solo si cambia</Tr></label>
             <select id={`aw-${k}`} name="watch_field" className="select" defaultValue={r?.watch_field ?? ""}>
               <option value="">Cualquier cambio</option>
               {watchable.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
@@ -65,11 +66,11 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
           </div>
         </div>
         <div>
-          <span className="label">Condiciones (todas deben cumplirse)</span>
+          <span className="label"><Tr>Condiciones (todas deben cumplirse)</Tr></span>
           <ConditionsEditor name="conditions" fields={def.fields} users={users} pipelines={pipelines} initial={r?.conditions ?? []} />
         </div>
         <div>
-          <span className="label">Acciones</span>
+          <span className="label"><Tr>Acciones</Tr></span>
           <ActionsEditor name="actions" fields={def.fields} users={users} initial={r?.actions ?? []} hasOwner={def.hasOwner !== false} />
         </div>
       </>
@@ -79,15 +80,15 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
   return (
     <>
       <div>
-        <h1 className="text-xl font-medium">Automatizaciones</h1>
-        <p className="text-sm text-muted">Asignación de registros, tareas de seguimiento, notificaciones y actualización de campos cuando un registro cumple condiciones.</p>
+        <h1 className="text-xl font-medium"><Tr>Automatizaciones</Tr></h1>
+        <p className="text-sm text-muted"><Tr>Asignación de registros, tareas de seguimiento, notificaciones y actualización de campos cuando un registro cumple condiciones.</Tr></p>
       </div>
       <ObjectTabs base="/configuracion/automatizaciones" active={object} objects={OBJECTS_WITH_AUTOMATION} />
       <section className="glass p-5">
         <h2 className="card-title">Nueva automatización para {def.plural.toLowerCase()}</h2>
         <ActionForm key={object} action={saveAutomationRule.bind(null, object, null)} className="mt-3 space-y-4">
           {fields()}
-          <div className="flex justify-end"><SubmitButton pendingText="Creando…">Crear automatización</SubmitButton></div>
+          <div className="flex justify-end"><SubmitButton pendingText="Creando…"><Tr>Crear automatización</Tr></SubmitButton></div>
         </ActionForm>
       </section>
       {rules.map((r) => (
@@ -109,17 +110,17 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
             <ActionForm action={saveAutomationRule.bind(null, object, r.id)} className="space-y-4">
               {fields(r)}
               <div className="flex items-center justify-between gap-3">
-                <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" name="is_active" defaultChecked={r.is_active} className="accent-[var(--brand)]" /> Activa</label>
-                <SubmitButton pendingText="Guardando…">Guardar</SubmitButton>
+                <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" name="is_active" defaultChecked={r.is_active} className="accent-[var(--brand)]" /> <Tr>Activa</Tr></label>
+                <SubmitButton pendingText="Guardando…"><Tr>Guardar</Tr></SubmitButton>
               </div>
             </ActionForm>
             <ActionForm action={deleteAutomationRule.bind(null, r.id)} className="mt-3 flex flex-col items-end">
-              <ConfirmSubmit message={`¿Eliminar la automatización “${r.name}”?`}><Trash2 size={14} /> Eliminar</ConfirmSubmit>
+              <ConfirmSubmit message={`¿Eliminar la automatización “${r.name}”?`}><Trash2 size={14} /> <Tr>Eliminar</Tr></ConfirmSubmit>
             </ActionForm>
           </div>
         </details>
       ))}
-      {rules.length === 0 && <p className="text-sm text-muted">No hay automatizaciones para este objeto.</p>}
+      {rules.length === 0 && <p className="text-sm text-muted"><Tr>No hay automatizaciones para este objeto.</Tr></p>}
     </>
   );
 }

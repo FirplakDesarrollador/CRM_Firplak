@@ -2023,6 +2023,57 @@ export type Database = {
           },
         ]
       }
+      sales_goals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          metric: string
+          period_start: string
+          period_type: string
+          target: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric: string
+          period_start: string
+          period_type: string
+          target: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric?: string
+          period_start?: string
+          period_type?: string
+          target?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sharing_settings: {
         Row: {
           access: string
@@ -2107,10 +2158,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_manage_goal: {
+        Args: {
+          p_user: string
+        }
+        Returns: boolean
+      }
       can_read_record: {
         Args: {
           p_object: string
           p_owner: string
+        }
+        Returns: boolean
+      }
+      can_see_goal: {
+        Args: {
+          p_user: string
         }
         Returns: boolean
       }
@@ -2184,6 +2247,28 @@ export type Database = {
           id: string
           title: string
           subtitle: string
+        }[]
+      }
+      goal_period_end: {
+        Args: {
+          p_type: string
+          p_start: string
+        }
+        Returns: string
+      }
+      goal_progress: {
+        Args: {
+          p_period_type: string
+          p_period_start: string
+        }
+        Returns: {
+          goal_id: string
+          user_id: string
+          user_name: string
+          metric: string
+          target: number
+          actual: number
+          period_end: string
         }[]
       }
       has_perm: {

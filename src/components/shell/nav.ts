@@ -17,6 +17,7 @@ export function navItems(access: Access, t: T = (s) => s): NavItem[] {
   if (can(access, "activities", "read")) items.push({ href: "/actividades", label: "Actividades", icon: "activities" });
   if (canSystem(access, "view_dashboards")) {
     items.push({ href: "/indicadores", label: "Indicadores", icon: "dashboard" });
+    items.push({ href: "/metas", label: "Metas", icon: "goals" });
     items.push({ href: "/informes", label: "Informes", icon: "reports" });
   }
   if (canSystem(access, "customize") || canSystem(access, "manage_users")) {

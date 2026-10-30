@@ -14,6 +14,7 @@ import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { deleteValidationRule, saveValidationRule } from "../actions";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Reglas de validación" };
 
 type Rule = { id: string; name: string; description: string | null; conditions: Filter[]; error_message: string; error_field: string | null; is_active: boolean };
@@ -33,17 +34,17 @@ export default async function ValidationRulesPage({ searchParams }: PageProps<"/
   const fields = (r?: Rule) => (
     <>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div><label className="label" htmlFor={`vn-${r?.id ?? "new"}`}>Nombre</label><input id={`vn-${r?.id ?? "new"}`} name="name" className="input" defaultValue={r?.name} /></div>
-        <div><label className="label" htmlFor={`vd-${r?.id ?? "new"}`}>Descripción</label><input id={`vd-${r?.id ?? "new"}`} name="description" className="input" defaultValue={r?.description ?? ""} /></div>
+        <div><label className="label" htmlFor={`vn-${r?.id ?? "new"}`}><Tr>Nombre</Tr></label><input id={`vn-${r?.id ?? "new"}`} name="name" className="input" defaultValue={r?.name} /></div>
+        <div><label className="label" htmlFor={`vd-${r?.id ?? "new"}`}><Tr>Descripción</Tr></label><input id={`vd-${r?.id ?? "new"}`} name="description" className="input" defaultValue={r?.description ?? ""} /></div>
       </div>
       <div>
-        <span className="label">Bloquear el guardado cuando se cumplan todas estas condiciones</span>
+        <span className="label"><Tr>Bloquear el guardado cuando se cumplan todas estas condiciones</Tr></span>
         <ConditionsEditor name="conditions" fields={def.fields} users={users} pipelines={pipelines} initial={r?.conditions ?? []} />
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_14rem]">
-        <div><label className="label" htmlFor={`vm-${r?.id ?? "new"}`}>Mensaje de error</label><input id={`vm-${r?.id ?? "new"}`} name="error_message" className="input" defaultValue={r?.error_message} /></div>
+        <div><label className="label" htmlFor={`vm-${r?.id ?? "new"}`}><Tr>Mensaje de error</Tr></label><input id={`vm-${r?.id ?? "new"}`} name="error_message" className="input" defaultValue={r?.error_message} /></div>
         <div>
-          <label className="label" htmlFor={`vf-${r?.id ?? "new"}`}>Mostrar junto al campo</label>
+          <label className="label" htmlFor={`vf-${r?.id ?? "new"}`}><Tr>Mostrar junto al campo</Tr></label>
           <select id={`vf-${r?.id ?? "new"}`} name="error_field" className="select" defaultValue={r?.error_field ?? ""}>
             <option value="">Arriba del formulario</option>
             {editableFields.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
@@ -56,15 +57,15 @@ export default async function ValidationRulesPage({ searchParams }: PageProps<"/
   return (
     <>
       <div>
-        <h1 className="text-xl font-medium">Reglas de validación</h1>
-        <p className="text-sm text-muted">Se aplican al guardar desde formularios, el pipeline y las rutas de estado. Si el registro cumple todas las condiciones, no se guarda y se muestra el mensaje.</p>
+        <h1 className="text-xl font-medium"><Tr>Reglas de validación</Tr></h1>
+        <p className="text-sm text-muted"><Tr>Se aplican al guardar desde formularios, el pipeline y las rutas de estado. Si el registro cumple todas las condiciones, no se guarda y se muestra el mensaje.</Tr></p>
       </div>
       <ObjectTabs base="/configuracion/validaciones" active={object} />
       <section className="glass p-5">
         <h2 className="card-title">Nueva regla para {def.plural.toLowerCase()}</h2>
         <ActionForm key={object} action={saveValidationRule.bind(null, object, null)} className="mt-3 space-y-3">
           {fields()}
-          <div className="flex justify-end"><SubmitButton pendingText="Creando…">Crear regla</SubmitButton></div>
+          <div className="flex justify-end"><SubmitButton pendingText="Creando…"><Tr>Crear regla</Tr></SubmitButton></div>
         </ActionForm>
       </section>
       {rules.map((r) => (
@@ -80,17 +81,17 @@ export default async function ValidationRulesPage({ searchParams }: PageProps<"/
             <ActionForm action={saveValidationRule.bind(null, object, r.id)} className="space-y-3">
               {fields(r)}
               <div className="flex items-center justify-between gap-3">
-                <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" name="is_active" defaultChecked={r.is_active} className="accent-[var(--brand)]" /> Activa</label>
-                <SubmitButton pendingText="Guardando…">Guardar</SubmitButton>
+                <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" name="is_active" defaultChecked={r.is_active} className="accent-[var(--brand)]" /> <Tr>Activa</Tr></label>
+                <SubmitButton pendingText="Guardando…"><Tr>Guardar</Tr></SubmitButton>
               </div>
             </ActionForm>
             <ActionForm action={deleteValidationRule.bind(null, r.id)} className="mt-3 flex flex-col items-end">
-              <ConfirmSubmit message={`¿Eliminar la regla “${r.name}”?`}><Trash2 size={14} /> Eliminar</ConfirmSubmit>
+              <ConfirmSubmit message={`¿Eliminar la regla “${r.name}”?`}><Trash2 size={14} /> <Tr>Eliminar</Tr></ConfirmSubmit>
             </ActionForm>
           </div>
         </details>
       ))}
-      {rules.length === 0 && <p className="text-sm text-muted">No hay reglas para este objeto.</p>}
+      {rules.length === 0 && <p className="text-sm text-muted"><Tr>No hay reglas para este objeto.</Tr></p>}
     </>
   );
 }

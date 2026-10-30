@@ -12,6 +12,7 @@ import { removeProductPrice, saveProductPrice } from "@/lib/records/phase2-actio
 import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
@@ -34,10 +35,10 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       title={String(row.name)}
       basePath={`/productos/${id}`}
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
-      badges={row.is_active ? null : <span className="badge">Inactivo</span>}
+      badges={row.is_active ? null : <span className="badge"><Tr>Inactivo</Tr></span>}
       actions={
         <>
-          {access.canEdit && <Link href={`/productos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+          {access.canEdit && <Link href={`/productos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="products" id={id} label={`el producto “${row.name}”`} />}
         </>
       }
@@ -47,7 +48,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
         content: (
           <>
             <section className="card overflow-hidden">
-              <div className="card-header"><h2 className="card-title">Precios por lista</h2></div>
+              <div className="card-header"><h2 className="card-title"><Tr>Precios por lista</Tr></h2></div>
               <ul className="divide-y divide-[var(--border)]">
                 {(books ?? []).map((b) => {
                   const entry = (entries ?? []).find((e) => e.price_book_id === b.id);
@@ -73,7 +74,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                           </ActionForm>
                           {entry && (
                             <ActionForm action={removeProductPrice.bind(null, entry.id)}>
-                              <ConfirmSubmit message={`¿Quitar el precio de “${b.name}”?`}><Trash2 size={14} /><span className="sr-only">Quitar</span></ConfirmSubmit>
+                              <ConfirmSubmit message={`¿Quitar el precio de “${b.name}”?`}><Trash2 size={14} /><span className="sr-only"><Tr>Quitar</Tr></span></ConfirmSubmit>
                             </ActionForm>
                           )}
                         </>
@@ -84,10 +85,10 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
               </ul>
             </section>
             <section className="card overflow-hidden">
-              <div className="card-header"><h2 className="card-title">Casos de servicio <span className="badge">{cases?.length ?? 0}</span></h2></div>
-              {(cases ?? []).length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted">Sin casos para este producto.</p> : (
+              <div className="card-header"><h2 className="card-title"><Tr>Casos de servicio</Tr> <span className="badge">{cases?.length ?? 0}</span></h2></div>
+              {(cases ?? []).length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted"><Tr>Sin casos para este producto.</Tr></p> : (
                 <table className="table">
-                  <thead><tr><th>Caso</th><th>Asunto</th><th>Estado</th><th>Abierto</th></tr></thead>
+                  <thead><tr><th><Tr>Caso</Tr></th><th><Tr>Asunto</Tr></th><th><Tr>Estado</Tr></th><th><Tr>Abierto</Tr></th></tr></thead>
                   <tbody>
                     {(cases ?? []).map((c) => (
                       <tr key={c.id}>

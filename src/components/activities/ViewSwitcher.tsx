@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Tr } from "@/components/ui/Tr";
 import { CalendarDays, CalendarRange, List } from "lucide-react";
 
 /** Agenda · Calendario · Lista para el módulo de actividades. */
@@ -13,7 +14,7 @@ export function ActivityViewSwitcher({ active }: { active: "agenda" | "calendari
       {items.map(({ key, href, label, Icon }) => (
         <Link key={key} href={href} aria-current={active === key ? "page" : undefined}
           className={`btn btn-sm border-0 ${active === key ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}>
-          <Icon size={14} /> {label}
+          <Icon size={14} /> <Tr>{label}</Tr>
         </Link>
       ))}
     </div>

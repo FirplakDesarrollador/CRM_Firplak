@@ -5,7 +5,9 @@ import { Plus, Trash2 } from "lucide-react";
 import type { FieldDef } from "@/lib/objects";
 import type { UserOption } from "@/lib/records/data";
 import type { AutomationAction } from "@/lib/rules/automation-types";
+import { useT } from "@/lib/i18n/client";
 
+import { Tr } from "@/components/ui/Tr";
 const TYPES: Record<AutomationAction["type"], string> = {
   create_task: "Crear tarea",
   notify: "Enviar notificación",
@@ -23,6 +25,7 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
   name: string; fields: FieldDef[]; users: UserOption[]; initial?: AutomationAction[]; hasOwner: boolean;
 }) {
   const [actions, setActions] = useState<AutomationAction[]>(initial);
+  const t = useT();
   const update = (i: number, patch: Partial<AutomationAction>) =>
     setActions(actions.map((a, j) => (j === i ? ({ ...a, ...patch } as AutomationAction) : a)));
   const settable = fields.filter((f) => !f.readOnly && !f.formHidden && ["select", "text", "checkbox"].includes(f.type));
@@ -31,11 +34,11 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
   return (
     <div className="space-y-2">
       <input type="hidden" name={name} value={JSON.stringify(actions)} />
-      {actions.length === 0 && <p className="text-sm text-muted">Sin acciones.</p>}
+      {actions.length === 0 && <p className="text-sm text-muted"><Tr>Sin acciones.</Tr></p>}
       {actions.map((a, i) => (
         <div key={i} className="grid gap-2 rounded-[10px] border border-line bg-surface p-3 sm:grid-cols-[11rem_1fr_auto]">
           <select className="select" value={a.type} aria-label="Tipo de acción" onChange={(e) => setActions(actions.map((x, j) => (j === i ? blank(e.target.value as AutomationAction["type"]) : x)))}>
-            {Object.entries(TYPES).filter(([k]) => hasOwner || k !== "assign_owner").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(TYPES).filter(([k]) => hasOwner || k !== "assign_owner").map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}
           </select>
           <div className="grid gap-2 sm:grid-cols-2">
             {a.type === "create_task" && (
@@ -101,7 +104,7 @@ export function ActionsEditor({ name, fields, users, initial = [], hasOwner }: {
       ))}
       <div className="flex flex-wrap gap-2">
         {(Object.keys(TYPES) as AutomationAction["type"][]).filter((k) => hasOwner || k !== "assign_owner").map((k) => (
-          <button key={k} type="button" className="btn btn-sm" onClick={() => setActions([...actions, blank(k)])}><Plus size={14} /> {TYPES[k]}</button>
+          <button key={k} type="button" className="btn btn-sm" onClick={() => setActions([...actions, blank(k)])}><Plus size={14} /> {t(TYPES[k])}</button>
         ))}
       </div>
     </div>

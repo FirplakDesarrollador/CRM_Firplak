@@ -13,11 +13,14 @@ import { CAMPAIGN_STATUSES } from "@/lib/objects/picklists";
 import { can } from "@/lib/permissions";
 import { formatMillions, formatPercent } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { getT } from "@/lib/i18n/server";
 import { Members, type Member } from "./Members";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Campaña" };
 
 export default async function CampaignDetailPage({ params, searchParams }: PageProps<"/campanas/[id]">) {
+  const t = await getT();
   const [user, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
   const [def, oppsDef, leadsDef] = await Promise.all([getObjectDef("campaigns"), getObjectDef("opportunities"), getObjectDef("leads")]);
   const row = await getRecord(def, id);
@@ -50,8 +53,8 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
       actions={
         <>
-          {can(user.access, "leads", "create") && <Link href={`/prospectos/nuevo?campaign=${id}`} className="btn"><Plus size={15} /> Prospecto</Link>}
-          {access.canEdit && <Link href={`/campanas/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+          {can(user.access, "leads", "create") && <Link href={`/prospectos/nuevo?campaign=${id}`} className="btn"><Plus size={15} /> <Tr>Prospecto</Tr></Link>}
+          {access.canEdit && <Link href={`/campanas/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="campaigns" id={id} label={`la campaña “${row.name}”`} />}
         </>
       }
@@ -62,10 +65,10 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
         content: (
           <>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <KpiTile label="Miembros" value={String(memberRows.length)} sub={`${responded} respondieron (${memberRows.length ? formatPercent((responded / memberRows.length) * 100) : "—"})`} />
+              <KpiTile label="Miembros" value={String(memberRows.length)} sub={`${responded} ${t("respondieron")} (${memberRows.length ? formatPercent((responded / memberRows.length) * 100) : "—"})`} />
               <KpiTile label="Prospectos generados" value={String(leads.data?.length ?? 0)} />
-              <KpiTile label="Ventas ganadas" {...formatMillions(won)} sub={`Pipeline abierto: ${formatMillions(pipeline).value} M`} tone="success" />
-              <KpiTile label="Retorno" value={cost ? formatPercent(((won - cost) / cost) * 100) : "—"} sub={cost ? `Costo: ${formatMillions(cost).value} M` : "Sin costo registrado"} />
+              <KpiTile label="Ventas ganadas" {...formatMillions(won)} sub={`${t("Pipeline abierto:")} ${formatMillions(pipeline).value} M`} tone="success" />
+              <KpiTile label="Retorno" value={cost ? formatPercent(((won - cost) / cost) * 100) : "—"} sub={cost ? `${t("Costo:")} ${formatMillions(cost).value} M` : t("Sin costo registrado")} />
             </div>
             <Members campaignId={id} members={memberRows} canEdit={access.canEdit} />
             <RelatedList def={oppsDef} title="Oportunidades influenciadas" rows={oppRows} columns={["name", "account_id", "stage_id", "amount", "close_date"]} />

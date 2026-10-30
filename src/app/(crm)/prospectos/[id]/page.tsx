@@ -14,6 +14,7 @@ import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Prospecto" };
 
 type Rel = { id: string; name?: string; full_name?: string } | null;
@@ -41,17 +42,17 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
       title={`${row.salutation ? `${row.salutation} ` : ""}${row.full_name}`}
       basePath={`/prospectos/${id}`}
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
-      badges={converted ? <span className="badge badge-success">Convertido</span> : null}
+      badges={converted ? <span className="badge badge-success"><Tr>Convertido</Tr></span> : null}
       actions={
         <>
           {typeof row.mobile === "string" && row.mobile && (
-            <a href={`https://wa.me/${row.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="btn"><Phone size={15} /> WhatsApp</a>
+            <a href={`https://wa.me/${row.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="btn"><Phone size={15} /> <Tr>WhatsApp</Tr></a>
           )}
-          {typeof row.email === "string" && row.email && !converted && <Link href={`/correo/nuevo?prospecto=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link>}
+          {typeof row.email === "string" && row.email && !converted && <Link href={`/correo/nuevo?prospecto=${id}`} className="btn"><Mail size={15} /> <Tr>Enviar correo</Tr></Link>}
           {!converted && access.canEdit && can(user.access, "accounts", "create") && can(user.access, "contacts", "create") && (
-            <Link href={`/prospectos/${id}/convertir`} className="btn btn-primary"><ArrowRightLeft size={15} /> Convertir</Link>
+            <Link href={`/prospectos/${id}/convertir`} className="btn btn-primary"><ArrowRightLeft size={15} /> <Tr>Convertir</Tr></Link>
           )}
-          {!converted && access.canEdit && <Link href={`/prospectos/${id}/editar`} className="btn"><Pencil size={15} /> Editar</Link>}
+          {!converted && access.canEdit && <Link href={`/prospectos/${id}/editar`} className="btn"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="leads" id={id} label={`el prospecto “${row.full_name}”`} />}
         </>
       }
@@ -75,12 +76,12 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
         label: "Relacionado",
         content: (
           <section className="card overflow-hidden">
-            <div className="card-header"><h2 className="card-title">Campañas <span className="badge">{memberships?.length ?? 0}</span></h2></div>
+            <div className="card-header"><h2 className="card-title"><Tr>Campañas</Tr> <span className="badge">{memberships?.length ?? 0}</span></h2></div>
             {(memberships ?? []).length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-muted">No participa en campañas.</p>
+              <p className="px-4 py-6 text-center text-sm text-muted"><Tr>No participa en campañas.</Tr></p>
             ) : (
               <table className="table">
-                <thead><tr><th>Campaña</th><th>Estado de la campaña</th><th>Respuesta</th><th>Agregado</th></tr></thead>
+                <thead><tr><th><Tr>Campaña</Tr></th><th><Tr>Estado de la campaña</Tr></th><th><Tr>Respuesta</Tr></th><th><Tr>Agregado</Tr></th></tr></thead>
                 <tbody>
                   {(memberships ?? []).map((m) => (
                     <tr key={m.id}>

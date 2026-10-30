@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { OBJECTS, isObjectKey } from "@/lib/objects";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Búsqueda" };
 
 export default async function SearchPage({ searchParams }: PageProps<"/buscar">) {
@@ -21,13 +22,13 @@ export default async function SearchPage({ searchParams }: PageProps<"/buscar">)
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <h1 className="text-xl font-medium">{q ? <>Resultados para “{q}”</> : "Búsqueda"}</h1>
-      {q.length < 2 && <p className="text-muted">Escribe al menos 2 caracteres en la barra de búsqueda.</p>}
-      {q.length >= 2 && (data ?? []).length === 0 && <p className="text-muted">No encontramos registros que coincidan.</p>}
+      {q.length < 2 && <p className="text-muted"><Tr>Escribe al menos 2 caracteres en la barra de búsqueda.</Tr></p>}
+      {q.length >= 2 && (data ?? []).length === 0 && <p className="text-muted"><Tr>No encontramos registros que coincidan.</Tr></p>}
       {groups.filter((g) => g.items.length).map((g) => (
         <section key={g.key} className="card">
           <div className="card-header">
             <h2 className="card-title"><ObjectIcon object={g.key} size={14} /> {g.def.plural} <span className="badge">{g.items.length}</span></h2>
-            <Link href={`${g.def.path}?q=${encodeURIComponent(q)}`} className="btn btn-sm btn-ghost">Ver en la lista</Link>
+            <Link href={`${g.def.path}?q=${encodeURIComponent(q)}`} className="btn btn-sm btn-ghost"><Tr>Ver en la lista</Tr></Link>
           </div>
           <ul className="divide-y divide-[var(--border)]">
             {g.items.map((r) => (

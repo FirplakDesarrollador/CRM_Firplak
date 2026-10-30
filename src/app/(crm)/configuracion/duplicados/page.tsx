@@ -10,6 +10,7 @@ import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { mergeDuplicates } from "../actions";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Duplicados" };
 
 const MERGEABLE: ObjectKey[] = ["accounts", "contacts", "leads"];
@@ -25,7 +26,7 @@ export default async function DuplicatesPage({ searchParams }: PageProps<"/confi
   return (
     <>
       <div>
-        <h1 className="text-xl font-medium">Duplicados</h1>
+        <h1 className="text-xl font-medium"><Tr>Duplicados</Tr></h1>
         <p className="text-sm text-muted">
           Parejas con el mismo NIT, correo o nombre normalizado (sin tildes, mayúsculas ni “S.A.S.”). Al fusionar, el registro principal
           completa sus campos vacíos con los del duplicado, recibe todos sus registros relacionados y el duplicado se elimina.
@@ -45,15 +46,15 @@ export default async function DuplicatesPage({ searchParams }: PageProps<"/confi
           <ActionForm action={mergeDuplicates.bind(null, object, p.id_a, p.id_b)} className="flex flex-wrap items-center gap-4 p-4">
             <span className="badge badge-warning">{p.reason}</span>
             <fieldset className="flex min-w-0 flex-1 flex-wrap gap-4">
-              <legend className="sr-only">Registro principal</legend>
+              <legend className="sr-only"><Tr>Registro principal</Tr></legend>
               {[[p.id_a, p.name_a], [p.id_b, p.name_b]].map(([id, name], i) => (
                 <label key={id} className="flex items-center gap-2 text-sm">
                   <input type="radio" name="master" value={id} defaultChecked={i === 0} className="accent-[var(--brand)]" />
-                  <span>Conservar <Link href={`${def.path}/${id}`} target="_blank" className="link">{name}</Link></span>
+                  <span><Tr>Conservar</Tr> <Link href={`${def.path}/${id}`} target="_blank" className="link">{name}</Link></span>
                 </label>
               ))}
             </fieldset>
-            <SubmitButton className="btn btn-sm btn-primary" pendingText="Fusionando…"><Combine size={14} /> Fusionar</SubmitButton>
+            <SubmitButton className="btn btn-sm btn-primary" pendingText="Fusionando…"><Combine size={14} /> <Tr>Fusionar</Tr></SubmitButton>
           </ActionForm>
         </section>
       ))}

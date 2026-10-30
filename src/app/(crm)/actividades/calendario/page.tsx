@@ -11,6 +11,7 @@ import { addDaysISO, formatTime, todayISO } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { OwnerSelect } from "./OwnerSelect";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Calendario" };
 
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -101,20 +102,20 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
         <div className="flex items-center gap-3">
           <ObjectIcon object="activities" />
           <div>
-            <p className="eyebrow">Calendario</p>
+            <p className="eyebrow"><Tr>Calendario</Tr></p>
             <h1 className="text-xl font-medium first-letter:uppercase">{title}</h1>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <ActivityViewSwitcher active="calendario" />
-          {canCreate && <Link href={`/actividades/nueva?tipo=meeting&fecha=${today}&volver=${encodeURIComponent(qs({}))}`} className="btn btn-primary"><Plus size={16} /> Nueva reunión</Link>}
+          {canCreate && <Link href={`/actividades/nueva?tipo=meeting&fecha=${today}&volver=${encodeURIComponent(qs({}))}`} className="btn btn-primary"><Plus size={16} /> <Tr>Nueva reunión</Tr></Link>}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex items-center gap-1">
           <Link href={qs({ fecha: prev })} className="btn btn-icon" aria-label="Anterior"><ChevronLeft size={16} /></Link>
-          <Link href={qs({ fecha: today })} className="btn">Hoy</Link>
+          <Link href={qs({ fecha: today })} className="btn"><Tr>Hoy</Tr></Link>
           <Link href={qs({ fecha: next })} className="btn btn-icon" aria-label="Siguiente"><ChevronRight size={16} /></Link>
         </div>
         <div className="inline-flex rounded-[10px] border border-line-strong p-0.5">

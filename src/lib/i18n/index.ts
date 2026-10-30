@@ -1,12 +1,13 @@
 import type { ObjectDef } from "@/lib/objects";
 import { FIELDS_EN, FIELD_OVERRIDES_EN, OBJECTS_EN, OPTION_LABELS_EN, OPS_EN, PHRASES_EN, SECTIONS_EN } from "./en";
+import { UI_EN } from "./en-ui";
 
 export type Locale = "es" | "en";
 export type T = (es: string) => string;
 
 export function makeT(locale: Locale): T {
   if (locale !== "en") return (s) => s;
-  return (s) => PHRASES_EN[s] ?? OBJECTS_EN_BY_PLURAL[s] ?? s;
+  return (s) => PHRASES_EN[s] ?? UI_EN[s] ?? OBJECTS_EN_BY_PLURAL[s] ?? s;
 }
 
 const OBJECTS_EN_BY_PLURAL: Record<string, string> = {

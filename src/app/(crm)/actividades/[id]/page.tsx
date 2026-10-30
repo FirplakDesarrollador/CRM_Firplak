@@ -9,6 +9,7 @@ import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { ACTIVITY_STATUSES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Actividad" };
 
 export default async function ActivityDetailPage({ params }: PageProps<"/actividades/[id]">) {
@@ -28,7 +29,7 @@ export default async function ActivityDetailPage({ params }: PageProps<"/activid
         badges={<span className={`badge ${status === "completed" ? "badge-success" : status === "cancelled" ? "" : "badge-warning"}`}>{ACTIVITY_STATUSES[status]}</span>}
         actions={
           <>
-            {access.canEdit && <Link href={`/actividades/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+            {access.canEdit && <Link href={`/actividades/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
             {access.canDelete && <DeleteButton object="activities" id={id} label="esta actividad" />}
           </>
         }

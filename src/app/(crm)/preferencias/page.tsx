@@ -5,6 +5,7 @@ import { PasswordForm, PreferencesForm, ProfileForm } from "./forms";
 import { ACTION_LABELS, OBJECT_ACTIONS, PERMISSION_OBJECTS } from "@/lib/permissions";
 import { OBJECTS } from "@/lib/objects";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Mis preferencias" };
 
 const TABS = [
@@ -20,7 +21,7 @@ export default async function PreferencesPage({ searchParams }: PageProps<"/pref
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-xl font-medium">Configuración personal</h1>
+      <h1 className="text-xl font-medium"><Tr>Configuración personal</Tr></h1>
       <div className="card">
         <div role="tablist" className="flex overflow-x-auto border-b border-line px-4">
           {TABS.map((t) => (
@@ -33,12 +34,12 @@ export default async function PreferencesPage({ searchParams }: PageProps<"/pref
         {tab === "permisos" && (
           <div className="space-y-3 p-4">
             <p className="text-sm">
-              Perfil: <strong>{user.access.profile ?? "Sin perfil"}</strong>{user.roleName && <> · Rol: <strong>{user.roleName}</strong></>}
-              {user.access.isAdmin && <span className="badge badge-accent ml-2">Administrador</span>}
+              Perfil: <strong>{user.access.profile ?? "Sin perfil"}</strong>{user.roleName && <> <Tr>· Rol:</Tr> <strong>{user.roleName}</strong></>}
+              {user.access.isAdmin && <span className="badge badge-accent ml-2"><Tr>Administrador</Tr></span>}
             </p>
             <div className="overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Objeto</th>{OBJECT_ACTIONS.map((a) => <th key={a} className="text-center">{ACTION_LABELS[a]}</th>)}</tr></thead>
+                <thead><tr><th><Tr>Objeto</Tr></th>{OBJECT_ACTIONS.map((a) => <th key={a} className="text-center">{ACTION_LABELS[a]}</th>)}</tr></thead>
                 <tbody>
                   {PERMISSION_OBJECTS.map((o) => (
                     <tr key={o}>

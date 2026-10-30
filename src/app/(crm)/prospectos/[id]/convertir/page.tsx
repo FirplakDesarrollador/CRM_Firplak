@@ -9,6 +9,7 @@ import { addDaysISO, todayISO } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { ConvertForm } from "./ConvertForm";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Convertir prospecto" };
 
 export default async function ConvertLeadPage({ params }: PageProps<"/prospectos/[id]/convertir">) {
@@ -35,7 +36,7 @@ export default async function ConvertLeadPage({ params }: PageProps<"/prospectos
       <div className="flex items-center gap-3">
         <ObjectIcon object="leads" />
         <div>
-          <p className="eyebrow">Convertir prospecto</p>
+          <p className="eyebrow"><Tr>Convertir prospecto</Tr></p>
           <h1 className="text-xl font-medium">{lead.full_name} · {lead.company}</h1>
         </div>
       </div>

@@ -8,6 +8,7 @@ import type { StageRow } from "@/lib/records/data";
 import { formatCompactCurrency, formatCurrency, formatDate, todayISO } from "@/lib/format";
 import { LossDialog } from "./LossDialog";
 
+import { Tr } from "@/components/ui/Tr";
 export type KanbanCard = {
   id: string;
   name: string;
@@ -117,7 +118,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                     </li>
                   );
                 })}
-                {column.length === 0 && <li className="rounded-lg border border-dashed border-line px-3 py-6 text-center text-xs text-muted">Arrastra aquí</li>}
+                {column.length === 0 && <li className="rounded-lg border border-dashed border-line px-3 py-6 text-center text-xs text-muted"><Tr>Arrastra aquí</Tr></li>}
               </ul>
             </section>
           );

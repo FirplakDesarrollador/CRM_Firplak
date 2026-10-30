@@ -8,6 +8,7 @@ import { LookupInput } from "@/components/records/LookupInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
+import { Tr } from "@/components/ui/Tr";
 type Props = {
   leadId: string;
   company: string;
@@ -30,14 +31,14 @@ export function ConvertForm(props: Props) {
       {state.message && <Alert tone="error">{state.message}</Alert>}
 
       <section className="glass p-5">
-        <h2 className="card-title"><Building2 size={17} /> Cuenta</h2>
+        <h2 className="card-title"><Building2 size={17} /> <Tr>Cuenta</Tr></h2>
         <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          <label className="flex items-center gap-2"><input type="radio" name="account_mode" value="new" checked={mode === "new"} onChange={() => setMode("new")} /> Crear cuenta nueva</label>
-          <label className="flex items-center gap-2"><input type="radio" name="account_mode" value="existing" checked={mode === "existing"} onChange={() => setMode("existing")} /> Usar una cuenta existente</label>
+          <label className="flex items-center gap-2"><input type="radio" name="account_mode" value="new" checked={mode === "new"} onChange={() => setMode("new")} /> <Tr>Crear cuenta nueva</Tr></label>
+          <label className="flex items-center gap-2"><input type="radio" name="account_mode" value="existing" checked={mode === "existing"} onChange={() => setMode("existing")} /> <Tr>Usar una cuenta existente</Tr></label>
         </div>
         {mode === "new" ? (
           <div className="mt-3">
-            <label className="label" htmlFor="account_name">Nombre de la cuenta</label>
+            <label className="label" htmlFor="account_name"><Tr>Nombre de la cuenta</Tr></label>
             <input id="account_name" name="account_name" className="input" defaultValue={props.company} />
           </div>
         ) : (
@@ -51,8 +52,8 @@ export function ConvertForm(props: Props) {
       </section>
 
       <section className="glass p-5">
-        <h2 className="card-title"><UserRound size={17} /> Contacto</h2>
-        <p className="mt-2 text-sm text-ink-2">Se creará el contacto <strong className="font-medium">{props.contactName}</strong> con los datos del prospecto, y se le pasarán sus actividades y campañas.</p>
+        <h2 className="card-title"><UserRound size={17} /> <Tr>Contacto</Tr></h2>
+        <p className="mt-2 text-sm text-ink-2"><Tr>Se creará el contacto</Tr> <strong className="font-medium">{props.contactName}</strong> <Tr>con los datos del prospecto, y se le pasarán sus actividades y campañas.</Tr></p>
       </section>
 
       <section className="glass p-5">
@@ -63,11 +64,11 @@ export function ConvertForm(props: Props) {
         {createOpp && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="label" htmlFor="opportunity_name">Nombre de la oportunidad</label>
+              <label className="label" htmlFor="opportunity_name"><Tr>Nombre de la oportunidad</Tr></label>
               <input id="opportunity_name" name="opportunity_name" className="input" defaultValue={`${props.company} · Nueva oportunidad`} />
             </div>
             <div>
-              <label className="label" htmlFor="stage_id">Etapa</label>
+              <label className="label" htmlFor="stage_id"><Tr>Etapa</Tr></label>
               <select id="stage_id" name="stage_id" className="select" defaultValue={props.defaultStage}>
                 {props.pipelines.map((p) => (
                   <optgroup key={p.id} label={p.name}>{p.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup>
@@ -76,11 +77,11 @@ export function ConvertForm(props: Props) {
               {state.errors?.stage_id && <p className="error-text">{state.errors.stage_id}</p>}
             </div>
             <div>
-              <label className="label" htmlFor="amount">Valor estimado (COP)</label>
+              <label className="label" htmlFor="amount"><Tr>Valor estimado (COP)</Tr></label>
               <input id="amount" name="amount" inputMode="decimal" className="input num" placeholder="0" />
             </div>
             <div>
-              <label className="label" htmlFor="close_date">Fecha de cierre</label>
+              <label className="label" htmlFor="close_date"><Tr>Fecha de cierre</Tr></label>
               <input id="close_date" name="close_date" type="date" className="input" defaultValue={props.defaultClose} />
             </div>
           </div>
@@ -88,15 +89,15 @@ export function ConvertForm(props: Props) {
       </section>
 
       <section className="glass p-5">
-        <label className="label" htmlFor="owner_id">Propietario de los registros</label>
+        <label className="label" htmlFor="owner_id"><Tr>Propietario de los registros</Tr></label>
         <select id="owner_id" name="owner_id" className="select" defaultValue={props.ownerId}>
           {props.users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </section>
 
       <div className="flex justify-end gap-2">
-        <Link href={`/prospectos/${props.leadId}`} className="btn">Cancelar</Link>
-        <SubmitButton pendingText="Convirtiendo…">Convertir prospecto</SubmitButton>
+        <Link href={`/prospectos/${props.leadId}`} className="btn"><Tr>Cancelar</Tr></Link>
+        <SubmitButton pendingText="Convirtiendo…"><Tr>Convertir prospecto</Tr></SubmitButton>
       </div>
     </form>
   );

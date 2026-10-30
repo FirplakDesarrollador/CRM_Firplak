@@ -11,6 +11,7 @@ import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { ImportWizard } from "./ImportWizard";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Importar datos" };
 
 export default async function ImportObjectPage({ params }: PageProps<"/importar/[objeto]">) {
@@ -26,11 +27,11 @@ export default async function ImportObjectPage({ params }: PageProps<"/importar/
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <Link href="/importar" className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> Importar datos</Link>
+      <Link href="/importar" className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> <Tr>Importar datos</Tr></Link>
       <div className="flex items-center gap-3">
         <ObjectIcon object={objeto} />
         <div>
-          <p className="eyebrow">Importar</p>
+          <p className="eyebrow"><Tr>Importar</Tr></p>
           <h1 className="text-xl font-medium">{def.plural}</h1>
         </div>
       </div>

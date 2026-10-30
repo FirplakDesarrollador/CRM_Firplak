@@ -580,3 +580,25 @@ from (values
    '[{"type":"notify","to":"owner","title":"Caso de prioridad alta","body":"Atiéndelo hoy."}]', 3)
 ) as v(object, name, description, trigger_on, watch, conditions, actions, ord)
 where not exists (select 1 from public.automation_rules r where r.object = v.object and r.name = v.name);
+
+-- ===========================================================================
+-- Fase 6: metas de compañía de ejemplo (periodo actual)
+-- ===========================================================================
+insert into public.sales_goals (user_id, metric, period_type, period_start, target)
+select null, v.metric, v.period_type,
+       date_trunc(case v.period_type when 'month' then 'month' when 'quarter' then 'quarter' else 'year' end,
+                  (now() at time zone 'America/Bogota'))::date,
+       v.target
+from (values
+  ('won_amount', 'month', 1500000000),
+  ('won_amount', 'quarter', 4500000000),
+  ('won_amount', 'year', 15000000000),
+  ('new_leads', 'month', 20),
+  ('activities_completed', 'month', 120)
+) as v(metric, period_type, target)
+where not exists (
+  select 1 from public.sales_goals g
+  where g.user_id is null and g.metric = v.metric and g.period_type = v.period_type
+    and g.period_start = date_trunc(case v.period_type when 'month' then 'month' when 'quarter' then 'quarter' else 'year' end,
+                                    (now() at time zone 'America/Bogota'))::date
+);

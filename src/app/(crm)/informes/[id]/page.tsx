@@ -10,6 +10,7 @@ import { deleteReport } from "@/lib/reports/actions";
 import { parseDefinition } from "@/lib/reports/types";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Informe" };
 
 export default async function ReportDetailPage({ params, searchParams }: PageProps<"/informes/[id]">) {
@@ -31,7 +32,7 @@ export default async function ReportDetailPage({ params, searchParams }: PagePro
       canSaveExisting={canEdit}
       actions={canEdit ? (
         <ActionForm action={deleteReport.bind(null, id)} className="flex flex-col items-end">
-          <ConfirmSubmit message={`¿Eliminar el informe “${report.name}”?`} className="btn btn-danger"><Trash2 size={15} /> Eliminar</ConfirmSubmit>
+          <ConfirmSubmit message={`¿Eliminar el informe “${report.name}”?`} className="btn btn-danger"><Trash2 size={15} /> <Tr>Eliminar</Tr></ConfirmSubmit>
         </ActionForm>
       ) : null}
     />

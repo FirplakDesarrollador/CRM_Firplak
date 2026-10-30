@@ -3,6 +3,7 @@ import { Timeline } from "./Timeline";
 import type { ActivityRow } from "./data";
 import type { UserOption } from "@/lib/records/data";
 
+import { Tr } from "@/components/ui/Tr";
 export function ActivityPanel({
   related,
   activities,
@@ -18,7 +19,7 @@ export function ActivityPanel({
 }) {
   return (
     <section className="glass">
-      <div className="card-header"><h2 className="card-title">Actividad</h2></div>
+      <div className="card-header"><h2 className="card-title"><Tr>Actividad</Tr></h2></div>
       <div className="px-4 pb-4">
         {canCreate && <Composer related={related} users={users} currentUserId={userId} />}
         <div className="mt-4 border-t border-line pt-3">

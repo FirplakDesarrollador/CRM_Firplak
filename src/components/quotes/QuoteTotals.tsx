@@ -1,5 +1,6 @@
 import { formatCurrency, formatNumber } from "@/lib/format";
 
+import { Tr } from "@/components/ui/Tr";
 export function QuoteTotals({ q }: { q: Record<string, unknown> }) {
   const rows: [string, unknown, string?][] = [
     ["Subtotal", q.subtotal],
@@ -10,7 +11,7 @@ export function QuoteTotals({ q }: { q: Record<string, unknown> }) {
   ];
   return (
     <section className="glass p-5">
-      <p className="eyebrow">Totales</p>
+      <p className="eyebrow"><Tr>Totales</Tr></p>
       <dl className="mt-3 space-y-1.5 text-sm">
         {rows.map(([label, value, cls]) => (
           <div key={label} className={`flex justify-between gap-4 ${cls ?? ""}`}>
@@ -20,7 +21,7 @@ export function QuoteTotals({ q }: { q: Record<string, unknown> }) {
         ))}
       </dl>
       <div className="mt-3 flex items-baseline justify-between gap-4 border-t border-line pt-3">
-        <span className="text-sm text-ink-2">Total</span>
+        <span className="text-sm text-ink-2"><Tr>Total</Tr></span>
         <span className="kpi-value text-[1.7rem]">{formatCurrency(Number(q.grand_total ?? 0))}</span>
       </div>
     </section>

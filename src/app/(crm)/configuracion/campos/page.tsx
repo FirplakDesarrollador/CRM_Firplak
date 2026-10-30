@@ -10,6 +10,7 @@ import { OBJECTS, type ObjectKey } from "@/lib/objects";
 import { requireUser } from "@/lib/session";
 import { deleteCustomField, saveCustomField } from "../actions";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Campos personalizados" };
 
 const TYPES: Record<string, string> = {
@@ -27,8 +28,8 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
   return (
     <>
       <div>
-        <h1 className="text-xl font-medium">Campos personalizados</h1>
-        <p className="text-sm text-muted">Se definen en JSON y sus valores viven en la columna <code>custom_fields</code> (jsonb) de cada registro. Aparecen en formularios, fichas, filtros, vistas y exportación.</p>
+        <h1 className="text-xl font-medium"><Tr>Campos personalizados</Tr></h1>
+        <p className="text-sm text-muted"><Tr>Se definen en JSON y sus valores viven en la columna</Tr> <code>custom_fields</code> (jsonb) de cada registro. Aparecen en formularios, fichas, filtros, vistas y exportación.</p>
       </div>
       <div className="card">
         <div role="tablist" className="flex overflow-x-auto border-b border-line px-4">
@@ -37,24 +38,24 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
           ))}
         </div>
         <ActionForm action={saveCustomField.bind(null, object, null)} resetOnSuccess className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label className="label" htmlFor="cf-label">Etiqueta</label><input id="cf-label" name="label" className="input" required placeholder="Ej. Tipo de proyecto" /></div>
-          <div><label className="label" htmlFor="cf-api">Nombre interno (opcional)</label><input id="cf-api" name="api_name" className="input" placeholder="tipo_proyecto" /></div>
+          <div><label className="label" htmlFor="cf-label"><Tr>Etiqueta</Tr></label><input id="cf-label" name="label" className="input" required placeholder="Ej. Tipo de proyecto" /></div>
+          <div><label className="label" htmlFor="cf-api"><Tr>Nombre interno (opcional)</Tr></label><input id="cf-api" name="api_name" className="input" placeholder="tipo_proyecto" /></div>
           <div>
-            <label className="label" htmlFor="cf-type">Tipo</label>
+            <label className="label" htmlFor="cf-type"><Tr>Tipo</Tr></label>
             <select id="cf-type" name="field_type" className="select">{Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </div>
-          <div><label className="label" htmlFor="cf-order">Orden</label><input id="cf-order" name="sort_order" type="number" className="input" defaultValue={fields.length + 1} /></div>
+          <div><label className="label" htmlFor="cf-order"><Tr>Orden</Tr></label><input id="cf-order" name="sort_order" type="number" className="input" defaultValue={fields.length + 1} /></div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="cf-options">Opciones (una por línea; solo listas)</label>
             <textarea id="cf-options" name="options" className="textarea" rows={2} />
           </div>
           <div className="sm:col-span-2">
-            <label className="label" htmlFor="cf-help">Texto de ayuda</label>
+            <label className="label" htmlFor="cf-help"><Tr>Texto de ayuda</Tr></label>
             <input id="cf-help" name="help_text" className="input" />
             <div className="mt-3 flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-1.5 text-sm font-semibold"><input type="checkbox" name="is_required" className="accent-[var(--brand)]" /> Obligatorio</label>
-              <label className="flex items-center gap-1.5 text-sm font-semibold"><input type="checkbox" name="show_in_list" className="accent-[var(--brand)]" /> Columna en listas</label>
-              <SubmitButton className="btn btn-primary ml-auto" pendingText="Creando…">Crear campo</SubmitButton>
+              <label className="flex items-center gap-1.5 text-sm font-semibold"><input type="checkbox" name="is_required" className="accent-[var(--brand)]" /> <Tr>Obligatorio</Tr></label>
+              <label className="flex items-center gap-1.5 text-sm font-semibold"><input type="checkbox" name="show_in_list" className="accent-[var(--brand)]" /> <Tr>Columna en listas</Tr></label>
+              <SubmitButton className="btn btn-primary ml-auto" pendingText="Creando…"><Tr>Crear campo</Tr></SubmitButton>
             </div>
           </div>
         </ActionForm>
@@ -62,40 +63,40 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
 
       <section className="card">
         <div className="card-header"><h2 className="card-title">Campos de {OBJECTS[object].plural.toLowerCase()} <span className="badge">{fields.length}</span></h2></div>
-        {fields.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">Aún no hay campos personalizados para este objeto.</p>}
+        {fields.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted"><Tr>Aún no hay campos personalizados para este objeto.</Tr></p>}
         <ul className="divide-y divide-[var(--border)]">
           {fields.map((f) => (
             <li key={f.id} className="flex flex-wrap items-start gap-2 p-4">
               <ActionForm action={saveCustomField.bind(null, object, f.id)} className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_9rem_1.4fr_5rem_auto] xl:items-end">
                 <div>
-                  <label className="label" htmlFor={`l-${f.id}`}>Etiqueta · <code className="text-[0.7rem]">{f.api_name}</code></label>
+                  <label className="label" htmlFor={`l-${f.id}`}><Tr>Etiqueta ·</Tr> <code className="text-[0.7rem]">{f.api_name}</code></label>
                   <input id={`l-${f.id}`} name="label" className="input font-semibold" defaultValue={f.label} />
                 </div>
                 <div>
-                  <span className="label">Tipo</span>
+                  <span className="label"><Tr>Tipo</Tr></span>
                   <span className="badge badge-brand mt-2">{TYPES[f.field_type] ?? f.field_type}</span>
                   <input type="hidden" name="field_type" value={f.field_type} />
                 </div>
                 <div>
-                  <label className="label" htmlFor={`o-${f.id}`}>Opciones</label>
+                  <label className="label" htmlFor={`o-${f.id}`}><Tr>Opciones</Tr></label>
                   <input id={`o-${f.id}`} name="options" className="input" disabled={!["select", "multiselect"].includes(f.field_type)}
                     defaultValue={Array.isArray(f.options) ? (f.options as string[]).join(", ") : ""} />
                 </div>
                 <div>
-                  <label className="label" htmlFor={`s-${f.id}`}>Orden</label>
+                  <label className="label" htmlFor={`s-${f.id}`}><Tr>Orden</Tr></label>
                   <input id={`s-${f.id}`} name="sort_order" type="number" className="input" defaultValue={f.sort_order} />
                 </div>
                 <div className="flex flex-wrap items-center gap-3 pb-1">
                   <input type="hidden" name="help_text" value={f.help_text ?? ""} />
-                  <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="is_required" defaultChecked={f.is_required} className="accent-[var(--brand)]" /> Oblig.</label>
-                  <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="show_in_list" defaultChecked={f.show_in_list} className="accent-[var(--brand)]" /> Lista</label>
-                  <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="is_active" defaultChecked={f.is_active} className="accent-[var(--brand)]" /> Activo</label>
-                  <SubmitButton className="btn btn-sm" pendingText="…">Guardar</SubmitButton>
+                  <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="is_required" defaultChecked={f.is_required} className="accent-[var(--brand)]" /> <Tr>Oblig.</Tr></label>
+                  <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="show_in_list" defaultChecked={f.show_in_list} className="accent-[var(--brand)]" /> <Tr>Lista</Tr></label>
+                  <label className="flex items-center gap-1 text-xs font-semibold"><input type="checkbox" name="is_active" defaultChecked={f.is_active} className="accent-[var(--brand)]" /> <Tr>Activo</Tr></label>
+                  <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
                 </div>
               </ActionForm>
               <ActionForm action={deleteCustomField.bind(null, f.id)} className="flex flex-col items-end xl:pt-6">
                 <ConfirmSubmit message={`¿Eliminar el campo “${f.label}”? Los valores ya guardados se conservan en el JSON del registro.`}>
-                  <Trash2 size={14} /><span className="sr-only">Eliminar</span>
+                  <Trash2 size={14} /><span className="sr-only"><Tr>Eliminar</Tr></span>
                 </ConfirmSubmit>
               </ActionForm>
             </li>

@@ -4,6 +4,7 @@ import { getObjectDef, untypedClient } from "@/lib/records/data";
 import { OBJECTS, isObjectKey, type FieldDef, type ObjectKey } from "@/lib/objects";
 import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPercent } from "@/lib/format";
 
+import { Tr } from "@/components/ui/Tr";
 type HistoryRow = {
   id: number; object: string; record_id: string; field: string; old_value: string | null; new_value: string | null;
   operation: "insert" | "update" | "delete"; changed_at: string; by: { full_name: string } | null;
@@ -71,18 +72,18 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
     for (const row of (found ?? []) as unknown as Record<string, string>[]) names.set(row.id, row[col]);
   }));
 
-  if (!rows.length) return <section className="card px-4 py-8 text-center text-sm text-muted">Sin cambios registrados.</section>;
+  if (!rows.length) return <section className="card px-4 py-8 text-center text-sm text-muted"><Tr>Sin cambios registrados.</Tr></section>;
 
   return (
     <section className="card overflow-hidden">
-      <div className="card-header"><h2 className="card-title">Historial de cambios <span className="badge">{rows.length}</span></h2></div>
+      <div className="card-header"><h2 className="card-title"><Tr>Historial de cambios</Tr> <span className="badge">{rows.length}</span></h2></div>
       <div className="overflow-x-auto">
         <table className="table">
           <thead>
             <tr>
-              <th>Fecha</th>
-              {global && <th>Registro</th>}
-              <th>Campo</th><th>Antes</th><th>Después</th><th>Usuario</th>
+              <th><Tr>Fecha</Tr></th>
+              {global && <th><Tr>Registro</Tr></th>}
+              <th><Tr>Campo</Tr></th><th><Tr>Antes</Tr></th><th><Tr>Después</Tr></th><th><Tr>Usuario</Tr></th>
             </tr>
           </thead>
           <tbody>
@@ -100,9 +101,9 @@ export async function FieldHistory({ object, recordId, limit = 150, global = fal
                     </td>
                   )}
                   {r.operation === "insert" ? (
-                    <td colSpan={3}><span className="badge badge-success">Registro creado</span></td>
+                    <td colSpan={3}><span className="badge badge-success"><Tr>Registro creado</Tr></span></td>
                   ) : r.operation === "delete" ? (
-                    <td colSpan={3}><span className="badge badge-danger">Registro eliminado</span> {r.old_value}</td>
+                    <td colSpan={3}><span className="badge badge-danger"><Tr>Registro eliminado</Tr></span> {r.old_value}</td>
                   ) : (
                     <>
                       <td className="font-medium">{f?.label ?? r.field}</td>

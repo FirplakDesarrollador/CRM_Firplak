@@ -11,6 +11,7 @@ import { CASE_STATUSES } from "@/lib/objects/picklists";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Caso" };
 
 const PRIORITY_TONE: Record<string, string> = { Alta: "badge-danger", Media: "badge-warning", Baja: "badge-info" };
@@ -37,8 +38,8 @@ export default async function CaseDetailPage({ params, searchParams }: PageProps
       badges={<span className={`badge ${PRIORITY_TONE[priority] ?? ""}`}>Prioridad {priority.toLowerCase()}</span>}
       actions={
         <>
-          {row.contact_id ? <Link href={`/correo/nuevo?caso=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link> : null}
-          {access.canEdit && <Link href={`/casos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+          {row.contact_id ? <Link href={`/correo/nuevo?caso=${id}`} className="btn"><Mail size={15} /> <Tr>Enviar correo</Tr></Link> : null}
+          {access.canEdit && <Link href={`/casos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="cases" id={id} label={`el caso ${row.case_number}`} />}
         </>
       }

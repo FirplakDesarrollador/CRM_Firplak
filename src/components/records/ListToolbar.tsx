@@ -14,6 +14,7 @@ import type { FormState } from "@/lib/records/form";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { opLabels } from "@/lib/i18n";
 
+import { Tr } from "@/components/ui/Tr";
 type View = { id: string; name: string; owner_id: string | null; is_shared: boolean; definition: ListDefinition };
 
 type Props = {
@@ -290,7 +291,7 @@ function SaveViewPanel({ object, definition, view, userId, canShare, onClose }: 
       {ownsView && (
         <div className="flex gap-4 text-sm">
           <label className="flex items-center gap-1.5"><input type="radio" checked={mode === "update"} onChange={() => setMode("update")} /> Actualizar “{view!.name}”</label>
-          <label className="flex items-center gap-1.5"><input type="radio" checked={mode === "new"} onChange={() => { setMode("new"); nameRef.current?.focus(); }} /> Guardar como nueva</label>
+          <label className="flex items-center gap-1.5"><input type="radio" checked={mode === "new"} onChange={() => { setMode("new"); nameRef.current?.focus(); }} /> <Tr>Guardar como nueva</Tr></label>
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">

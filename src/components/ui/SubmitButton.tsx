@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 export function SubmitButton({
   children,
@@ -10,10 +11,11 @@ export function SubmitButton({
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { pendingText?: string }) {
   const { pending } = useFormStatus();
+  const t = useT();
   return (
     <button type="submit" className={className} disabled={pending || rest.disabled} {...rest}>
       {pending && <Loader2 size={15} className="animate-spin" />}
-      {pending && pendingText ? pendingText : children}
+      {pending && pendingText ? t(pendingText) : typeof children === "string" ? t(children) : children}
     </button>
   );
 }

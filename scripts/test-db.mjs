@@ -313,4 +313,19 @@ await check('possible_duplicates encuentra cuentas por NIT y contactos por corre
   });
 });
 
+console.log('Fase 6');
+await check('goal_progress calcula el avance de las metas de compañía', async () => {
+  const [{ start }] = await q(`select date_trunc('year', now() at time zone 'America/Bogota')::date::text as start`);
+  const rows = await as(admin, () => q(`select * from goal_progress('year', $1::date) where metric = 'won_amount'`, [start]));
+  assert.equal(rows.length, 1);
+  assert.ok(Number(rows[0].actual) > 0);
+});
+await check('un gerente fija metas a su equipo, pero nadie se fija la propia', async () => {
+  const [{ start }] = await q(`select date_trunc('month', now() at time zone 'America/Bogota')::date::text as start`);
+  await as(mgr, () => q(`insert into sales_goals (user_id, metric, period_type, period_start, target) values ($1, 'won_amount', 'month', $2, 100000000)`, [rep.id, start]));
+  await assert.rejects(as(rep, () => q(`insert into sales_goals (user_id, metric, period_type, period_start, target) values ($1, 'won_amount', 'month', $2, 1)`, [rep.id, start])));
+  assert.equal(await as(rep, () => count(`select count(*) n from goal_progress('month', $1::date) where user_id = $2`, [start, rep.id])), 1);
+  assert.equal(await as(rep, () => count(`select count(*) n from sales_goals where user_id = $1`, [mgr.id])), 0);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

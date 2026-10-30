@@ -3,6 +3,7 @@ import { activityDate } from "./data";
 import { ActivityItem } from "./ActivityItem";
 import { todayISO } from "@/lib/format";
 
+import { Tr } from "@/components/ui/Tr";
 /** Línea de tiempo: primero lo pendiente (vencido, próximo) y luego el historial. */
 export function Timeline({ activities, showRelated = false }: { activities: ActivityRow[]; showRelated?: boolean }) {
   const today = todayISO();
@@ -14,7 +15,7 @@ export function Timeline({ activities, showRelated = false }: { activities: Acti
   const upcoming = open.filter((a) => activityDate(a) >= today);
 
   if (!activities.length) {
-    return <p className="py-8 text-center text-sm text-muted">Aún no hay actividades. Registra la primera llamada, reunión o tarea.</p>;
+    return <p className="py-8 text-center text-sm text-muted"><Tr>Aún no hay actividades. Registra la primera llamada, reunión o tarea.</Tr></p>;
   }
 
   return (

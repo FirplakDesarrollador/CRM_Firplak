@@ -8,6 +8,7 @@ import { OBJECTS } from "@/lib/objects";
 import { requireUser } from "@/lib/session";
 import { saveSharing } from "../actions";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Compartir por defecto" };
 
 const LEVELS = [
@@ -26,8 +27,8 @@ export default async function SharingPage() {
   return (
     <>
       <div>
-        <h1 className="text-xl font-medium">Compartir por defecto</h1>
-        <p className="text-sm text-muted">Visibilidad base de cada objeto. Los perfiles de permisos siguen limitando lo que cada usuario puede hacer.</p>
+        <h1 className="text-xl font-medium"><Tr>Compartir por defecto</Tr></h1>
+        <p className="text-sm text-muted"><Tr>Visibilidad base de cada objeto. Los perfiles de permisos siguen limitando lo que cada usuario puede hacer.</Tr></p>
       </div>
       <ActionForm action={saveSharing} className="card space-y-0 divide-y divide-[var(--border)]">
         {PERMISSION_OBJECTS.map((o) => (
@@ -47,7 +48,7 @@ export default async function SharingPage() {
             </div>
           </fieldset>
         ))}
-        <div className="flex flex-wrap items-center justify-end gap-3 p-4"><SubmitButton pendingText="Guardando…">Guardar</SubmitButton></div>
+        <div className="flex flex-wrap items-center justify-end gap-3 p-4"><SubmitButton pendingText="Guardando…"><Tr>Guardar</Tr></SubmitButton></div>
       </ActionForm>
     </>
   );

@@ -7,6 +7,7 @@ import { OBJECTS, isObjectKey, type ObjectKey } from "@/lib/objects";
 import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Auditoría de cambios" };
 
 const AUDITED: ObjectKey[] = ["leads", "accounts", "contacts", "opportunities", "quotes", "products", "cases", "campaigns"];
@@ -26,15 +27,15 @@ export default async function AuditPage({ searchParams }: PageProps<"/configurac
   return (
     <>
       <div>
-        <h1 className="text-xl font-medium">Auditoría de cambios</h1>
-        <p className="text-sm text-muted">Cada creación, modificación de campo y eliminación queda registrada por la base de datos, con usuario y fecha. Se muestran los 300 cambios más recientes.</p>
+        <h1 className="text-xl font-medium"><Tr>Auditoría de cambios</Tr></h1>
+        <p className="text-sm text-muted"><Tr>Cada creación, modificación de campo y eliminación queda registrada por la base de datos, con usuario y fecha. Se muestran los 300 cambios más recientes.</Tr></p>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Link href={qs({ objeto: undefined })} className={`badge py-1 ${!object ? "badge-brand" : ""}`}>Todos los objetos</Link>
+        <Link href={qs({ objeto: undefined })} className={`badge py-1 ${!object ? "badge-brand" : ""}`}><Tr>Todos los objetos</Tr></Link>
         {AUDITED.map((o) => <Link key={o} href={qs({ objeto: o })} className={`badge py-1 ${object === o ? "badge-brand" : ""}`}>{OBJECTS[o].plural}</Link>)}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Link href={qs({ usuario: undefined })} className={`badge py-1 ${!userId ? "badge-brand" : ""}`}>Todos los usuarios</Link>
+        <Link href={qs({ usuario: undefined })} className={`badge py-1 ${!userId ? "badge-brand" : ""}`}><Tr>Todos los usuarios</Tr></Link>
         {users.map((u) => <Link key={u.id} href={qs({ usuario: u.id })} className={`badge py-1 ${userId === u.id ? "badge-brand" : ""}`}>{u.full_name}</Link>)}
       </div>
       <FieldHistory object={object} userId={userId} global limit={300} />

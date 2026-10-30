@@ -1,14 +1,15 @@
 import { formatCompactCurrency, formatCurrency, formatMonth } from "@/lib/format";
 
+import { Tr } from "@/components/ui/Tr";
 export function KpiTile({ label, value, unit, sub, tone }: {
   label: string; value: string; unit?: string; sub?: React.ReactNode; tone?: "success" | "danger" | "warning";
 }) {
   const toneCls = tone === "success" ? "text-success" : tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-muted";
   return (
     <div className="glass p-5">
-      <p className="eyebrow">{label}</p>
-      <p className="kpi-value mt-3">{value}{unit && <span className="kpi-unit">{unit}</span>}</p>
-      {sub && <p className={`mt-2 text-xs font-medium ${toneCls}`}>{sub}</p>}
+      <p className="eyebrow"><Tr>{label}</Tr></p>
+      <p className="kpi-value mt-3">{value}{unit && <span className="kpi-unit"><Tr>{unit}</Tr></span>}</p>
+      {sub && <p className={`mt-2 text-xs font-medium ${toneCls}`}>{typeof sub === "string" ? <Tr>{sub}</Tr> : sub}</p>}
     </div>
   );
 }
@@ -89,9 +90,9 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
         </div>
       </div>
       <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-xs font-semibold text-muted">Ver datos en tabla</summary>
+        <summary className="cursor-pointer text-xs font-semibold text-muted"><Tr>Ver datos en tabla</Tr></summary>
         <table className="table mt-2">
-          <thead><tr><th>Mes</th><th className="text-right">Ganado</th><th className="text-right">N.º ganadas</th><th className="text-right">Pipeline creado</th></tr></thead>
+          <thead><tr><th><Tr>Mes</Tr></th><th className="text-right"><Tr>Ganado</Tr></th><th className="text-right"><Tr>N.º ganadas</Tr></th><th className="text-right"><Tr>Pipeline creado</Tr></th></tr></thead>
           <tbody>
             {data.map((d) => (
               <tr key={d.month}>
@@ -111,7 +112,7 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
 /** Embudo: una barra centrada por etapa, ancho proporcional al valor. */
 export function Funnel({ stages }: { stages: { id: string; name: string; color: string; category: string; count: number; amount: number; probability: number }[] }) {
   const max = Math.max(1, ...stages.map((s) => Number(s.amount)));
-  if (!stages.length) return <p className="py-6 text-center text-sm text-muted">Sin etapas.</p>;
+  if (!stages.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin etapas.</Tr></p>;
   return (
     <ol className="space-y-2">
       {stages.map((s) => {
@@ -141,7 +142,7 @@ export function Funnel({ stages }: { stages: { id: string; name: string; color: 
 export function ColumnChart({ items, format }: { items: { key: string; label: string; value: number }[]; format: (v: number) => string }) {
   const max = niceMax(Math.max(0, ...items.map((i) => i.value)));
   const ticks = [max, max / 2, 0];
-  if (!items.length) return <p className="py-6 text-center text-sm text-muted">Sin datos.</p>;
+  if (!items.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin datos.</Tr></p>;
   return (
     <div className="flex gap-2">
       <div className="num flex h-56 flex-col justify-between pb-10 text-right text-[0.68rem] text-muted">

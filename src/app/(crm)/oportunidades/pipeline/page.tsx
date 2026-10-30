@@ -10,6 +10,7 @@ import { formatCompactCurrency, addDaysISO, todayISO } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { PipelineFilters } from "./PipelineFilters";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Pipeline" };
 
 export default async function PipelinePage({ searchParams }: PageProps<"/oportunidades/pipeline">) {
@@ -20,7 +21,7 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
   const closed = one(sp.closed) || "90";
 
   if (!pipeline) {
-    return <p className="text-muted">No hay pipelines configurados. Crea uno en Configuración → Pipelines y etapas.</p>;
+    return <p className="text-muted"><Tr>No hay pipelines configurados. Crea uno en Configuración → Pipelines y etapas.</Tr></p>;
   }
 
   const supabase = await createClient();
@@ -70,14 +71,14 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
         <div className="flex items-center gap-3">
           <ObjectIcon object="opportunities" />
           <div>
-            <p className="eyebrow">Pipeline de ventas</p>
+            <p className="eyebrow"><Tr>Pipeline de ventas</Tr></p>
             <h1 className="text-xl font-medium">{pipeline.name}</h1>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/oportunidades" className="btn"><List size={16} /> Ver lista</Link>
+          <Link href="/oportunidades" className="btn"><List size={16} /> <Tr>Ver lista</Tr></Link>
           {can(user.access, "opportunities", "create") && (
-            <Link href={`/oportunidades/nueva?pipeline=${pipeline.id}`} className="btn btn-primary"><Plus size={16} /> Nueva oportunidad</Link>
+            <Link href={`/oportunidades/nueva?pipeline=${pipeline.id}`} className="btn btn-primary"><Plus size={16} /> <Tr>Nueva oportunidad</Tr></Link>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
 
 export function PipelineFilters({ pipelines, users, pipeline, owner, closed }: {
   pipelines: { id: string; name: string }[];
@@ -10,6 +11,7 @@ export function PipelineFilters({ pipelines, users, pipeline, owner, closed }: {
   closed: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const pathname = usePathname();
   const params = useSearchParams();
   const set = (key: string, value: string) => {
@@ -23,14 +25,14 @@ export function PipelineFilters({ pipelines, users, pipeline, owner, closed }: {
         {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
       <select aria-label="Propietario" className="select w-auto" value={owner} onChange={(e) => set("owner", e.target.value)}>
-        <option value="all">Todo el equipo</option>
-        <option value="me">Mis oportunidades</option>
+        <option value="all">{t("Todo el equipo")}</option>
+        <option value="me">{t("Mis oportunidades")}</option>
         {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
       </select>
       <select aria-label="Cerradas" className="select w-auto" value={closed} onChange={(e) => set("closed", e.target.value)}>
-        <option value="30">Cerradas: últimos 30 días</option>
-        <option value="90">Cerradas: últimos 90 días</option>
-        <option value="365">Cerradas: último año</option>
+        <option value="30">{t("Cerradas: últimos 30 días")}</option>
+        <option value="90">{t("Cerradas: últimos 90 días")}</option>
+        <option value="365">{t("Cerradas: último año")}</option>
       </select>
     </div>
   );

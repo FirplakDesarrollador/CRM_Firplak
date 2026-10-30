@@ -10,6 +10,7 @@ import type { CurrentUser } from "@/lib/session";
 import { ReportBuilder } from "./ReportBuilder";
 import { ReportResults } from "./ReportResults";
 
+import { Tr } from "@/components/ui/Tr";
 export async function ReportPage({
   object, user, definition, reportId, meta, canSaveExisting, actions,
 }: {
@@ -27,7 +28,7 @@ export async function ReportPage({
 
   return (
     <div className="space-y-4">
-      <Link href="/informes" className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> Informes</Link>
+      <Link href="/informes" className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> <Tr>Informes</Tr></Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <ObjectIcon object={object} />
@@ -39,7 +40,7 @@ export async function ReportPage({
         </div>
         <div className="flex flex-wrap gap-2">
           {canSystem(user.access, "export") && (
-            <a href={`/api/informes/export?${exportQs}`} className="btn"><Download size={15} /> Exportar CSV</a>
+            <a href={`/api/informes/export?${exportQs}`} className="btn"><Download size={15} /> <Tr>Exportar CSV</Tr></a>
           )}
           {actions}
         </div>

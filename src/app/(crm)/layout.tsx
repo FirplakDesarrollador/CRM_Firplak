@@ -9,6 +9,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { makeT } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n/client";
 
+import { Tr } from "@/components/ui/Tr";
 export default async function CrmLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -27,7 +28,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
       <NavTabs items={navItems(user.access, t)} />
       {!user.isActive && (
         <div className="mx-auto max-w-[1600px] px-4 pt-4 sm:px-6">
-          <Alert tone="warning">Tu usuario está desactivado. Pide al administrador que lo active para ver la información.</Alert>
+          <Alert tone="warning"><Tr>Tu usuario está desactivado. Pide al administrador que lo active para ver la información.</Tr></Alert>
         </div>
       )}
       <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">{children}</main>

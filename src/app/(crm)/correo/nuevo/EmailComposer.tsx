@@ -9,6 +9,7 @@ import { renderTemplate } from "@/lib/email/merge";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
+import { Tr } from "@/components/ui/Tr";
 type Template = { id: string; name: string; category: string; subject: string; body: string };
 
 export function EmailComposer({ to, related, merge, templates, returnTo, providerReady }: {
@@ -49,7 +50,7 @@ export function EmailComposer({ to, related, merge, templates, returnTo, provide
       )}
       {templates.length > 0 && (
         <div>
-          <label className="label" htmlFor="tpl">Plantilla</label>
+          <label className="label" htmlFor="tpl"><Tr>Plantilla</Tr></label>
           <select id="tpl" className="select" defaultValue="" onChange={(e) => {
             const t = templates.find((x) => x.id === e.target.value);
             if (!t) return;
@@ -65,7 +66,7 @@ export function EmailComposer({ to, related, merge, templates, returnTo, provide
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label" htmlFor="to">Para</label>
+          <label className="label" htmlFor="to"><Tr>Para</Tr></label>
           <input id="to" name="to" className="input" defaultValue={to} placeholder="correo@empresa.com" aria-invalid={Boolean(state.errors?.to)} />
           {state.errors?.to && <p className="error-text">{state.errors.to}</p>}
         </div>
@@ -76,19 +77,19 @@ export function EmailComposer({ to, related, merge, templates, returnTo, provide
         </div>
       </div>
       <div>
-        <label className="label" htmlFor="subject">Asunto</label>
+        <label className="label" htmlFor="subject"><Tr>Asunto</Tr></label>
         <input id="subject" name="subject" className="input" value={subject} onChange={(e) => setSubject(e.target.value)} aria-invalid={Boolean(state.errors?.subject)} />
         {state.errors?.subject && <p className="error-text">{state.errors.subject}</p>}
       </div>
       <div>
-        <label className="label" htmlFor="body">Mensaje</label>
+        <label className="label" htmlFor="body"><Tr>Mensaje</Tr></label>
         <textarea id="body" name="body" rows={12} className="textarea" value={body} onChange={(e) => setBody(e.target.value)} aria-invalid={Boolean(state.errors?.body)} />
         {state.errors?.body && <p className="error-text">{state.errors.body}</p>}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link href="/correo/plantillas" className="link text-sm">Gestionar plantillas</Link>
+        <Link href="/correo/plantillas" className="link text-sm"><Tr>Gestionar plantillas</Tr></Link>
         <div className="flex gap-2">
-          <Link href={returnTo} className="btn">Cancelar</Link>
+          <Link href={returnTo} className="btn"><Tr>Cancelar</Tr></Link>
           <SubmitButton pendingText="Enviando…"><Send size={15} /> {providerReady ? "Enviar" : "Registrar y abrir correo"}</SubmitButton>
         </div>
       </div>

@@ -14,6 +14,7 @@ import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export async function generateMetadata({ params }: PageProps<"/contactos/[id]">): Promise<Metadata> {
   const { id } = await params;
   const row = await getRecord(await getObjectDef("contacts"), id);
@@ -50,15 +51,15 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
         actions={
           <>
             {typeof row.mobile === "string" && row.mobile && (
-              <a href={`https://wa.me/${row.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="btn"><Phone size={15} /> WhatsApp</a>
+              <a href={`https://wa.me/${row.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="btn"><Phone size={15} /> <Tr>WhatsApp</Tr></a>
             )}
             {typeof row.email === "string" && row.email && !row.email_opt_out && (
-              <Link href={`/correo/nuevo?contacto=${id}`} className="btn"><Mail size={15} /> Enviar correo</Link>
+              <Link href={`/correo/nuevo?contacto=${id}`} className="btn"><Mail size={15} /> <Tr>Enviar correo</Tr></Link>
             )}
             {can(user.access, "opportunities", "create") && (
-              <Link href={`/oportunidades/nueva?contact=${id}${accountId ? `&account=${accountId}` : ""}`} className="btn"><Plus size={15} /> Oportunidad</Link>
+              <Link href={`/oportunidades/nueva?contact=${id}${accountId ? `&account=${accountId}` : ""}`} className="btn"><Plus size={15} /> <Tr>Oportunidad</Tr></Link>
             )}
-            {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+            {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
             {access.canDelete && <DeleteButton object="contacts" id={id} label={`el contacto “${row.full_name}”`} />}
           </>
         }

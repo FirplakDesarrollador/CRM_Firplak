@@ -9,6 +9,7 @@ import { savePriceBook } from "@/lib/records/phase2-actions";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Listas de precios" };
 
 export default async function PriceBooksPage() {
@@ -23,22 +24,22 @@ export default async function PriceBooksPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <Link href="/productos" className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> Productos</Link>
+      <Link href="/productos" className="inline-flex items-center gap-1 text-sm font-medium text-muted no-underline hover:text-ink"><ChevronLeft size={16} /> <Tr>Productos</Tr></Link>
       <div className="flex items-center gap-3">
         <ObjectIcon object="products" />
         <div>
-          <p className="eyebrow">Catálogo</p>
-          <h1 className="text-xl font-medium">Listas de precios</h1>
+          <p className="eyebrow"><Tr>Catálogo</Tr></p>
+          <h1 className="text-xl font-medium"><Tr>Listas de precios</Tr></h1>
         </div>
       </div>
-      <p className="text-sm text-muted">Cada cotización usa una lista (por defecto, la de su oportunidad o la estándar). Los precios por producto se editan en la ficha del producto.</p>
+      <p className="text-sm text-muted"><Tr>Cada cotización usa una lista (por defecto, la de su oportunidad o la estándar). Los precios por producto se editan en la ficha del producto.</Tr></p>
       {canEdit && (
         <section className="glass">
-          <div className="card-header"><h2 className="card-title">Nueva lista</h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Nueva lista</Tr></h2></div>
           <ActionForm action={savePriceBook.bind(null, null)} resetOnSuccess className="flex flex-wrap items-end gap-3 p-4">
-            <div className="min-w-48 flex-1"><label className="label" htmlFor="pb-name">Nombre</label><input id="pb-name" name="name" className="input" required /></div>
-            <div className="min-w-48 flex-1"><label className="label" htmlFor="pb-desc">Descripción</label><input id="pb-desc" name="description" className="input" /></div>
-            <SubmitButton pendingText="Creando…">Crear lista</SubmitButton>
+            <div className="min-w-48 flex-1"><label className="label" htmlFor="pb-name"><Tr>Nombre</Tr></label><input id="pb-name" name="name" className="input" required /></div>
+            <div className="min-w-48 flex-1"><label className="label" htmlFor="pb-desc"><Tr>Descripción</Tr></label><input id="pb-desc" name="description" className="input" /></div>
+            <SubmitButton pendingText="Creando…"><Tr>Crear lista</Tr></SubmitButton>
           </ActionForm>
         </section>
       )}
@@ -52,7 +53,7 @@ export default async function PriceBooksPage() {
                   <input id={`n-${b.id}`} name="name" className="input font-medium" defaultValue={b.name} disabled={!canEdit} />
                 </div>
                 <div className="min-w-48 flex-1">
-                  <label className="label" htmlFor={`d-${b.id}`}>Descripción</label>
+                  <label className="label" htmlFor={`d-${b.id}`}><Tr>Descripción</Tr></label>
                   <input id={`d-${b.id}`} name="description" className="input" defaultValue={b.description ?? ""} disabled={!canEdit} />
                 </div>
                 <label className="flex items-center gap-1.5 pb-2 text-sm font-medium">
@@ -61,7 +62,7 @@ export default async function PriceBooksPage() {
                 <label className="flex items-center gap-1.5 pb-2 text-sm font-medium">
                   <input type="checkbox" name="is_active" defaultChecked={b.is_active} disabled={!canEdit} className="accent-[var(--brand)]" /> Activa
                 </label>
-                {canEdit && <SubmitButton className="btn btn-sm mb-1" pendingText="…">Guardar</SubmitButton>}
+                {canEdit && <SubmitButton className="btn btn-sm mb-1" pendingText="…"><Tr>Guardar</Tr></SubmitButton>}
               </ActionForm>
             </li>
           ))}

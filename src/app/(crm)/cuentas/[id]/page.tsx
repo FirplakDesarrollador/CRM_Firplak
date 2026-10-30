@@ -15,6 +15,7 @@ import { can } from "@/lib/permissions";
 import { formatCompactCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export async function generateMetadata({ params }: PageProps<"/cuentas/[id]">): Promise<Metadata> {
   const { id } = await params;
   const row = await getRecord(await getObjectDef("accounts"), id);
@@ -56,20 +57,20 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
         actions={
           <>
             {can(user.access, "opportunities", "create") && (
-              <Link href={`/oportunidades/nueva?account=${id}`} className="btn"><Plus size={15} /> Oportunidad</Link>
+              <Link href={`/oportunidades/nueva?account=${id}`} className="btn"><Plus size={15} /> <Tr>Oportunidad</Tr></Link>
             )}
             {can(user.access, "contacts", "create") && (
-              <Link href={`/contactos/nuevo?account=${id}`} className="btn"><Plus size={15} /> Contacto</Link>
+              <Link href={`/contactos/nuevo?account=${id}`} className="btn"><Plus size={15} /> <Tr>Contacto</Tr></Link>
             )}
-            {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> Editar</Link>}
+            {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
             {access.canDelete && <DeleteButton object="accounts" id={id} label={`la cuenta “${row.name}”`} />}
           </>
         }
       >
         <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line bg-surface-2 px-4 py-2 text-xs font-semibold text-muted">
-          <span>Pipeline abierto: <span className="num text-ink">{formatCompactCurrency(openAmount)}</span></span>
-          <span>Ganado histórico: <span className="num text-success">{formatCompactCurrency(wonAmount)}</span></span>
-          <span>N.º cuenta: <span className="text-ink">{String(row.account_number)}</span></span>
+          <span><Tr>Pipeline abierto:</Tr> <span className="num text-ink">{formatCompactCurrency(openAmount)}</span></span>
+          <span><Tr>Ganado histórico:</Tr> <span className="num text-success">{formatCompactCurrency(wonAmount)}</span></span>
+          <span><Tr>N.º cuenta:</Tr> <span className="text-ink">{String(row.account_number)}</span></span>
         </div>
       </RecordHeader>
 

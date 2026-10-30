@@ -10,6 +10,7 @@ import { addDaysISO, formatDate, todayISO } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Actividades" };
 
 const weekday = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
@@ -51,21 +52,21 @@ export default async function ActivitiesPage({ searchParams }: PageProps<"/activ
         <div className="flex items-center gap-3">
           <ObjectIcon object="activities" />
           <div>
-            <p className="eyebrow">Actividades comerciales</p>
-            <h1 className="text-xl font-medium">Mi agenda</h1>
+            <p className="eyebrow"><Tr>Actividades comerciales</Tr></p>
+            <h1 className="text-xl font-medium"><Tr>Mi agenda</Tr></h1>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {switcher}
-          {can(user.access, "activities", "create") && <Link href="/actividades/nueva" className="btn btn-primary"><Plus size={16} /> Nueva actividad</Link>}
+          {can(user.access, "activities", "create") && <Link href="/actividades/nueva" className="btn btn-primary"><Plus size={16} /> <Tr>Nueva actividad</Tr></Link>}
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section className="card">
-          <div className="card-header"><h2 className="card-title">Tareas y llamadas pendientes <span className="badge">{tasks.length}</span></h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Tareas y llamadas pendientes</Tr> <span className="badge">{tasks.length}</span></h2></div>
           <div className="space-y-4 px-4 pb-4 pt-2">
-            {tasks.length === 0 && <p className="py-8 text-center text-sm text-muted">No tienes pendientes. ¡Buen trabajo!</p>}
+            {tasks.length === 0 && <p className="py-8 text-center text-sm text-muted"><Tr>No tienes pendientes. ¡Buen trabajo!</Tr></p>}
             {groups.filter((g) => g.items.length).map((g) => (
               <div key={g.key}>
                 <h3 className={`text-[0.7rem] font-medium uppercase tracking-[0.18em] ${g.tone ?? "text-muted"}`}>{g.title} · {g.items.length}</h3>
@@ -75,9 +76,9 @@ export default async function ActivitiesPage({ searchParams }: PageProps<"/activ
           </div>
         </section>
         <section className="card">
-          <div className="card-header"><h2 className="card-title">Reuniones · próximos 14 días <span className="badge">{meetings.length}</span></h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Reuniones · próximos 14 días</Tr> <span className="badge">{meetings.length}</span></h2></div>
           <div className="space-y-4 px-4 pb-4 pt-2">
-            {meetings.length === 0 && <p className="py-8 text-center text-sm text-muted">Sin reuniones agendadas.</p>}
+            {meetings.length === 0 && <p className="py-8 text-center text-sm text-muted"><Tr>Sin reuniones agendadas.</Tr></p>}
             {[...byDay.entries()].map(([day, items]) => (
               <div key={day}>
                 <h3 className={`text-[0.7rem] font-medium uppercase tracking-[0.18em] ${day === today ? "text-brand" : "text-muted"}`}>

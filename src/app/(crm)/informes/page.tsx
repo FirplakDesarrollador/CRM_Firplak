@@ -9,6 +9,7 @@ import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Informes" };
 
 export default async function ReportsPage() {
@@ -30,30 +31,30 @@ export default async function ReportsPage() {
         <div className="flex items-center gap-3">
           <ObjectIcon object="dashboard" />
           <div>
-            <p className="eyebrow">Análisis</p>
-            <h1 className="text-xl font-medium">Informes</h1>
+            <p className="eyebrow"><Tr>Análisis</Tr></p>
+            <h1 className="text-xl font-medium"><Tr>Informes</Tr></h1>
           </div>
         </div>
-        <Dropdown label="Nuevo informe" className="btn btn-primary" trigger={<><Plus size={16} /> Nuevo informe <ChevronDown size={14} /></>}>
-          <p className="px-2.5 pb-1 pt-1.5 text-[0.68rem] font-medium uppercase tracking-[0.18em] text-muted">Informe de…</p>
+        <Dropdown label="Nuevo informe" className="btn btn-primary" trigger={<><Plus size={16} /> <Tr>Nuevo informe</Tr> <ChevronDown size={14} /></>}>
+          <p className="px-2.5 pb-1 pt-1.5 text-[0.68rem] font-medium uppercase tracking-[0.18em] text-muted"><Tr>Informe de…</Tr></p>
           {objects.map((o) => (
             <Link key={o} href={`/informes/nuevo?objeto=${o}`} className={menuItemClass}>{OBJECTS[o].plural}</Link>
           ))}
         </Dropdown>
       </div>
 
-      {reports.length === 0 && <p className="text-muted">Aún no hay informes. Crea el primero con «Nuevo informe».</p>}
+      {reports.length === 0 && <p className="text-muted"><Tr>Aún no hay informes. Crea el primero con «Nuevo informe».</Tr></p>}
       {folders.map((folder) => {
         const list = reports.filter((r) => (r.owner_id === user.id && !r.is_shared ? "Mis informes" : r.folder) === folder);
         return (
           <section key={folder} className="card overflow-hidden">
             <div className="card-header"><h2 className="card-title">{folder} <span className="badge">{list.length}</span></h2></div>
             <table className="table">
-              <thead><tr><th>Informe</th><th>Objeto</th><th>Descripción</th><th>Autor</th><th>Modificado</th></tr></thead>
+              <thead><tr><th><Tr>Informe</Tr></th><th><Tr>Objeto</Tr></th><th><Tr>Descripción</Tr></th><th><Tr>Autor</Tr></th><th><Tr>Modificado</Tr></th></tr></thead>
               <tbody>
                 {list.map((r) => (
                   <tr key={r.id}>
-                    <td><Link href={`/informes/${r.id}`} className="link">{r.name}</Link>{r.is_shared && <span className="badge ml-2">Compartido</span>}</td>
+                    <td><Link href={`/informes/${r.id}`} className="link">{r.name}</Link>{r.is_shared && <span className="badge ml-2"><Tr>Compartido</Tr></span>}</td>
                     <td>{isObjectKey(r.object) ? OBJECTS[r.object].plural : r.object}</td>
                     <td className="max-w-md truncate text-muted">{r.description ?? "—"}</td>
                     <td>{r.owner?.full_name ?? "Firplak CRM"}</td>

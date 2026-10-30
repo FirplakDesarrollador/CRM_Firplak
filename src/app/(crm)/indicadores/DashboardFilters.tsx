@@ -2,12 +2,14 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PERIODS } from "@/lib/periods";
+import { useT } from "@/lib/i18n/client";
 
 export function DashboardFilters({ period, from, to, owner, pipeline, users, pipelines, canPickOwner }: {
   period: string; from: string; to: string; owner: string; pipeline: string;
   users: { id: string; name: string }[]; pipelines: { id: string; name: string }[]; canPickOwner: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const pathname = usePathname();
   const params = useSearchParams();
   const set = (patch: Record<string, string | null>) => {
@@ -19,7 +21,7 @@ export function DashboardFilters({ period, from, to, owner, pipeline, users, pip
     <div className="flex flex-wrap items-center gap-2">
       <select aria-label="Periodo" className="select w-auto" value={period}
         onChange={(e) => set({ periodo: e.target.value, desde: e.target.value === "custom" ? from : null, hasta: e.target.value === "custom" ? to : null })}>
-        {Object.entries(PERIODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        {Object.entries(PERIODS).map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}
       </select>
       {period === "custom" && (
         <>
@@ -29,7 +31,7 @@ export function DashboardFilters({ period, from, to, owner, pipeline, users, pip
       )}
       {canPickOwner && (
         <select aria-label="Asesor" className="select w-auto" value={owner} onChange={(e) => set({ asesor: e.target.value === "all" ? null : e.target.value })}>
-          <option value="all">Todo el equipo</option>
+          <option value="all">{t("Todo el equipo")}</option>
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       )}

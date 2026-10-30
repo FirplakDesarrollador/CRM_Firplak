@@ -8,6 +8,7 @@ import { CHUNK_SIZE, MAX_ROWS } from "@/lib/import/config";
 import { importChunk, logImport, type ChunkResult } from "@/lib/import/actions";
 import { Alert } from "@/components/ui/Alert";
 
+import { Tr } from "@/components/ui/Tr";
 type Field = { name: string; label: string; type: string; required: boolean };
 
 export function ImportWizard({ object, label, plural, path, fields, matchFields, canUpdate }: {
@@ -107,12 +108,12 @@ export function ImportWizard({ object, label, plural, path, fields, matchFields,
         <section className="glass space-y-4 p-6">
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border-2 border-dashed border-line-strong bg-surface/60 px-6 py-12 text-center hover:border-brand">
             <FileUp size={32} className="text-brand" />
-            <span className="font-medium">Selecciona un archivo CSV</span>
+            <span className="font-medium"><Tr>Selecciona un archivo CSV</Tr></span>
             <span className="text-sm text-muted">En Excel: Archivo → Guardar como → CSV (delimitado por comas o punto y coma). Máximo {MAX_ROWS.toLocaleString("en-US")} filas.</span>
             <input type="file" accept=".csv,.txt,text/csv" className="sr-only" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
           </label>
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-muted">Las relaciones se escriben por nombre (p. ej. el nombre de la cuenta) y el propietario por nombre o correo. Las fechas en DD/MM/AAAA.</span>
+            <span className="text-muted"><Tr>Las relaciones se escriben por nombre (p. ej. el nombre de la cuenta) y el propietario por nombre o correo. Las fechas en DD/MM/AAAA.</Tr></span>
             <button type="button" className="btn btn-sm" onClick={downloadTemplate}><Download size={14} /> Plantilla de {plural.toLowerCase()}</button>
           </div>
         </section>
@@ -123,11 +124,11 @@ export function ImportWizard({ object, label, plural, path, fields, matchFields,
           <section className="card overflow-hidden">
             <div className="card-header">
               <h2 className="card-title">{fileName} · {rows.length.toLocaleString("en-US")} filas</h2>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setRows([]); setHeaders([]); }}>Cambiar archivo</button>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setRows([]); setHeaders([]); }}><Tr>Cambiar archivo</Tr></button>
             </div>
             <div className="overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Columna del archivo</th><th>Ejemplo</th><th>Campo del CRM</th></tr></thead>
+                <thead><tr><th><Tr>Columna del archivo</Tr></th><th><Tr>Ejemplo</Tr></th><th><Tr>Campo del CRM</Tr></th></tr></thead>
                 <tbody>
                   {headers.map((h, i) => (
                     <tr key={i}>
@@ -152,20 +153,20 @@ export function ImportWizard({ object, label, plural, path, fields, matchFields,
           </section>
 
           <section className="glass space-y-3 p-5">
-            <p className="eyebrow">Cómo importar</p>
+            <p className="eyebrow"><Tr>Cómo importar</Tr></p>
             <div className="flex flex-wrap gap-4 text-sm">
-              <label className="flex items-center gap-2"><input type="radio" checked={mode === "create"} onChange={() => setMode("create")} /> Crear todos como nuevos</label>
+              <label className="flex items-center gap-2"><input type="radio" checked={mode === "create"} onChange={() => setMode("create")} /> <Tr>Crear todos como nuevos</Tr></label>
               {canUpdate && matchFields.length > 0 && (
-                <label className="flex items-center gap-2"><input type="radio" checked={mode === "upsert"} onChange={() => setMode("upsert")} /> Actualizar existentes y crear los nuevos</label>
+                <label className="flex items-center gap-2"><input type="radio" checked={mode === "upsert"} onChange={() => setMode("upsert")} /> <Tr>Actualizar existentes y crear los nuevos</Tr></label>
               )}
             </div>
             {mode === "upsert" && (
               <div className="max-w-sm">
-                <label className="label" htmlFor="match">Identificar registros existentes por</label>
+                <label className="label" htmlFor="match"><Tr>Identificar registros existentes por</Tr></label>
                 <select id="match" className="select" value={matchField} onChange={(e) => setMatchField(e.target.value)}>
                   {matchFields.map((m) => <option key={m.name} value={m.name}>{m.label}</option>)}
                 </select>
-                {!matchMapped && <p className="error-text">Asigna una columna al campo elegido para poder actualizar.</p>}
+                {!matchMapped && <p className="error-text"><Tr>Asigna una columna al campo elegido para poder actualizar.</Tr></p>}
               </div>
             )}
             {missingRequired.length > 0 && mode === "create" && (
@@ -188,11 +189,11 @@ export function ImportWizard({ object, label, plural, path, fields, matchFields,
 
       {step === 3 && result && (
         <section className="glass space-y-4 p-6">
-          <h2 className="card-title"><CheckCircle2 size={18} className="text-success" /> Importación terminada</h2>
+          <h2 className="card-title"><CheckCircle2 size={18} className="text-success" /> <Tr>Importación terminada</Tr></h2>
           <div className="grid gap-3 sm:grid-cols-3">
-            <div><p className="eyebrow">Creados</p><p className="kpi-value mt-1">{result.created}</p></div>
-            <div><p className="eyebrow">Actualizados</p><p className="kpi-value mt-1">{result.updated}</p></div>
-            <div><p className="eyebrow">Omitidos</p><p className="kpi-value mt-1">{result.skipped}</p></div>
+            <div><p className="eyebrow"><Tr>Creados</Tr></p><p className="kpi-value mt-1">{result.created}</p></div>
+            <div><p className="eyebrow"><Tr>Actualizados</Tr></p><p className="kpi-value mt-1">{result.updated}</p></div>
+            <div><p className="eyebrow"><Tr>Omitidos</Tr></p><p className="kpi-value mt-1">{result.skipped}</p></div>
           </div>
           {result.errors.length > 0 && (
             <div className="space-y-2">

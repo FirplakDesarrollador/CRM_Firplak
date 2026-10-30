@@ -11,8 +11,12 @@ import { ACTIVITY_TYPES } from "@/lib/objects/picklists";
 import { addDaysISO, formatCompactCurrency, formatCurrency, formatDate, formatMillions, formatNumber, formatPercent, todayISO } from "@/lib/format";
 import { PERIODS, resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
+import { getT } from "@/lib/i18n/server";
 import { DashboardFilters } from "./DashboardFilters";
+import { GoalSummary } from "@/components/goals/GoalSummary";
+import type { GoalPeriodType } from "@/lib/goals/periods";
 
+import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Indicadores" };
 
 type Dashboard = {
@@ -26,6 +30,7 @@ type Dashboard = {
 };
 
 export default async function DashboardPage({ searchParams }: PageProps<"/indicadores">) {
+  const t = await getT();
   const [user, sp] = await Promise.all([requireUser(), searchParams]);
   if (!canSystem(user.access, "view_dashboards")) redirect("/inicio");
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
@@ -64,8 +69,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         <div className="flex items-center gap-3">
           <ObjectIcon object="dashboard" />
           <div>
-            <p className="eyebrow">Indicadores comerciales</p>
-            <h1 className="text-xl font-medium">{PERIODS[period]} · {formatDate(from)} – {formatDate(to)}</h1>
+            <p className="eyebrow"><Tr>Indicadores comerciales</Tr></p>
+            <h1 className="text-xl font-medium">{t(PERIODS[period])} · {formatDate(from)} – {formatDate(to)}</h1>
           </div>
         </div>
         <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"} pipeline={pipeline?.id ?? ""}
@@ -76,28 +81,34 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">No se pudieron calcular los indicadores: {error.message}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiTile label="Ventas ganadas" {...formatMillions(n("won_amount"))} sub={`${n("won_count")} oportunidades ganadas`} tone="success" />
+        <KpiTile label="Ventas ganadas" {...formatMillions(n("won_amount"))} sub={`${n("won_count")} ${t("oportunidades ganadas")}`} tone="success" />
         <KpiTile label="Pipeline abierto" {...formatMillions(n("open_amount"))}
-          sub={`${n("open_count")} abiertas · ponderado ${formatCompactCurrency(n("weighted_amount"))}`} />
+          sub={`${n("open_count")} ${t("abiertas · ponderado")} ${formatCompactCurrency(n("weighted_amount"))}`} />
         <KpiTile label="Tasa de éxito" value={k.win_rate === null || k.win_rate === undefined ? "—" : formatPercent(k.win_rate)}
-          sub={`${n("won_count")} ganadas / ${n("lost_count")} perdidas`} />
+          sub={`${n("won_count")} ${t("ganadas /")} ${n("lost_count")} ${t("perdidas")}`} />
         <KpiTile label="Ticket promedio" {...formatMillions(n("avg_deal"))}
-          sub={k.avg_cycle_days ? `Ciclo de venta: ${formatNumber(k.avg_cycle_days)} días` : "Sin cierres en el periodo"} />
-        <KpiTile label="Nuevas oportunidades" value={formatNumber(n("new_count"))} sub={`${formatCompactCurrency(n("new_amount"))} creadas en el periodo`} />
+          sub={k.avg_cycle_days ? `${t("Ciclo de venta:")} ${formatNumber(k.avg_cycle_days)} ${t("días")}` : t("Sin cierres en el periodo")} />
+        <KpiTile label="Nuevas oportunidades" value={formatNumber(n("new_count"))} sub={`${formatCompactCurrency(n("new_amount"))} ${t("creadas en el periodo")}`} />
         <KpiTile label="Cierran en el periodo" value={formatNumber(n("closing_this_period"))}
-          sub={n("overdue_close") ? `${n("overdue_close")} con fecha de cierre vencida` : "Ninguna con cierre vencido"} tone={n("overdue_close") ? "danger" : undefined} />
-        <KpiTile label="Actividades completadas" value={formatNumber(n("activities_completed"))} sub={`${n("meetings_upcoming")} reuniones en los próximos 7 días`} />
+          sub={n("overdue_close") ? `${n("overdue_close")} ${t("con fecha de cierre vencida")}` : t("Ninguna con cierre vencido")} tone={n("overdue_close") ? "danger" : undefined} />
+        <KpiTile label="Actividades completadas" value={formatNumber(n("activities_completed"))} sub={`${n("meetings_upcoming")} ${t("reuniones en los próximos 7 días")}`} />
         <KpiTile label="Tareas vencidas" value={formatNumber(n("tasks_overdue"))} sub={n("tasks_overdue") ? "Requieren seguimiento" : "Al día"}
           tone={n("tasks_overdue") ? "warning" : "success"} />
       </div>
 
+      {(() => {
+        const goalType: GoalPeriodType | null = period === "this_month" || period === "last_month" ? "month"
+          : period === "this_quarter" ? "quarter" : period === "this_year" ? "year" : null;
+        return goalType ? <GoalSummary type={goalType} start={from} userId={owner ?? undefined} perUser={!owner} /> : null;
+      })()}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} prospectos abiertos en total`} />
+        <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t("prospectos abiertos en total")}`} />
         <KpiTile label="Conversión de prospectos" value={x.lead_conversion_rate === null || x.lead_conversion_rate === undefined ? "—" : formatPercent(x.lead_conversion_rate)}
-          sub={`${xn("leads_converted")} convertidos en el periodo`} />
-        <KpiTile label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} cotizaciones · ${xn("quotes_accepted")} aceptadas en el periodo`} />
+          sub={`${xn("leads_converted")} ${t("convertidos en el periodo")}`} />
+        <KpiTile label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} ${t("cotizaciones ·")} ${xn("quotes_accepted")} ${t("aceptadas en el periodo")}`} />
         <KpiTile label="Casos abiertos" value={formatNumber(xn("cases_open"))}
-          sub={xn("cases_high") ? `${xn("cases_high")} de prioridad alta` : x.avg_resolution_days ? `Resolución promedio: ${formatNumber(x.avg_resolution_days)} días` : "Sin casos de prioridad alta"}
+          sub={xn("cases_high") ? `${xn("cases_high")} ${t("de prioridad alta")}` : x.avg_resolution_days ? `${t("Resolución promedio:")} ${formatNumber(x.avg_resolution_days)} ${t("días")}` : t("Sin casos de prioridad alta")}
           tone={xn("cases_high") ? "warning" : undefined} />
       </div>
 
@@ -105,26 +116,26 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         <section className="glass">
           <div className="card-header"><h2 className="card-title">Embudo de ventas · {pipeline?.name}</h2></div>
           <div className="p-4"><Funnel stages={d?.funnel ?? []} /></div>
-          <p className="px-4 pb-3 text-xs text-muted">Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</p>
+          <p className="px-4 pb-3 text-xs text-muted"><Tr>Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</Tr></p>
         </section>
         <section className="glass">
-          <div className="card-header"><h2 className="card-title">Ventas ganadas por mes</h2></div>
+          <div className="card-header"><h2 className="card-title"><Tr>Ventas ganadas por mes</Tr></h2></div>
           <div className="p-4"><MonthlyColumns data={d?.by_month ?? []} /></div>
         </section>
       </div>
 
       <section className="card overflow-hidden">
-        <div className="card-header"><h2 className="card-title">Ventas por asesor</h2></div>
+        <div className="card-header"><h2 className="card-title"><Tr>Ventas por asesor</Tr></h2></div>
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
-                <th>Asesor</th><th className="w-[28%]">Ganado en el periodo</th><th className="text-right">Ganadas</th><th className="text-right">Perdidas</th>
-                <th className="text-right">Tasa de éxito</th><th className="text-right">Pipeline abierto</th><th className="text-right">Abiertas</th>
+                <th><Tr>Asesor</Tr></th><th className="w-[28%]"><Tr>Ganado en el periodo</Tr></th><th className="text-right"><Tr>Ganadas</Tr></th><th className="text-right"><Tr>Perdidas</Tr></th>
+                <th className="text-right"><Tr>Tasa de éxito</Tr></th><th className="text-right"><Tr>Pipeline abierto</Tr></th><th className="text-right"><Tr>Abiertas</Tr></th>
               </tr>
             </thead>
             <tbody>
-              {(d?.by_owner ?? []).length === 0 && <tr><td colSpan={7} className="py-8 text-center text-muted">Sin datos para el periodo.</td></tr>}
+              {(d?.by_owner ?? []).length === 0 && <tr><td colSpan={7} className="py-8 text-center text-muted"><Tr>Sin datos para el periodo.</Tr></td></tr>}
               {(() => {
                 const max = Math.max(1, ...(d?.by_owner ?? []).map((o) => Number(o.won_amount)));
                 return (d?.by_owner ?? []).map((o) => {
@@ -157,14 +168,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       <div className="grid gap-4 xl:grid-cols-3">
         <section className="card xl:col-span-2">
           <div className="card-header">
-            <h2 className="card-title">Oportunidades que cierran en 30 días</h2>
-            <Link href="/oportunidades/pipeline" className="btn btn-sm btn-ghost">Ver pipeline</Link>
+            <h2 className="card-title"><Tr>Oportunidades que cierran en 30 días</Tr></h2>
+            <Link href="/oportunidades/pipeline" className="btn btn-sm btn-ghost"><Tr>Ver pipeline</Tr></Link>
           </div>
           <div className="overflow-x-auto">
             <table className="table">
-              <thead><tr><th>Oportunidad</th><th>Etapa</th><th className="text-right">Valor</th><th>Cierre</th><th>Asesor</th></tr></thead>
+              <thead><tr><th><Tr>Oportunidad</Tr></th><th><Tr>Etapa</Tr></th><th className="text-right"><Tr>Valor</Tr></th><th><Tr>Cierre</Tr></th><th><Tr>Asesor</Tr></th></tr></thead>
               <tbody>
-                {(closing ?? []).length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted">Ninguna oportunidad abierta cierra en los próximos 30 días.</td></tr>}
+                {(closing ?? []).length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted"><Tr>Ninguna oportunidad abierta cierra en los próximos 30 días.</Tr></td></tr>}
                 {(closing ?? []).map((o) => (
                   <tr key={o.id}>
                     <td><Link href={`/oportunidades/${o.id}`} className="link">{o.name}</Link><p className="text-xs text-muted">{o.account?.name}</p></td>
@@ -180,13 +191,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         </section>
         <div className="space-y-4">
           <section className="card">
-            <div className="card-header"><h2 className="card-title">Ventas por origen</h2></div>
+            <div className="card-header"><h2 className="card-title"><Tr>Ventas por origen</Tr></h2></div>
             <div className="p-4">
               <BarList items={(d?.by_source ?? []).map((s) => ({ key: s.source, label: s.source, value: Number(s.amount), detail: `${s.count} ganadas · ${formatCurrency(s.amount)}` }))} />
             </div>
           </section>
           <section className="card">
-            <div className="card-header"><h2 className="card-title">Actividades completadas</h2></div>
+            <div className="card-header"><h2 className="card-title"><Tr>Actividades completadas</Tr></h2></div>
             <div className="p-4">
               <BarList format={(v) => formatNumber(v)} emptyText="Sin actividades completadas en el periodo."
                 items={(d?.activities_by_type ?? []).sort((a, b) => b.count - a.count).map((a) => ({
