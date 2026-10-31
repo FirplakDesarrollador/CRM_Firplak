@@ -7,6 +7,7 @@ import { OBJECTS } from "@/lib/objects";
 
 import { Tr } from "@/components/ui/Tr";
 import { DefaultTeam } from "@/components/teams/DefaultTeam";
+import { InstallApp } from "@/components/pwa/InstallApp";
 import { McpSettings } from "@/components/mcp/McpSettings";
 import { Ms365Settings } from "@/components/ms365/Ms365Settings";
 export const metadata: Metadata = { title: "Mis preferencias" };
@@ -34,7 +35,12 @@ export default async function PreferencesPage({ searchParams }: PageProps<"/pref
             <Link key={t.key} role="tab" href={`/preferencias?tab=${t.key}`} aria-selected={tab === t.key} className="tab"><Tr>{t.label}</Tr></Link>
           ))}
         </div>
-        {tab === "preferencias" && <PreferencesForm prefs={user.preferences} />}
+        {tab === "preferencias" && (
+          <>
+            <PreferencesForm prefs={user.preferences} />
+            <div className="px-4 pb-4"><InstallApp /></div>
+          </>
+        )}
         {tab === "perfil" && <ProfileForm fullName={user.fullName} title={user.title} phone={user.phone} email={user.email} />}
         {tab === "equipo" && <DefaultTeam userId={user.id} preferences={user.preferences as unknown as Record<string, unknown>} />}
         {tab === "ia" && <McpSettings user={user} />}

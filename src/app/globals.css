@@ -227,6 +227,8 @@ svg.lucide {
 
 @layer components {
   .card {
+    /* En grillas, la tarjeta no crece con su tabla: la tabla se desplaza dentro (celular). */
+    min-width: 0;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);

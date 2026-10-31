@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { NavTabs } from "@/components/shell/NavTabs";
+import { MobileTabBar } from "@/components/shell/MobileTabBar";
 import { navItems } from "@/components/shell/nav";
 import { Alert } from "@/components/ui/Alert";
 import { getCurrentUser } from "@/lib/session";
@@ -25,13 +26,14 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     <I18nProvider locale={locale} data={dataLabels}>
     <div className="min-h-dvh">
       <AppHeader user={user} notifications={notifications ?? []} unread={unread ?? 0} t={t} />
-      <NavTabs items={navItems(user.access, t)} />
+      <div className="hidden md:block"><NavTabs items={navItems(user.access, t)} /></div>
       {!user.isActive && (
         <div className="mx-auto max-w-[1600px] px-4 pt-4 sm:px-6">
           <Alert tone="warning"><Tr>Tu usuario está desactivado. Pide al administrador que lo active para ver la información.</Tr></Alert>
         </div>
       )}
-      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">{children}</main>
+      <main className="mx-auto max-w-[1600px] px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-5 sm:px-6 md:pb-5">{children}</main>
+      <MobileTabBar items={navItems(user.access, t)} />
     </div>
     </I18nProvider>
   );

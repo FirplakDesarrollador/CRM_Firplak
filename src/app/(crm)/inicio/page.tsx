@@ -20,6 +20,7 @@ import { periodStart } from "@/lib/goals/periods";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { InstallBanner } from "@/components/pwa/InstallApp";
 export const metadata: Metadata = { title: "Inicio" };
 
 function greeting(locale: "es" | "en") {
@@ -70,6 +71,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-5">
+      <InstallBanner />
       <div>
         <p className="eyebrow"><Tr>Inicio</Tr></p>
         <h1 className="editorial mt-1 text-3xl">{greeting(locale)}, {firstName}</h1>

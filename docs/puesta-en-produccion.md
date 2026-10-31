@@ -212,7 +212,20 @@ El CRM **lee** de SAP (cartera, pedidos, facturas, inventario, artículos) y, so
    vista previa y pulsa *Importar ahora* cuando quieras. Se crean los productos nuevos y se actualizan
    nombre y campos relacionados de los existentes; los precios y la familia no se tocan.
 
-## 11. Lista de verificación antes de anunciarlo
+## 11. App en el celular (asesores)
+
+El CRM es una app web instalable (PWA): no pasa por tiendas de aplicaciones y se actualiza sola cada
+vez que se publica una versión nueva. Requiere el dominio final con **https**.
+
+- **Android (Chrome):** abrir el CRM, iniciar sesión y tocar *Instalar* en el aviso de Inicio, o menú ⋮ →
+  *Instalar app*.
+- **iPhone (Safari):** abrir el CRM, tocar *Compartir* → *Agregar a inicio*.
+- **Computador (Chrome o Edge):** ícono de instalar en la barra de direcciones.
+
+Las mismas instrucciones están en Mis preferencias → *App en el celular*. La app necesita internet: sin
+conexión muestra un aviso y no guarda datos del CRM en el teléfono.
+
+## 12. Lista de verificación antes de anunciarlo
 
 - [ ] Iniciar sesión, cerrar sesión y recuperar contraseña funcionan en el dominio final.
 - [ ] Un asesor solo ve lo que debe (prueba con un usuario de cada perfil).
@@ -220,6 +233,7 @@ El CRM **lee** de SAP (cartera, pedidos, facturas, inventario, artículos) y, so
 - [ ] Las importaciones quedaron completas (comparar cantidades con SAP).
 - [ ] Las alertas programadas aparecen en la campana al día siguiente (pg_cron activo).
 - [ ] Copias de seguridad activas en Supabase.
+- [ ] La app se instala en un Android y en un iPhone y abre en Inicio.
 
 ## Lo que sigue después de salir en vivo
 
