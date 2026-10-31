@@ -758,4 +758,14 @@ await check('carpetas de SharePoint: las ve quien ve el registro; los ajustes lo
   assert.equal((await as(rep, () => q(`select value from integration_settings where key = 'sharepoint'`)))[0].value.drive_id, 'drv');
 });
 
+console.log('Fase 23');
+await check('un pedido activado guarda su oferta de venta de SAP una sola vez', async () => {
+  const [acc] = await q(`select id from accounts order by created_at limit 1`);
+  const [o] = await as(admin, () => q(`insert into orders (name, account_id) values ('Pedido SAP 1', $1) returning id`, [acc.id]));
+  const [other] = await as(admin, () => q(`insert into orders (name, account_id) values ('Pedido SAP 2', $1) returning id`, [acc.id]));
+  await as(admin, () => q(`update orders set sap_quotation_entry = 501, sap_quotation_num = 2001, sap_sent_at = now(), sap_error = null where id = $1`, [o.id]));
+  assert.equal((await q(`select sap_quotation_num from orders where id = $1`, [o.id]))[0].sap_quotation_num, 2001);
+  await assert.rejects(q(`update orders set sap_quotation_entry = 501 where id = $1`, [other.id]));
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

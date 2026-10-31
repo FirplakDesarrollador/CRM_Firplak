@@ -120,6 +120,11 @@ await db.query(`insert into public.mcp_tokens (user_id, name, token_prefix, toke
   select id, 'Demo', $1, $2, 'write' from public.profiles where email = 'luis.demo@firplak.com'`,
   [mcpToken.slice(0, 12), createHash('sha256').update(mcpToken).digest('hex')]);
 
+// Campos personalizados de productos para probar el mapeo con campos de usuario de SAP.
+await db.exec(`insert into public.custom_field_definitions (object, api_name, label, field_type, options, sort_order)
+  values ('products', 'linea', 'Línea', 'text', '[]', 1), ('products', 'color', 'Color', 'text', '[]', 2)
+  on conflict (object, api_name) do nothing;`);
+
 // Códigos SAP de ejemplo (el SAP simulado tiene estos socios de negocio).
 await db.exec(`update public.accounts set sap_card_code = 'C20001' where name = 'Almacenes Casa Viva';
   update public.accounts set sap_card_code = 'C20002' where name = 'Constructora Altos del Valle S.A.S.';`);
@@ -130,6 +135,7 @@ await db.exec(`insert into public.teams_channels (name, webhook_url) values ('Ve
 // PGlite tiene una sola conexión, compartida con PostgREST: desde aquí ya no se consulta la base
 // directamente (se mezclaría con sus transacciones). Los usuarios quedan en memoria.
 const users = new Map((await db.query(`select * from auth.users`)).rows.map((u) => [u.id, u]));
+const demoProducts = (await db.query(`select product_code, name from public.products where product_code like 'DEMO-%'`)).rows;
 const sock = new PGLiteSocketServer({ db, port: DB_PORT, host: '127.0.0.1', maxConnections: 10 });
 await sock.start();
 
@@ -465,10 +471,36 @@ const sapItems = {
     ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 289000 }, { PriceList: 2, PriceListName: 'Distribuidores', Price: 245000 }],
     ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 45, Committed: 60, Ordered: 150 }] },
 };
+// Catálogo de artículos (60, algunos que no son de venta) con campos de usuario U_Linea y U_Color.
+const lines = [['MB', 'MUEBLE BAÑO', 'Muebles de baño'], ['LV', 'LAVAMANOS', 'Lavamanos y superficies'], ['CO', 'COCINA INTEGRAL', 'Cocinas'], ['DU', 'DUCHA', 'Duchas y bañeras']];
+const colors = ['Blanco', 'Roble', 'Gris grafito', 'Nogal'];
+for (let i = 1; i <= 56; i++) {
+  const [code, name, linea] = lines[i % lines.length];
+  const itemCode = `FP-${code}-${String(100 + i)}`;
+  sapItems[itemCode] = { ItemCode: itemCode, ItemName: `${name} REF ${100 + i} ${colors[i % colors.length].toUpperCase()}`, SalesItem: i % 9 === 0 ? 'tNO' : 'tYES',
+    U_Linea: linea, U_Color: colors[i % colors.length], QuantityOnStock: (i * 7) % 90, ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 150000 + i * 10000 }], ItemWarehouseInfoCollection: [] };
+}
+// Todos los productos de ejemplo del CRM existen en SAP (para crear ofertas con los pedidos de la demo).
+for (const p of demoProducts) {
+  sapItems[p.product_code] ??= { ItemCode: p.product_code, ItemName: p.name.toUpperCase(), SalesItem: 'tYES', QuantityOnStock: 50,
+    ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 500000 }], ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 50, Committed: 0, Ordered: 0 }] };
+}
+Object.assign(sapItems['DEMO-MB-060'], { SalesItem: 'tYES', U_Linea: 'Muebles de baño', U_Color: 'Blanco' });
+Object.assign(sapItems['DEMO-LV-RD'], { SalesItem: 'tYES', U_Linea: 'Lavamanos y superficies', U_Color: 'Blanco' });
+const quotations = new Map();
+let quotationSeq = 3000;
 const sapError = (res, status, value) => json(res, status, { error: { code: -1, message: { lang: 'es-ES', value } } });
 const sapServer = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${SAP_PORT}`);
   const path = decodeURIComponent(url.pathname.replace(/^\/b1s\/v1/, ''));
+  // Solo para la demo: el experto convierte en orden de venta la última oferta (queda cerrada).
+  if (path === '/sim/convertir-oferta' && req.method === 'POST') {
+    const doc = [...quotations.values()].at(-1);
+    if (!doc) return sapError(res, 404, 'Sin ofertas');
+    doc.DocumentStatus = 'bost_Close';
+    console.log(`[SAP simulado] oferta ${doc.DocNum} convertida en orden de venta`);
+    return json(res, 200, { DocNum: doc.DocNum });
+  }
   if (path === '/Login' && req.method === 'POST') {
     const b = JSON.parse(await readRaw(req));
     if (b.CompanyDB !== SAP.company || b.UserName !== SAP.user || b.Password !== SAP.password) return sapError(res, 401, 'Usuario o contraseña incorrectos');
@@ -482,6 +514,41 @@ const sapServer = http.createServer(async (req, res) => {
   const key = path.match(/^\/(\w+)\('([^']+)'\)$/);
   if (key?.[1] === 'BusinessPartners') return partners[key[2]] ? json(res, 200, partners[key[2]]) : sapError(res, 404, 'No matching records found (ODBC -2028)');
   if (key?.[1] === 'Items') return sapItems[key[2]] ? json(res, 200, sapItems[key[2]]) : sapError(res, 404, 'No matching records found (ODBC -2028)');
+  if (path === '/Items') {
+    const select = (url.searchParams.get('$select') ?? 'ItemCode,ItemName').split(',');
+    const filter = url.searchParams.get('$filter') ?? '';
+    const prefix = filter.match(/startswith\(ItemCode,'([^']*)'\)/)?.[1];
+    const top = Number(url.searchParams.get('$top') ?? 0) || undefined;
+    const skip = Number(url.searchParams.get('$skip') ?? 0);
+    const all = Object.values(sapItems).filter((it) => (!filter.includes("SalesItem eq 'tYES'") || it.SalesItem === 'tYES') && (!prefix || it.ItemCode.startsWith(prefix)))
+      .sort((a, b) => a.ItemCode.localeCompare(b.ItemCode));
+    const size = Math.min(top ?? 20, 20);
+    const page = all.slice(skip, skip + size).map((it) => Object.fromEntries(select.map((f) => [f, it[f] ?? null])));
+    const more = skip + size < all.length && (!top || skip + size < top);
+    if (more) {
+      const next = new URLSearchParams(url.searchParams);
+      next.set('$skip', String(skip + size));
+      return json(res, 200, { value: page, 'odata.nextLink': `Items?${next.toString()}` });
+    }
+    return json(res, 200, { value: page });
+  }
+  if (path === '/Quotations' && req.method === 'POST') {
+    const q = JSON.parse(await readRaw(req));
+    if (!partners[q.CardCode]) return sapError(res, 400, `Socio de negocio no válido: ${q.CardCode}`);
+    const bad = (q.DocumentLines ?? []).find((l) => !sapItems[l.ItemCode]);
+    if (bad) return sapError(res, 400, `Artículo no válido: ${bad.ItemCode}`);
+    const entry = ++quotationSeq;
+    const total = (q.DocumentLines ?? []).reduce((s, l) => s + l.Quantity * l.UnitPrice * (1 - (l.DiscountPercent ?? 0) / 100), 0);
+    const doc = { ...q, DocEntry: entry, DocNum: entry + 3000, DocumentStatus: 'bost_Open', Cancelled: 'tNO', DocTotal: Math.round(total * 1.19) };
+    quotations.set(entry, doc);
+    console.log(`[SAP simulado] oferta de venta ${doc.DocNum} creada para ${q.CardCode} (${q.DocumentLines.length} líneas, NumAtCard ${q.NumAtCard})`);
+    return json(res, 201, doc);
+  }
+  const qMatch = path.match(/^\/Quotations\((\d+)\)$/);
+  if (qMatch) {
+    const doc = quotations.get(Number(qMatch[1]));
+    return doc ? json(res, 200, doc) : sapError(res, 404, 'No matching records found (ODBC -2028)');
+  }
   if (path === '/Orders' || path === '/Invoices') {
     const filter = url.searchParams.get('$filter') ?? '';
     const card = filter.match(/CardCode eq '([^']+)'/)?.[1];

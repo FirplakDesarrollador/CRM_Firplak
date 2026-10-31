@@ -35,19 +35,31 @@ export class SapError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-/** GET al Service Layer con la sesión vigente. */
-export async function sapGet<T>(path: string, retry = true): Promise<T> {
+async function sapRequest<T>(method: "GET" | "POST", path: string, body?: unknown, retry = true): Promise<T> {
   if (!sapConfigured()) throw new SapError(503, "SAP Business One no está configurado");
   const cookie = session && session.expiresAt > Date.now() ? session.cookie : await login();
-  const res = await fetch(`${sap.url}${path}`, { headers: { Cookie: cookie, Prefer: "odata.maxpagesize=50" }, cache: "no-store" });
+  // Los enlaces de la página siguiente («odata.nextLink») llegan relativos a la raíz del servicio.
+  const url = path.startsWith("/") ? `${sap.url}${path}` : `${sap.url}/${path}`;
+  const res = await fetch(url, {
+    method,
+    headers: { Cookie: cookie, Prefer: "odata.maxpagesize=50", ...(body !== undefined ? { "Content-Type": "application/json" } : {}) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    cache: "no-store",
+  });
   if (res.status === 401 && retry) {
     session = null;
-    return sapGet<T>(path, false);
+    return sapRequest<T>(method, path, body, false);
   }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new SapError(res.status, (json as { error?: { message?: { value?: string } } }).error?.message?.value ?? `SAP respondió ${res.status}`);
   return json as T;
 }
+
+/** GET al Service Layer con la sesión vigente. */
+export const sapGet = <T>(path: string) => sapRequest<T>("GET", path);
+
+/** POST al Service Layer (solo se usa para crear ofertas de venta). */
+export const sapPost = <T>(path: string, body: unknown) => sapRequest<T>("POST", path, body);
 
 /** Literal OData seguro para un código (comillas simples duplicadas). */
 export const odataString = (value: string) => `'${value.replace(/'/g, "''")}'`;

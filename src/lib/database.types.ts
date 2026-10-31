@@ -2581,6 +2581,10 @@ export type Database = {
           price_book_id: string | null
           quote_id: string | null
           requested_delivery_date: string | null
+          sap_error: string | null
+          sap_quotation_entry: number | null
+          sap_quotation_num: number | null
+          sap_sent_at: string | null
           shipping: number
           shipping_address: string | null
           status: string
@@ -2616,6 +2620,10 @@ export type Database = {
           price_book_id?: string | null
           quote_id?: string | null
           requested_delivery_date?: string | null
+          sap_error?: string | null
+          sap_quotation_entry?: number | null
+          sap_quotation_num?: number | null
+          sap_sent_at?: string | null
           shipping?: number
           shipping_address?: string | null
           status?: string
@@ -2651,6 +2659,10 @@ export type Database = {
           price_book_id?: string | null
           quote_id?: string | null
           requested_delivery_date?: string | null
+          sap_error?: string | null
+          sap_quotation_entry?: number | null
+          sap_quotation_num?: number | null
+          sap_sent_at?: string | null
           shipping?: number
           shipping_address?: string | null
           status?: string

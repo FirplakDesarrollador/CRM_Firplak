@@ -12,6 +12,8 @@ import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { ORDER_STATUSES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
+import { sapConfigured } from "@/lib/sap/client";
+import { SapOrderCard } from "@/components/sap/SapOrderCard";
 
 export const metadata: Metadata = { title: "Pedido" };
 
@@ -61,7 +63,14 @@ export default async function OrderDetailPage({ params, searchParams }: PageProp
             <QuoteTotals q={row} />
           </div>
         ),
-      }]}
+      }, ...(sapConfigured() ? [{
+        key: "sap",
+        label: "SAP",
+        content: <SapOrderCard canEdit={access.canEdit} order={{
+          id, status, sap_quotation_entry: (row.sap_quotation_entry as number | null) ?? null, sap_quotation_num: (row.sap_quotation_num as number | null) ?? null,
+          sap_sent_at: (row.sap_sent_at as string | null) ?? null, sap_error: (row.sap_error as string | null) ?? null,
+        }} />,
+      }] : [])]}
       activity={null}
     />
   );

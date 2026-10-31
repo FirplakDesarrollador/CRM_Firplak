@@ -181,13 +181,15 @@ depósito de Planner** y, la primera vez, *Sincronizar ahora*. Desde ese momento
 del CRM aparecen en Outlook y Planner al crearlas. Quien conectó su cuenta antes de la Fase 21 verá
 el aviso *Volver a conectar* para aceptar los permisos de Planner y SharePoint.
 
-## 10. SAP Business One: consulta desde el CRM (TI y el administrador de SAP)
+## 10. SAP Business One (TI y el administrador de SAP)
 
-El CRM **solo lee** de SAP por el Service Layer: no crea ni cambia nada allá.
+El CRM **lee** de SAP (cartera, pedidos, facturas, inventario, artículos) y, solo si lo habilitas,
+**crea ofertas de venta** al activar pedidos. No crea órdenes de venta ni socios de negocio.
 
-1. Crear en SAP un **usuario técnico** (p. ej. `crm.lectura`) con licencia que permita el Service Layer
-   y autorizaciones de **solo lectura** para socios de negocio, pedidos de cliente, facturas de
-   clientes y artículos.
+1. Crear en SAP un **usuario técnico** (p. ej. `crm.integracion`) con licencia que permita el Service
+   Layer, autorizaciones de **lectura** para socios de negocio, pedidos de cliente, facturas de
+   clientes y artículos, y —solo si usarás las ofertas desde el CRM— permiso para **crear ofertas de
+   venta**. Nada más.
 2. Verificar que el servidor del CRM (Vercel) llega al Service Layer por https
    (`https://<servidor-sap>:50000/b1s/v1`). Si SAP está en la red interna, publicarlo a través de un
    proxy inverso con certificado válido y, de preferencia, restringido por IP.
@@ -203,6 +205,12 @@ El CRM **solo lee** de SAP por el Service Layer: no crea ni cambia nada allá.
    pedidos, facturas e inventario.
 5. Cada cuenta necesita su **Código SAP (CardCode)** y cada producto su **Referencia = ItemCode** (ver la
    sección 6).
+6. **Configuración → SAP Business One:** *Probar conexión*; activa, si quieres, «Al activar un pedido,
+   crear su oferta de venta en SAP».
+7. **Importar productos:** en la misma página, opcionalmente filtra por prefijo de código y relaciona
+   campos personalizados de productos con campos de SAP (p. ej. `U_Linea`, `ItemsGroupCode`); revisa la
+   vista previa y pulsa *Importar ahora* cuando quieras. Se crean los productos nuevos y se actualizan
+   nombre y campos relacionados de los existentes; los precios y la familia no se tocan.
 
 ## 11. Lista de verificación antes de anunciarlo
 
@@ -215,5 +223,4 @@ El CRM **solo lee** de SAP por el Service Layer: no crea ni cambia nada allá.
 
 ## Lo que sigue después de salir en vivo
 
-- **SAP Business One — escritura:** crear pedidos de venta y socios de negocio desde el CRM, usando el
-  Código SAP y la Referencia como llaves.
+- **SAP Business One:** sincronizar clientes (socios de negocio) cuando se decida.

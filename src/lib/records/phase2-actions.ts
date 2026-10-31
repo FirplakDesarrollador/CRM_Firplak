@@ -10,6 +10,7 @@ import {
 import { parseAmount, type FormState } from "./form";
 import { validateRecord } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
+import { sendOrderToSapIfEnabled } from "@/lib/sap/quotations";
 
 function friendly(message: string) {
   if (message.includes("row-level security") || message.includes("42501")) return "No tienes permiso para realizar esta acción.";
@@ -47,8 +48,15 @@ export async function setStatus(object: keyof typeof STATUS_FIELDS, id: string, 
   if (error) return { message: friendly(error.message) };
   if (!data?.length) return { message: "No tienes permiso para cambiar el estado." };
   await runAutomations(object, "update", id, before as Record<string, unknown>, user.id);
+  // Al activar un pedido: oferta de venta en SAP (si administración lo habilitó). Si SAP falla, el
+  // pedido queda activado y el error se muestra en el pedido para reintentar.
+  let sap: { ok: boolean; message: string } | null = null;
+  if (object === "orders" && before.status === "Borrador" && !["Borrador", "Cancelado"].includes(status)) {
+    sap = await sendOrderToSapIfEnabled(id);
+  }
   revalidatePath("/", "layout");
-  return { ok: true };
+  if (sap && !sap.ok) return { ok: false, message: `Pedido activado, pero no se creó la oferta en SAP. ${sap.message}` };
+  return { ok: true, message: sap?.message };
 }
 
 // ---------------------------------------------------------------------------

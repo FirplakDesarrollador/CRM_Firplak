@@ -19,6 +19,8 @@ export function StatusPath({ object, id, options, current, canEdit, negative = [
   const valueLabel = useValueLabel();
   const [value, setValue] = useOptimistic(current);
   const [error, setError] = useState<string | null>(null);
+  // Aviso de éxito con mensaje (p. ej. la oferta de venta creada en SAP al activar un pedido).
+  const [notice, setNotice] = useState<string | null>(null);
   const index = options.indexOf(value);
 
   return (
@@ -36,9 +38,10 @@ export function StatusPath({ object, id, options, current, canEdit, negative = [
                 onClick={() =>
                   start(async () => {
                     setError(null);
+                    setNotice(null);
                     setValue(option);
                     const res = await setStatus(object, id, option);
-                    if (res.message) setError(res.message);
+                    if (res.message) (res.ok ? setNotice : setError)(res.message);
                   })
                 }
                 className={`flex h-8 w-full items-center justify-center gap-1 truncate rounded-full px-3 text-xs font-medium transition ${
@@ -59,6 +62,7 @@ export function StatusPath({ object, id, options, current, canEdit, negative = [
         })}
       </ol>
       {error && <p className="error-text">{error}</p>}
+      {notice && <p role="status" className="mt-1 text-xs font-semibold text-success">{notice}</p>}
     </div>
   );
 }
