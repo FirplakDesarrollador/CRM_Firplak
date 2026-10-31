@@ -16,7 +16,8 @@
 ## Reglas del proyecto
 
 - Las claves solo van en `.env.local` o en las variables del hosting; nunca en el código. La
-  `service_role` y los secretos (`MS365_*`, `SUPABASE_JWT_SECRET`, `RESEND_API_KEY`) son solo de servidor.
+  `service_role` y los secretos (`MS365_*`, `SAP_*`, `CRON_SECRET`, `SUPABASE_JWT_SECRET`,
+  `RESEND_API_KEY`) son solo de servidor.
 - No modifiques `rea/`. Nunca apliques REA ni extracción o copia sobre Salesforce: los módulos se
   basan en su documentación pública.
 - Interfaz en español (con traducción en `src/lib/i18n/en-ui.ts`), responsive, con el Firplak Design

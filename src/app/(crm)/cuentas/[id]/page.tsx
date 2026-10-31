@@ -12,6 +12,9 @@ import { FieldHistory } from "@/components/records/FieldHistory";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { TeamCard } from "@/components/teams/TeamCard";
 import { DocumentsCard } from "@/components/ms365/DocumentsCard";
+import { SapAccountCard } from "@/components/sap/SapCards";
+import { sapConfigured } from "@/lib/sap/client";
+import { canSystem } from "@/lib/permissions";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
 import { can } from "@/lib/permissions";
@@ -50,7 +53,9 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
   const oppRows = (opps.data ?? []) as unknown as Row[];
   const openAmount = oppRows.filter((o) => !o.is_closed).reduce((s, o) => s + Number(o.amount), 0);
   const wonAmount = oppRows.filter((o) => o.is_won).reduce((s, o) => s + Number(o.amount), 0);
-  const tab = (["detalles", "equipo", "documentos", "historial"] as const).find((k) => k === sp.tab) ?? "relacionado";
+  // SAP: solo con el permiso «Ver información de SAP» y el Service Layer configurado.
+  const showSap = sapConfigured() && canSystem(user.access, "view_sap");
+  const tab = (["detalles", "equipo", "documentos", "historial", ...(showSap ? ["sap" as const] : [])] as const).find((k) => k === sp.tab) ?? "relacionado";
   const owner = row.owner as { full_name?: string; email?: string } | null;
   const path = `/cuentas/${id}`;
 
@@ -87,11 +92,14 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
           <div className="card">
             <Tabs basePath={path} active={tab} tabs={[
               { key: "relacionado", label: "Relacionado" }, { key: "equipo", label: "Equipo" }, { key: "documentos", label: "Documentos" },
+              ...(showSap ? [{ key: "sap", label: "SAP" }] : []),
               { key: "detalles", label: "Detalles" }, { key: "historial", label: "Historial de cambios" },
             ]} />
           </div>
           {tab === "historial" ? (
             <FieldHistory object="accounts" recordId={id} />
+          ) : tab === "sap" ? (
+            <SapAccountCard cardCode={(row.sap_card_code as string | null) ?? null} />
           ) : tab === "documentos" ? (
             <DocumentsCard object="accounts" recordId={id} recordName={String(row.name)} userId={user.id} />
           ) : tab === "equipo" ? (

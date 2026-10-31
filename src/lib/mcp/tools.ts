@@ -13,6 +13,9 @@ import { moveOpportunityStage, setActivityStatus } from "@/lib/records/actions";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { periodStart } from "@/lib/goals/periods";
 import type { McpIdentity } from "./auth";
+import { canSystem } from "@/lib/permissions";
+import { sapConfigured } from "@/lib/sap/client";
+import { getCustomerSummary, invoiceStatus } from "@/lib/sap/data";
 
 const READ_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "quotes", "orders", "cases", "campaigns", "products", "activities"] as const;
 const WRITE_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "cases", "activities"] as const;
@@ -348,6 +351,38 @@ export function buildMcpServer(identity: McpIdentity) {
     if (error) return fail(error.message);
     const d = data as { kpis: unknown; by_owner: unknown[] };
     return text({ desde, hasta, kpis: d.kpis, ranking_asesores: d.by_owner.slice(0, 15) });
+  }));
+
+  server.registerTool("sap_cliente", {
+    title: "Cliente en SAP Business One",
+    description: "Cartera, cupo de crédito, pedidos de venta abiertos y facturas recientes de una cuenta en SAP (por su Código SAP). Solo lectura; requiere el permiso «Ver información de SAP».",
+    inputSchema: { cuenta_id: z.string().uuid().optional(), codigo_sap: z.string().optional().describe("CardCode, si no se da la cuenta") },
+    annotations: readOnly,
+  }, run("sap_cliente", async ({ cuenta_id, codigo_sap }: { cuenta_id?: string; codigo_sap?: string }) => {
+    const user = await getCurrentUser();
+    if (!sapConfigured()) return fail("SAP Business One no está configurado en el CRM.");
+    if (!user || !canSystem(user.access, "view_sap")) return fail("Tu perfil no tiene el permiso «Ver información de SAP».");
+    let code = codigo_sap?.trim().toUpperCase() ?? "";
+    if (cuenta_id) {
+      const supabase = await createClient();
+      const { data } = await supabase.from("accounts").select("sap_card_code").eq("id", cuenta_id).maybeSingle();
+      if (!data) return fail("La cuenta no existe o no tienes acceso.");
+      if (!data.sap_card_code) return fail("La cuenta no tiene Código SAP.");
+      code = data.sap_card_code;
+    }
+    if (!code) return fail("Indica la cuenta o el Código SAP.");
+    const summary = await getCustomerSummary(code);
+    if (!summary) return fail(`No existe un socio de negocio ${code} en SAP.`);
+    const p = summary.partner;
+    return text({
+      codigo: p.CardCode, nombre: p.CardName, saldo_cartera: p.CurrentAccountBalance, cupo_credito: p.CreditLimit,
+      cupo_disponible: p.CreditLimit - p.CurrentAccountBalance - p.OpenDeliveryNotesBalance - p.OpenOrdersBalance,
+      pedidos_abiertos: summary.orders.map((o) => ({ numero: o.DocNum, fecha: o.DocDate.slice(0, 10), entrega: o.DocDueDate.slice(0, 10), oc_cliente: o.NumAtCard, total: o.DocTotal })),
+      facturas: summary.invoices.map((i) => {
+        const st = invoiceStatus(i);
+        return { numero: i.DocNum, fecha: i.DocDate.slice(0, 10), vence: i.DocDueDate.slice(0, 10), total: i.DocTotal, pendiente: st.pending, abierta: st.open, vencida: st.overdue };
+      }),
+    });
   }));
 
   // ---------------------------------------------------------------- Herramientas de cambio

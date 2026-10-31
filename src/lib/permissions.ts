@@ -6,7 +6,7 @@ export type PermissionObject = (typeof PERMISSION_OBJECTS)[number];
 export const OBJECT_ACTIONS = ["read", "create", "edit", "delete", "view_all", "modify_all"] as const;
 export type ObjectAction = (typeof OBJECT_ACTIONS)[number];
 
-export const SYSTEM_PERMISSIONS = ["view_dashboards", "export", "manage_users", "customize", "use_mcp", "mcp_write"] as const;
+export const SYSTEM_PERMISSIONS = ["view_dashboards", "export", "manage_users", "customize", "use_mcp", "mcp_write", "view_sap"] as const;
 export type SystemPermission = (typeof SYSTEM_PERMISSIONS)[number];
 
 export const ACTION_LABELS: Record<ObjectAction, string> = {
@@ -25,6 +25,7 @@ export const SYSTEM_LABELS: Record<SystemPermission, string> = {
   customize: "Personalizar la aplicación",
   use_mcp: "Usar asistentes de IA (MCP)",
   mcp_write: "Hacer cambios con asistentes de IA",
+  view_sap: "Ver información de SAP (cartera, pedidos, facturas, inventario)",
 };
 
 export type PermissionMap = Partial<Record<PermissionObject, Partial<Record<ObjectAction, boolean>>>> & {

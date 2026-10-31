@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, MS_PORT = 54350, APP_PORT = 3000;
+const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, MS_PORT = 54350, SAP_PORT = 54360, APP_PORT = 3000;
 const PASSWORD = 'demo1234';
 const USERS = [
   { email: 'luis.demo@firplak.com', name: 'Luis Demo', note: 'administrador' },
@@ -35,7 +35,7 @@ const portBusy = (port) => new Promise((resolve) => {
   const s = net.createServer().once('error', () => resolve(true)).once('listening', () => s.close(() => resolve(false)));
   s.listen(port, '127.0.0.1');
 });
-for (const port of [DB_PORT, PGRST_PORT, API_PORT, MS_PORT, APP_PORT]) {
+for (const port of [DB_PORT, PGRST_PORT, API_PORT, MS_PORT, SAP_PORT, APP_PORT]) {
   if (await portBusy(port)) {
     console.error(`\nEl puerto ${port} está ocupado. Cierra la otra instancia (¿npm run dev o dev:demo abiertos?) e inténtalo de nuevo.\n`);
     process.exit(1);
@@ -119,6 +119,10 @@ const mcpToken = `fcrm_${randomBytes(32).toString('base64url')}`;
 await db.query(`insert into public.mcp_tokens (user_id, name, token_prefix, token_hash, scope)
   select id, 'Demo', $1, $2, 'write' from public.profiles where email = 'luis.demo@firplak.com'`,
   [mcpToken.slice(0, 12), createHash('sha256').update(mcpToken).digest('hex')]);
+
+// Códigos SAP de ejemplo (el SAP simulado tiene estos socios de negocio).
+await db.exec(`update public.accounts set sap_card_code = 'C20001' where name = 'Almacenes Casa Viva';
+  update public.accounts set sap_card_code = 'C20002' where name = 'Constructora Altos del Valle S.A.S.';`);
 
 // Canal de Teams simulado (los avisos se imprimen en esta consola).
 await db.exec(`insert into public.teams_channels (name, webhook_url) values ('Ventas (simulado)', 'http://127.0.0.1:${MS_PORT}/teams/webhook/ventas')`);
@@ -429,6 +433,66 @@ const ms = http.createServer(async (req, res) => {
 });
 await new Promise((r) => ms.listen(MS_PORT, '127.0.0.1', r));
 
+// ---------------------------------------------------------------- SAP Business One simulado
+// Service Layer (/b1s/v1) de solo lectura: inicio de sesión, socios de negocio, pedidos, facturas y artículos.
+const SAP = { company: 'SBO_FIRPLAK_DEMO', user: 'crm.lectura', password: randomBytes(12).toString('hex') };
+const sapDay = (offset) => new Date(Date.now() + offset * day).toISOString().slice(0, 10) + 'T00:00:00Z';
+const sapSessions = new Set();
+const partners = {
+  C20001: { CardCode: 'C20001', CardName: 'ALMACENES CASA VIVA S.A.', FederalTaxID: '860045998-1', Phone1: '6014876600', EmailAddress: 'cartera@casaviva.example',
+    CurrentAccountBalance: 186400000, OpenOrdersBalance: 245000000, OpenDeliveryNotesBalance: 38000000, CreditLimit: 600000000 },
+  C20002: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', FederalTaxID: '900512334-7', Phone1: '6044412200', EmailAddress: 'pagos@altosdelvalle.example',
+    CurrentAccountBalance: 512000000, OpenOrdersBalance: 120000000, OpenDeliveryNotesBalance: 0, CreditLimit: 500000000 },
+};
+const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
+  PaidToDate: paid, DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
+const sapOrders = [
+  doc(41210, 'C20001', -12, 18, 245000000, 0, 'bost_Open', 'OC-CV-2231'),
+  doc(41188, 'C20002', -20, 10, 120000000, 0, 'bost_Open', 'ADV-T2-07'),
+];
+const sapInvoices = [
+  doc(87105, 'C20001', -40, -10, 92000000, 0, 'bost_Open', 'OC-CV-2190'),
+  doc(87240, 'C20001', -10, 20, 94400000, 0, 'bost_Open', 'OC-CV-2204'),
+  doc(86911, 'C20001', -75, -45, 130000000, 130000000, 'bost_Close', 'OC-CV-2150'),
+  doc(87002, 'C20002', -65, -35, 312000000, 0, 'bost_Open', 'ADV-T1-15'),
+  doc(87199, 'C20002', -25, 5, 200000000, 0, 'bost_Open', 'ADV-T2-03'),
+];
+const sapItems = {
+  'DEMO-MB-060': { ItemCode: 'DEMO-MB-060', ItemName: 'MUEBLE BAÑO 60 CM BLANCO', QuantityOnStock: 340, QuantityOrderedByCustomers: 120, QuantityOrderedFromVendors: 200, SalesUnit: 'UN',
+    ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 685000 }, { PriceList: 2, PriceListName: 'Distribuidores', Price: 590000 }, { PriceList: 3, PriceListName: 'Proyectos', Price: 610000 }],
+    ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 260, Committed: 100, Ordered: 200 }, { WarehouseCode: 'BOG-CD', InStock: 80, Committed: 20, Ordered: 0 }] },
+  'DEMO-LV-RD': { ItemCode: 'DEMO-LV-RD', ItemName: 'LAVAMANOS REDONDO SOBREPONER', QuantityOnStock: 45, QuantityOrderedByCustomers: 60, SalesUnit: 'UN',
+    ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 289000 }, { PriceList: 2, PriceListName: 'Distribuidores', Price: 245000 }],
+    ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 45, Committed: 60, Ordered: 150 }] },
+};
+const sapError = (res, status, value) => json(res, status, { error: { code: -1, message: { lang: 'es-ES', value } } });
+const sapServer = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://127.0.0.1:${SAP_PORT}`);
+  const path = decodeURIComponent(url.pathname.replace(/^\/b1s\/v1/, ''));
+  if (path === '/Login' && req.method === 'POST') {
+    const b = JSON.parse(await readRaw(req));
+    if (b.CompanyDB !== SAP.company || b.UserName !== SAP.user || b.Password !== SAP.password) return sapError(res, 401, 'Usuario o contraseña incorrectos');
+    const id = randomUUID();
+    sapSessions.add(id);
+    res.writeHead(200, { 'content-type': 'application/json', 'set-cookie': [`B1SESSION=${id}; path=/b1s; HttpOnly`, 'ROUTEID=.node1; path=/b1s'] });
+    return res.end(JSON.stringify({ SessionId: id, Version: '1000271', SessionTimeout: 30 }));
+  }
+  const session = (req.headers.cookie ?? '').match(/B1SESSION=([^;]+)/)?.[1];
+  if (!session || !sapSessions.has(session)) return sapError(res, 401, 'Invalid session or session already timeout.');
+  const key = path.match(/^\/(\w+)\('([^']+)'\)$/);
+  if (key?.[1] === 'BusinessPartners') return partners[key[2]] ? json(res, 200, partners[key[2]]) : sapError(res, 404, 'No matching records found (ODBC -2028)');
+  if (key?.[1] === 'Items') return sapItems[key[2]] ? json(res, 200, sapItems[key[2]]) : sapError(res, 404, 'No matching records found (ODBC -2028)');
+  if (path === '/Orders' || path === '/Invoices') {
+    const filter = url.searchParams.get('$filter') ?? '';
+    const card = filter.match(/CardCode eq '([^']+)'/)?.[1];
+    const openOnly = filter.includes("DocumentStatus eq 'bost_Open'");
+    const list = (path === '/Orders' ? sapOrders : sapInvoices).filter((d) => d.CardCode === card && (!openOnly || d.DocumentStatus === 'bost_Open'));
+    return json(res, 200, { value: list.sort((a, b) => b.DocDate.localeCompare(a.DocDate)) });
+  }
+  sapError(res, 404, `No simulado: ${path}`);
+});
+await new Promise((r) => sapServer.listen(SAP_PORT, '127.0.0.1', r));
+
 // ---------------------------------------------------------------- App
 // Estas variables tienen prioridad sobre .env.local: la app solo habla con la base de demo y con
 // el Microsoft 365 simulado; nunca usa las claves reales ni envía correos aunque estén configurados.
@@ -447,6 +511,10 @@ const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'd
     MS365_CLIENT_SECRET: MS.clientSecret,
     MS365_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
     CRON_SECRET: randomBytes(16).toString('hex'),
+    SAP_SL_URL: `http://127.0.0.1:${SAP_PORT}/b1s/v1`,
+    SAP_COMPANY_DB: SAP.company,
+    SAP_USER: SAP.user,
+    SAP_PASSWORD: SAP.password,
     MS365_LOGIN_URL: `http://127.0.0.1:${MS_PORT}`,
     MS365_GRAPH_URL: `http://127.0.0.1:${MS_PORT}/v1.0`,
     // El servidor MCP firma las sesiones de los tokens con el secreto de esta base de demo.
@@ -464,6 +532,7 @@ console.log(`
   Abre http://localhost:${APP_PORT}  ·  contraseña de todos: ${PASSWORD}
 ${USERS.map((u) => `    ${u.email.padEnd(30)} ${u.note}`).join('\n')}
   Microsoft 365 simulado: Mis preferencias → Microsoft 365 → Conectar.
+  SAP simulado: pestaña SAP de Almacenes Casa Viva (C20001) y Altos del Valle (C20002).
   MCP: http://localhost:${APP_PORT}/api/mcp  ·  token de Luis:
     ${mcpToken}
   Al cerrar con Ctrl+C se borra todo. No toca tu Supabase real.
@@ -477,6 +546,7 @@ const stop = async () => {
   for (const c of children) c.kill();
   api.close();
   ms.close();
+  sapServer.close();
   await sock.stop().catch(() => {});
   await db.close().catch(() => {});
   rmSync(tmp, { recursive: true, force: true });

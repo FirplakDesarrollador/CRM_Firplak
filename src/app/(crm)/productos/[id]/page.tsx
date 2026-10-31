@@ -11,13 +11,16 @@ import { createClient } from "@/lib/supabase/server";
 import { removeProductPrice, saveProductPrice } from "@/lib/records/phase2-actions";
 import { formatCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { canSystem } from "@/lib/permissions";
+import { sapConfigured } from "@/lib/sap/client";
+import { SapProductCard } from "@/components/sap/SapCards";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
 export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
-  const [, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
+  const [user, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
   const def = await getObjectDef("products");
   const row = await getRecord(def, id);
   if (!row) notFound();
@@ -105,7 +108,11 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             </section>
           </>
         ),
-      }]}
+      }, ...(sapConfigured() && canSystem(user.access, "view_sap") ? [{
+        key: "sap",
+        label: "SAP",
+        content: <SapProductCard itemCode={(row.product_code as string | null) ?? null} />,
+      }] : [])]}
       activity={null}
     />
   );
