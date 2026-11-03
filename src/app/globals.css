@@ -76,9 +76,9 @@
   --glass-lo: rgba(255, 255, 255, 0.4);
   --card-hi: rgba(255, 255, 255, 0.82);
   --card-lo: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(47, 110, 163, 0.26);
   --glass-sheen: rgba(255, 255, 255, 0.7);
-  --glass-shadow: inset 0 1px 0 #ffffff, 0 0 0 1px rgba(16, 38, 58, 0.08), 0 18px 40px -22px rgba(16, 38, 58, 0.38);
+  --glass-shadow: inset 0 1px 0 #ffffff, 0 18px 40px -24px rgba(28, 79, 124, 0.42);
 
   /* Logo de fondo */
   --logo-a: #2f6ea3;
@@ -426,6 +426,7 @@ svg.lucide {
   }
   /* Columnas del Pipeline: también de vidrio, para que el logo se difumine detrás. */
   .kanban-column {
+    border-color: var(--glass-border);
     background: var(--card-lo);
     -webkit-backdrop-filter: blur(26px) saturate(155%);
     backdrop-filter: blur(26px) saturate(155%);

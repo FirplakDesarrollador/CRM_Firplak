@@ -81,6 +81,15 @@ test("los datos de los gráficos de Indicadores se pueden leer con teclado", asy
   await expect(etapa.getByRole("tooltip")).toBeVisible();
 });
 
+test("en modo claro las tarjetas y las columnas del Pipeline llevan el borde azul", async ({ page }) => {
+  const azul = "rgba(47, 110, 163, 0.26)";
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/indicadores");
+  await expect.poll(() => page.locator("main .glass").first().evaluate((e) => getComputedStyle(e).borderTopColor)).toBe(azul);
+  await page.goto("/oportunidades/pipeline");
+  await expect.poll(() => page.locator(".kanban-column").first().evaluate((e) => getComputedStyle(e).borderTopColor)).toBe(azul);
+});
+
 test("las tarjetas tienen blur real y el logo de fondo se mueve despacio", async ({ page }) => {
   await page.goto("/indicadores");
   // El orden de las reglas importa: si el compilador descarta la estándar, el blur desaparece sin avisar.

@@ -40,7 +40,7 @@ colors:
   glass-lo: "rgba(255, 255, 255, 0.4)"
   card-hi: "rgba(255, 255, 255, 0.82)"
   card-lo: "rgba(255, 255, 255, 0.72)"
-  glass-border: "rgba(255, 255, 255, 0.9)"
+  glass-border: "rgba(47, 110, 163, 0.26)"
   glass-sheen: "rgba(255, 255, 255, 0.7)"
   logo-a: "#2f6ea3"
   logo-b: "#1c4f7c"
@@ -308,7 +308,7 @@ Blanco y negro puros de suelo, navy y azul para la marca y los datos, oliva para
 - **Blanco Suelo** (#ffffff): fondo de página en claro, y también de menús y diálogos. En oscuro, **Negro Suelo** (#000000) con capa opaca #0e1011. Dentro de la barra en claro, la capa opaca es #10202e.
 - **Negro Tinta** (#0c0f10, #2a2e2c, #3e423b): texto principal, secundario y atenuado en claro. En oscuro, #eef3f6, #d3dde4 y #adb9c2, con títulos en #f6f9fb.
 - **Claro Frío** (#fbfcfd): texto sobre botones azules, íconos de objeto y pestaña activa de la barra.
-- **Líneas**: negro al 10 y 20 % en claro; blanco al 13 y 24 % en oscuro. El vidrio lleva borde de luz: blanco al 90 % en claro y al 14 % en oscuro.
+- **Líneas**: negro al 10 y 20 % en claro; blanco al 13 y 24 % en oscuro. El vidrio lleva un borde azul fino en claro (azul al 26 %) y un borde de luz en oscuro (blanco al 14 %).
 
 ### Named Rules
 **Título Sin Etiqueta.** Ninguna página lleva una etiqueta encima del título; si el título por sí solo no dice qué es la página, el nombre entra al título (decisión de Luis, 3 nov 2026).
@@ -361,12 +361,12 @@ La densidad compacta reduce el relleno vertical de las filas de tabla de 0.7rem 
 
 ## Elevation & Depth
 
-El sistema es híbrido: la profundidad nace del vidrio (blur real, transparencia, borde de luz y brillo superior) y se completa con sombras largas teñidas de navy en claro y negras en oscuro. El orden de capas es suelo, marca azul, paneles de vidrio, cromo de la barra y, al final, las capas opacas: menús y diálogos.
+El sistema es híbrido: la profundidad nace del vidrio (blur real, transparencia, borde fino y brillo superior) y se completa con sombras largas teñidas de navy en claro y negras en oscuro. El orden de capas es suelo, marca azul, paneles de vidrio, cromo de la barra y, al final, las capas opacas: menús y diálogos.
 
 El blur solo se nota porque hay algo detrás: lo que atraviesa el vidrio es la marca azul. En un panel sobre suelo vacío, el vidrio se lee como blanco o negro limpio con su borde de luz.
 
 ### Shadow Vocabulary
-- **Vidrio** (`box-shadow: inset 0 1px 0 #ffffff, 0 0 0 1px rgba(16, 38, 58, 0.08), 0 18px 40px -22px rgba(16, 38, 58, 0.38)`): reposo de todo panel de vidrio en claro. En oscuro, `inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000`.
+- **Vidrio** (`box-shadow: inset 0 1px 0 #ffffff, 0 18px 40px -24px rgba(28, 79, 124, 0.42)`): reposo de todo panel de vidrio en claro. En oscuro, `inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000`.
 - **Media** (`box-shadow: 0 12px 26px -10px rgba(16, 38, 58, 0.22)`): se suma al vidrio al pasar el cursor, y a los elementos que se elevan. En oscuro, negra al 70 %.
 - **Grande** (`box-shadow: 0 26px 54px -18px rgba(16, 38, 58, 0.32)`): menús y diálogos. En oscuro, negra al 80 %.
 - **Dock** (`box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75)`): dock flotante del celular.

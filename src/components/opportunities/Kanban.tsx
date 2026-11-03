@@ -73,7 +73,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                 setDragId(null);
                 if (id) requestMove(id, stage.id);
               }}
-              className={`kanban-column flex w-72 flex-none flex-col rounded-xl border border-line ${over === stage.id ? "ring-2 ring-[var(--brand)]" : ""}`}
+              className={`kanban-column flex w-72 flex-none flex-col rounded-xl border ${over === stage.id ? "ring-2 ring-[var(--brand)]" : ""}`}
             >
               <header className="px-3 pb-2 pt-2.5">
                 <span
