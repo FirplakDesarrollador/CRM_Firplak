@@ -42,7 +42,8 @@ export function Dropdown({
       {open && (
         <div
           role="menu"
-          onClick={(e) => (e.target as HTMLElement).closest("a,button[type=submit],[data-close]") && setOpen(false)}
+          // Se cierra después del clic: quitar el menú antes dejaría sin enviar un formulario que esté dentro.
+          onClick={(e) => (e.target as HTMLElement).closest("a,button[type=submit],[data-close]") && setTimeout(() => setOpen(false))}
           className={`absolute z-40 mt-1.5 min-w-56 rounded-lg border border-line bg-surface p-1.5 shadow-[var(--shadow-lg)] ${
             align === "right" ? "right-0" : "left-0"
           }`}

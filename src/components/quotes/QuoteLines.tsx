@@ -85,8 +85,8 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote" }: { quoteI
       {canEdit && (
         <form ref={formRef} action={action} className="grid gap-3 border-t border-line bg-surface-2 p-4 md:grid-cols-[minmax(0,1fr)_7rem_9rem_6rem_auto] md:items-end">
           <div>
-            <span className="label"><Tr>Producto</Tr></span>
-            <LookupInput key={state.values?.nonce ?? "add"} name="product_id" object="products" placeholder="Buscar producto o referencia…"
+            <label className="label" htmlFor="ql-product"><Tr>Producto</Tr></label>
+            <LookupInput key={state.values?.nonce ?? "add"} id="ql-product" name="product_id" object="products" placeholder="Buscar producto o referencia…"
               invalid={Boolean(state.errors?.product_id)} />
           </div>
           <div>

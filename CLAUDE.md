@@ -25,5 +25,7 @@
 - Cada cambio de base de datos va en una migración nueva de `supabase/migrations/` con su prueba en
   `scripts/test-db.mjs`; después `npm run db:types:local`.
 - Verifica en el navegador con `npm run dev:demo` (base en memoria, Microsoft 365 simulado).
+- Si cambias la interfaz, corre también `npm run test:e2e` y agrega la prueba del flujo en `tests/e2e/`. Los clics reales
+  importan: un clic por JavaScript se saltó un error de cierre de sesión que solo aparecía con el mouse.
 - La integración con el ERP es con **SAP Business One** (Service Layer); los clientes se vinculan por
   el Código SAP (CardCode) y los productos por la Referencia (ItemCode).

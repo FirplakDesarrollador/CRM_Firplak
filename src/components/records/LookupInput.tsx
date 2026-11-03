@@ -8,6 +8,7 @@ type Option = { id: string; label: string; sub?: string };
 
 /** Campo de relación con búsqueda remota. Envía el id en un input oculto `name`. */
 export function LookupInput({
+  id,
   name,
   object,
   initial,
@@ -16,6 +17,7 @@ export function LookupInput({
   filterAccount,
   onChange,
 }: {
+  id?: string;
   name: string;
   object: string;
   initial?: { id: string; label: string } | null;
@@ -88,6 +90,7 @@ export function LookupInput({
         <div className="relative">
           <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
+            id={id}
             className="input pl-8"
             role="combobox"
             aria-expanded={open}

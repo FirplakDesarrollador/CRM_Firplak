@@ -135,6 +135,7 @@ export function FieldInput({
     case "lookup":
       control = (
         <LookupInput
+          id={id}
           name={field.name}
           object={field.lookup!}
           invalid={invalid}

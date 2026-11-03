@@ -137,6 +137,7 @@ En el modo demo ya está configurado: al arrancar se imprime un token de Luis pa
 | `npm run dev` / `build` / `start` | Desarrollo, compilación y producción. |
 | `npm run dev:demo` | App con una base de demostración en memoria (sin Supabase); ver «Probar sin Supabase». |
 | `npm run lint` / `typecheck` | Calidad de código. |
+| `npm run test:e2e` | Pruebas de interfaz con Playwright sobre el modo demo (lo arranca solo; no debe estar corriendo otro): acceso y permisos, idioma, cuentas, oportunidades, tareas, aprobaciones, SAP, push y celular. Usa el Chrome instalado (`PW_CHANNEL=chromium` para otro). Informe en `test-results/informe`. |
 | `npm run db:test` | Aplica migraciones + semilla en un Postgres embebido (PGlite) y prueba RLS, triggers e indicadores. |
 | `npm run db:types:local` | Regenera `src/lib/database.types.ts` desde las migraciones (sin Docker). |
 | `npm run db:types` | Regenera los tipos desde el proyecto enlazado con la CLI de Supabase. |

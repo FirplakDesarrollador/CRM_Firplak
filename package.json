@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
     "db:types:local": "node scripts/gen-types-local.mjs",
+    "test:e2e": "playwright test",
     "db:test": "node scripts/test-db.mjs",
     "db:bundle": "node scripts/bundle-sql.mjs",
     "db:bundle:produccion": "node scripts/bundle-sql.mjs --produccion",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.13",
     "@electric-sql/pglite-socket": "^0.2.16",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

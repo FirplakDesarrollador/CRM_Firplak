@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getObject, isObjectKey } from "@/lib/objects";
 import { untypedClient } from "@/lib/records/data";
+import { applySearch } from "@/lib/records/filters";
 
 /** Búsqueda para campos de relación: /api/lookup?object=accounts&q=casa&account=<id> */
 export async function GET(request: NextRequest) {
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
     campaigns: "campaign_type, status",
   };
   let query = db.from(def.table).select(`id, ${def.nameField}, ${subtitle[object]}`).limit(10).order(def.nameField);
-  if (term) query = query.ilike(def.nameField, `%${term}%`);
+  // Por todas las columnas de búsqueda del objeto: p. ej. un producto por su referencia o una cuenta por su NIT.
+  query = applySearch(query, def, term);
   if (object === "products") query = query.eq("is_active", true);
   if (account && /^[0-9a-f-]{36}$/i.test(account) && (object === "contacts" || object === "opportunities")) {
     query = query.eq("account_id", account);

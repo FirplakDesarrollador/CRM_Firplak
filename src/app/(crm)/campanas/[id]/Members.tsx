@@ -78,8 +78,8 @@ export function Members({ campaignId, members, canEdit }: { campaignId: string; 
             </select>
           </div>
           <div>
-            <span className="label">{kind === "contacts" ? "Contacto" : "Prospecto"}</span>
-            <LookupInput key={`${kind}-${state.values?.nonce ?? ""}`} name={kind === "contacts" ? "contact_id" : "lead_id"} object={kind} />
+            <label className="label" htmlFor="member-record">{kind === "contacts" ? "Contacto" : "Prospecto"}</label>
+            <LookupInput key={`${kind}-${state.values?.nonce ?? ""}`} id="member-record" name={kind === "contacts" ? "contact_id" : "lead_id"} object={kind} />
           </div>
           <div>
             <label className="label" htmlFor="member-status"><Tr>Estado</Tr></label>
