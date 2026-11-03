@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 
@@ -125,8 +126,11 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           </div>
         )}
       </div>
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-xs font-semibold text-muted">{t("Ver datos en tabla")}</summary>
+      <details className="group/tabla mt-3 text-sm">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-muted [&::-webkit-details-marker]:hidden">
+          <ChevronRight size={14} aria-hidden="true" className="transition-transform group-open/tabla:rotate-90" />
+          {t("Ver datos en tabla")}
+        </summary>
         <div className="overflow-x-auto">
           <table className="table mt-2">
             <thead>

@@ -146,7 +146,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <ObjectIcon object="dashboard" />
+          <ObjectIcon object="forecast" />
           <div>
             <h1 className="text-xl font-medium"><Tr>Pronóstico</Tr> · {periodLabel(type, start, locale)}</h1>
           </div>

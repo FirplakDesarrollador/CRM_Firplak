@@ -59,7 +59,7 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
         {stages.map((stage) => {
           const column = cards.filter((c) => c.stage_id === stage.id);
           const total = column.reduce((s, c) => s + Number(c.amount), 0);
-          const closedTone = stage.category === "won" ? "border-t-success" : stage.category === "lost" ? "border-t-danger" : "";
+          const closedTone = stage.category === "won" ? "bg-success" : stage.category === "lost" ? "bg-danger" : "";
           return (
             <section
               key={stage.id}
@@ -73,10 +73,14 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                 setDragId(null);
                 if (id) requestMove(id, stage.id);
               }}
-              className={`flex w-72 flex-none flex-col rounded-xl border border-t-4 border-line bg-surface-2 ${closedTone} ${over === stage.id ? "ring-2 ring-[var(--brand)]" : ""}`}
-              style={stage.category === "open" ? { borderTopColor: stage.color } : undefined}
+              className={`kanban-column flex w-72 flex-none flex-col rounded-xl border border-line ${over === stage.id ? "ring-2 ring-[var(--brand)]" : ""}`}
             >
               <header className="px-3 pb-2 pt-2.5">
+                <span
+                  aria-hidden="true"
+                  className={`mb-2 block h-[3px] rounded-full ${closedTone}`}
+                  style={stage.category === "open" ? { background: stage.color } : undefined}
+                />
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="truncate text-sm font-medium">{valueLabel(stage.name)}</h2>
                   <span className="badge">{column.length}</span>
@@ -92,12 +96,10 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                       draggable={card.canEdit}
                       onDragStart={(e) => { e.dataTransfer.setData("text/plain", card.id); e.dataTransfer.effectAllowed = "move"; setDragId(card.id); }}
                       onDragEnd={() => setDragId(null)}
-                      className={`card group p-3 ${card.canEdit ? "cursor-grab active:cursor-grabbing" : ""} ${dragId === card.id ? "opacity-50" : ""}`}
+                      className={`card group relative p-3 ${card.canEdit ? "cursor-grab active:cursor-grabbing" : ""} ${dragId === card.id ? "opacity-50" : ""}`}
                     >
-                      <div className="flex items-start gap-1.5">
-                        {card.canEdit && <GripVertical size={14} className="mt-0.5 flex-none text-muted opacity-0 group-hover:opacity-100" />}
-                        <Link href={`/oportunidades/${card.id}`} className="link min-w-0 flex-1 text-sm leading-snug">{card.name}</Link>
-                      </div>
+                      {card.canEdit && <GripVertical size={14} className="absolute right-1.5 top-3 text-muted opacity-0 group-hover:opacity-100" />}
+                      <Link href={`/oportunidades/${card.id}`} className={`link block text-sm leading-snug ${card.canEdit ? "pr-3" : ""}`}>{card.name}</Link>
                       {card.account && <p className="mt-1 truncate text-xs text-muted">{card.account.name}</p>}
                       <div className="mt-2 flex items-center justify-between gap-2 text-xs">
                         <span className="num font-semibold" title={formatCurrency(card.amount)}>{formatCompactCurrency(card.amount)}</span>
@@ -106,11 +108,11 @@ export function Kanban({ stages, cards: initial, lossReasons }: { stages: StageR
                         </span>
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="truncate text-[0.7rem] text-muted">{card.owner?.full_name || card.owner?.email}</span>
+                        <span className="min-w-0 truncate text-[0.7rem] text-muted">{card.owner?.full_name || card.owner?.email}</span>
                         {card.canEdit && (
                           <select
                             aria-label="Mover a etapa"
-                            className="h-7 max-w-32 rounded-md border border-line bg-surface px-1 text-[0.7rem] font-semibold"
+                            className="select select-compact flex-none"
                             value={card.stage_id}
                             onChange={(e) => requestMove(card.id, e.target.value)}
                           >

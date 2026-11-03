@@ -24,7 +24,7 @@ Interfaz en español, con traducción al inglés. Permisos por perfil y rol. Los
 
 ## Brand Commitments
 
-Nombre y logos de Firplak. Paleta de navy, verde oliva, beige o crema y negro, sin exigir los valores exactos del manual de Firplak (decisión de Luis, 3 nov 2026). Efectos Liquid Morph y Glassmorphism, sobre todo en las tarjetas de información.
+Nombre y logos de Firplak. Paleta de navy, azul, verde oliva, blanco y negro, sin exigir los valores exactos del manual de Firplak; modo claro blanco con barra navy y modo oscuro negro (decisiones de Luis, 3 nov 2026). Glassmorphism con blur, sobre todo en las tarjetas de información, y el logo azul de Firplak en movimiento lento de fondo.
 
 ## Evidence on Hand
 

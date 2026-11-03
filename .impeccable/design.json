@@ -79,49 +79,19 @@
           "#ecf2f6"
         ]
       },
-      "navy-300": {
-        "role": "primary",
-        "displayName": "Navy Niebla",
-        "canonical": "#9cbbd0",
-        "tonalRamp": [
-          "#0a1826",
-          "#10263a",
-          "#173650",
-          "#27506f",
-          "#477590",
-          "#9cbbd0",
-          "#d5e3ed",
-          "#ecf2f6"
-        ]
-      },
-      "navy-100": {
-        "role": "primary",
-        "displayName": "Navy Bruma",
-        "canonical": "#d5e3ed",
-        "tonalRamp": [
-          "#0a1826",
-          "#10263a",
-          "#173650",
-          "#27506f",
-          "#477590",
-          "#9cbbd0",
-          "#d5e3ed",
-          "#ecf2f6"
-        ]
-      },
       "sage-700": {
         "role": "secondary",
         "displayName": "Oliva Oscuro",
         "canonical": "#4c5a1f",
         "tonalRamp": [
-          "#090d01",
-          "#202900",
-          "#3b4809",
-          "#5a692e",
-          "#7a8a4f",
-          "#9dae71",
-          "#c3cfa7",
-          "#ecf0e4"
+          "#080e00",
+          "#222b00",
+          "#4c5a1f",
+          "#65762c",
+          "#86973f",
+          "#b7c47f",
+          "#cad8a9",
+          "#f1f3e0"
         ]
       },
       "sage-600": {
@@ -129,14 +99,14 @@
         "displayName": "Oliva Base",
         "canonical": "#65762c",
         "tonalRamp": [
-          "#090d00",
-          "#212900",
-          "#3b4900",
-          "#59691e",
-          "#7a8b42",
-          "#9caf65",
-          "#c2d0a0",
-          "#ecf1e2"
+          "#080e00",
+          "#222b00",
+          "#4c5a1f",
+          "#65762c",
+          "#86973f",
+          "#b7c47f",
+          "#c9d9a1",
+          "#f1f3e0"
         ]
       },
       "sage-500": {
@@ -145,13 +115,13 @@
         "canonical": "#86973f",
         "tonalRamp": [
           "#090d00",
-          "#222900",
-          "#3d4800",
-          "#5b6a01",
-          "#7b8c33",
-          "#9daf58",
-          "#c3d199",
-          "#ecf1e0"
+          "#232a00",
+          "#4c5a1f",
+          "#65762c",
+          "#86973f",
+          "#b7c47f",
+          "#cada98",
+          "#f1f3e0"
         ]
       },
       "sage-300": {
@@ -160,43 +130,43 @@
         "canonical": "#b7c47f",
         "tonalRamp": [
           "#0a0d00",
-          "#232900",
-          "#3f4700",
-          "#5d6824",
-          "#7e8a47",
-          "#a0ad69",
-          "#c6cfa2",
-          "#edf0e3"
+          "#242a00",
+          "#4c5a1f",
+          "#65762c",
+          "#86973f",
+          "#b7c47f",
+          "#cdd8a3",
+          "#f1f3e0"
         ]
       },
       "cream-50": {
         "role": "neutral",
-        "displayName": "Crema Clara",
-        "canonical": "#fcf8ef",
+        "displayName": "Claro Frío",
+        "canonical": "#fbfcfd",
         "tonalRamp": [
-          "#0c0b09",
-          "#27251f",
-          "#45423b",
-          "#646159",
-          "#86827a",
-          "#a8a59c",
-          "#cbc9c3",
-          "#efeeec"
+          "#0b0b0c",
+          "#262627",
+          "#444546",
+          "#656667",
+          "#88898a",
+          "#adaeaf",
+          "#d0d8df",
+          "#fbfcfd"
         ]
       },
       "cream-100": {
         "role": "neutral",
-        "displayName": "Crema Texto",
-        "canonical": "#f4ecdc",
+        "displayName": "Claro Texto",
+        "canonical": "#eef3f6",
         "tonalRamp": [
-          "#0d0b07",
-          "#29241a",
-          "#484134",
-          "#676053",
-          "#898273",
-          "#aca495",
-          "#cec9be",
-          "#f0eeeb"
+          "#0a0b0d",
+          "#242729",
+          "#424648",
+          "#626769",
+          "#858a8c",
+          "#aaafb1",
+          "#d0d8df",
+          "#fbfcfd"
         ]
       },
       "ink-900": {
@@ -204,14 +174,14 @@
         "displayName": "Negro Tinta",
         "canonical": "#0c0f10",
         "tonalRamp": [
-          "#0a0b0c",
-          "#232627",
-          "#3f4344",
-          "#5e6263",
-          "#7f8384",
-          "#a2a6a7",
-          "#c7cacb",
-          "#eeeeef"
+          "#0c0f10",
+          "#2a2e2c",
+          "#3e423b",
+          "#636768",
+          "#868a8b",
+          "#a5a69b",
+          "#ced2d3",
+          "#eceff0"
         ]
       },
       "ink-700": {
@@ -219,14 +189,14 @@
         "displayName": "Negro Secundario",
         "canonical": "#2a2e2c",
         "tonalRamp": [
-          "#0a0b0b",
-          "#232624",
-          "#3f4341",
-          "#5e6260",
-          "#7f8481",
-          "#a1a6a4",
-          "#c7cac8",
-          "#eeefee"
+          "#0c0f10",
+          "#2a2e2c",
+          "#3e423b",
+          "#636765",
+          "#868a88",
+          "#a5a69b",
+          "#ced2d0",
+          "#ecefee"
         ]
       },
       "ink-500": {
@@ -234,119 +204,134 @@
         "displayName": "Negro Atenuado",
         "canonical": "#3e423b",
         "tonalRamp": [
-          "#0a0c09",
-          "#232621",
-          "#3f433c",
-          "#5f635b",
-          "#7f847c",
-          "#a2a79f",
-          "#c7cac5",
-          "#eeefed"
+          "#0c0f10",
+          "#2a2e2c",
+          "#3e423b",
+          "#636860",
+          "#868b83",
+          "#a5a69b",
+          "#cfd2cc",
+          "#ecf0ea"
         ]
       },
       "bg": {
         "role": "neutral",
-        "displayName": "Crema Suelo",
-        "canonical": "#f1e8d6",
+        "displayName": "Blanco Suelo",
+        "canonical": "#ffffff",
         "tonalRamp": [
-          "#0d0b07",
-          "#2a2419",
-          "#484132",
-          "#686051",
-          "#8a8171",
-          "#ada493",
-          "#cec8bd",
-          "#f0eeeb"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Crema Papel",
-        "canonical": "#fffcf5",
+        "displayName": "Blanco Capa",
+        "canonical": "#ffffff",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "surface-2": {
         "role": "neutral",
         "displayName": "Surface 2",
-        "canonical": "rgba(255, 252, 245, 0.55)",
+        "canonical": "rgba(240, 244, 248, 0.72)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0a0b0d",
+          "#242729",
+          "#424548",
+          "#63666a",
+          "#868a8d",
+          "#abaeb2",
+          "#ced1d4",
+          "#eceff1"
         ]
       },
       "surface-3": {
         "role": "neutral",
         "displayName": "Surface 3",
-        "canonical": "rgba(23, 54, 80, 0.08)",
+        "canonical": "rgba(23, 54, 80, 0.07)",
         "tonalRamp": [
-          "#040c15",
-          "#0d273c",
-          "#264560",
-          "#456581",
-          "#6586a4",
-          "#87a9c9",
-          "#b5cce2",
-          "#e8eff6"
+          "#010c19",
+          "#11283c",
+          "#2b4861",
+          "#4a6a86",
+          "#6c8dab",
+          "#93b2ce",
+          "#bad5ee",
+          "#e2f1fe"
         ]
       },
       "border": {
         "role": "neutral",
         "displayName": "Border",
-        "canonical": "rgba(12, 15, 16, 0.13)",
+        "canonical": "rgba(12, 15, 16, 0.1)",
         "tonalRamp": [
           "#0a0b0c",
-          "#232627",
-          "#3f4344",
-          "#5e6263",
-          "#7f8384",
-          "#a2a6a7",
-          "#c7cacb",
-          "#eeeeef"
+          "#242728",
+          "#424647",
+          "#636768",
+          "#868a8b",
+          "#abafb0",
+          "#ced2d3",
+          "#eceff0"
         ]
       },
       "border-strong": {
         "role": "neutral",
         "displayName": "Border Strong",
-        "canonical": "rgba(12, 15, 16, 0.24)",
+        "canonical": "rgba(12, 15, 16, 0.2)",
         "tonalRamp": [
           "#0a0b0c",
-          "#232627",
-          "#3f4344",
-          "#5e6263",
-          "#7f8384",
-          "#a2a6a7",
-          "#c7cacb",
-          "#eeeeef"
+          "#242728",
+          "#424647",
+          "#636768",
+          "#868a8b",
+          "#abafb0",
+          "#ced2d3",
+          "#eceff0"
+        ]
+      },
+      "brand-soft": {
+        "role": "neutral",
+        "displayName": "Brand Soft",
+        "canonical": "rgba(23, 54, 80, 0.09)",
+        "tonalRamp": [
+          "#010c19",
+          "#11283c",
+          "#2b4861",
+          "#4a6a86",
+          "#6c8dab",
+          "#93b2ce",
+          "#bad5ee",
+          "#e2f1fe"
         ]
       },
       "accent": {
         "role": "secondary",
-        "displayName": "Oliva de Logro",
+        "displayName": "Oliva de Acento",
         "canonical": "#414e18",
         "tonalRamp": [
-          "#090d01",
-          "#202a00",
-          "#3b4811",
-          "#5a6833",
-          "#7b8a54",
-          "#9dad75",
-          "#c3cfaa",
-          "#edf0e5"
+          "#080e00",
+          "#222b01",
+          "#3f4b1a",
+          "#5f6d38",
+          "#81915b",
+          "#a6b583",
+          "#cad8ac",
+          "#e9f4d1"
         ]
       },
       "accent-soft": {
@@ -354,14 +339,14 @@
         "displayName": "Accent Soft",
         "canonical": "rgba(101, 118, 44, 0.14)",
         "tonalRamp": [
-          "#090d00",
-          "#212900",
-          "#3b4900",
-          "#59691e",
-          "#7a8b42",
-          "#9caf65",
-          "#c2d0a0",
-          "#ecf1e2"
+          "#080e00",
+          "#222b00",
+          "#3e4c00",
+          "#5e6e24",
+          "#80924a",
+          "#a5b775",
+          "#c9d9a1",
+          "#e8f5c8"
         ]
       },
       "success": {
@@ -369,14 +354,14 @@
         "displayName": "Oliva Éxito",
         "canonical": "#3f5616",
         "tonalRamp": [
-          "#070e00",
-          "#1b2b00",
-          "#344a06",
-          "#536b2c",
-          "#738d4e",
-          "#95b070",
-          "#bed1a6",
-          "#ebf1e4"
+          "#050f00",
+          "#1d2c00",
+          "#384d12",
+          "#577032",
+          "#7a9455",
+          "#9fb87e",
+          "#c4daa8",
+          "#e4f6ce"
         ]
       },
       "success-soft": {
@@ -384,14 +369,14 @@
         "displayName": "Success Soft",
         "canonical": "rgba(101, 118, 44, 0.16)",
         "tonalRamp": [
-          "#090d00",
-          "#212900",
-          "#3b4900",
-          "#59691e",
-          "#7a8b42",
-          "#9caf65",
-          "#c2d0a0",
-          "#ecf1e2"
+          "#080e00",
+          "#222b00",
+          "#3e4c00",
+          "#5e6e24",
+          "#80924a",
+          "#a5b775",
+          "#c9d9a1",
+          "#e8f5c8"
         ]
       },
       "warning": {
@@ -399,14 +384,14 @@
         "displayName": "Ámbar de Estado",
         "canonical": "#6c4809",
         "tonalRamp": [
-          "#140800",
-          "#352000",
-          "#5a3b03",
-          "#7e5920",
-          "#a17a44",
-          "#c69d66",
-          "#e0c4a0",
-          "#f6ede2"
+          "#170700",
+          "#372100",
+          "#5e3d02",
+          "#835e26",
+          "#a8814c",
+          "#cca776",
+          "#ebcba1",
+          "#feebd3"
         ]
       },
       "warning-mark": {
@@ -415,13 +400,13 @@
         "canonical": "#bd8629",
         "tonalRamp": [
           "#160700",
-          "#352000",
-          "#593b02",
-          "#825807",
-          "#ac760f",
-          "#d19940",
-          "#e8c28d",
-          "#f8eddd"
+          "#372100",
+          "#5e3e00",
+          "#885c08",
+          "#b37d20",
+          "#d7a457",
+          "#f5c98a",
+          "#feecd3"
         ]
       },
       "warning-soft": {
@@ -430,13 +415,13 @@
         "canonical": "rgba(189, 134, 41, 0.18)",
         "tonalRamp": [
           "#160700",
-          "#352000",
-          "#593b02",
-          "#825807",
-          "#ac760f",
-          "#d19940",
-          "#e8c28d",
-          "#f8eddd"
+          "#372100",
+          "#5e3e00",
+          "#885c08",
+          "#b37d20",
+          "#d7a457",
+          "#f5c98a",
+          "#feecd3"
         ]
       },
       "danger": {
@@ -444,14 +429,14 @@
         "displayName": "Terracota de Estado",
         "canonical": "#9c3a24",
         "tonalRamp": [
-          "#1d0200",
-          "#4a0700",
-          "#7a1800",
-          "#9f3d27",
-          "#c66049",
-          "#ed836a",
-          "#fdb5a3",
-          "#fee9e4"
+          "#220000",
+          "#4c0800",
+          "#7b210c",
+          "#a5432c",
+          "#cd6850",
+          "#f19079",
+          "#fec0b1",
+          "#ffe9e3"
         ]
       },
       "danger-soft": {
@@ -459,14 +444,14 @@
         "displayName": "Danger Soft",
         "canonical": "rgba(156, 58, 36, 0.13)",
         "tonalRamp": [
-          "#1d0200",
-          "#4a0700",
-          "#7a1800",
-          "#9f3d27",
-          "#c66049",
-          "#ed836a",
-          "#fdb5a3",
-          "#fee9e4"
+          "#220000",
+          "#4c0800",
+          "#7b210c",
+          "#a5432c",
+          "#cd6850",
+          "#f19079",
+          "#fec0b1",
+          "#ffe9e3"
         ]
       },
       "info-soft": {
@@ -474,329 +459,269 @@
         "displayName": "Info Soft",
         "canonical": "rgba(39, 80, 111, 0.12)",
         "tonalRamp": [
-          "#020c16",
-          "#042740",
-          "#1c4664",
-          "#3c6686",
-          "#5d87a9",
-          "#7fabce",
-          "#b1cde5",
-          "#e7f0f7"
-        ]
-      },
-      "brand-soft": {
-        "role": "neutral",
-        "displayName": "Brand Soft",
-        "canonical": "rgba(23, 54, 80, 0.09)",
-        "tonalRamp": [
-          "#040c15",
-          "#0d273c",
-          "#264560",
-          "#456581",
-          "#6586a4",
-          "#87a9c9",
-          "#b5cce2",
-          "#e8eff6"
+          "#000c1b",
+          "#082940",
+          "#234965",
+          "#416b8b",
+          "#658eb0",
+          "#8cb3d3",
+          "#b4d6f2",
+          "#e1f1ff"
         ]
       },
       "chart-best": {
         "role": "tertiary",
-        "displayName": "Beige Tostado",
-        "canonical": "#9a7f49",
+        "displayName": "Azul Potencial",
+        "canonical": "#6f9fc2",
         "tonalRamp": [
-          "#110a00",
-          "#322200",
-          "#563d00",
-          "#775d26",
-          "#997e48",
-          "#bda16a",
-          "#dac7a3",
-          "#f4eee3"
+          "#000d1c",
+          "#032940",
+          "#1e4966",
+          "#3d6b8c",
+          "#608fb1",
+          "#88b4d4",
+          "#b1d7f3",
+          "#e1f1fe"
         ]
       },
       "control-bg": {
         "role": "neutral",
         "displayName": "Control Bg",
-        "canonical": "rgba(255, 252, 245, 0.86)",
+        "canonical": "rgba(255, 255, 255, 0.92)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
-        ]
-      },
-      "control-hover": {
-        "role": "neutral",
-        "displayName": "Control Hover",
-        "canonical": "#fffcf5",
-        "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "field-bg": {
         "role": "neutral",
         "displayName": "Field Bg",
-        "canonical": "rgba(255, 252, 245, 0.86)",
+        "canonical": "rgba(255, 255, 255, 0.92)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "glass-hi": {
         "role": "neutral",
         "displayName": "Glass Hi",
-        "canonical": "rgba(255, 252, 245, 0.78)",
+        "canonical": "rgba(255, 255, 255, 0.6)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "glass-lo": {
         "role": "neutral",
         "displayName": "Glass Lo",
-        "canonical": "rgba(255, 252, 245, 0.62)",
+        "canonical": "rgba(255, 255, 255, 0.4)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "card-hi": {
         "role": "neutral",
         "displayName": "Card Hi",
-        "canonical": "rgba(255, 252, 245, 0.88)",
+        "canonical": "rgba(255, 255, 255, 0.82)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "card-lo": {
         "role": "neutral",
         "displayName": "Card Lo",
-        "canonical": "rgba(255, 252, 245, 0.78)",
+        "canonical": "rgba(255, 255, 255, 0.72)",
         "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423c",
-          "#63615b",
-          "#85827c",
-          "#a7a59e",
-          "#cbc9c4",
-          "#efeeed"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "glass-border": {
         "role": "neutral",
         "displayName": "Glass Border",
-        "canonical": "rgba(255, 255, 255, 0.72)",
+        "canonical": "rgba(255, 255, 255, 0.9)",
         "tonalRamp": [
           "#0b0b0b",
-          "#252525",
-          "#424242",
-          "#616161",
-          "#828282",
-          "#a5a5a5",
-          "#c9c9c9",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
           "#eeeeee"
         ]
       },
       "glass-sheen": {
         "role": "neutral",
         "displayName": "Glass Sheen",
-        "canonical": "rgba(255, 255, 255, 0.55)",
+        "canonical": "rgba(255, 255, 255, 0.7)",
         "tonalRamp": [
           "#0b0b0b",
-          "#252525",
-          "#424242",
-          "#616161",
-          "#828282",
-          "#a5a5a5",
-          "#c9c9c9",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
           "#eeeeee"
         ]
       },
-      "scrim": {
-        "role": "neutral",
-        "displayName": "Scrim",
-        "canonical": "rgba(241, 232, 214, 0.72)",
+      "logo-a": {
+        "role": "primary",
+        "displayName": "Azul Marca Alto",
+        "canonical": "#2f6ea3",
         "tonalRamp": [
-          "#0d0b07",
-          "#2a2419",
-          "#484132",
-          "#686051",
-          "#8a8171",
-          "#ada493",
-          "#cec8bd",
-          "#f0eeeb"
+          "#000b20",
+          "#002847",
+          "#064877",
+          "#2b6a9f",
+          "#518ec5",
+          "#7bb4e7",
+          "#aed6fc",
+          "#e2f0fe"
         ]
       },
-      "blob-a": {
-        "role": "tertiary",
-        "displayName": "Blob A",
-        "canonical": "#5f8caf",
+      "logo-b": {
+        "role": "primary",
+        "displayName": "Azul Marca Bajo",
+        "canonical": "#1c4f7c",
         "tonalRamp": [
-          "#020c16",
-          "#012840",
-          "#194665",
-          "#3a6687",
-          "#5b88ab",
-          "#7dabcf",
-          "#afcee6",
-          "#e7f0f8"
-        ]
-      },
-      "blob-b": {
-        "role": "tertiary",
-        "displayName": "Blob B",
-        "canonical": "#a3b25c",
-        "tonalRamp": [
-          "#0a0d00",
-          "#232900",
-          "#3f4701",
-          "#5d6904",
-          "#7d8b34",
-          "#9fae58",
-          "#c5d099",
-          "#edf1e0"
-        ]
-      },
-      "blob-c": {
-        "role": "tertiary",
-        "displayName": "Blob C",
-        "canonical": "#dcc698",
-        "tonalRamp": [
-          "#100a01",
-          "#312200",
-          "#523f12",
-          "#725e33",
-          "#948054",
-          "#b8a276",
-          "#d6c8aa",
-          "#f2eee5"
-        ]
-      },
-      "blob-d": {
-        "role": "tertiary",
-        "displayName": "Blob D",
-        "canonical": "#4a7ba1",
-        "tonalRamp": [
-          "#010c17",
-          "#002843",
-          "#134669",
-          "#35668b",
-          "#5788af",
-          "#79abd3",
-          "#adcee9",
-          "#e6f0f9"
-        ]
-      },
-      "blob-e": {
-        "role": "tertiary",
-        "displayName": "Blob E",
-        "canonical": "#c6d08d",
-        "tonalRamp": [
-          "#0b0d00",
-          "#242800",
-          "#414703",
-          "#5f6726",
-          "#808948",
-          "#a3ac6a",
-          "#c7cea3",
-          "#eef0e3"
-        ]
-      },
-      "drop-beige-a": {
-        "role": "tertiary",
-        "displayName": "Drop Beige A",
-        "canonical": "#b59a63",
-        "tonalRamp": [
-          "#110a00",
-          "#322200",
-          "#563e00",
-          "#765d26",
-          "#997e48",
-          "#bca16a",
-          "#d9c7a3",
-          "#f3eee3"
-        ]
-      },
-      "drop-beige-b": {
-        "role": "tertiary",
-        "displayName": "Drop Beige B",
-        "canonical": "#7d6638",
-        "tonalRamp": [
-          "#110a01",
-          "#322200",
-          "#543e0d",
-          "#745e30",
-          "#977f50",
-          "#baa272",
-          "#d8c7a8",
-          "#f3eee4"
+          "#000b21",
+          "#002849",
+          "#194871",
+          "#386a98",
+          "#5c8ebe",
+          "#84b3e1",
+          "#add6fe",
+          "#e2f0ff"
         ]
       },
       "dark-bg": {
         "role": "neutral",
-        "displayName": "Navy Noche",
-        "canonical": "#070f17",
+        "displayName": "Negro Suelo",
+        "canonical": "#000000",
         "tonalRamp": [
-          "#080c0f",
-          "#1e262e",
-          "#39434d",
-          "#58636d",
-          "#79848f",
-          "#9ba7b2",
-          "#c2cad2",
-          "#eceff1"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "dark-surface": {
         "role": "neutral",
-        "displayName": "Navy Capa",
-        "canonical": "#10202e",
+        "displayName": "Negro Capa",
+        "canonical": "#0e1011",
         "tonalRamp": [
-          "#070c11",
-          "#192733",
-          "#334454",
-          "#516474",
-          "#728596",
-          "#94a8ba",
-          "#becbd8",
-          "#ebeff3"
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646668",
+          "#878a8b",
+          "#acaeb0",
+          "#cfd1d2",
+          "#edeff0"
+        ]
+      },
+      "dark-surface-2": {
+        "role": "neutral",
+        "displayName": "Dark Surface 2",
+        "canonical": "rgba(255, 255, 255, 0.05)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "dark-surface-3": {
+        "role": "neutral",
+        "displayName": "Dark Surface 3",
+        "canonical": "rgba(255, 255, 255, 0.09)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "dark-border": {
+        "role": "neutral",
+        "displayName": "Dark Border",
+        "canonical": "rgba(255, 255, 255, 0.13)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "dark-border-strong": {
+        "role": "neutral",
+        "displayName": "Dark Border Strong",
+        "canonical": "rgba(255, 255, 255, 0.24)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
       "dark-text-2": {
@@ -804,44 +729,134 @@
         "displayName": "Dark Text 2",
         "canonical": "#d3dde4",
         "tonalRamp": [
-          "#090c0d",
-          "#20262a",
-          "#3b4349",
-          "#5a6369",
-          "#7b848a",
-          "#9da7ad",
-          "#c4cacf",
-          "#edeff0"
+          "#080c0e",
+          "#21272c",
+          "#3f464c",
+          "#5f676e",
+          "#828b91",
+          "#a7afb5",
+          "#cbd2d7",
+          "#e9eff4"
         ]
       },
       "dark-muted": {
         "role": "neutral",
         "displayName": "Dark Muted",
-        "canonical": "#b1c1cd",
+        "canonical": "#adb9c2",
         "tonalRamp": [
-          "#080c0f",
-          "#1c272e",
-          "#36444e",
-          "#55636e",
-          "#768590",
-          "#98a7b3",
-          "#c0cbd3",
-          "#eceff1"
+          "#070c0f",
+          "#20282d",
+          "#3d464e",
+          "#5d6870",
+          "#808b93",
+          "#a5b0b8",
+          "#c9d2d9",
+          "#e8f0f5"
         ]
       },
-      "dark-border": {
+      "dark-heading": {
         "role": "neutral",
-        "displayName": "Dark Border",
-        "canonical": "rgba(244, 236, 220, 0.14)",
+        "displayName": "Dark Heading",
+        "canonical": "#f6f9fb",
         "tonalRamp": [
-          "#0d0b07",
-          "#29241a",
-          "#484134",
-          "#676053",
-          "#898273",
-          "#aca495",
-          "#cec9be",
-          "#f0eeeb"
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646668",
+          "#87898b",
+          "#acaeb0",
+          "#cfd1d3",
+          "#edeff0"
+        ]
+      },
+      "dark-brand": {
+        "role": "primary",
+        "displayName": "Azul Dato",
+        "canonical": "#8fb9da",
+        "tonalRamp": [
+          "#000c1a",
+          "#0a293e",
+          "#254963",
+          "#436b88",
+          "#668ead",
+          "#8eb3d1",
+          "#b5d6f0",
+          "#e0f1ff"
+        ]
+      },
+      "dark-brand-hover": {
+        "role": "primary",
+        "displayName": "Azul Dato Hover",
+        "canonical": "#b4d0e6",
+        "tonalRamp": [
+          "#030c15",
+          "#162936",
+          "#314859",
+          "#50697d",
+          "#738da1",
+          "#99b2c5",
+          "#bfd4e5",
+          "#e0f1ff"
+        ]
+      },
+      "dark-brand-strong": {
+        "role": "primary",
+        "displayName": "Dark Brand Strong",
+        "canonical": "#d5e3ed",
+        "tonalRamp": [
+          "#070c10",
+          "#1f282e",
+          "#3c474e",
+          "#5c6871",
+          "#7f8b94",
+          "#a4b0b8",
+          "#c8d3da",
+          "#e7f0f6"
+        ]
+      },
+      "dark-brand-soft": {
+        "role": "neutral",
+        "displayName": "Dark Brand Soft",
+        "canonical": "rgba(15, 32, 46, 0.86)",
+        "tonalRamp": [
+          "#040c14",
+          "#1a2834",
+          "#364756",
+          "#556979",
+          "#788c9d",
+          "#9eb1c1",
+          "#c3d3e2",
+          "#e3f0fc"
+        ]
+      },
+      "dark-brand-contrast": {
+        "role": "neutral",
+        "displayName": "Dark Brand Contrast",
+        "canonical": "#07111a",
+        "tonalRamp": [
+          "#060c11",
+          "#1f2830",
+          "#3b4651",
+          "#5b6873",
+          "#7e8b97",
+          "#a3b0bb",
+          "#c8d2dd",
+          "#e7f0f8"
+        ]
+      },
+      "dark-accent-soft": {
+        "role": "neutral",
+        "displayName": "Dark Accent Soft",
+        "canonical": "rgba(183, 196, 127, 0.16)",
+        "tonalRamp": [
+          "#0a0d00",
+          "#242a00",
+          "#424b06",
+          "#626d2a",
+          "#85904f",
+          "#aab578",
+          "#cdd8a3",
+          "#ebf4ca"
         ]
       },
       "dark-success": {
@@ -850,13 +865,28 @@
         "canonical": "#bccd76",
         "tonalRamp": [
           "#0a0d00",
-          "#232900",
-          "#3e4801",
-          "#5c6903",
-          "#7c8b34",
-          "#9faf58",
-          "#c4d099",
-          "#edf1e0"
+          "#242a00",
+          "#414b01",
+          "#616e0f",
+          "#83923d",
+          "#a8b76a",
+          "#cbd998",
+          "#eaf5c2"
+        ]
+      },
+      "dark-success-soft": {
+        "role": "neutral",
+        "displayName": "Dark Success Soft",
+        "canonical": "rgba(30, 40, 18, 0.86)",
+        "tonalRamp": [
+          "#080d04",
+          "#212a18",
+          "#3f4933",
+          "#5f6b52",
+          "#828e75",
+          "#a7b39a",
+          "#cbd5c0",
+          "#e9f2e1"
         ]
       },
       "dark-warning": {
@@ -864,14 +894,29 @@
         "displayName": "Ámbar de Estado Oscuro",
         "canonical": "#e2bd7a",
         "tonalRamp": [
-          "#130900",
-          "#332200",
-          "#563d01",
-          "#7c5b11",
-          "#9f7c39",
-          "#c39f5d",
-          "#dec69b",
-          "#f5eee1"
+          "#140800",
+          "#352300",
+          "#5b4000",
+          "#816019",
+          "#a68342",
+          "#c9a96e",
+          "#e9cd9b",
+          "#feeccd"
+        ]
+      },
+      "dark-warning-soft": {
+        "role": "neutral",
+        "displayName": "Dark Warning Soft",
+        "canonical": "rgba(226, 189, 122, 0.16)",
+        "tonalRamp": [
+          "#140800",
+          "#352300",
+          "#5b4000",
+          "#816019",
+          "#a68342",
+          "#c9a96e",
+          "#e9cd9b",
+          "#feeccd"
         ]
       },
       "dark-danger": {
@@ -879,29 +924,44 @@
         "displayName": "Terracota de Estado Oscuro",
         "canonical": "#f4b1a2",
         "tonalRamp": [
-          "#170604",
-          "#41150d",
-          "#663024",
-          "#894f42",
-          "#ae7062",
-          "#d39284",
-          "#eabdb3",
-          "#f9ebe8"
+          "#1b0301",
+          "#411810",
+          "#683429",
+          "#8f5447",
+          "#b4776a",
+          "#d89d90",
+          "#f7c3b7",
+          "#ffe9e4"
+        ]
+      },
+      "dark-danger-soft": {
+        "role": "neutral",
+        "displayName": "Dark Danger Soft",
+        "canonical": "rgba(238, 159, 141, 0.16)",
+        "tonalRamp": [
+          "#1e0100",
+          "#451309",
+          "#6e2f22",
+          "#964f40",
+          "#bc7362",
+          "#e09a89",
+          "#fec0b1",
+          "#fee9e4"
         ]
       },
       "dark-chart-best": {
         "role": "tertiary",
-        "displayName": "Beige Tostado Oscuro",
-        "canonical": "#c9b386",
+        "displayName": "Arena de Dato",
+        "canonical": "#d8cda9",
         "tonalRamp": [
-          "#100a01",
-          "#312200",
-          "#523f13",
-          "#725e34",
-          "#948054",
-          "#b8a276",
-          "#d6c8aa",
-          "#f2eee5"
+          "#0f0b00",
+          "#2d260e",
+          "#4d4527",
+          "#706645",
+          "#938968",
+          "#b7ae8e",
+          "#d9d1b6",
+          "#f5efd8"
         ]
       },
       "dark-primary-a": {
@@ -910,13 +970,13 @@
         "canonical": "#a6b85c",
         "tonalRamp": [
           "#090d00",
-          "#222900",
-          "#3e4801",
-          "#5b6904",
-          "#7b8c2e",
-          "#9eaf53",
-          "#c4d197",
-          "#ecf1df"
+          "#242a00",
+          "#414b06",
+          "#606f00",
+          "#829338",
+          "#a7b866",
+          "#cbda95",
+          "#e9f6bf"
         ]
       },
       "dark-primary-b": {
@@ -924,14 +984,14 @@
         "displayName": "Oliva Activo Bajo",
         "canonical": "#7f9140",
         "tonalRamp": [
-          "#090d00",
-          "#212900",
-          "#3c4802",
-          "#5a6a12",
-          "#7a8c3b",
-          "#9caf5e",
-          "#c3d19c",
-          "#ecf1e1"
+          "#090e00",
+          "#222b00",
+          "#3f4c00",
+          "#5e6f1a",
+          "#819343",
+          "#a6b76f",
+          "#cada9c",
+          "#e8f6c5"
         ]
       },
       "dark-primary-text": {
@@ -939,299 +999,374 @@
         "displayName": "Dark Primary Text",
         "canonical": "#12170a",
         "tonalRamp": [
-          "#0a0c07",
-          "#22271b",
-          "#3f4536",
-          "#5d6454",
-          "#7e8575",
-          "#a1a897",
-          "#c6cbc0",
-          "#edefeb"
+          "#090c06",
+          "#24281d",
+          "#42473a",
+          "#626959",
+          "#858c7c",
+          "#aab1a1",
+          "#ced3c6",
+          "#ecf1e5"
         ]
       },
       "dark-control-bg": {
         "role": "neutral",
         "displayName": "Dark Control Bg",
-        "canonical": "rgba(16, 32, 46, 0.9)",
+        "canonical": "rgba(20, 22, 24, 0.92)",
         "tonalRamp": [
-          "#070c11",
-          "#192733",
-          "#334454",
-          "#516474",
-          "#728596",
-          "#94a8ba",
-          "#becbd8",
-          "#ebeff3"
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646669",
+          "#87898c",
+          "#acaeb1",
+          "#cfd1d3",
+          "#edeff0"
+        ]
+      },
+      "dark-control-hover": {
+        "role": "neutral",
+        "displayName": "Dark Control Hover",
+        "canonical": "rgba(38, 41, 44, 0.95)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242729",
+          "#424548",
+          "#63666a",
+          "#868a8d",
+          "#abaeb2",
+          "#ced1d4",
+          "#eceff1"
         ]
       },
       "dark-field-bg": {
         "role": "neutral",
         "displayName": "Dark Field Bg",
-        "canonical": "rgba(5, 13, 21, 0.48)",
+        "canonical": "rgba(10, 11, 12, 0.72)",
         "tonalRamp": [
-          "#080c0f",
-          "#1e262e",
-          "#39434d",
-          "#57636d",
-          "#78848f",
-          "#9aa7b2",
-          "#c2cad2",
-          "#eceff1"
+          "#0b0b0c",
+          "#262627",
+          "#444546",
+          "#656667",
+          "#88898b",
+          "#adaeaf",
+          "#d0d1d2",
+          "#edeeef"
         ]
       },
       "dark-glass-hi": {
         "role": "neutral",
         "displayName": "Dark Glass Hi",
-        "canonical": "rgba(39, 66, 90, 0.62)",
+        "canonical": "rgba(36, 40, 43, 0.55)",
         "tonalRamp": [
-          "#050c14",
-          "#11273a",
-          "#2a455d",
-          "#48647e",
-          "#6986a1",
-          "#8ba9c5",
-          "#b8ccdf",
-          "#e9eff5"
+          "#090b0d",
+          "#242729",
+          "#424649",
+          "#62676a",
+          "#858a8d",
+          "#aaafb2",
+          "#cdd1d5",
+          "#eceff1"
         ]
       },
       "dark-glass-lo": {
         "role": "neutral",
         "displayName": "Dark Glass Lo",
-        "canonical": "rgba(14, 30, 44, 0.5)",
+        "canonical": "rgba(14, 16, 17, 0.42)",
         "tonalRamp": [
-          "#070c11",
-          "#192733",
-          "#334454",
-          "#516474",
-          "#728597",
-          "#94a8ba",
-          "#becbd8",
-          "#ebeff3"
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646668",
+          "#878a8b",
+          "#acaeb0",
+          "#cfd1d2",
+          "#edeff0"
         ]
       },
       "dark-card-hi": {
         "role": "neutral",
         "displayName": "Dark Card Hi",
-        "canonical": "rgba(26, 47, 66, 0.84)",
+        "canonical": "rgba(24, 26, 28, 0.84)",
         "tonalRamp": [
-          "#060c12",
-          "#152736",
-          "#2f4458",
-          "#4d6479",
-          "#6d859c",
-          "#90a8c0",
-          "#bbcbdb",
-          "#eaeff4"
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646669",
+          "#87898c",
+          "#acaeb1",
+          "#cfd1d3",
+          "#edeff0"
         ]
       },
       "dark-card-lo": {
         "role": "neutral",
         "displayName": "Dark Card Lo",
-        "canonical": "rgba(14, 29, 42, 0.8)",
+        "canonical": "rgba(12, 14, 15, 0.8)",
         "tonalRamp": [
-          "#070c10",
-          "#1a2632",
-          "#344453",
-          "#526373",
-          "#738595",
-          "#95a8b9",
-          "#becbd7",
-          "#ebeff3"
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646668",
+          "#878a8b",
+          "#acaeb0",
+          "#cfd1d2",
+          "#edeff0"
         ]
       },
       "dark-glass-border": {
         "role": "neutral",
         "displayName": "Dark Glass Border",
-        "canonical": "rgba(245, 236, 220, 0.17)",
+        "canonical": "rgba(255, 255, 255, 0.14)",
         "tonalRamp": [
-          "#0d0b07",
-          "#2a241a",
-          "#484134",
-          "#686052",
-          "#898173",
-          "#aca495",
-          "#cec8be",
-          "#f0eeeb"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
-      "dark-scrim": {
+      "dark-glass-sheen": {
         "role": "neutral",
-        "displayName": "Dark Scrim",
-        "canonical": "rgba(7, 15, 23, 0.78)",
+        "displayName": "Dark Glass Sheen",
+        "canonical": "rgba(255, 255, 255, 0.1)",
         "tonalRamp": [
-          "#080c0f",
-          "#1e262e",
-          "#39434d",
-          "#58636d",
-          "#79848f",
-          "#9ba7b2",
-          "#c2cad2",
-          "#eceff1"
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
         ]
       },
-      "dark-blob-a": {
-        "role": "tertiary",
-        "displayName": "Dark Blob A",
-        "canonical": "#1f5079",
+      "dark-logo-a": {
+        "role": "primary",
+        "displayName": "Azul Marca Oscuro",
+        "canonical": "#3a7fb8",
         "tonalRamp": [
-          "#010c19",
-          "#002747",
-          "#12456d",
-          "#356590",
-          "#5687b4",
-          "#78aad9",
-          "#accded",
-          "#e6f0fa"
+          "#000c20",
+          "#002846",
+          "#074875",
+          "#246ba2",
+          "#4c8fc8",
+          "#77b4ea",
+          "#abd6fe",
+          "#e2f1ff"
         ]
       },
-      "dark-blob-b": {
-        "role": "tertiary",
-        "displayName": "Dark Blob B",
-        "canonical": "#4d5e22",
+      "chrome-bar-hi": {
+        "role": "primary",
+        "displayName": "Barra Navy Alta",
+        "canonical": "rgba(10, 24, 38, 0.96)",
         "tonalRamp": [
-          "#080d00",
-          "#1f2a00",
-          "#394909",
-          "#58692e",
-          "#788b4f",
-          "#9aae71",
-          "#c2d0a7",
-          "#ecf1e4"
+          "#050c14",
+          "#1c2834",
+          "#384756",
+          "#576879",
+          "#7a8b9d",
+          "#a0b0c1",
+          "#c5d3e2",
+          "#e4f0fc"
         ]
       },
-      "dark-blob-c": {
-        "role": "tertiary",
-        "displayName": "Dark Blob C",
-        "canonical": "#4a4029",
+      "chrome-bar-lo": {
+        "role": "primary",
+        "displayName": "Barra Navy Baja",
+        "canonical": "rgba(13, 32, 49, 0.9)",
+        "tonalRamp": [
+          "#040c15",
+          "#192836",
+          "#344759",
+          "#53697d",
+          "#768ca1",
+          "#9cb1c5",
+          "#c1d3e5",
+          "#e2f1ff"
+        ]
+      },
+      "chrome-line": {
+        "role": "neutral",
+        "displayName": "Chrome Line",
+        "canonical": "rgba(255, 255, 255, 0.12)",
         "tonalRamp": [
           "#0e0b05",
-          "#2c2411",
-          "#4b412a",
-          "#6b6048",
-          "#8c8168",
-          "#afa48a",
-          "#d0c8b7",
-          "#f1eee9"
+          "#2b261c",
+          "#4a4438",
+          "#6c6557",
+          "#8f887a",
+          "#b4ada0",
+          "#d6d0c4",
+          "#f3eee4"
         ]
       },
-      "dark-blob-d": {
-        "role": "tertiary",
-        "displayName": "Dark Blob D",
-        "canonical": "#15395a",
+      "chrome-surface": {
+        "role": "primary",
+        "displayName": "Capa de la Barra",
+        "canonical": "#10202e",
         "tonalRamp": [
-          "#030c17",
-          "#082641",
-          "#214466",
-          "#406488",
-          "#6086ac",
-          "#82a9d0",
-          "#b2cce7",
-          "#e7f0f8"
+          "#050c14",
+          "#1b2833",
+          "#374756",
+          "#566879",
+          "#798c9d",
+          "#9eb0c1",
+          "#c4d3e2",
+          "#e4f0fc"
         ]
       },
-      "dark-blob-e": {
-        "role": "tertiary",
-        "displayName": "Dark Blob E",
-        "canonical": "#3f4f1d",
-        "tonalRamp": [
-          "#080d02",
-          "#1e2a00",
-          "#394916",
-          "#586937",
-          "#788a57",
-          "#9aae79",
-          "#c2cfac",
-          "#ecf0e5"
-        ]
-      },
-      "dark-drop-navy-a": {
-        "role": "tertiary",
-        "displayName": "Dark Drop Navy A",
-        "canonical": "#6f9fc2",
-        "tonalRamp": [
-          "#020c16",
-          "#002840",
-          "#164665",
-          "#386687",
-          "#5988aa",
-          "#7babcf",
-          "#aecee6",
-          "#e6f0f8"
-        ]
-      },
-      "dark-drop-navy-b": {
-        "role": "tertiary",
-        "displayName": "Dark Drop Navy B",
-        "canonical": "#2d5878",
-        "tonalRamp": [
-          "#020c16",
-          "#022840",
-          "#1a4665",
-          "#3b6687",
-          "#5c88aa",
-          "#7eabcf",
-          "#b0cde6",
-          "#e7f0f8"
-        ]
-      },
-      "dark-drop-olive-a": {
-        "role": "tertiary",
-        "displayName": "Dark Drop Olive A",
-        "canonical": "#a4b65a",
+      "chrome-tab-hi": {
+        "role": "secondary",
+        "displayName": "Oliva de Pestaña Alto",
+        "canonical": "rgba(164, 182, 90, 0.5)",
         "tonalRamp": [
           "#090d00",
-          "#222900",
-          "#3e4801",
-          "#5b6904",
-          "#7b8c2e",
-          "#9eaf53",
-          "#c4d197",
-          "#ecf1df"
+          "#242a00",
+          "#414b06",
+          "#606f00",
+          "#829338",
+          "#a7b866",
+          "#cbda95",
+          "#e9f6bf"
         ]
       },
-      "dark-drop-olive-b": {
-        "role": "tertiary",
-        "displayName": "Dark Drop Olive B",
-        "canonical": "#5f7229",
+      "chrome-tab-lo": {
+        "role": "secondary",
+        "displayName": "Oliva de Pestaña Bajo",
+        "canonical": "rgba(95, 114, 41, 0.42)",
         "tonalRamp": [
           "#080e00",
-          "#202a00",
-          "#3a4901",
-          "#576a20",
-          "#788c44",
-          "#9aaf66",
-          "#c1d1a1",
-          "#ecf1e2"
+          "#212b00",
+          "#3c4c00",
+          "#5c6f26",
+          "#7f934c",
+          "#a4b876",
+          "#c8daa2",
+          "#e7f6c9"
         ]
       },
-      "dark-drop-beige-a": {
-        "role": "tertiary",
-        "displayName": "Dark Drop Beige A",
-        "canonical": "#cdb98d",
+      "dock-hi": {
+        "role": "primary",
+        "displayName": "Dock Hi",
+        "canonical": "rgba(23, 44, 64, 0.97)",
         "tonalRamp": [
-          "#100a01",
-          "#312300",
-          "#513f15",
-          "#715f36",
-          "#938056",
-          "#b6a378",
-          "#d5c8ab",
-          "#f2eee5"
+          "#030c16",
+          "#182838",
+          "#33475b",
+          "#52697f",
+          "#748ca4",
+          "#9ab1c7",
+          "#c0d4e7",
+          "#e3f0fe"
         ]
       },
-      "dark-drop-beige-b": {
-        "role": "tertiary",
-        "displayName": "Dark Drop Beige B",
-        "canonical": "#7d6f52",
+      "dock-lo": {
+        "role": "primary",
+        "displayName": "Dock Lo",
+        "canonical": "rgba(10, 24, 38, 0.97)",
         "tonalRamp": [
-          "#0f0b04",
-          "#2e230d",
-          "#4d4025",
-          "#6d5f43",
-          "#8f8163",
-          "#b2a385",
-          "#d2c8b4",
-          "#f1eee8"
+          "#050c14",
+          "#1c2834",
+          "#384756",
+          "#576879",
+          "#7a8b9d",
+          "#a0b0c1",
+          "#c5d3e2",
+          "#e4f0fc"
+        ]
+      },
+      "dock-line": {
+        "role": "neutral",
+        "displayName": "Dock Line",
+        "canonical": "rgba(255, 255, 255, 0.16)",
+        "tonalRamp": [
+          "#0e0b05",
+          "#2b261c",
+          "#4a4438",
+          "#6c6557",
+          "#8f887a",
+          "#b4ada0",
+          "#d6d0c4",
+          "#f3eee4"
+        ]
+      },
+      "dock-active-hi": {
+        "role": "secondary",
+        "displayName": "Dock Active Hi",
+        "canonical": "rgba(164, 182, 90, 0.62)",
+        "tonalRamp": [
+          "#090d00",
+          "#242a00",
+          "#414b06",
+          "#606f00",
+          "#829338",
+          "#a7b866",
+          "#cbda95",
+          "#e9f6bf"
+        ]
+      },
+      "dock-active-lo": {
+        "role": "secondary",
+        "displayName": "Dock Active Lo",
+        "canonical": "rgba(95, 114, 41, 0.5)",
+        "tonalRamp": [
+          "#080e00",
+          "#212b00",
+          "#3c4c00",
+          "#5c6f26",
+          "#7f934c",
+          "#a4b876",
+          "#c8daa2",
+          "#e7f6c9"
+        ]
+      },
+      "dark-chrome-bar": {
+        "role": "neutral",
+        "displayName": "Barra Negra",
+        "canonical": "rgba(0, 0, 0, 0.84)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "dark-dock": {
+        "role": "neutral",
+        "displayName": "Dock Negro",
+        "canonical": "rgba(12, 14, 15, 0.97)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#252728",
+          "#434547",
+          "#646668",
+          "#878a8b",
+          "#acaeb0",
+          "#cfd1d2",
+          "#edeff0"
+        ]
+      },
+      "dialog-scrim": {
+        "role": "neutral",
+        "displayName": "Dialog Scrim",
+        "canonical": "rgba(10, 24, 38, 0.55)",
+        "tonalRamp": [
+          "#050c14",
+          "#1c2834",
+          "#384756",
+          "#576879",
+          "#7a8b9d",
+          "#a0b0c1",
+          "#c5d3e2",
+          "#e4f0fc"
         ]
       }
     },
@@ -1271,28 +1406,47 @@
       "caption": {
         "displayName": "Leyenda",
         "purpose": "Insignias e iniciales."
+      },
+      "select-compact": {
+        "displayName": "Selector compacto",
+        "purpose": "Selector de etapa en las tarjetas del Pipeline."
       }
     },
     "shadows": [
       {
         "name": "glass",
-        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 20px 42px -22px rgba(16, 38, 58, 0.45)",
+        "value": "inset 0 1px 0 #ffffff, 0 0 0 1px rgba(16, 38, 58, 0.08), 0 18px 40px -22px rgba(16, 38, 58, 0.38)",
         "purpose": "Reposo de todo panel de vidrio en claro."
       },
       {
         "name": "glass-dark",
-        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 22px 44px -22px rgba(0, 0, 0, 0.75)",
-        "purpose": "Reposo de todo panel de vidrio en oscuro y en el cromo."
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000",
+        "purpose": "Reposo de todo panel de vidrio en oscuro."
+      },
+      {
+        "name": "sm",
+        "value": "0 2px 6px -1px rgba(16, 38, 58, 0.1)",
+        "purpose": "Elevación mínima en claro."
       },
       {
         "name": "md",
         "value": "0 12px 26px -10px rgba(16, 38, 58, 0.22)",
-        "purpose": "Se suma al vidrio al pasar el cursor, y a los elementos que se elevan."
+        "purpose": "Se suma al vidrio al pasar el cursor, y a los elementos que se elevan, en claro."
+      },
+      {
+        "name": "md-dark",
+        "value": "0 12px 26px -10px rgba(0, 0, 0, 0.7)",
+        "purpose": "Se suma al vidrio al pasar el cursor, en oscuro."
       },
       {
         "name": "lg",
         "value": "0 26px 54px -18px rgba(16, 38, 58, 0.32)",
-        "purpose": "Menús y diálogos."
+        "purpose": "Menús y diálogos en claro."
+      },
+      {
+        "name": "lg-dark",
+        "value": "0 26px 54px -18px rgba(0, 0, 0, 0.8)",
+        "purpose": "Menús y diálogos en oscuro."
       },
       {
         "name": "dock",
@@ -1307,7 +1461,34 @@
       {
         "name": "ring-dark",
         "value": "0 0 0 3px rgba(183, 196, 127, 0.45)",
-        "purpose": "Anillo de foco en oscuro y en el cromo."
+        "purpose": "Anillo de foco en oscuro y en la barra."
+      }
+    ],
+    "backdropFilters": [
+      {
+        "name": "glass",
+        "value": "blur(30px) saturate(170%)",
+        "purpose": "Tarjetas de vidrio."
+      },
+      {
+        "name": "card",
+        "value": "blur(26px) saturate(155%)",
+        "purpose": "Paneles de datos y columnas del Pipeline."
+      },
+      {
+        "name": "chrome-bar",
+        "value": "blur(26px) saturate(170%)",
+        "purpose": "Barra superior, módulos y panel del acceso."
+      },
+      {
+        "name": "dock",
+        "value": "blur(24px) saturate(170%)",
+        "purpose": "Dock del celular."
+      },
+      {
+        "name": "dialog-scrim",
+        "value": "blur(6px)",
+        "purpose": "Velo detrás de los diálogos."
       }
     ],
     "motion": [
@@ -1324,27 +1505,22 @@
       {
         "name": "control-morph",
         "value": "0.35s",
-        "purpose": "Deformación de esquinas en botones y pestañas."
+        "purpose": "Liquid Morph de esquinas en botones y pestañas."
       },
       {
         "name": "card-morph",
         "value": "0.6s",
-        "purpose": "Deformación de esquinas de la tarjeta de información."
+        "purpose": "Liquid Morph de esquinas del vidrio, solo con cursor: 30/20/28/18 px."
       },
       {
-        "name": "logo-grow",
-        "value": "0.7s",
-        "purpose": "Crecimiento del logo al pasar el cursor."
+        "name": "button-morph-radii",
+        "value": "18px 12px 18px 12px",
+        "purpose": "Esquinas de botón al pasar el cursor."
       },
       {
-        "name": "liquid-drift",
-        "value": "36s a 52s, ease-in-out, infinito",
-        "purpose": "Deriva de las manchas del fondo desde 768 px, con preferencia de movimiento normal."
-      },
-      {
-        "name": "liquid-flow",
-        "value": "16s a 22s, ease-in-out, infinito y alterno",
-        "purpose": "Color que fluye dentro del logo desde 768 px, con preferencia de movimiento normal."
+        "name": "logo-deriva",
+        "value": "40s, ease-in-out, infinito",
+        "purpose": "Recorrido de la marca de fondo desde 768 px, con preferencia de movimiento normal. Quieta en celular y con menos movimiento."
       }
     ],
     "breakpoints": [
@@ -1379,32 +1555,32 @@
       "name": "Botón primario",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Acción principal: navy en claro, oliva en oscuro y en el cromo.",
+      "description": "Acción principal: azul en el contenido en claro; oliva en el contenido en oscuro y en la barra.",
       "html": "<button class=\"ds-btn-primary\">Guardar</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.95rem; border-radius: 14px; border: 1px solid transparent; background: linear-gradient(160deg, var(--primary-a), var(--primary-b)); color: var(--primary-text); font-weight: 500; font-size: 0.86rem; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 10px 20px -10px color-mix(in srgb, var(--primary-b) 75%, transparent); transition: background 0.2s var(--ease), border-radius 0.35s var(--ease), scale 0.15s var(--ease); } .ds-btn-primary:hover { background: linear-gradient(160deg, var(--primary-a), var(--primary-a)); border-radius: 18px 12px 18px 12px; } .ds-btn-primary:active { scale: 0.98; } .ds-btn-primary:focus-visible { outline: none; box-shadow: var(--ring); }"
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.95rem; border-radius: 14px; font-weight: 500; font-size: 0.86rem; cursor: pointer; border: 1px solid transparent; background: linear-gradient(160deg, var(--primary-a), var(--primary-b)); color: var(--primary-text); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 10px 20px -10px color-mix(in srgb, var(--primary-b) 75%, transparent); transition: background 0.2s var(--ease), border-radius 0.35s var(--ease), scale 0.15s var(--ease); } .ds-btn-primary:hover { background: linear-gradient(160deg, var(--primary-a), var(--primary-a)); border-radius: 18px 12px 18px 12px; } .ds-btn-primary:active { scale: 0.98; } .ds-btn-primary:focus-visible { outline: none; box-shadow: var(--ring); }"
     },
     {
       "name": "Botón secundario",
       "kind": "button",
       "refersTo": "button-secondary",
       "description": "Acción corriente sobre vidrio.",
-      "html": "<button class=\"ds-btn\">Exportar</button>",
-      "css": ".ds-btn { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.95rem; border-radius: 14px; border: 1px solid var(--border); background: var(--control-bg); color: var(--text); font-weight: 500; font-size: 0.86rem; cursor: pointer; box-shadow: inset 0 1px 0 var(--glass-sheen); transition: background 0.2s var(--ease), border-color 0.2s var(--ease), border-radius 0.35s var(--ease), scale 0.15s var(--ease); } .ds-btn:hover { background: var(--control-hover); border-color: var(--border-strong); border-radius: 18px 12px 18px 12px; } .ds-btn:active { scale: 0.98; } .ds-btn:focus-visible { outline: none; box-shadow: var(--ring); }"
+      "html": "<button class=\"ds-btn\">Ver lista</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.95rem; border-radius: 14px; font-weight: 500; font-size: 0.86rem; cursor: pointer; border: 1px solid var(--border); background: var(--control-bg); color: var(--text); box-shadow: inset 0 1px 0 var(--glass-sheen); transition: background 0.2s var(--ease), border-color 0.2s var(--ease), border-radius 0.35s var(--ease), scale 0.15s var(--ease); } .ds-btn:hover { background: var(--control-hover); border-color: var(--border-strong); border-radius: 18px 12px 18px 12px; } .ds-btn:active { scale: 0.98; } .ds-btn:focus-visible { outline: none; box-shadow: var(--ring); }"
     },
     {
       "name": "Botón fantasma",
       "kind": "button",
       "description": "Acción discreta, sin fondo hasta el hover.",
       "html": "<button class=\"ds-btn-ghost\">Cancelar</button>",
-      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.95rem; border-radius: 14px; border: 1px solid transparent; background: transparent; color: var(--text); font-weight: 500; font-size: 0.86rem; cursor: pointer; transition: background 0.2s var(--ease), border-radius 0.35s var(--ease); } .ds-btn-ghost:hover { background: var(--surface-3); border-radius: 18px 12px 18px 12px; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: var(--ring); }"
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.95rem; border-radius: 14px; font-weight: 500; font-size: 0.86rem; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text); transition: background 0.2s var(--ease), border-radius 0.35s var(--ease); } .ds-btn-ghost:hover { background: var(--surface-3); border-radius: 18px 12px 18px 12px; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: var(--ring); }"
     },
     {
-      "name": "Campo de texto",
+      "name": "Campo y selector",
       "kind": "input",
       "refersTo": "input",
-      "description": "Campo translúcido con foco oliva.",
-      "html": "<input class=\"ds-input\" placeholder=\"Nombre de la cuenta\" aria-label=\"Nombre de la cuenta\" />",
-      "css": ".ds-input { width: 100%; height: 2.4rem; padding: 0 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--field-bg); color: var(--text); font-size: 0.875rem; box-shadow: inset 0 1px 2px rgba(10, 24, 38, 0.08); transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease); } .ds-input::placeholder { color: var(--muted); } .ds-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }"
+      "description": "Campo casi opaco con foco oliva; el selector lleva el chevrón dibujado.",
+      "html": "<div class=\"ds-fields\"><input class=\"ds-input\" placeholder=\"Nombre de la cuenta\" aria-label=\"Nombre de la cuenta\" /><select class=\"ds-input ds-select\" aria-label=\"Equipo\"><option>Todo el equipo</option></select></div>",
+      "css": ".ds-fields { display: grid; gap: 0.5rem; } .ds-input { width: 100%; height: 2.4rem; padding: 0 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--field-bg); color: var(--text); font-size: 0.875rem; box-shadow: inset 0 1px 2px rgba(10, 24, 38, 0.08); transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease); } .ds-input::placeholder { color: var(--muted); } .ds-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); } .ds-select { appearance: none; padding-right: 2.1rem; background-image: var(--chevron, url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233e423b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")); background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 14px; }"
     },
     {
       "name": "Insignias de estado",
@@ -1418,55 +1594,276 @@
       "name": "Módulos",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Franja de módulos en vidrio navy, con la pestaña activa en píldora oliva.",
+      "description": "Franja de módulos en la barra: navy en claro y negra en oscuro, con la pestaña activa en píldora oliva.",
       "html": "<nav class=\"ds-nav\" aria-label=\"Módulos\"><a class=\"ds-tab\" href=\"#\">Inicio</a><a class=\"ds-tab\" href=\"#\">Cuentas</a><a class=\"ds-tab ds-tab-active\" href=\"#\" aria-current=\"page\">Indicadores</a></nav>",
-      "css": ".ds-nav { display: flex; gap: 0.2rem; padding: 0.35rem 1rem; background: linear-gradient(180deg, rgba(10, 24, 38, 0.96), rgba(13, 32, 49, 0.9)); } .ds-tab { padding: 0.42rem 0.8rem; border-radius: 999px; font-size: 0.82rem; font-weight: 500; color: #b1c1cd; text-decoration: none; transition: color 0.2s var(--ease), background 0.2s var(--ease), border-radius 0.35s var(--ease); } .ds-tab:hover { color: #f4ecdc; background: rgba(245, 236, 220, 0.12); } .ds-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(183, 196, 127, 0.45); } .ds-tab-active { color: var(--cream-50); background: linear-gradient(160deg, rgba(164, 182, 90, 0.5), rgba(95, 114, 41, 0.42)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11), inset 0 0 0 1px rgba(183, 196, 127, 0.45); border-radius: 18px 14px 18px 14px; }"
+      "css": ".ds-nav { display: flex; gap: 0.2rem; padding: 0.35rem 1rem; background: linear-gradient(180deg, rgba(10, 24, 38, 0.96), rgba(13, 32, 49, 0.9)); border-bottom: 1px solid rgba(255, 255, 255, 0.12); -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%); } .ds-tab { padding: 0.42rem 0.6rem; border-radius: 999px; font-size: 0.82rem; font-weight: 500; color: #adb9c2; text-decoration: none; transition: color 0.2s var(--ease), background 0.2s var(--ease), border-radius 0.35s var(--ease); } .ds-tab:hover { color: #eef3f6; background: rgba(255, 255, 255, 0.09); } .ds-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(183, 196, 127, 0.45); } .ds-tab-active { color: var(--cream-50); background: linear-gradient(160deg, rgba(164, 182, 90, 0.5), rgba(95, 114, 41, 0.42)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(183, 196, 127, 0.45); border-radius: 18px 14px 18px 14px; }"
     },
     {
       "name": "Tarjeta de información",
       "kind": "card",
       "refersTo": "card-info",
-      "description": "La firma del sistema: vidrio abierto con el logo de Firplak recortado en la esquina.",
+      "description": "Vidrio abierto con blur real y Liquid Morph al pasar el cursor. No lleva logo.",
       "html": "<section class=\"ds-glass\"><p class=\"ds-glass-label\">Ventas ganadas</p><p class=\"ds-glass-value\">3,684<span class=\"ds-glass-unit\">Millones COP</span></p><p class=\"ds-glass-note\">9 oportunidades ganadas</p></section>",
-      "css": ".ds-glass { position: relative; isolation: isolate; overflow: hidden; padding: 20px; background: linear-gradient(145deg, var(--glass-hi), var(--glass-lo)); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--glass-shadow); backdrop-filter: blur(24px) saturate(170%); -webkit-backdrop-filter: blur(24px) saturate(170%); transition: border-radius 0.6s var(--ease), box-shadow 0.3s var(--ease); } .ds-glass::before { content: ''; position: absolute; z-index: -1; right: 0; bottom: 0; width: clamp(100px, 36%, 210px); aspect-ratio: 420 / 428; translate: 16% 18%; pointer-events: none; background: linear-gradient(200deg, var(--drop-navy-a), var(--drop-olive-a), var(--drop-navy-b)); background-size: 100% 170%; -webkit-mask: url('/brand/firplak-mark-white.png') center / contain no-repeat; mask: url('/brand/firplak-mark-white.png') center / contain no-repeat; opacity: var(--drop-opacity); transition: scale 0.7s var(--ease), opacity 0.4s var(--ease); } .ds-glass:hover { border-radius: 30px 20px 28px 18px; box-shadow: var(--glass-shadow), var(--shadow-md); } .ds-glass:hover::before { scale: 1.1; opacity: calc(var(--drop-opacity) + 0.14); } .ds-glass-label { margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--accent); } .ds-glass-value { margin: 0; font-size: 2.2rem; line-height: 1; font-weight: 300; letter-spacing: -0.035em; color: var(--heading); } .ds-glass-unit { margin-left: 0.35rem; font-size: 0.8rem; font-weight: 400; letter-spacing: 0; color: var(--muted); } .ds-glass-note { margin: 0.5rem 0 0; padding-right: 26%; font-size: 0.75rem; color: var(--text-2); }"
+      "css": ".ds-glass { position: relative; isolation: isolate; padding: 20px; background: linear-gradient(145deg, var(--glass-hi), var(--glass-lo)); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(30px) saturate(170%); backdrop-filter: blur(30px) saturate(170%); transition: border-radius 0.6s var(--ease), box-shadow 0.3s var(--ease); } .ds-glass::after { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, var(--glass-sheen), transparent 38%); opacity: 0.55; } @media (hover: hover) { .ds-glass:hover { border-radius: 30px 20px 28px 18px; box-shadow: var(--glass-shadow), var(--shadow-md); } } .ds-glass-label { margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--accent); } .ds-glass-value { margin: 0; font-size: 2.2rem; line-height: 1; font-weight: 300; letter-spacing: -0.035em; color: var(--heading); } .ds-glass-unit { margin-left: 0.35rem; font-size: 0.8rem; font-weight: 400; letter-spacing: 0; color: var(--muted); } .ds-glass-note { margin: 0.5rem 0 0; font-size: 0.75rem; color: var(--text-2); }"
     },
     {
       "name": "Panel de datos",
       "kind": "card",
       "refersTo": "card-data",
-      "description": "Vidrio denso con encabezado, para tablas, formularios y gráficos. No lleva logo.",
+      "description": "Relleno denso con encabezado, para tablas, formularios y gráficos.",
       "html": "<section class=\"ds-card\"><header class=\"ds-card-header\"><h2 class=\"ds-card-title\">Ventas por asesor</h2></header><table class=\"ds-table\"><thead><tr><th>Asesor</th><th>Ganadas</th></tr></thead><tbody><tr><td>Luis Demo</td><td>7</td></tr><tr><td>Camila Asesora</td><td>2</td></tr></tbody></table></section>",
-      "css": ".ds-card { overflow: hidden; background: linear-gradient(150deg, var(--card-hi), var(--card-lo)); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--glass-shadow); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); } .ds-card-header { padding: 0.95rem 1.15rem; border-bottom: 1px solid var(--border); } .ds-card-title { margin: 0; font-size: 1rem; font-weight: 500; color: var(--heading); } .ds-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem; color: var(--text); } .ds-table th { text-align: left; font-weight: 500; font-size: 0.76rem; color: var(--muted); background: var(--surface-2); padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); } .ds-table td { padding: var(--row-pad) 0.8rem; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; } .ds-table tbody tr:hover td { background: var(--accent-soft); } .ds-table tbody tr:last-child td { border-bottom: 0; }"
+      "css": ".ds-card { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(150deg, var(--card-hi), var(--card-lo)); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(26px) saturate(155%); backdrop-filter: blur(26px) saturate(155%); } .ds-card-header { padding: 0.95rem 1.15rem; border-bottom: 1px solid var(--border); } .ds-card-title { margin: 0; font-size: 1rem; font-weight: 500; color: var(--heading); } .ds-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem; color: var(--text); } .ds-table th { text-align: left; font-weight: 500; font-size: 0.76rem; color: var(--muted); background: var(--surface-2); padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); } .ds-table td { padding: var(--row-pad) 0.8rem; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; } .ds-table tbody tr:hover td { background: var(--accent-soft); } .ds-table tbody tr:last-child td { border-bottom: 0; }"
+    },
+    {
+      "name": "Columna del Pipeline",
+      "kind": "custom",
+      "refersTo": "kanban-column",
+      "description": "Columna de vidrio con la barra de etapa de 3 px en el encabezado; su tarjeta no repite vidrio y lleva el selector compacto.",
+      "html": "<section class=\"ds-col\" aria-label=\"Calificación\"><header class=\"ds-col-head\"><span class=\"ds-col-stage\" aria-hidden=\"true\"></span><div class=\"ds-col-row\"><h2 class=\"ds-col-title\">Calificación</h2><span class=\"ds-col-count\">2</span></div><p class=\"ds-col-sum\">$2,460 M · 20%</p></header><div class=\"ds-col-card\"><a class=\"ds-col-link\" href=\"#\">Vivienda Futura · VIS Bello 600 und.</a><select class=\"ds-select-compact\" aria-label=\"Mover a etapa\"><option>Calificación</option></select></div></section>",
+      "css": ".ds-col { width: 18rem; padding-bottom: 0.5rem; background: var(--card-lo); border: 1px solid var(--border); border-radius: 28px; -webkit-backdrop-filter: blur(26px) saturate(155%); backdrop-filter: blur(26px) saturate(155%); } .ds-col-head { padding: 0.625rem 0.75rem 0.5rem; } .ds-col-stage { display: block; height: 3px; margin-bottom: 0.5rem; border-radius: 999px; background: var(--navy-500); } .ds-col-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; } .ds-col-title { margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--heading); } .ds-col-count { padding: 0.14rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 500; background: var(--surface-3); color: var(--text); } .ds-col-sum { margin: 0; font-size: 0.75rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; } .ds-col-card { display: grid; gap: 0.5rem; justify-items: start; margin: 0 0.5rem; padding: 0.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); } .ds-col-link { font-size: 0.875rem; font-weight: 500; color: var(--brand); text-decoration: none; } .ds-col-link:hover { text-decoration: underline; text-underline-offset: 3px; } .ds-select-compact { appearance: none; width: auto; max-width: 10rem; height: 1.75rem; padding: 0 1.45rem 0 0.5rem; border: 1px solid var(--border); border-radius: 0.5rem; background-color: var(--field-bg); background-image: var(--chevron, url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233e423b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")); background-repeat: no-repeat; background-position: right 0.4rem center; background-size: 12px; color: var(--text); font-size: 0.7rem; font-weight: 600; } .ds-select-compact:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }"
     },
     {
       "name": "Dock móvil",
       "kind": "nav",
       "refersTo": "dock",
-      "description": "Navegación flotante bajo 768 px, siempre en vidrio navy.",
+      "description": "Navegación flotante bajo 768 px: navy en claro y casi negra en oscuro.",
       "html": "<nav class=\"ds-dock\" aria-label=\"Navegación principal\"><a class=\"ds-dock-item ds-dock-active\" href=\"#\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9v12h14V9\"/></svg><span>Inicio</span></a><a class=\"ds-dock-item\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6h16M4 12h16M4 18h16\"/></svg><span>Más</span></a></nav>",
-      "css": ".ds-dock { display: grid; grid-template-columns: 1fr 1fr; max-width: 320px; background: linear-gradient(170deg, rgba(23, 44, 64, 0.97), rgba(10, 24, 38, 0.97)); border: 1px solid rgba(244, 236, 220, 0.16); border-radius: 24px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75); backdrop-filter: blur(24px) saturate(170%); -webkit-backdrop-filter: blur(24px) saturate(170%); } .ds-dock-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; height: 3.5rem; font-size: 0.68rem; color: #b1c1cd; text-decoration: none; } .ds-dock-item:hover { color: #f4ecdc; } .ds-dock-item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(183, 196, 127, 0.45); border-radius: 18px; } .ds-dock-active { color: var(--cream-50); } .ds-dock-active svg { box-sizing: content-box; margin-block: -3px; padding: 3px 9px; border-radius: 12px 9px 12px 9px; background: linear-gradient(160deg, rgba(164, 182, 90, 0.62), rgba(95, 114, 41, 0.5)); }"
+      "css": ".ds-dock { display: grid; grid-template-columns: 1fr 1fr; max-width: 320px; background: linear-gradient(170deg, rgba(23, 44, 64, 0.97), rgba(10, 24, 38, 0.97)); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 24px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); } .ds-dock-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; height: 3.5rem; font-size: 0.68rem; color: #adb9c2; text-decoration: none; } .ds-dock-item:hover { color: #eef3f6; } .ds-dock-item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(183, 196, 127, 0.45); border-radius: 18px; } .ds-dock-active { color: var(--cream-50); } .ds-dock-active svg { box-sizing: content-box; margin-block: -3px; padding: 3px 9px; border-radius: 12px 9px 12px 9px; background: linear-gradient(160deg, rgba(164, 182, 90, 0.62), rgba(95, 114, 41, 0.5)); }"
+    },
+    {
+      "name": "Marca de fondo",
+      "kind": "custom",
+      "description": "El único vector azul de Firplak, redibujado del PNG oficial, con deriva de 40 s desde 768 px. En la app va fijo a la ventana.",
+      "html": "<div class=\"ds-backdrop\" aria-hidden=\"true\"><svg class=\"ds-backdrop-logo\" viewBox=\"0 0 502 512\" focusable=\"false\"><defs><linearGradient id=\"ds-backdrop-azul\" x1=\"0.7\" y1=\"0\" x2=\"0.3\" y2=\"1\"><stop offset=\"0\" style=\"stop-color: var(--logo-a)\" /><stop offset=\"1\" style=\"stop-color: var(--logo-b)\" /></linearGradient></defs><path fill=\"url(#ds-backdrop-azul)\" d=\"M201.54 27.3L304.51 27.3L469.37 472.5L384.51 472.5L253.02 117.45L121.56 472.5L36.69 472.5ZM253.03 340.92L301.75 472.5L204.3 472.5Z\" /></svg></div>",
+      "css": ".ds-backdrop { position: relative; height: 16rem; overflow: hidden; background: var(--bg); pointer-events: none; } .ds-backdrop-logo { position: absolute; right: -4vmin; bottom: -16vmin; width: 88vmin; height: auto; opacity: var(--logo-opacity); } @keyframes ds-logo-deriva { 0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); } 25% { transform: translate(-14vmin, -8vmin) rotate(-5deg) scale(1.04); } 50% { transform: translate(-26vmin, 4vmin) rotate(3deg) scale(0.97); } 75% { transform: translate(-10vmin, 10vmin) rotate(6deg) scale(1.02); } } @media (min-width: 768px) and (prefers-reduced-motion: no-preference) { .ds-backdrop-logo { animation: ds-logo-deriva 40s ease-in-out infinite; } }"
     }
   ],
   "narrative": {
-    "northStar": "Vidrio sobre líquido",
-    "overview": "Paneles de vidrio esmerilado flotan sobre un fondo líquido vivo: manchas navy, oliva y beige que se funden entre sí detrás de todo el contenido. La persona entra, lee sus cifras sobre vidrio y encuentra módulos y controles donde los espera. El efecto acompaña y nunca tapa un dato. El sistema rechaza el panel gris de tarjetas blancas planas típico de un CRM.\n\nLa firma del sistema es el logo de Firplak recortado en la esquina inferior derecha de cada tarjeta de información, con color que fluye despacio dentro de él desde 768 px. Reemplazó a las bolas de la primera versión por pedido de Luis. Al pasar el cursor, el logo crece y las esquinas de la tarjeta se deforman.\n\nLa densidad es de herramienta de trabajo: texto base de 14 px, tablas compactas y una opción de densidad reducida. El tema por defecto sigue el dispositivo, y cada persona puede fijar claro u oscuro. La paleta pertenece a la familia navy, verde oliva, beige o crema y negro, sin atarse a los valores exactos del manual de Firplak (decisión de Luis). Los efectos son Liquid Morph y Glassmorphism.",
+    "northStar": "Vidrio sobre la marca",
+    "overview": "Paneles de vidrio con blur real flotan sobre un suelo blanco o negro puros, y detrás de todos pasa una sola marca azul de Firplak, grande y lenta. La persona entra, lee sus cifras sobre vidrio y encuentra módulos y controles donde los espera. El logo acompaña y nunca tapa un dato: cuando cruza detrás de una tarjeta se difumina, y ese paso del blur de una tarjeta a otra es el movimiento característico del sistema. El sistema rechaza el panel gris de tarjetas planas típico de un CRM.\n\nLa dirección la fijó Luis tras varias rondas de muestras sobre la app real (`.impeccable/mocks/fondo7` con barra navy, aprobada el 3 nov 2026), y la construcción fue por código. Las bolas, el crema, la foto de producto y el logo en cada tarjeta se probaron y se descartaron. La marca de fondo es un vector redibujado a partir del PNG oficial, no el archivo del manual de marca.\n\nLa densidad es de herramienta de trabajo: texto base de 14 px, tablas compactas y una opción de densidad reducida. El tema por defecto sigue el dispositivo, y cada persona puede fijar claro u oscuro. La paleta es navy, azul, verde oliva, blanco y negro, sin atarse a los valores exactos del manual de Firplak (decisión de Luis). Los efectos son Glassmorphism y el Liquid Morph de las esquinas al pasar el cursor, que Luis pidió desde el inicio.",
     "keyCharacteristics": [
-      "Fondo líquido fijo detrás del contenido, con vidrio en dos densidades encima.",
-      "Barra, módulos y dock siempre en vidrio navy, en los dos temas.",
-      "Logo de Firplak recortado en las tarjetas de información.",
-      "Movimiento lento y constante en computador, quieto en celular.",
+      "Suelo blanco puro en claro y negro puro en oscuro, sin tinte.",
+      "Una sola marca azul fija detrás de todo, en deriva de 40 s desde 768 px.",
+      "Vidrio con blur real, y relleno más denso donde hay tabla, gráfico o formulario.",
+      "Barra navy en claro y negra en oscuro, con pestaña activa y botón «Nuevo» en oliva.",
+      "Botones del contenido azules en claro y oliva en oscuro; azul en datos y enlaces en ambos.",
       "Outfit como única familia, con cifras grandes en peso ligero.",
-      "Esquinas amplias que se deforman levemente al interactuar."
+      "Esquinas amplias que se deforman al pasar el cursor.",
+      "",
+      " Colors",
+      "",
+      "anco y negro puros de suelo, navy y azul para la marca y los datos, oliva para el acento, y ámbar y terracota solo para comunicar estado. Los nombres `--sage-*` y `--cream-*` del código son históricos: hoy significan la gama oliva y unos claros neutros fríos, no un tono crema.",
+      "",
+      "# Primary",
+      "**Navy Acción** (#27506f a #0a1826): degradado de la acción primaria en el contenido, solo en tema claro.",
+      "**Navy Profundo** (#173650, con #10263a para títulos): enlaces, marca y series de compromiso y pronóstico en claro.",
+      "**Barra Navy** (de rgba(10, 24, 38, 0.96) a rgba(13, 32, 49, 0.9)): barra superior, franja de módulos y panel lateral del acceso en claro. El dock usa su pareja de rgba(23, 44, 64, 0.97) a rgba(10, 24, 38, 0.97).",
+      "**Azul Dato** (#8fb9da en oscuro, con #b4d0e6 en hover): enlaces, marca, cifras de tabla y series de datos en oscuro. Nunca es el color de un botón de contenido primario.",
+      "**Azul Marca** (de #2f6ea3 a #1c4f7c en claro, de #3a7fb8 a #1c4f7c en oscuro): solo para la marca de fondo, con opacidad de 0.62 en claro y 0.72 en oscuro.",
+      "",
+      "# Secondary",
+      "**Oliva de Acento** (#414e18 en claro, #b7c47f en oscuro): etiqueta de métrica, foco de campos, pestañas dentro de un registro y avatar.",
+      "**Oliva Activo** (de #a6b85c a #7f9140, con texto #12170a): acción primaria en todo el tema oscuro, y en la barra también en claro.",
+      "**Oliva de Pestaña** (de rgba(164, 182, 90, 0.5) a rgba(95, 114, 41, 0.42)): módulo activo en la barra. En el dock sube a 0.62 y 0.5.",
+      "**Oliva Éxito** (#3f5616 en claro, #bccd76 en oscuro): lo ganado y lo logrado, en texto, barras y series.",
+      "",
+      "# Tertiary",
+      "**Azul Potencial** (#6f9fc2 en claro) y **Arena de Dato** (#d8cda9 en oscuro): serie de mejor caso y potencial. La arena solo existe como serie de datos en oscuro; no es superficie ni suelo.",
+      "**Ámbar y Terracota de Estado**: advertencia (#6c4809 para texto, #bd8629 para marcas) y peligro (#9c3a24). En oscuro pasan a #e2bd7a y #f4b1a2.",
+      "",
+      "# Neutral",
+      "**Blanco Suelo** (#ffffff): fondo de página en claro, y también de menús y diálogos. En oscuro, **Negro Suelo** (#000000) con capa opaca #0e1011. Dentro de la barra en claro, la capa opaca es #10202e.",
+      "**Negro Tinta** (#0c0f10, #2a2e2c, #3e423b): texto principal, secundario y atenuado en claro. En oscuro, #eef3f6, #d3dde4 y #adb9c2, con títulos en #f6f9fb.",
+      "**Claro Frío** (#fbfcfd): texto sobre botones azules, íconos de objeto y pestaña activa de la barra.",
+      "**Líneas**: negro al 10 y 20 % en claro; blanco al 13 y 24 % en oscuro. El vidrio lleva borde de luz: blanco al 90 % en claro y al 14 % en oscuro.",
+      "",
+      "# Named Rules",
+      "Título Sin Etiqueta.** Ninguna página lleva una etiqueta encima del título; si el título por sí solo no dice qué es la página, el nombre entra al título (decisión de Luis, 3 nov 2026).",
+      "",
+      "La Regla del Suelo Puro.** El suelo es #ffffff o #000000, sin tinte ni degradado. El color del fondo lo pone la marca azul, no el suelo.",
+      "",
+      "La Regla del Cromo por Tema.** La barra, los módulos, el dock y el panel lateral del acceso usan siempre los valores oscuros, aunque la página esté en claro. Su fondo es navy en claro y negro en oscuro.",
+      "",
+      "La Regla del Botón por Lugar.** La acción primaria es azul sobre el contenido en claro, y oliva sobre el contenido en oscuro y en la barra de los dos temas (decisión de Luis). El azul en oscuro queda para datos, enlaces y la opción elegida de un selector segmentado.",
+      "",
+      "La Regla del Estado Explícito.** Cada estado importante lleva ícono o texto además de color. Las alertas y los medidores de meta ya lo hacen.",
+      "",
+      " Typography",
+      "",
+      "Display Font:** Outfit (con system-ui, -apple-system, Segoe UI, sans-serif)",
+      "Body Font:** Outfit (con los mismos respaldos)",
+      "",
+      "Character:** Una sola geométrica amable, cargada en pesos de 200 a 700. La jerarquía sale del tamaño, el peso y el tracking, no de una segunda familia.",
+      "",
+      "# Hierarchy",
+      "**Display** (300, 1.875rem, tracking -0.025em): saludo de Inicio. El panel del acceso usa el mismo tratamiento en 2.25rem.",
+      "**Metric** (300, 2.2rem, línea 1, tracking -0.035em): cifras grandes de las tarjetas, con unidad en 0.8rem y peso 400 en color atenuado.",
+      "**Headline** (500, 1.25rem, tracking -0.015em): título de página, junto al ícono de objeto.",
+      "**Title** (500, 1rem): título de tarjeta o panel.",
+      "**Body** (400, 14 px, línea 1.5): texto de la interfaz. Las tablas van en 0.86rem, con cifras tabulares.",
+      "**Control** (500, 0.86rem): botones y filas de acción. Los módulos de la barra van en 0.82rem.",
+      "**Label** (500, 0.8rem, color acento): nombre de la cifra dentro de una tarjeta de métrica. Va en caja normal, sin tracking.",
+      "**Field label** (500, 0.78rem): etiquetas de formulario. Ayuda y error van en 0.75rem.",
+      "**Caption** (500, 0.72rem): insignias e iniciales. Las etiquetas del dock van en 0.68rem.",
+      "**Select compact** (600, 0.7rem): selector de etapa en las tarjetas del Pipeline.",
+      "",
+      "# Named Rules",
+      "La Regla de la Familia Única.** Outfit es la única familia, también en teclas y cifras. Los números alineados usan cifras tabulares, no una mono.",
+      "",
+      "La Regla de la Cifra Ligera.** Las cifras grandes van en peso 300 con tracking negativo. El peso sube en lo pequeño y baja en lo grande.",
+      "",
+      " Layout",
+      "",
+      " aplicación vive en un contenedor centrado de hasta 1600 px, con márgenes de 16 px que suben a 24 px desde 640 px. La barra superior mide 56 px y los módulos van en una segunda franja. Bajo la cabecera, el contenido se apila con 16 px entre bloques y 12 a 16 px entre tarjetas. Las tarjetas de información usan 20 px de relleno.",
+      "",
+      "s grillas de tarjetas parten en una columna, pasan a dos desde 640 px y llegan a cuatro o cinco desde 1280 px. Los módulos van sin íconos para caber desde 1280 px; por debajo se desplazan con el borde difuminado, y desde 1700 px se reparten a lo ancho.",
+      "",
+      "jo 768 px los módulos desaparecen y entra el dock flotante, con cuatro accesos y «Más». El contenido reserva espacio inferior para el dock y el área segura.",
+      "",
+      " Pipeline es una fila de columnas de 18 rem que se desplaza a lo ancho, con 12 px entre columnas. Cada columna desplaza sus tarjetas por dentro.",
+      "",
+      " acceso se divide en dos columnas desde 1024 px: panel de la barra a la izquierda y formulario a la derecha, sobre la marca. Por debajo solo queda el formulario.",
+      "",
+      " densidad compacta reduce el relleno vertical de las filas de tabla de 0.7rem a 0.4rem.",
+      "",
+      " Elevation & Depth",
+      "",
+      " sistema es híbrido: la profundidad nace del vidrio (blur real, transparencia, borde de luz y brillo superior) y se completa con sombras largas teñidas de navy en claro y negras en oscuro. El orden de capas es suelo, marca azul, paneles de vidrio, cromo de la barra y, al final, las capas opacas: menús y diálogos.",
+      "",
+      " blur solo se nota porque hay algo detrás: lo que atraviesa el vidrio es la marca azul. En un panel sobre suelo vacío, el vidrio se lee como blanco o negro limpio con su borde de luz.",
+      "",
+      "# Shadow Vocabulary",
+      "**Vidrio** (`box-shadow: inset 0 1px 0 #ffffff, 0 0 0 1px rgba(16, 38, 58, 0.08), 0 18px 40px -22px rgba(16, 38, 58, 0.38)`): reposo de todo panel de vidrio en claro. En oscuro, `inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000`.",
+      "**Media** (`box-shadow: 0 12px 26px -10px rgba(16, 38, 58, 0.22)`): se suma al vidrio al pasar el cursor, y a los elementos que se elevan. En oscuro, negra al 70 %.",
+      "**Grande** (`box-shadow: 0 26px 54px -18px rgba(16, 38, 58, 0.32)`): menús y diálogos. En oscuro, negra al 80 %.",
+      "**Dock** (`box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75)`): dock flotante del celular.",
+      "**Foco** (`box-shadow: 0 0 0 3px rgba(39, 80, 111, 0.32)`): anillo de foco. En oscuro y en la barra, oliva: `0 0 0 3px rgba(183, 196, 127, 0.45)`.",
+      "",
+      "# Named Rules",
+      "La Regla de las Dos Densidades.** Las tarjetas de información usan vidrio abierto (40 a 60 % en claro, 42 a 55 % en oscuro) con blur de 30 px. Los paneles de datos usan relleno denso (72 a 82 % en claro, 80 a 84 % en oscuro) con blur de 26 px. Una tarjeta de vidrio que contiene encabezado de panel, gráfico o formulario toma ese relleno denso por sí sola, y las tablas siempre van en panel denso, para leerse sin esfuerzo.",
+      "",
+      "La Regla del Orden del Blur.** `-webkit-backdrop-filter` se declara siempre antes de `backdrop-filter`. El compilador conserva solo la última, y en el orden contrario el blur desaparece en Chrome sin ningún aviso. Una prueba de navegador lo vigila en las tarjetas y paneles (`tests/e2e/analitica.spec.ts`).",
+      "",
+      "La Regla del Vidrio Único.** Un panel dentro de otro no repite vidrio ni sombra: pasa a una superficie translúcida simple con línea fina. Las columnas del Pipeline son vidrio; sus tarjetas no.",
+      "",
+      "La Regla de la Capa Opaca.** Menús, diálogos y la hoja «Más» tapan lo de abajo con superficie opaca. El vidrio es para lo que reposa, no para lo que interrumpe.",
+      "",
+      "La Regla de la Preferencia Respetada.** Con menos transparencia, la marca desaparece y los paneles quedan sólidos. Con menos movimiento, la marca queda quieta. Al imprimir, la marca no sale.",
+      "",
+      " Shapes",
+      "",
+      "quinas amplias en lo grande y justas en lo pequeño: paneles de 22 px, columnas del Pipeline y diálogos de 28 px, dock de 24 px, controles de 14 px, campos de 13 px, botones pequeños de 11 px, selector compacto de 8 px, filas de menú de 18 px, y píldoras para pestañas, insignias y avatares.",
+      "",
+      " forma reacciona. El Liquid Morph que Luis pidió es intencional y se conserva: al pasar el cursor, el vidrio pierde la simetría y pasa a 30/20/28/18 px en 0.6 s, solo en dispositivos con cursor. Los botones pasan a 18/12/18/12 px en 0.35 s. En reposo, la pestaña activa queda en 18/14/18/14 px y el ícono activo del dock en 12/9/12/9 px.",
+      "",
+      " silueta recurrente es la A de la marca Firplak: dos trazos diagonales con un triángulo interior. Solo aparece una vez por pantalla como forma de fondo.",
+      "",
+      " Components",
+      "",
+      "s controles son directos y táctiles; el vidrio y el movimiento quedan en las tarjetas y el fondo. Los íconos son Lucide con trazo de 1.5.",
+      "",
+      "# Buttons",
+      "**Shape:** esquinas de 14 px, alto de 2.25rem. La versión pequeña mide 1.9rem con esquinas de 11 px.",
+      "**Primary:** degradado a 160 grados con brillo interno superior y sombra del mismo tono. Azul en el contenido en claro; oliva en el contenido en oscuro y en la barra.",
+      "**Hover / Focus:** el fondo se aclara y las esquinas se deforman; al presionar, escala a 0.98. Foco con el anillo del sistema.",
+      "**Secondary / Ghost / Danger:** el secundario es blanco o gris muy oscuro translúcido con línea fina. El fantasma no tiene fondo hasta el hover. El de peligro usa texto y borde terracota, y se llena de terracota suave al pasar el cursor.",
+      "",
+      "# Chips",
+      "**Style:** insignias en píldora, 0.72rem, sobre un tinte suave del color de su estado (marca, éxito, advertencia, peligro, acento o información).",
+      "**State:** son informativas. Los selectores segmentados agrupan botones pequeños en un carril de 14 px con sombra interna, y la opción elegida se llena de azul de marca.",
+      "",
+      "# Cards / Containers",
+      "**Corner Style:** 22 px en reposo; el vidrio se deforma al pasar el cursor.",
+      "**Background:** degradado translúcido, a 145 grados en información y a 150 grados en datos.",
+      "**Shadow Strategy:** sombra de vidrio en reposo; sombra media añadida al vidrio al pasar el cursor.",
+      "**Border:** 1 px de luz, más un brillo superior del 38 % de la altura al 55 % de opacidad.",
+      "**Internal Padding:** 20 px en información, 28 px en el acceso. Los encabezados de panel usan 0.95rem por 1.15rem, con línea inferior.",
+      "",
+      "# Inputs / Fields",
+      "**Style:** alto de 2.4rem, esquinas de 13 px, línea fina, fondo casi opaco y sombra interna leve. El selector lleva chevrón dibujado de 14 px, con color propio en cada tema.",
+      "**Selector compacto:** alto de 1.75rem, esquinas de 8 px y texto de 0.7rem en peso 600. Comparte el mismo chevrón dibujado, en 12 px. Hereda del selector normal: nunca lleva la flecha nativa del navegador.",
+      "**Focus:** el borde pasa al acento oliva y aparece el anillo de foco.",
+      "**Error / Disabled:** en error, borde terracota y texto de ayuda de 0.75rem en terracota. Los botones deshabilitados bajan al 55 % de opacidad.",
+      "",
+      "# Navigation",
+      "**Barra y módulos:** vidrio del cromo con blur de 26 px, buscador central y botón «Nuevo» en oliva. Las pestañas son píldoras de texto; la activa se llena con un degradado oliva, y siempre queda a la vista aunque los módulos se desplacen.",
+      "**Dentro de un registro:** las mismas píldoras, con tinte oliva suave y línea interior.",
+      "**Móvil:** dock flotante a 12 px de los bordes, con esquinas de 24 px, íconos de 20 px y etiquetas de 0.68rem. Es navy en claro y casi negro en oscuro. El ícono activo va sobre una píldora oliva de esquinas asimétricas. «Más» abre una hoja opaca con una grilla de tres columnas.",
+      "",
+      "# Tablas",
+      "**Style:** texto de 0.86rem, encabezado fijo de 0.76rem en color atenuado, líneas finas entre filas y tinte oliva al pasar el cursor.",
+      "",
+      "# Íconos de objeto",
+      "**Style:** azulejo de 36 px con esquinas de 14 px y degradado navy u oliva según el módulo, con ícono claro en su interior.",
+      "",
+      "# Pipeline",
+      "**Columna:** vidrio con relleno denso y blur de 26 px, para que la marca se difumine detrás. Esquinas de 28 px y línea fina. Al recibir una tarjeta arrastrada, muestra un anillo de 2 px en color de marca.",
+      "**Marcador de etapa:** barra redondeada de 3 px dentro del encabezado de la columna, separada de los bordes por su relleno. Toma el color de la etapa; las cerradas usan éxito o peligro. No es un borde superior: sobre una columna redondeada, ese borde se curvaría con la esquina.",
+      "**Tarjeta:** superficie translúcida simple con línea fina y 12 px de relleno, sin blur ni sombra propios. Lleva el selector compacto para mover de etapa sin arrastrar.",
+      "",
+      "# Marca de fondo",
+      " solo vector azul de la marca Firplak, redibujado a partir del PNG oficial (no es el archivo del manual de marca), fijo detrás de todo el contenido, decorativo y sin interacción. Mide 88 vmin y parte de la esquina inferior derecha, con parte de la forma fuera de la pantalla. Desde 768 px recorre el fondo en un ciclo de 40 s, con desplazamiento de hasta 26 vmin, giro de hasta 6 grados y escala de 0.97 a 1.04. En celular y con menos movimiento queda quieta.",
+      "",
+      "# Named Rules",
+      "La Regla del Dato Primero.** La información se lee antes que el efecto. Lo que necesita lectura sostenida va en relleno denso, y la marca nunca pasa por encima del contenido.",
+      "",
+      "La Regla de la Marca Única.** Hay una sola marca de fondo por pantalla, detrás de todo. El logo no entra en las tarjetas. La barra y el acceso llevan el logotipo normal de Firplak.",
+      "",
+      "La Regla de la Lentitud.** La marca de fondo tarda 40 s por ciclo y nunca se acelera. En celular y con menos movimiento no se anima, y dos pruebas de navegador lo vigilan.",
+      "",
+      " Do's and Don'ts",
+      "",
+      "# Do:",
+      "**Haz** que los componentes consuman las variables semánticas (`--bg`, `--surface`, `--brand`, `--accent`), para que funcionen en los dos temas y dentro del cromo.",
+      "**Haz** que el tema por defecto siga al dispositivo, y usa la elección guardada solo cuando la persona haya fijado una.",
+      "**Declara** `-webkit-backdrop-filter` antes de `backdrop-filter` en todo vidrio nuevo.",
+      "**Usa** vidrio abierto para las tarjetas de información, y relleno denso para tablas, gráficos y formularios.",
+      "**Usa** superficie opaca para menús, diálogos y hojas que tapan el contenido.",
+      "**Usa** el chevrón dibujado en todo selector, también en el compacto.",
+      "**Marca** la etapa del Pipeline con la barra de 3 px dentro del encabezado de la columna.",
+      "**Acompaña** cada estado con ícono o texto, además del color.",
+      "**Conserva** contraste de 4.5:1 en texto, foco visible y las respuestas a menos movimiento y menos transparencia.",
+      "",
+      "# Don't:",
+      "**No vuelvas** a poner bolas ni manchas de color, ni en las tarjetas ni en el fondo: Luis las probó y las descartó.",
+      "**No vuelvas** al crema como suelo o superficie: Luis lo descartó. El suelo es blanco o negro puro.",
+      "**No uses** la foto de producto como fondo: Luis la descartó.",
+      "**No pongas** el logo dentro de cada tarjeta: Luis lo descartó. La marca va una sola vez, detrás de todo.",
+      "**No inviertas** el orden de `-webkit-backdrop-filter` y `backdrop-filter`.",
+      "**No pongas** un borde superior de color en una columna redondeada.",
+      "**No animes** la marca de fondo bajo 768 px, ni con la preferencia de menos movimiento.",
+      "**No uses** azul en los botones primarios del contenido en tema oscuro: ahí van en oliva.",
+      "**No anides** vidrio dentro de vidrio.",
+      "**No uses** una segunda familia tipográfica.",
+      "**No caigas** en el panel gris de tarjetas planas típico de un CRM.",
+      "**No uses** terracota ni ámbar como decoración: solo comunican estado.",
+      "",
+      "# Asuntos abiertos",
+      "tos puntos siguen sin decidir o sin medir, y no son reglas del sistema.",
+      "**Cuadros por segundo en celulares reales:** sin medir. El blur del vidrio sigue activo en celular aunque la marca esté quieta.",
+      "",
+      "# Estado de la revisión",
+      " hizo una revisión de cierre y sus correcciones se aplicaron, salvo donde una decisión de Luis manda: los botones oliva en el contenido en oscuro y el Liquid Morph al pasar el cursor se conservan a propósito. No se sorteó semilla, porque Luis fijó la dirección."
     ],
     "rules": [
       {
-        "name": "La Regla del Cromo Navy",
-        "body": "La barra superior, los módulos, el dock y el panel lateral del acceso son navy en los dos temas. Usan los valores del tema oscuro aunque la página esté en claro.",
+        "name": "Título Sin Etiqueta",
+        "body": "Ninguna página lleva una etiqueta encima del título; si el título por sí solo no dice qué es la página, el nombre entra al título (decisión de Luis, 3 nov 2026).",
         "section": "colors"
       },
       {
-        "name": "La Regla del Primario Reversible",
-        "body": "La acción primaria es navy sobre el suelo claro y oliva sobre cualquier superficie oscura. Nunca se fija un solo color de botón.",
+        "name": "La Regla del Suelo Puro",
+        "body": "El suelo es #ffffff o #000000, sin tinte ni degradado. El color del fondo lo pone la marca azul, no el suelo.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Cromo por Tema",
+        "body": "La barra, los módulos, el dock y el panel lateral del acceso usan siempre los valores oscuros, aunque la página esté en claro. Su fondo es navy en claro y negro en oscuro.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Botón por Lugar",
+        "body": "La acción primaria es azul sobre el contenido en claro, y oliva sobre el contenido en oscuro y en la barra de los dos temas (decisión de Luis). El azul en oscuro queda para datos, enlaces y la opción elegida de un selector segmentado.",
         "section": "colors"
       },
       {
@@ -1486,12 +1883,17 @@
       },
       {
         "name": "La Regla de las Dos Densidades",
-        "body": "Las tarjetas de información usan vidrio abierto (62 a 78 % de opacidad, desenfoque de 24 px). Tablas, formularios y gráficos usan vidrio denso (78 a 88 %, desenfoque de 20 px), para leerse sin esfuerzo.",
+        "body": "Las tarjetas de información usan vidrio abierto (40 a 60 % en claro, 42 a 55 % en oscuro) con blur de 30 px. Los paneles de datos usan relleno denso (72 a 82 % en claro, 80 a 84 % en oscuro) con blur de 26 px. Una tarjeta de vidrio que contiene encabezado de panel, gráfico o formulario toma ese relleno denso por sí sola, y las tablas siempre van en panel denso, para leerse sin esfuerzo.",
+        "section": "elevation"
+      },
+      {
+        "name": "La Regla del Orden del Blur",
+        "body": "`-webkit-backdrop-filter` se declara siempre antes de `backdrop-filter`. El compilador conserva solo la última, y en el orden contrario el blur desaparece en Chrome sin ningún aviso. Una prueba de navegador lo vigila en las tarjetas y paneles (`tests/e2e/analitica.spec.ts`).",
         "section": "elevation"
       },
       {
         "name": "La Regla del Vidrio Único",
-        "body": "Un panel dentro de otro no repite vidrio, sombra ni logo: pasa a una superficie translúcida simple con línea fina.",
+        "body": "Un panel dentro de otro no repite vidrio ni sombra: pasa a una superficie translúcida simple con línea fina. Las columnas del Pipeline son vidrio; sus tarjetas no.",
         "section": "elevation"
       },
       {
@@ -1501,44 +1903,53 @@
       },
       {
         "name": "La Regla de la Preferencia Respetada",
-        "body": "Con menos transparencia, el fondo líquido desaparece y los paneles quedan sólidos. Con menos movimiento, las formas quedan quietas. Al imprimir, el fondo no sale.",
+        "body": "Con menos transparencia, la marca desaparece y los paneles quedan sólidos. Con menos movimiento, la marca queda quieta. Al imprimir, la marca no sale.",
         "section": "elevation"
       },
       {
         "name": "La Regla del Dato Primero",
-        "body": "La información se lee antes que el efecto. El subtexto de una tarjeta reserva 26 % a la derecha para no llegar al logo, y lo que necesita lectura sostenida va en vidrio denso.",
+        "body": "La información se lee antes que el efecto. Lo que necesita lectura sostenida va en relleno denso, y la marca nunca pasa por encima del contenido.",
         "section": "components"
       },
       {
-        "name": "La Regla del Logo en su Sitio",
-        "body": "Dentro de una tarjeta, el logo es exclusivo de las tarjetas de información. Se oculta donde hay encabezado de panel, gráfico, medidor, formulario o ícono de objeto.",
+        "name": "La Regla de la Marca Única",
+        "body": "Hay una sola marca de fondo por pantalla, detrás de todo. El logo no entra en las tarjetas. La barra y el acceso llevan el logotipo normal de Firplak.",
         "section": "components"
       },
       {
         "name": "La Regla de la Lentitud",
-        "body": "El movimiento ambiental es lento y constante: nunca menos de 16 s por ciclo. Bajo 768 px y con menos movimiento, las formas y el logo quedan quietos.",
+        "body": "La marca de fondo tarda 40 s por ciclo y nunca se acelera. En celular y con menos movimiento no se anima, y dos pruebas de navegador lo vigilan.",
         "section": "components"
       }
     ],
     "dos": [
       "**Haz** que los componentes consuman las variables semánticas (`--bg`, `--surface`, `--brand`, `--accent`), para que funcionen en los dos temas y dentro del cromo.",
       "**Haz** que el tema por defecto siga al dispositivo, y usa la elección guardada solo cuando la persona haya fijado una.",
-      "**Usa** vidrio abierto y logo para las tarjetas de información, y vidrio denso para tablas, formularios y gráficos.",
+      "**Declara** `-webkit-backdrop-filter` antes de `backdrop-filter` en todo vidrio nuevo.",
+      "**Usa** vidrio abierto para las tarjetas de información, y relleno denso para tablas, gráficos y formularios.",
       "**Usa** superficie opaca para menús, diálogos y hojas que tapan el contenido.",
+      "**Usa** el chevrón dibujado en todo selector, también en el compacto.",
+      "**Marca** la etapa del Pipeline con la barra de 3 px dentro del encabezado de la columna.",
       "**Acompaña** cada estado con ícono o texto, además del color.",
       "**Conserva** contraste de 4.5:1 en texto, foco visible y las respuestas a menos movimiento y menos transparencia."
     ],
     "donts": [
-      "**No vuelvas** a poner bolas en las tarjetas de información: el logo de Firplak las reemplazó por pedido de Luis.",
-      "**No animes** las manchas ni el logo bajo 768 px, ni con la preferencia de menos movimiento.",
-      "**No pongas** el logo en tarjetas con gráficos, medidores, formularios o ícono de objeto.",
+      "**No vuelvas** a poner bolas ni manchas de color, ni en las tarjetas ni en el fondo: Luis las probó y las descartó.",
+      "**No vuelvas** al crema como suelo o superficie: Luis lo descartó. El suelo es blanco o negro puro.",
+      "**No uses** la foto de producto como fondo: Luis la descartó.",
+      "**No pongas** el logo dentro de cada tarjeta: Luis lo descartó. La marca va una sola vez, detrás de todo.",
+      "**No inviertas** el orden de `-webkit-backdrop-filter` y `backdrop-filter`.",
+      "**No pongas** un borde superior de color en una columna redondeada.",
+      "**No animes** la marca de fondo bajo 768 px, ni con la preferencia de menos movimiento.",
+      "**No uses** azul en los botones primarios del contenido en tema oscuro: ahí van en oliva.",
       "**No anides** vidrio dentro de vidrio.",
       "**No uses** una segunda familia tipográfica.",
-      "**No caigas** en el panel gris de tarjetas blancas planas típico de un CRM.",
+      "**No caigas** en el panel gris de tarjetas planas típico de un CRM.",
       "**No uses** terracota ni ámbar como decoración: solo comunican estado."
     ],
     "openItems": [
-      "**Cuadros por segundo en celulares reales:** sin medir. El desenfoque del vidrio sigue activo en celular aunque las formas estén quietas."
-    ]
+      "**Cuadros por segundo en celulares reales:** sin medir. El blur del vidrio sigue activo en celular aunque la marca esté quieta."
+    ],
+    "reviewDisposition": "Se hizo una revisión de cierre y sus correcciones se aplicaron, salvo donde una decisión de Luis manda: los botones oliva en el contenido en oscuro y el Liquid Morph al pasar el cursor se conservan a propósito. No se sorteó semilla, porque Luis fijó la dirección."
   }
 }

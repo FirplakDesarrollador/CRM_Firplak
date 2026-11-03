@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { ChevronRight } from "lucide-react";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
@@ -96,8 +97,11 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
           </div>
         </div>
       </div>
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-xs font-semibold text-muted"><Tr>Ver datos en tabla</Tr></summary>
+      <details className="group/tabla mt-3 text-sm">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-muted [&::-webkit-details-marker]:hidden">
+          <ChevronRight size={14} aria-hidden="true" className="transition-transform group-open/tabla:rotate-90" />
+          <Tr>Ver datos en tabla</Tr>
+        </summary>
         <table className="table mt-2">
           <thead><tr><th><Tr>Mes</Tr></th><th className="text-right"><Tr>Ganado</Tr></th><th className="text-right"><Tr>N.º ganadas</Tr></th><th className="text-right"><Tr>Pipeline creado</Tr></th></tr></thead>
           <tbody>

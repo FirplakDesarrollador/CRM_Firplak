@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#0a1826" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a1826" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   // La app instalada usa toda la pantalla (incluida la zona de la muesca); el contenido respeta los márgenes seguros.
   viewportFit: "cover",

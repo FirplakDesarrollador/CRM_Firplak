@@ -80,3 +80,14 @@ test("los datos de los gráficos de Indicadores se pueden leer con teclado", asy
   await etapa.focus();
   await expect(etapa.getByRole("tooltip")).toBeVisible();
 });
+
+test("las tarjetas tienen blur real y el logo de fondo se mueve despacio", async ({ page }) => {
+  await page.goto("/indicadores");
+  // El orden de las reglas importa: si el compilador descarta la estándar, el blur desaparece sin avisar.
+  await expect.poll(() => page.locator("main .glass").first().evaluate((e) => getComputedStyle(e).backdropFilter)).toContain("blur");
+  await expect.poll(() => page.locator("main .card").first().evaluate((e) => getComputedStyle(e).backdropFilter)).toContain("blur");
+  const logo = page.locator(".brand-backdrop-logo");
+  await expect.poll(() => logo.evaluate((e) => getComputedStyle(e).animationName)).toBe("logo-deriva");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect.poll(() => logo.evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+});

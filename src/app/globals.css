@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Firplak CRM · sistema visual: vidrio esmerilado sobre un fondo líquido, en navy, oliva, crema y negro.
+/* Firplak CRM · sistema visual: vidrio esmerilado sobre blanco o negro, con el logo azul de fondo, en navy, oliva y negro.
    Las escalas conservan sus nombres (--sage-* es ahora la gama oliva) para que los componentes no cambien.
    Las variables semánticas de abajo (--bg, --surface, --brand…) son las que consume la app. */
 
@@ -21,11 +21,11 @@
   --sage-300: #b7c47f;
   --sage-100: #dfe5bf;
   --sage-50: #f1f3e0;
-  /* Crema y beige */
-  --cream-50: #fcf8ef;
-  --cream-100: #f4ecdc;
-  --cream-200: #e9dec7;
-  --cream-300: #d8c9a8;
+  /* Claros neutros para texto sobre fondos oscuros */
+  --cream-50: #fbfcfd;
+  --cream-100: #eef3f6;
+  --cream-200: #e3e9ee;
+  --cream-300: #d0d8df;
   /* Negro */
   --ink-900: #0c0f10;
   --ink-700: #2a2e2c;
@@ -33,12 +33,12 @@
   --ink-300: #a5a69b;
 
   /* Semánticos (tema claro) */
-  --bg: #f1e8d6;
-  --surface: #fffcf5; /* menús, diálogos y capas que deben tapar lo de abajo */
-  --surface-2: rgba(255, 252, 245, 0.55);
-  --surface-3: rgba(23, 54, 80, 0.08);
-  --border: rgba(12, 15, 16, 0.13);
-  --border-strong: rgba(12, 15, 16, 0.24);
+  --bg: #ffffff;
+  --surface: #ffffff; /* menús, diálogos y capas que deben tapar lo de abajo */
+  --surface-2: rgba(240, 244, 248, 0.72);
+  --surface-3: rgba(23, 54, 80, 0.07);
+  --border: rgba(12, 15, 16, 0.1);
+  --border-strong: rgba(12, 15, 16, 0.2);
   --text: var(--ink-900);
   --text-2: var(--ink-700);
   --muted: var(--ink-500);
@@ -60,43 +60,30 @@
   --info: var(--navy-600);
   --info-soft: rgba(39, 80, 111, 0.12);
   --chart-commit: var(--navy-700); /* Compromiso y Pronóstico en los gráficos */
-  --chart-best: #9a7f49; /* Mejor caso y Potencial */
+  --chart-best: #6f9fc2; /* Mejor caso y Potencial */
 
   /* Controles */
   --primary-a: var(--navy-600);
   --primary-b: var(--navy-900);
   --primary-text: var(--cream-50);
-  --control-bg: rgba(255, 252, 245, 0.86);
-  --control-hover: rgba(255, 252, 245, 1);
-  --field-bg: rgba(255, 252, 245, 0.86);
+  --control-bg: rgba(255, 255, 255, 0.92);
+  --control-hover: #ffffff;
+  --field-bg: rgba(255, 255, 255, 0.92);
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233e423b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   /* Vidrio: tarjetas de información (.glass) y paneles de datos más densos (.card) */
-  --glass-hi: rgba(255, 252, 245, 0.78);
-  --glass-lo: rgba(255, 252, 245, 0.62);
-  --card-hi: rgba(255, 252, 245, 0.88);
-  --card-lo: rgba(255, 252, 245, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.72);
-  --glass-sheen: rgba(255, 255, 255, 0.55);
-  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 20px 42px -22px rgba(16, 38, 58, 0.45);
+  --glass-hi: rgba(255, 255, 255, 0.6);
+  --glass-lo: rgba(255, 255, 255, 0.4);
+  --card-hi: rgba(255, 255, 255, 0.82);
+  --card-lo: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --glass-sheen: rgba(255, 255, 255, 0.7);
+  --glass-shadow: inset 0 1px 0 #ffffff, 0 0 0 1px rgba(16, 38, 58, 0.08), 0 18px 40px -22px rgba(16, 38, 58, 0.38);
 
-  /* Fondo líquido */
-  --goo-opacity: 0.52; /* suaviza las manchas para que el texto directo sobre el fondo se lea */
-  --blob-a: #5f8caf;
-  --blob-b: #a3b25c;
-  --blob-c: #dcc698;
-  --blob-d: #4a7ba1;
-  --blob-e: #c6d08d;
-  --scrim: rgba(241, 232, 214, 0.72);
-
-  /* Logo de las tarjetas */
-  --drop-navy-a: #477590;
-  --drop-navy-b: #173650;
-  --drop-olive-a: #86973f;
-  --drop-olive-b: #4c5a1f;
-  --drop-beige-a: #b59a63;
-  --drop-beige-b: #7d6638;
-  --drop-opacity: 0.36;
+  /* Logo de fondo */
+  --logo-a: #2f6ea3;
+  --logo-b: #1c4f7c;
+  --logo-opacity: 0.62;
 
   --shadow: 0 2px 6px -1px rgba(16, 38, 58, 0.1);
   --shadow-md: 0 12px 26px -10px rgba(16, 38, 58, 0.22);
@@ -110,134 +97,112 @@
   color-scheme: light;
 }
 
-/* Tema oscuro: navy casi negro, texto crema y oliva como acento. */
+/* Tema oscuro: negro puro, texto claro y oliva como acento. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #070f17;
-    --surface: #10202e; /* menús, diálogos y capas que deben tapar lo de abajo */
-    --surface-2: rgba(19, 37, 53, 0.66);
-    --surface-3: rgba(245, 236, 220, 0.12);
-    --border: rgba(244, 236, 220, 0.14);
-    --border-strong: rgba(244, 236, 220, 0.26);
-    --text: var(--cream-100);
+    --bg: #000000;
+    --surface: #0e1011; /* menús, diálogos y capas que deben tapar lo de abajo */
+    --surface-2: rgba(255, 255, 255, 0.05);
+    --surface-3: rgba(255, 255, 255, 0.09);
+    --border: rgba(255, 255, 255, 0.13);
+    --border-strong: rgba(255, 255, 255, 0.24);
+    --text: #eef3f6;
     --text-2: #d3dde4;
-    --muted: #b1c1cd;
-    --heading: var(--cream-50);
-    --brand: var(--navy-300);
-    --brand-hover: var(--navy-100);
-    --brand-strong: var(--navy-100);
-    --brand-soft: rgba(19, 42, 60, 0.86);
-    --brand-contrast: var(--navy-900);
+    --muted: #adb9c2;
+    --heading: #f6f9fb;
+    --brand: #8fb9da;
+    --brand-hover: #b4d0e6;
+    --brand-strong: #d5e3ed;
+    --brand-soft: rgba(15, 32, 46, 0.86);
+    --brand-contrast: #07111a;
     --accent: var(--sage-300);
     --accent-soft: rgba(183, 196, 127, 0.16);
     --success: #bccd76;
-    --success-soft: rgba(36, 48, 20, 0.86);
+    --success-soft: rgba(30, 40, 18, 0.86);
     --warning: #e2bd7a;
     --warning-mark: #e2bd7a;
     --warning-soft: rgba(226, 189, 122, 0.16);
     --danger: #f4b1a2;
     --danger-soft: rgba(238, 159, 141, 0.16);
-    --info: var(--navy-300);
-    --info-soft: rgba(19, 42, 60, 0.86);
-    --chart-commit: var(--navy-100);
-    --chart-best: #c9b386;
+    --info: #8fb9da;
+    --info-soft: rgba(15, 32, 46, 0.86);
+    --chart-commit: #8fb9da;
+    --chart-best: #d8cda9;
     --primary-a: #a6b85c;
     --primary-b: #7f9140;
     --primary-text: #12170a;
-    --control-bg: rgba(16, 32, 46, 0.9);
-    --control-hover: rgba(33, 56, 76, 0.92);
-    --field-bg: rgba(5, 13, 21, 0.48);
+    --control-bg: rgba(20, 22, 24, 0.92);
+    --control-hover: rgba(38, 41, 44, 0.95);
+    --field-bg: rgba(10, 11, 12, 0.72);
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b1c1cd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    --glass-hi: rgba(39, 66, 90, 0.62);
-    --glass-lo: rgba(14, 30, 44, 0.5);
-    --card-hi: rgba(26, 47, 66, 0.84);
-    --card-lo: rgba(14, 29, 42, 0.8);
-    --glass-border: rgba(245, 236, 220, 0.17);
-    --glass-sheen: rgba(255, 255, 255, 0.11);
-    --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 22px 44px -22px rgba(0, 0, 0, 0.75);
-    --goo-opacity: 0.85;
-    --blob-a: #1f5079;
-    --blob-b: #4d5e22;
-    --blob-c: #4a4029;
-    --blob-d: #15395a;
-    --blob-e: #3f4f1d;
-    --scrim: rgba(7, 15, 23, 0.78);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 12px 26px -10px rgba(0, 0, 0, 0.6);
-    --shadow-lg: 0 26px 54px -18px rgba(0, 0, 0, 0.7);
+    --glass-hi: rgba(36, 40, 43, 0.55);
+    --glass-lo: rgba(14, 16, 17, 0.42);
+    --card-hi: rgba(24, 26, 28, 0.84);
+    --card-lo: rgba(12, 14, 15, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-sheen: rgba(255, 255, 255, 0.1);
+    --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000;
+    --logo-a: #3a7fb8;
+    --logo-b: #1c4f7c;
+    --logo-opacity: 0.72;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 12px 26px -10px rgba(0, 0, 0, 0.7);
+    --shadow-lg: 0 26px 54px -18px rgba(0, 0, 0, 0.8);
     --ring: 0 0 0 3px rgba(183, 196, 127, 0.45);
-    --drop-navy-a: #6f9fc2;
-    --drop-navy-b: #2d5878;
-    --drop-olive-a: #a4b65a;
-    --drop-olive-b: #5f7229;
-    --drop-beige-a: #cdb98d;
-    --drop-beige-b: #7d6f52;
-    --drop-opacity: 0.32;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #070f17;
-  --surface: #10202e; /* menús, diálogos y capas que deben tapar lo de abajo */
-  --surface-2: rgba(19, 37, 53, 0.66);
-  --surface-3: rgba(245, 236, 220, 0.12);
-  --border: rgba(244, 236, 220, 0.14);
-  --border-strong: rgba(244, 236, 220, 0.26);
-  --text: var(--cream-100);
+  --bg: #000000;
+  --surface: #0e1011; /* menús, diálogos y capas que deben tapar lo de abajo */
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.13);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --text: #eef3f6;
   --text-2: #d3dde4;
-  --muted: #b1c1cd;
-  --heading: var(--cream-50);
-  --brand: var(--navy-300);
-  --brand-hover: var(--navy-100);
-  --brand-strong: var(--navy-100);
-  --brand-soft: rgba(19, 42, 60, 0.86);
-  --brand-contrast: var(--navy-900);
+  --muted: #adb9c2;
+  --heading: #f6f9fb;
+  --brand: #8fb9da;
+  --brand-hover: #b4d0e6;
+  --brand-strong: #d5e3ed;
+  --brand-soft: rgba(15, 32, 46, 0.86);
+  --brand-contrast: #07111a;
   --accent: var(--sage-300);
   --accent-soft: rgba(183, 196, 127, 0.16);
   --success: #bccd76;
-  --success-soft: rgba(36, 48, 20, 0.86);
+  --success-soft: rgba(30, 40, 18, 0.86);
   --warning: #e2bd7a;
   --warning-mark: #e2bd7a;
   --warning-soft: rgba(226, 189, 122, 0.16);
   --danger: #f4b1a2;
   --danger-soft: rgba(238, 159, 141, 0.16);
-  --info: var(--navy-300);
-  --info-soft: rgba(19, 42, 60, 0.86);
-  --chart-commit: var(--navy-100);
-  --chart-best: #c9b386;
+  --info: #8fb9da;
+  --info-soft: rgba(15, 32, 46, 0.86);
+  --chart-commit: #8fb9da;
+  --chart-best: #d8cda9;
   --primary-a: #a6b85c;
   --primary-b: #7f9140;
   --primary-text: #12170a;
-  --control-bg: rgba(16, 32, 46, 0.9);
-  --control-hover: rgba(33, 56, 76, 0.92);
-  --field-bg: rgba(5, 13, 21, 0.48);
+  --control-bg: rgba(20, 22, 24, 0.92);
+  --control-hover: rgba(38, 41, 44, 0.95);
+  --field-bg: rgba(10, 11, 12, 0.72);
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b1c1cd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --glass-hi: rgba(39, 66, 90, 0.62);
-  --glass-lo: rgba(14, 30, 44, 0.5);
-  --card-hi: rgba(26, 47, 66, 0.84);
-  --card-lo: rgba(14, 29, 42, 0.8);
-  --glass-border: rgba(245, 236, 220, 0.17);
-  --glass-sheen: rgba(255, 255, 255, 0.11);
-  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 22px 44px -22px rgba(0, 0, 0, 0.75);
-  --goo-opacity: 0.85;
-  --blob-a: #1f5079;
-  --blob-b: #4d5e22;
-  --blob-c: #4a4029;
-  --blob-d: #15395a;
-  --blob-e: #3f4f1d;
-  --scrim: rgba(7, 15, 23, 0.78);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 12px 26px -10px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 26px 54px -18px rgba(0, 0, 0, 0.7);
+  --glass-hi: rgba(36, 40, 43, 0.55);
+  --glass-lo: rgba(14, 16, 17, 0.42);
+  --card-hi: rgba(24, 26, 28, 0.84);
+  --card-lo: rgba(12, 14, 15, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-sheen: rgba(255, 255, 255, 0.1);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000;
+  --logo-a: #3a7fb8;
+  --logo-b: #1c4f7c;
+  --logo-opacity: 0.72;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 12px 26px -10px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 26px 54px -18px rgba(0, 0, 0, 0.8);
   --ring: 0 0 0 3px rgba(183, 196, 127, 0.45);
-  --drop-navy-a: #6f9fc2;
-  --drop-navy-b: #2d5878;
-  --drop-olive-a: #a4b65a;
-  --drop-olive-b: #5f7229;
-  --drop-beige-a: #cdb98d;
-  --drop-beige-b: #7d6f52;
-  --drop-opacity: 0.32;
   color-scheme: dark;
 }
 
@@ -245,69 +210,59 @@
   --row-pad: 0.4rem;
 }
 
-/* Barra superior, módulos y dock: siempre vidrio navy, en los dos temas. */
+/* Barra superior, módulos y dock: vidrio navy en claro y negro en oscuro. */
 .shell-chrome {
-  --bg: #070f17;
-  --surface: #10202e; /* menús, diálogos y capas que deben tapar lo de abajo */
-  --surface-2: rgba(19, 37, 53, 0.66);
-  --surface-3: rgba(245, 236, 220, 0.12);
-  --border: rgba(244, 236, 220, 0.14);
-  --border-strong: rgba(244, 236, 220, 0.26);
-  --text: var(--cream-100);
+  --bg: #000000;
+  --surface: #0e1011; /* menús, diálogos y capas que deben tapar lo de abajo */
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.13);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --text: #eef3f6;
   --text-2: #d3dde4;
-  --muted: #b1c1cd;
-  --heading: var(--cream-50);
-  --brand: var(--navy-300);
-  --brand-hover: var(--navy-100);
-  --brand-strong: var(--navy-100);
-  --brand-soft: rgba(19, 42, 60, 0.86);
-  --brand-contrast: var(--navy-900);
+  --muted: #adb9c2;
+  --heading: #f6f9fb;
+  --brand: #8fb9da;
+  --brand-hover: #b4d0e6;
+  --brand-strong: #d5e3ed;
+  --brand-soft: rgba(15, 32, 46, 0.86);
+  --brand-contrast: #07111a;
   --accent: var(--sage-300);
   --accent-soft: rgba(183, 196, 127, 0.16);
   --success: #bccd76;
-  --success-soft: rgba(36, 48, 20, 0.86);
+  --success-soft: rgba(30, 40, 18, 0.86);
   --warning: #e2bd7a;
   --warning-mark: #e2bd7a;
   --warning-soft: rgba(226, 189, 122, 0.16);
   --danger: #f4b1a2;
   --danger-soft: rgba(238, 159, 141, 0.16);
-  --info: var(--navy-300);
-  --info-soft: rgba(19, 42, 60, 0.86);
-  --chart-commit: var(--navy-100);
-  --chart-best: #c9b386;
+  --info: #8fb9da;
+  --info-soft: rgba(15, 32, 46, 0.86);
+  --chart-commit: #8fb9da;
+  --chart-best: #d8cda9;
   --primary-a: #a6b85c;
   --primary-b: #7f9140;
   --primary-text: #12170a;
-  --control-bg: rgba(16, 32, 46, 0.9);
-  --control-hover: rgba(33, 56, 76, 0.92);
-  --field-bg: rgba(5, 13, 21, 0.48);
+  --control-bg: rgba(20, 22, 24, 0.92);
+  --control-hover: rgba(38, 41, 44, 0.95);
+  --field-bg: rgba(10, 11, 12, 0.72);
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b1c1cd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --glass-hi: rgba(39, 66, 90, 0.62);
-  --glass-lo: rgba(14, 30, 44, 0.5);
-  --card-hi: rgba(26, 47, 66, 0.84);
-  --card-lo: rgba(14, 29, 42, 0.8);
-  --glass-border: rgba(245, 236, 220, 0.17);
-  --glass-sheen: rgba(255, 255, 255, 0.11);
-  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 22px 44px -22px rgba(0, 0, 0, 0.75);
-  --goo-opacity: 0.85;
-  --blob-a: #1f5079;
-  --blob-b: #4d5e22;
-  --blob-c: #4a4029;
-  --blob-d: #15395a;
-  --blob-e: #3f4f1d;
-  --scrim: rgba(7, 15, 23, 0.78);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 12px 26px -10px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 26px 54px -18px rgba(0, 0, 0, 0.7);
+  --glass-hi: rgba(36, 40, 43, 0.55);
+  --glass-lo: rgba(14, 16, 17, 0.42);
+  --card-hi: rgba(24, 26, 28, 0.84);
+  --card-lo: rgba(12, 14, 15, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-sheen: rgba(255, 255, 255, 0.1);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 22px 44px -22px #000;
+  --logo-a: #3a7fb8;
+  --logo-b: #1c4f7c;
+  --logo-opacity: 0.72;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 12px 26px -10px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 26px 54px -18px rgba(0, 0, 0, 0.8);
   --ring: 0 0 0 3px rgba(183, 196, 127, 0.45);
-  --drop-navy-a: #6f9fc2;
-  --drop-navy-b: #2d5878;
-  --drop-olive-a: #a4b65a;
-  --drop-olive-b: #5f7229;
-  --drop-beige-a: #cdb98d;
-  --drop-beige-b: #7d6f52;
-  --drop-opacity: 0.32;
   color-scheme: dark;
+  --surface: #10202e;
   color: var(--text);
 }
 
@@ -347,7 +302,7 @@
   --radius-2xl: 36px;
 }
 
-/* El fondo va en html: si body lo pintara, taparía el fondo líquido. */
+/* El fondo va en html: si body lo pintara, taparía el logo de fondo. */
 html {
   background-color: var(--bg);
 }
@@ -385,8 +340,8 @@ svg.lucide {
   stroke-width: 1.5;
 }
 
-/* ---------- Fondo líquido: manchas que se funden entre sí, detrás de todo el contenido ---------- */
-.liquid-field {
+/* ---------- Fondo: el logo azul de Firplak en vector, moviéndose despacio detrás del vidrio ---------- */
+.brand-backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
@@ -394,76 +349,27 @@ svg.lucide {
   pointer-events: none;
   contain: strict;
 }
-.liquid-filter {
+.brand-backdrop-logo {
   position: absolute;
-}
-/* Se dibuja a mitad de tamaño y se amplía: el filtro cuesta menos y el borde queda suave. */
-.liquid-goo {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 50%;
-  transform: scale(2);
-  transform-origin: 0 0;
-  opacity: var(--goo-opacity);
-  filter: url(#liquid-goo);
-}
-.liquid-blob {
-  position: absolute;
-  display: block;
-}
-.liquid-blob-a { right: 4%; top: 2%; width: 40vmin; height: 34vmin; background: var(--blob-a); border-radius: 58% 42% 46% 54% / 52% 60% 40% 48%; }
-.liquid-blob-b { right: 30%; top: 34%; width: 34vmin; height: 36vmin; background: var(--blob-b); border-radius: 42% 58% 62% 38% / 60% 40% 60% 40%; }
-.liquid-blob-c { left: 22%; bottom: 2%; width: 44vmin; height: 34vmin; background: var(--blob-c); border-radius: 62% 38% 44% 56% / 44% 58% 42% 56%; }
-.liquid-blob-d { right: -8%; bottom: -8%; width: 38vmin; height: 40vmin; background: var(--blob-d); border-radius: 48% 52% 36% 64% / 58% 44% 56% 42%; }
-.liquid-blob-e { left: -6%; top: 46%; width: 26vmin; height: 30vmin; background: var(--blob-e); border-radius: 54% 46% 60% 40% / 40% 62% 38% 60%; }
-/* Protege el texto que va directo sobre el fondo, como los títulos de página. */
-.liquid-field::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(62vw 40vh at 0 0, var(--scrim) 45%, transparent 100%);
+  right: -4vmin;
+  bottom: -16vmin;
+  width: 88vmin;
+  height: auto;
+  opacity: var(--logo-opacity);
 }
 
-@media (max-width: 767px) {
-  .liquid-field::after {
-    background: linear-gradient(180deg, var(--scrim) 0, var(--scrim) 22vh, transparent 44vh);
-  }
+@keyframes logo-deriva {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  25% { transform: translate(-14vmin, -8vmin) rotate(-5deg) scale(1.04); }
+  50% { transform: translate(-26vmin, 4vmin) rotate(3deg) scale(0.97); }
+  75% { transform: translate(-10vmin, 10vmin) rotate(6deg) scale(1.02); }
 }
 
-@keyframes liquid-drift-a {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); border-radius: 58% 42% 46% 54% / 52% 60% 40% 48%; }
-  33% { transform: translate(-9vmin, 7vmin) rotate(14deg); border-radius: 40% 60% 62% 38% / 62% 38% 62% 38%; }
-  66% { transform: translate(5vmin, 12vmin) rotate(-10deg); border-radius: 66% 34% 38% 62% / 42% 66% 34% 58%; }
-}
-@keyframes liquid-drift-b {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); border-radius: 42% 58% 62% 38% / 60% 40% 60% 40%; }
-  50% { transform: translate(11vmin, -8vmin) rotate(-16deg); border-radius: 64% 36% 40% 60% / 38% 62% 38% 62%; }
-}
-@keyframes liquid-drift-c {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); border-radius: 62% 38% 44% 56% / 44% 58% 42% 56%; }
-  50% { transform: translate(-7vmin, -9vmin) rotate(12deg); border-radius: 38% 62% 58% 42% / 62% 40% 60% 38%; }
-}
-
-/* El color que fluye dentro del logo de las tarjetas. */
-@keyframes liquid-flow {
-  to { background-position: 0 100%; }
-}
-
-/* Movimiento lento en computador; en celular las formas quedan quietas para cuidar la batería. */
+/* Movimiento lento en computador; en celular el logo queda quieto para cuidar la batería. */
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-  .liquid-blob-a { animation: liquid-drift-a 44s ease-in-out infinite; }
-  .liquid-blob-b { animation: liquid-drift-b 36s ease-in-out infinite; }
-  .liquid-blob-c { animation: liquid-drift-c 40s ease-in-out infinite; }
-  .liquid-blob-d { animation: liquid-drift-c 52s ease-in-out -14s infinite reverse; }
-  .liquid-blob-e { animation: liquid-drift-b 48s ease-in-out -20s infinite reverse; }
-  .glass::before {
-    animation: liquid-flow 18s ease-in-out infinite alternate;
+  .brand-backdrop-logo {
+    animation: logo-deriva 40s ease-in-out infinite;
   }
-  .glass:nth-child(4n + 2)::before { animation-delay: -5s; animation-duration: 22s; }
-  .glass:nth-child(4n + 3)::before { animation-delay: -11s; animation-duration: 16s; }
-  .glass:nth-child(4n)::before { animation-delay: -15s; animation-duration: 20s; }
 }
 
 @layer components {
@@ -477,10 +383,10 @@ svg.lucide {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     box-shadow: var(--glass-shadow);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(26px) saturate(155%);
+    backdrop-filter: blur(26px) saturate(155%);
   }
-  /* Tarjeta de información: vidrio más abierto, con el logo detrás. */
+  /* Tarjeta de información: vidrio más abierto. */
   .glass {
     position: relative;
     isolation: isolate;
@@ -488,53 +394,9 @@ svg.lucide {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     box-shadow: var(--glass-shadow);
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
-    overflow: hidden;
+    -webkit-backdrop-filter: blur(30px) saturate(170%);
+    backdrop-filter: blur(30px) saturate(170%);
     transition: border-radius 0.6s var(--ease), box-shadow 0.3s var(--ease);
-  }
-  /* El logo de Firplak nace de la esquina, recortado por el vidrio; el color fluye despacio dentro de él. */
-  .glass::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    right: 0;
-    bottom: 0;
-    width: clamp(100px, 36%, 210px);
-    aspect-ratio: 420 / 428;
-    translate: 16% 18%;
-    pointer-events: none;
-    background: linear-gradient(200deg, var(--drop-a, var(--drop-navy-a)), var(--drop-flow, var(--drop-olive-a)), var(--drop-b, var(--drop-navy-b)));
-    background-size: 100% 170%;
-    -webkit-mask: url("/brand/firplak-mark-white.png") center / contain no-repeat;
-    mask: url("/brand/firplak-mark-white.png") center / contain no-repeat;
-    opacity: var(--drop-opacity);
-    transition: scale 0.7s var(--ease), opacity 0.4s var(--ease);
-  }
-  .glass:nth-child(2n)::before {
-    --drop-a: var(--drop-beige-a);
-    --drop-flow: var(--drop-navy-a);
-    --drop-b: var(--drop-beige-b);
-  }
-  .glass:has(.text-success)::before {
-    --drop-a: var(--drop-olive-a);
-    --drop-flow: var(--drop-beige-a);
-    --drop-b: var(--drop-olive-b);
-  }
-  .glass:has(.text-warning)::before,
-  .glass:has(.text-danger)::before {
-    --drop-a: var(--drop-beige-a);
-    --drop-flow: var(--drop-navy-a);
-    --drop-b: var(--drop-beige-b);
-  }
-  /* El logo es de las tarjetas de información: no va donde hay gráficos, medidores ni formularios. */
-  .glass:has(> .card-header)::before,
-  .glass:has(svg[role="group"])::before,
-  .glass:has([role="meter"])::before,
-  .glass:has(input, select, textarea)::before,
-  .glass:has(.object-icon)::before,
-  nav.glass::before {
-    display: none;
   }
   /* Gráficos y formularios se leen mejor sobre el vidrio denso. */
   .glass:has(> .card-header),
@@ -542,11 +404,6 @@ svg.lucide {
   .glass:has(input, select, textarea),
   nav.glass {
     background: linear-gradient(150deg, var(--card-hi), var(--card-lo));
-  }
-  /* El subtexto de una tarjeta no llega hasta el logo. */
-  .glass > .kpi-value ~ p {
-    padding-right: 26%;
-    text-wrap: balance;
   }
   /* Brillo del borde superior. */
   .glass::after,
@@ -561,29 +418,29 @@ svg.lucide {
     opacity: 0.55;
   }
   @media (hover: hover) {
-    /* Movimiento característico: el logo crece y la esquina del vidrio se deforma. */
+    /* Al pasar el cursor, la esquina del vidrio se deforma. */
     .glass:hover {
       border-radius: 30px 20px 28px 18px;
       box-shadow: var(--glass-shadow), var(--shadow-md);
     }
-    .glass:hover::before {
-      scale: 1.1;
-      opacity: calc(var(--drop-opacity) + 0.14);
-    }
   }
-  /* Un panel dentro de otro no repite vidrio ni logo. */
+  /* Columnas del Pipeline: también de vidrio, para que el logo se difumine detrás. */
+  .kanban-column {
+    background: var(--card-lo);
+    -webkit-backdrop-filter: blur(26px) saturate(155%);
+    backdrop-filter: blur(26px) saturate(155%);
+  }
+  /* Un panel dentro de otro no repite vidrio. */
   .card .card,
   .card .glass,
   .glass .card,
-  .glass .glass {
-    backdrop-filter: none;
+  .glass .glass,
+  .kanban-column .card {
     -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     box-shadow: none;
     background: var(--surface-2);
     border-color: var(--border);
-  }
-  .glass .glass::before {
-    display: none;
   }
   .card-header {
     display: flex;
@@ -708,6 +565,17 @@ svg.lucide {
     background-position: right 0.7rem center;
     background-size: 14px;
     text-overflow: ellipsis;
+  }
+  .select-compact {
+    width: auto;
+    max-width: 10rem;
+    height: 1.75rem;
+    padding: 0 1.45rem 0 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background-position: right 0.4rem center;
+    background-size: 12px;
   }
   .input::placeholder,
   .textarea::placeholder {
@@ -899,7 +767,8 @@ svg.lucide {
   .obj-quotes { background: linear-gradient(160deg, var(--navy-600), var(--navy-800)); }
   .obj-orders { background: linear-gradient(160deg, var(--navy-700), var(--ink-900)); }
   .obj-products { background: linear-gradient(160deg, var(--sage-600), var(--sage-700)); }
-  .obj-cases { background: linear-gradient(160deg, #9a7f49, #5f4c28); }
+  .obj-cases { background: linear-gradient(160deg, var(--navy-500), var(--navy-700)); }
+  .obj-forecast { background: linear-gradient(160deg, var(--navy-500), var(--navy-700)); }
   .obj-campaigns { background: linear-gradient(160deg, var(--navy-700), var(--navy-900)); }
   .obj-home, .obj-settings { background: linear-gradient(160deg, var(--navy-600), var(--navy-800)); }
   .obj-approvals { background: linear-gradient(160deg, var(--sage-600), var(--sage-700)); }
@@ -923,15 +792,37 @@ svg.lucide {
 /* Barra superior y módulos. */
 .shell-chrome.shell-bar {
   background: linear-gradient(180deg, rgba(10, 24, 38, 0.96), rgba(13, 32, 49, 0.9));
-  border-bottom: 1px solid rgba(244, 236, 220, 0.12);
-  backdrop-filter: blur(26px) saturate(170%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: blur(26px) saturate(170%);
+  backdrop-filter: blur(26px) saturate(170%);
 }
 .shell-chrome .tab[aria-current="page"] {
   color: var(--cream-50);
   background: linear-gradient(160deg, rgba(164, 182, 90, 0.5), rgba(95, 114, 41, 0.42));
 }
 /* Módulos: sin íconos, para que todos quepan desde 1280. Por debajo se desplazan, con barra fina y borde difuminado. */
+/* En tema oscuro, la barra y el dock pasan de navy a negro. */
+:root[data-theme="dark"] .shell-chrome {
+  --surface: #0e1011;
+}
+:root[data-theme="dark"] .shell-chrome.shell-bar {
+  background: rgba(0, 0, 0, 0.84);
+}
+:root[data-theme="dark"] .dock {
+  background: rgba(12, 14, 15, 0.97);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .shell-chrome {
+    --surface: #0e1011;
+  }
+  :root:not([data-theme="light"]) .shell-chrome.shell-bar {
+    background: rgba(0, 0, 0, 0.84);
+  }
+  :root:not([data-theme="light"]) .dock {
+    background: rgba(12, 14, 15, 0.97);
+  }
+}
+
 .nav-scroll {
   scrollbar-width: thin;
 }
@@ -972,11 +863,11 @@ svg.lucide {
 /* Dock flotante del celular. */
 .dock {
   background: linear-gradient(170deg, rgba(23, 44, 64, 0.97), rgba(10, 24, 38, 0.97));
-  border: 1px solid rgba(244, 236, 220, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 24px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75);
-  backdrop-filter: blur(24px) saturate(170%);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
 }
 .dock-active {
   color: var(--cream-50);
@@ -1000,31 +891,31 @@ svg.lucide {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
-  /* Un ciclo infinito de 0.01 ms parpadearía: las formas líquidas simplemente quedan quietas. */
-  .liquid-blob,
-  .glass::before,
+  /* Un ciclo infinito de 0.01 ms parpadearía: el logo y el esqueleto simplemente quedan quietos. */
+  .brand-backdrop-logo,
   .skeleton {
     animation: none !important;
   }
 }
 
-/* Quien pide menos transparencia ve paneles sólidos y sin fondo líquido. */
+/* Quien pide menos transparencia ve paneles sólidos y sin logo de fondo. */
 @media (prefers-reduced-transparency: reduce) {
-  .liquid-field {
+  .brand-backdrop {
     display: none;
   }
   .card,
   .glass,
+  .kanban-column,
   .dock,
   .shell-chrome.shell-bar {
     background: var(--surface);
-    backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
 @media print {
-  .liquid-field {
+  .brand-backdrop {
     display: none;
   }
 }
