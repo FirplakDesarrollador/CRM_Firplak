@@ -32,7 +32,6 @@ export default async function ReportsPage() {
         <div className="flex items-center gap-3">
           <ObjectIcon object="dashboard" />
           <div>
-            <p className="eyebrow"><Tr>Análisis</Tr></p>
             <h1 className="text-xl font-medium"><Tr>Informes</Tr></h1>
           </div>
         </div>

@@ -76,7 +76,6 @@ export default async function ApprovalsPage() {
       <div className="flex items-center gap-3">
         <ObjectIcon object="approvals" size={20} />
         <div>
-          <p className="eyebrow"><Tr>Aprobaciones</Tr></p>
           <h1 className="text-xl font-medium"><Tr>Bandeja de aprobaciones</Tr></h1>
         </div>
       </div>

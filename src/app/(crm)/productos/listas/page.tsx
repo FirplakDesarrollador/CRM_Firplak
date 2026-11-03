@@ -28,7 +28,6 @@ export default async function PriceBooksPage() {
       <div className="flex items-center gap-3">
         <ObjectIcon object="products" />
         <div>
-          <p className="eyebrow"><Tr>Catálogo</Tr></p>
           <h1 className="text-xl font-medium"><Tr>Listas de precios</Tr></h1>
         </div>
       </div>

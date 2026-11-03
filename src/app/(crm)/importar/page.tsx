@@ -33,7 +33,6 @@ export default async function ImportPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div>
-        <p className="eyebrow"><Tr>Datos</Tr></p>
         <h1 className="text-xl font-medium"><Tr>Importar datos</Tr></h1>
         <p className="text-sm text-muted"><Tr>Carga registros desde un archivo CSV exportado de Excel u otro sistema. Recomendado: cuentas → contactos → oportunidades, para que las relaciones se encuentren.</Tr></p>
       </div>

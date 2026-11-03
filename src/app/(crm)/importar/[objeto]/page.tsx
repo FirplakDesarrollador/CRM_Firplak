@@ -31,8 +31,7 @@ export default async function ImportObjectPage({ params }: PageProps<"/importar/
       <div className="flex items-center gap-3">
         <ObjectIcon object={objeto} />
         <div>
-          <p className="eyebrow"><Tr>Importar</Tr></p>
-          <h1 className="text-xl font-medium">{def.plural}</h1>
+          <h1 className="text-xl font-medium"><Tr>Importar</Tr> · {def.plural}</h1>
         </div>
       </div>
       <ImportWizard object={objeto} label={def.label} plural={def.plural} path={def.path} fields={fields}

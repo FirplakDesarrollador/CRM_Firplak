@@ -36,8 +36,7 @@ export default async function ConvertLeadPage({ params }: PageProps<"/prospectos
       <div className="flex items-center gap-3">
         <ObjectIcon object="leads" />
         <div>
-          <p className="eyebrow"><Tr>Convertir prospecto</Tr></p>
-          <h1 className="text-xl font-medium">{lead.full_name} · {lead.company}</h1>
+          <h1 className="text-xl font-medium"><Tr>Convertir prospecto</Tr> · {lead.full_name} · {lead.company}</h1>
         </div>
       </div>
       <ConvertForm

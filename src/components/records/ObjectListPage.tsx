@@ -59,7 +59,6 @@ export async function ObjectListPage({
         <div className="flex items-center gap-3">
           <ObjectIcon object={object} />
           <div>
-            <p className="eyebrow">{def.plural}</p>
             <h1 className="text-xl font-medium">{view?.name ?? defaultViewName ?? `Todas las ${def.plural.toLowerCase()}`}</h1>
             {params.credit && (
               <p className="mt-0.5 text-xs text-muted">

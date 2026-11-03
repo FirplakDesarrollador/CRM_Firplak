@@ -72,8 +72,7 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
         <div className="flex items-center gap-3">
           <ObjectIcon object="opportunities" />
           <div>
-            <p className="eyebrow"><Tr>Pipeline de ventas</Tr></p>
-            <h1 className="text-xl font-medium"><Val>{pipeline.name}</Val></h1>
+            <h1 className="text-xl font-medium"><Tr>Pipeline</Tr> · <Val>{pipeline.name}</Val></h1>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

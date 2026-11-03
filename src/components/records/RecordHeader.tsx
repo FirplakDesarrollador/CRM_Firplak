@@ -25,7 +25,6 @@ export function RecordHeader({
         <div className="flex min-w-0 items-center gap-3">
           <ObjectIcon object={def.key} size={20} />
           <div className="min-w-0">
-            <p className="eyebrow">{def.label}</p>
             <h1 className="flex flex-wrap items-center gap-2 text-xl font-medium leading-tight">
               <span className="break-words">{title}</span>
               {badges}

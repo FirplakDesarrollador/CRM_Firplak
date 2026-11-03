@@ -33,8 +33,8 @@ export async function ReportPage({
         <div className="flex items-center gap-3">
           <ObjectIcon object={object} />
           <div>
-            <p className="eyebrow">Informe de {def.plural.toLowerCase()}{meta.folder ? ` · ${meta.folder}` : ""}</p>
             <h1 className="text-xl font-medium">{meta.name || "Informe sin guardar"}</h1>
+            <p className="text-sm text-muted">Informe de {def.plural.toLowerCase()}{meta.folder ? ` · ${meta.folder}` : ""}</p>
             {meta.description && <p className="text-sm text-muted">{meta.description}</p>}
           </div>
         </div>

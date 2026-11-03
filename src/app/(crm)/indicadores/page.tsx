@@ -71,8 +71,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         <div className="flex items-center gap-3">
           <ObjectIcon object="dashboard" />
           <div>
-            <p className="eyebrow"><Tr>Indicadores comerciales</Tr></p>
-            <h1 className="text-xl font-medium">{t(PERIODS[period])} · <Fmt date={from} /> – <Fmt date={to} /></h1>
+            <h1 className="text-xl font-medium">{t("Indicadores")} · {t(PERIODS[period])} · <Fmt date={from} /> – <Fmt date={to} /></h1>
           </div>
         </div>
         <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"} pipeline={pipeline?.id ?? ""}

@@ -254,6 +254,8 @@ Una paleta de navy casi negro, crema cálida, verde oliva y negro, donde terraco
 - **Líneas**: negro al 13 y 24 % en claro; crema al 14 y 26 % en oscuro.
 
 ### Named Rules
+**Título Sin Etiqueta.** Ninguna página lleva una etiqueta encima del título; si el título por sí solo no dice qué es la página, el nombre entra al título (decisión de Luis, 3 nov 2026).
+
 **La Regla del Cromo Navy.** La barra superior, los módulos, el dock y el panel lateral del acceso son navy en los dos temas. Usan los valores del tema oscuro aunque la página esté en claro.
 
 **La Regla del Primario Reversible.** La acción primaria es navy sobre el suelo claro y oliva sobre cualquier superficie oscura. Nunca se fija un solo color de botón.
@@ -393,5 +395,4 @@ La marca oficial de Firplak funciona como máscara sobre un degradado que se des
 
 ### Asuntos abiertos
 Estos puntos siguen sin decidir o sin medir, y no son reglas del sistema.
-- **Etiquetas de nombre de página sobre el título:** están presentes en el código, en al menos 18 encabezados. Falta preguntarle a Luis si se quedan, así que este documento no las adopta ni las prohíbe.
 - **Cuadros por segundo en celulares reales:** sin medir. El desenfoque del vidrio sigue activo en celular aunque las formas estén quietas.

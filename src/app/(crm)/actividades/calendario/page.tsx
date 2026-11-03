@@ -107,7 +107,6 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
         <div className="flex items-center gap-3">
           <ObjectIcon object="activities" />
           <div>
-            <p className="eyebrow"><Tr>Calendario</Tr></p>
             <h1 className="text-xl font-medium first-letter:uppercase">{title}</h1>
           </div>
         </div>

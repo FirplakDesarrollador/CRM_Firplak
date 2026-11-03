@@ -42,7 +42,6 @@ export default async function TemplatesPage() {
       <div className="flex items-center gap-3">
         <ObjectIcon object="activities" />
         <div>
-          <p className="eyebrow"><Tr>Correo</Tr></p>
           <h1 className="text-xl font-medium"><Tr>Plantillas de correo</Tr></h1>
         </div>
       </div>

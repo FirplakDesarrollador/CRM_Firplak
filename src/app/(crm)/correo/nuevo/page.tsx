@@ -94,7 +94,6 @@ export default async function NewEmailPage({ searchParams }: PageProps<"/correo/
       <div className="flex items-center gap-3">
         <ObjectIcon object="activities" />
         <div>
-          <p className="eyebrow"><Tr>Correo</Tr></p>
           <h1 className="text-xl font-medium">{recipient ? `Escribir a ${recipient}` : "Nuevo correo"}</h1>
         </div>
       </div>

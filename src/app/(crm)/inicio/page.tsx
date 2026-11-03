@@ -73,8 +73,7 @@ export default async function HomePage() {
     <div className="space-y-5">
       <InstallBanner />
       <div>
-        <p className="eyebrow"><Tr>Inicio</Tr></p>
-        <h1 className="editorial mt-1 text-3xl">{greeting(locale)}, {firstName}</h1>
+        <h1 className="editorial text-3xl">{greeting(locale)}, {firstName}</h1>
         <p className="text-sm text-muted">{t("Este es tu resumen de")} {new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-CO", { month: "long", timeZone: "UTC" }).format(new Date(`${today}T00:00:00Z`))}.</p>
       </div>
 
