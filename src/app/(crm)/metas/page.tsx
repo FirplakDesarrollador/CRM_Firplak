@@ -64,7 +64,7 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-[10px] border border-line-strong p-0.5">
+          <div className="segmented">
             {(["month", "quarter", "year"] as const).map((t) => (
               <Link key={t} href={qs({ tipo: t, inicio: periodStart(t, start) })} aria-current={type === t ? "page" : undefined}
                 className={`btn btn-sm border-0 ${type === t ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}>

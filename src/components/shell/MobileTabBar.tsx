@@ -38,7 +38,7 @@ export function MobileTabBar({ items }: { items: NavItem[] }) {
                 return (
                   <li key={item.href}>
                     <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined} onClick={() => setOpen(false)}
-                      className={`flex flex-col items-center gap-1 rounded-[12px] border px-2 py-3 text-center text-xs no-underline ${isActive(item.href) ? "border-[var(--brand)] text-[var(--brand)]" : "border-line text-ink"}`}>
+                      className={`flex flex-col items-center gap-1 rounded-[12px] border px-2 py-3 text-center text-xs no-underline ${isActive(item.href) ? "border-[var(--accent)] bg-accent-soft text-[var(--accent)]" : "border-line text-ink"}`}>
                       {Icon && <Icon size={20} />}
                       <span className="leading-tight">{item.label}</span>
                     </Link>
@@ -50,7 +50,7 @@ export function MobileTabBar({ items }: { items: NavItem[] }) {
         </div>
       )}
       <nav aria-label={t("Navegación principal")}
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[var(--glass-bg)] pb-[env(safe-area-inset-bottom)] backdrop-blur-[28px] backdrop-saturate-150 md:hidden">
+        className="shell-chrome dock fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 md:hidden">
         <ul className="grid grid-cols-5">
           {primary.map((item) => {
             const Icon = OBJECT_ICONS[item.icon];
@@ -59,7 +59,7 @@ export function MobileTabBar({ items }: { items: NavItem[] }) {
             return (
               <li key={item.href}>
                 <Link href={href} aria-current={active ? "page" : undefined} onClick={() => setOpen(false)}
-                  className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[0.68rem] no-underline ${active ? "text-[var(--brand)]" : "text-muted"}`}>
+                  className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[0.68rem] no-underline ${active ? "dock-active" : "text-muted"}`}>
                   {Icon && <Icon size={20} />}
                   <span>{LABELS[item.href] ? t(LABELS[item.href]) : item.label}</span>
                 </Link>
@@ -68,7 +68,7 @@ export function MobileTabBar({ items }: { items: NavItem[] }) {
           })}
           <li>
             <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
-              className={`flex h-14 w-full flex-col items-center justify-center gap-0.5 text-[0.68rem] ${open || rest.some((i) => isActive(i.href)) ? "text-[var(--brand)]" : "text-muted"}`}>
+              className={`flex h-14 w-full flex-col items-center justify-center gap-0.5 text-[0.68rem] ${open || rest.some((i) => isActive(i.href)) ? "dock-active" : "text-muted"}`}>
               <Menu size={20} />
               <span>{t("Más")}</span>
             </button>

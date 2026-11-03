@@ -116,7 +116,7 @@ export function ReportBuilder({
           </div>
           <div className="sm:col-span-2">
             <span className="label"><Tr>Visualización</Tr></span>
-            <div className="inline-flex rounded-[10px] border border-line-strong p-0.5">
+            <div className="segmented">
               {([["bar", "Barras", BarChart3], ["column", "Columnas", Columns3], ["table", "Solo tabla", Table2]] as const).map(([k, label, Icon]) => (
                 <button key={k} type="button" onClick={() => set({ chart: k })} aria-pressed={def.chart === k}
                   className={`btn btn-sm border-0 ${def.chart === k ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}>

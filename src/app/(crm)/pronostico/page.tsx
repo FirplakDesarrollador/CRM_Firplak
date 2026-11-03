@@ -32,7 +32,7 @@ type Row = {
 const SEGMENTS = [
   { key: "closed", label: "Cerrado", color: "var(--success)" },
   { key: "commit_amount", label: "Compromiso", color: "var(--chart-commit)" },
-  { key: "best_case", label: "Mejor caso", color: "var(--sage-500)" },
+  { key: "best_case", label: "Mejor caso", color: "var(--chart-best)" },
 ] as const;
 
 export default async function ForecastPage({ searchParams }: PageProps<"/pronostico">) {
@@ -153,7 +153,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-[10px] border border-line-strong p-0.5">
+          <div className="segmented">
             {(["month", "quarter", "year"] as const).map((t) => (
               <Link key={t} href={qs({ tipo: t, inicio: periodStart(t, start) })} aria-current={type === t ? "page" : undefined}
                 className={`btn btn-sm border-0 ${type === t ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}>
@@ -168,7 +168,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
       </div>
       {error && <p className="error-text">{error.message}</p>}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 sm:max-xl:[&>*:last-child]:col-span-2 xl:grid-cols-5">
         <KpiTile label="Cerrado" {...formatMillions(totals.closed)} sub={delta(totals.closed, before?.closed)} />
         <KpiTile label="Compromiso" {...formatMillions(totals.commit)} sub={delta(totals.commit, before?.commit)} />
         <KpiTile label="Mejor caso" {...formatMillions(totals.best)}

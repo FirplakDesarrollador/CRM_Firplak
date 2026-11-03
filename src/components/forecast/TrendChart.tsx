@@ -7,7 +7,7 @@ import { useLocale, useT } from "@/lib/i18n/client";
 export type TrendPoint = { date: string; closed: number; forecast: number; potential: number; quota: number | null; live?: boolean };
 
 const SERIES = [
-  { key: "potential", label: "Potencial (con mejor caso)", color: "var(--sage-500)" },
+  { key: "potential", label: "Potencial (con mejor caso)", color: "var(--chart-best)" },
   { key: "forecast", label: "Pronóstico", color: "var(--chart-commit)" },
   { key: "closed", label: "Cerrado", color: "var(--success)" },
 ] as const;

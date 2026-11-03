@@ -96,7 +96,7 @@ export function ListToolbar(props: Props) {
           <input className="input pl-8" placeholder={t("Buscar en esta lista…")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </form>
 
-        {props.hasOwner !== false && <div className="inline-flex rounded-lg border border-line-strong p-0.5" role="group" aria-label="Alcance">
+        {props.hasOwner !== false && <div className="segmented" role="group" aria-label="Alcance">
           {(props.teamScope ? (["all", "mine", "team"] as const) : (["all", "mine"] as const)).map((s) => (
             <button key={s} type="button" onClick={() => push({ scope: s === "all" ? null : s })}
               title={s === "team" ? t("Registros en los que estás en el equipo") : undefined}

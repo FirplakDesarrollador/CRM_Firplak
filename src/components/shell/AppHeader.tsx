@@ -23,7 +23,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
   ].filter((q) => q.ok);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-[var(--glass-bg)] backdrop-blur-[28px] backdrop-saturate-150">
+    <header className="shell-chrome shell-bar sticky top-0 z-30">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <Link href="/inicio" className="flex-none no-underline" aria-label="Inicio">
           <span className="hidden sm:inline-flex"><Logo height={30} /></span>
@@ -61,7 +61,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
           <div className="border-b border-line px-2.5 pb-2 pt-1.5">
             <p className="truncate text-sm font-semibold">{user.fullName}</p>
             <p className="truncate text-xs text-muted">{user.email}</p>
-            <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-accent">{user.access.profile ?? t("Sin perfil")}{user.roleName ? ` · ${user.roleName}` : ""}</p>
+            <p className="mt-1 text-xs font-medium text-accent">{user.access.profile ?? t("Sin perfil")}{user.roleName ? ` · ${user.roleName}` : ""}</p>
           </div>
           <div className="pt-1">
             <Link href="/preferencias" className={menuItemClass}><SlidersHorizontal size={15} className="text-muted" /> {t("Mis preferencias")}</Link>
@@ -71,7 +71,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
             {(canSystem(user.access, "customize") || canSystem(user.access, "manage_users")) && (
               <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> {t("Configuración")}</Link>
             )}
-            <SignOutForm className={`${menuItemClass} text-danger`} label={t("Cerrar sesión")} />
+            <SignOutForm label={t("Cerrar sesión")} />
           </div>
         </Dropdown>
       </div>

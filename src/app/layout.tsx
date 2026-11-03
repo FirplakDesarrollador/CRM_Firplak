@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 
-// Tipografías del Firplak Design System: Outfit (UI y display) y Fraunces (acentos editoriales).
+// Outfit es la única familia de la interfaz.
 const outfit = Outfit({ subsets: ["latin"], weight: ["200", "300", "400", "500", "600", "700"], variable: "--font-outfit", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], weight: ["300", "400", "500"], variable: "--font-fraunces", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "Firplak CRM", template: "%s · Firplak CRM" },
@@ -20,8 +19,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f1ea" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1e28" },
+    { media: "(prefers-color-scheme: light)", color: "#0a1826" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a1826" },
   ],
   // La app instalada usa toda la pantalla (incluida la zona de la muesca); el contenido respeta los márgenes seguros.
   viewportFit: "cover",
@@ -36,7 +35,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html
       lang={lang}
-      className={`${outfit.variable} ${fraunces.variable}`}
+      className={outfit.variable}
       data-theme={theme === "light" || theme === "dark" ? theme : undefined}
       data-density={density === "compact" ? "compact" : undefined}
     >

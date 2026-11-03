@@ -3,9 +3,10 @@
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/(auth)/actions";
 import { forgetDevice } from "@/lib/push/device";
+import { menuItemClass } from "@/components/ui/Dropdown";
 
 /** Cierra sesión y deja de enviar notificaciones a este dispositivo; si eso tarda, igual cierra sesión. */
-export function SignOutForm({ className, label }: { className: string; label: string }) {
+export function SignOutForm({ label }: { label: string }) {
   const action = async () => {
     await Promise.race([
       forgetDevice().catch(() => undefined),
@@ -15,7 +16,7 @@ export function SignOutForm({ className, label }: { className: string; label: st
   };
   return (
     <form action={action}>
-      <button type="submit" className={className}><LogOut size={15} /> {label}</button>
+      <button type="submit" className={menuItemClass.replace("text-ink", "text-danger")}><LogOut size={15} /> {label}</button>
     </form>
   );
 }

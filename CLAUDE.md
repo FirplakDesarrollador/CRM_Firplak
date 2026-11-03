@@ -20,8 +20,8 @@
   `RESEND_API_KEY`) son solo de servidor.
 - No modifiques `rea/`. Nunca apliques REA ni extracción o copia sobre Salesforce: los módulos se
   basan en su documentación pública.
-- Interfaz en español (con traducción en `src/lib/i18n/en-ui.ts`), responsive, con el Firplak Design
-  System (navy #254153, sage #749094, ink #1d1d1b, cream #f5f1ea; Outfit y Fraunces; iconos Lucide).
+- Interfaz en español (con traducción en `src/lib/i18n/en-ui.ts`), responsive. Sistema visual en `DESIGN.md`:
+  vidrio y fondo líquido en navy, verde oliva, crema y negro, con Outfit e iconos Lucide.
 - Cada cambio de base de datos va en una migración nueva de `supabase/migrations/` con su prueba en
   `scripts/test-db.mjs`; después `npm run db:types:local`.
 - Verifica en el navegador con `npm run dev:demo` (base en memoria, Microsoft 365 simulado).

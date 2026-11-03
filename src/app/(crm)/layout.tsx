@@ -1,3 +1,4 @@
+import { LiquidBackdrop } from "@/components/brand/LiquidBackdrop";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { NavTabs } from "@/components/shell/NavTabs";
@@ -29,6 +30,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   return (
     <I18nProvider locale={locale} data={dataLabels}>
     <div className="min-h-dvh">
+      <LiquidBackdrop />
       <AppHeader user={user} notifications={notifications ?? []} unread={unread ?? 0} t={t} />
       <div className="hidden md:block"><NavTabs items={navItems(user.access, t)} /></div>
       {!user.isActive && (

@@ -104,7 +104,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         return goalType ? <GoalSummary type={goalType} start={from} userId={owner ?? undefined} perUser={!owner} /> : null;
       })()}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 sm:max-xl:[&>*:last-child]:col-span-2 xl:grid-cols-5">
         <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t("prospectos abiertos en total")}`} />
         <KpiTile label="Conversión de prospectos" value={x.lead_conversion_rate === null || x.lead_conversion_rate === undefined ? "—" : formatPercent(x.lead_conversion_rate)}
           sub={`${xn("leads_converted")} ${t("convertidos en el periodo")}`} />

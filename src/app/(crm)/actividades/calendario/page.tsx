@@ -123,7 +123,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/activid
           <Link href={qs({ fecha: today })} className="btn"><Tr>Hoy</Tr></Link>
           <Link href={qs({ fecha: next })} className="btn btn-icon" aria-label="Siguiente"><ChevronRight size={16} /></Link>
         </div>
-        <div className="inline-flex rounded-[10px] border border-line-strong p-0.5">
+        <div className="segmented">
           {(["mes", "semana"] as const).map((v) => (
             <Link key={v} href={qs({ vista: v })} aria-current={view === v ? "page" : undefined}
               className={`btn btn-sm border-0 ${view === v ? "bg-brand text-[var(--brand-contrast)] hover:bg-brand" : "btn-ghost"}`}>
