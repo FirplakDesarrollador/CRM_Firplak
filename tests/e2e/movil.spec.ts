@@ -45,6 +45,51 @@ test("el buscador muestra un texto que cabe en el celular", async ({ page }) => 
   expect(cabe).toBe(true);
 });
 
+test("el gráfico de tendencia se lee en el celular: texto real de 11 px, fechas sin encimarse y detalle al tocar", async ({ page }) => {
+  await page.goto("/pronostico");
+  const grafico = page.getByRole("group", { name: "Tendencia del pronóstico" });
+  await expect(grafico).toBeVisible();
+  await expect.poll(() => grafico.evaluate((svg: SVGSVGElement) => svg.viewBox.baseVal.width === Math.round(svg.getBoundingClientRect().width))).toBe(true);
+  const medidas = await grafico.evaluate((svg: SVGSVGElement) => {
+    const alto = svg.getBoundingClientRect().height;
+    const fechas = [...svg.querySelectorAll("text")].filter((t) => Number(t.getAttribute("y")) > alto - 20).map((t) => t.getBoundingClientRect());
+    return { alto, cruces: fechas.slice(1).filter((f, i) => f.left < fechas[i].right).length, fuente: svg.querySelector("text")!.getAttribute("font-size") };
+  });
+  expect(medidas.fuente).toBe("11");
+  expect(medidas.alto).toBe(200);
+  expect(medidas.cruces).toBe(0);
+  await grafico.scrollIntoViewIfNeeded();
+  const caja = (await grafico.boundingBox())!;
+  await page.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
+  await expect(page.getByRole("status").filter({ hasText: "Potencial" })).toBeVisible();
+  await page.getByText("Ver datos en tabla").click();
+  await expect(page.getByRole("columnheader", { name: "Fecha", exact: true })).toBeVisible();
+});
+
+test("Pronóstico por asesor muestra las cifras en tarjetas, sin desplazarse a los lados", async ({ page }) => {
+  await page.goto("/pronostico");
+  const seccion = page.locator("section", { has: page.getByRole("heading", { name: "Pronóstico por asesor" }) });
+  await expect(seccion.locator("table")).toBeHidden();
+  const tarjeta = seccion.getByRole("listitem").filter({ hasText: "abiertas" }).first();
+  for (const cifra of ["Cerrado", "Compromiso", "Mejor caso", "Pipeline", "Meta", "Pronóstico final"]) {
+    const dentro = await tarjeta.getByText(cifra, { exact: true }).evaluate((e) => e.getBoundingClientRect().right <= document.documentElement.clientWidth);
+    expect(dentro, cifra).toBe(true);
+  }
+});
+
+test("el embudo usa todo el ancho y sus detalles aparecen al enfocar", async ({ page }) => {
+  await page.goto("/indicadores");
+  await expect(page.locator("main ol > li").first()).toBeVisible();
+  const barras = await page.locator("main ol > li").evaluateAll((filas) => filas.map((f) => f.children[1].firstElementChild!.getBoundingClientRect().width));
+  expect(Math.max(...barras)).toBeGreaterThan(200);
+  const etapa = page.locator("main ol > li").first();
+  await etapa.focus();
+  const detalle = etapa.getByRole("tooltip");
+  await expect(detalle).toBeVisible();
+  const caja = (await detalle.boundingBox())!;
+  expect(caja.x + caja.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+});
+
 test("la app es instalable: manifiesto, íconos y página sin conexión", async ({ page, request }) => {
   const manifiesto = await (await request.get("/manifest.webmanifest")).json();
   expect(manifiesto.display).toBe("standalone");

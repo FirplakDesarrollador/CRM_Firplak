@@ -156,7 +156,7 @@ export const UI_EN: Record<string, string> = {
   cumplimiento: "attainment", "esta actividad": "this activity", "· Rol:": "· Role:", "¿Olvidaste tu contraseña?": "Forgot your password?", Área: "Department",
   "Última modificación": "Last modified",
   // Metas y estados del medidor
-  "Meta cumplida": "Goal achieved", "A buen ritmo": "On track", "Por debajo del ritmo esperado": "Behind expected pace",
+  "Meta cumplida": "Goal achieved", "A buen ritmo": "On track", "Por debajo del ritmo esperado": "Behind expected pace", "Meta no cumplida": "Goal not met", "Aún no inicia": "Not started yet",
   "Prospectos abiertos": "Open leads",
   // Subtítulos de indicadores
   "oportunidades ganadas": "opportunities won", "abiertas · ponderado": "open · weighted", "ganadas /": "won /", perdidas: "lost",

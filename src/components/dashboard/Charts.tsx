@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
@@ -26,12 +27,14 @@ export function BarList({
   format?: (v: number) => string;
   emptyText?: string;
 }) {
+  const uid = useId();
   const max = Math.max(1, ...items.map((i) => i.value));
   if (!items.length) return <p className="py-6 text-center text-sm text-muted">{emptyText}</p>;
   return (
     <ul className="space-y-2.5">
       {items.map((item) => (
-        <li key={item.key} className="group relative grid grid-cols-[minmax(6rem,11rem)_1fr] items-center gap-3">
+        <li key={item.key} className="group relative grid grid-cols-[minmax(6rem,11rem)_1fr] items-center gap-3"
+          tabIndex={item.detail ? 0 : undefined} aria-describedby={item.detail ? `${uid}-${item.key}` : undefined}>
           <span className="truncate text-sm font-medium text-ink-2"><Val>{item.label}</Val></span>
           <span className="flex items-center gap-2">
             <span
@@ -41,7 +44,7 @@ export function BarList({
             <span className="num whitespace-nowrap text-xs font-semibold text-ink">{format(item.value)}</span>
           </span>
           {item.detail && (
-            <span role="tooltip" className="pointer-events-none absolute -top-8 left-40 z-10 hidden whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block">
+            <span role="tooltip" id={`${uid}-${item.key}`} className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 hidden w-max max-w-full rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block group-focus:block sm:left-40 sm:max-w-none">
               {item.detail}
             </span>
           )}
@@ -61,6 +64,7 @@ function niceMax(v: number) {
 
 /** Columnas por mes (una serie) con eje Y redondeado, tooltip y tabla de datos. */
 export function MonthlyColumns({ data }: { data: { month: string; won_amount: number; won_count: number; created_amount: number }[] }) {
+  const uid = useId();
   const max = niceMax(Math.max(0, ...data.map((d) => Number(d.won_amount))));
   const ticks = [max, max / 2, 0];
   return (
@@ -74,12 +78,13 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
             {ticks.map((t) => <span key={t} className="border-t border-line" />)}
           </div>
           <div className="absolute inset-x-0 top-0 bottom-5 flex items-end justify-around gap-[2px]">
-            {data.map((d) => {
+            {data.map((d, i) => {
               const h = (Number(d.won_amount) / max) * 100;
+              const side = i < 3 ? "left-0" : i >= data.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2";
               return (
-                <div key={d.month} className="group relative flex h-full flex-1 items-end justify-center">
+                <div key={d.month} tabIndex={0} aria-describedby={`${uid}-${d.month}`} className="group relative flex h-full flex-1 items-end justify-center">
                   <div className="w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${h}%` }} />
-                  <div role="tooltip" className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block">
+                  <div role="tooltip" id={`${uid}-${d.month}`} className={`pointer-events-none absolute bottom-full z-10 mb-1 hidden w-max max-w-[70vw] rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block group-focus:block ${side}`}>
                     <Fmt month={d.month} />: {formatCurrency(d.won_amount)} · {d.won_count} ganadas
                   </div>
                 </div>
@@ -111,8 +116,9 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
   );
 }
 
-/** Embudo: una barra centrada por etapa, ancho proporcional al valor. */
+/** Embudo: una barra centrada por etapa, ancho proporcional al valor. En el celular la barra baja a su propia línea. */
 export function Funnel({ stages }: { stages: { id: string; name: string; color: string; category: string; count: number; amount: number; probability: number }[] }) {
+  const uid = useId();
   const max = Math.max(1, ...stages.map((s) => Number(s.amount)));
   if (!stages.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin etapas.</Tr></p>;
   return (
@@ -120,17 +126,17 @@ export function Funnel({ stages }: { stages: { id: string; name: string; color: 
       {stages.map((s) => {
         const w = Math.max(6, (Number(s.amount) / max) * 100);
         return (
-          <li key={s.id} className="group relative grid grid-cols-[minmax(6rem,10rem)_1fr_auto] items-center gap-3">
+          <li key={s.id} tabIndex={0} aria-describedby={`${uid}-${s.id}`} className="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[minmax(6rem,10rem)_1fr_auto]">
             <span className="truncate text-sm font-medium text-ink-2"><Val>{s.name}</Val></span>
-            <span className="flex justify-center">
+            <span className="order-last col-span-2 flex justify-center sm:order-none sm:col-span-1">
               <span className="h-6 rounded-[4px] transition-opacity group-hover:opacity-80"
                 style={{ width: `${w}%`, background: s.category === "won" ? "var(--success)" : s.color }} />
             </span>
-            <span className="w-28 text-right text-xs">
+            <span className="text-right text-xs sm:w-28">
               <span className="num block font-semibold text-ink">{formatCompactCurrency(s.amount)}</span>
               <span className="text-muted">{s.count} {s.count === 1 ? "oportunidad" : "oportunidades"}</span>
             </span>
-            <span role="tooltip" className="pointer-events-none absolute -top-8 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block">
+            <span role="tooltip" id={`${uid}-${s.id}`} className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden w-max max-w-full -translate-x-1/2 rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block group-focus:block">
               {s.name}: {formatCurrency(s.amount)} · probabilidad {s.probability}%
             </span>
           </li>

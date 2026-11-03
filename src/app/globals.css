@@ -55,6 +55,7 @@
   --danger-soft: #f1dcd6;
   --info: var(--navy-600);
   --info-soft: var(--navy-50);
+  --chart-commit: var(--navy-700); /* Compromiso y Pronóstico en los gráficos */
 
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-border: rgba(255, 255, 255, 0.55);
@@ -104,6 +105,7 @@
     --danger-soft: #3d2421;
     --info: var(--navy-300);
     --info-soft: #1f3a4a;
+    --chart-commit: var(--navy-100);
     --glass-bg: rgba(37, 65, 83, 0.42);
     --glass-border: rgba(255, 255, 255, 0.16);
     --glass-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.1) inset, 0 -1px 0 0 rgba(0, 0, 0, 0.18) inset,
@@ -144,6 +146,7 @@
   --danger-soft: #3d2421;
   --info: var(--navy-300);
   --info-soft: #1f3a4a;
+  --chart-commit: var(--navy-100);
   --glass-bg: rgba(37, 65, 83, 0.42);
   --glass-border: rgba(255, 255, 255, 0.16);
   --glass-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.1) inset, 0 -1px 0 0 rgba(0, 0, 0, 0.18) inset,

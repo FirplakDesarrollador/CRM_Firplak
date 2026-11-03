@@ -8,6 +8,7 @@ import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { TrendChart, type TrendPoint } from "@/components/forecast/TrendChart";
 import { getUsers } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +31,7 @@ type Row = {
 // Colores de las categorías (tonos del design system; leyenda siempre visible).
 const SEGMENTS = [
   { key: "closed", label: "Cerrado", color: "var(--success)" },
-  { key: "commit_amount", label: "Compromiso", color: "var(--navy-700)" },
+  { key: "commit_amount", label: "Compromiso", color: "var(--chart-commit)" },
   { key: "best_case", label: "Mejor caso", color: "var(--sage-500)" },
 ] as const;
 
@@ -100,6 +101,45 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
       ...extra,
     ];
     return `/oportunidades?credito=${ownerId}&f=${encodeURIComponent(JSON.stringify(f))}`;
+  };
+
+  type ForecastRow = (typeof rows)[number];
+  const figures = (r: ForecastRow) => [
+    { label: "Cerrado", value: r.closed, href: drill(r.user_id, [{ field: "is_won", op: "eq", value: "true" }]) },
+    { label: "Compromiso", value: r.commit_amount, href: drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "commit" }, { field: "is_closed", op: "eq", value: "false" }]) },
+    { label: "Mejor caso", value: r.best_case, href: drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "best_case" }, { field: "is_closed", op: "eq", value: "false" }]) },
+    { label: "Pipeline", value: r.pipeline, href: drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "pipeline" }, { field: "is_closed", op: "eq", value: "false" }]) },
+  ];
+  const composition = (r: ForecastRow) => (
+    <div className="relative flex h-3.5 gap-[2px]" role="img"
+      aria-label={`${t("Cerrado")} ${formatCompactCurrency(r.closed)}, ${t("Compromiso")} ${formatCompactCurrency(r.commit_amount)}, ${t("Mejor caso")} ${formatCompactCurrency(r.best_case)}${r.quota ? `, ${t("Meta")} ${formatCompactCurrency(r.quota)}` : ""}`}
+      title={`${formatCurrency(r.closed)} · ${formatCurrency(r.commit_amount)} · ${formatCurrency(r.best_case)}`}>
+      {SEGMENTS.map((s) => {
+        const v = r[s.key];
+        return v > 0 ? <span key={s.key} className="h-full first:rounded-l-[4px] last:rounded-r-[4px]" style={{ width: `${(v / scaleMax) * 100}%`, background: s.color }} /> : null;
+      })}
+      {r.quota ? <span className="absolute -top-1 h-5.5 w-0.5 rounded bg-ink" style={{ left: `${Math.min(100, (r.quota / scaleMax) * 100)}%` }} /> : null}
+    </div>
+  );
+  // Pronóstico final con su origen; quien puede ajustar edita aquí mismo el valor.
+  const finalForecast = (r: ForecastRow, fieldCls: string, noteCls: string) => {
+    const final = forecastOf(r);
+    return (
+      <>
+        <p className="num mb-1 font-medium">{formatCompactCurrency(final)}{r.quota ? <span className="ml-1.5 text-xs font-normal text-muted">{formatPercent((final / r.quota) * 100)}</span> : null}</p>
+        {r.can_adjust && (
+          <ActionForm action={saveForecastAdjustment.bind(null, r.user_id, type, start)} className="flex flex-wrap items-center gap-1.5">
+            <AmountInput name="amount" className={`input num text-right ${fieldCls}`} aria-label={`${t("Ajuste de")} ${r.user_name}`}
+              defaultValue={r.adjustment} placeholder={Math.round(r.closed + r.commit_amount)} />
+            <input name="note" className={`input ${noteCls}`} placeholder={t("Nota")} aria-label={t("Nota del ajuste")} defaultValue={r.adjustment_note ?? ""} />
+            <SubmitButton className="btn btn-sm" pendingText="…">Ajustar</SubmitButton>
+          </ActionForm>
+        )}
+        <p className="mt-1 text-xs text-muted">
+          {r.adjustment !== null ? <><Tr>Ajustado por el gerente</Tr>{r.adjustment_note ? ` · ${r.adjustment_note}` : ""}</> : <Tr>Cerrado + compromiso</Tr>}
+        </p>
+      </>
+    );
   };
 
   return (
@@ -184,73 +224,87 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
         {rows.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-muted"><Tr>No hay oportunidades que cierren en este periodo ni metas definidas.</Tr></p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th><Tr>Asesor</Tr></th>
-                  <th className="min-w-56"><Tr>Composición</Tr></th>
-                  <th className="text-right"><Tr>Cerrado</Tr></th>
-                  <th className="text-right"><Tr>Compromiso</Tr></th>
-                  <th className="text-right"><Tr>Mejor caso</Tr></th>
-                  <th className="text-right"><Tr>Pipeline</Tr></th>
-                  <th className="text-right"><Tr>Meta</Tr></th>
-                  <th className="min-w-64"><Tr>Pronóstico final</Tr></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => {
-                  const final = forecastOf(r);
-                  return (
+          <>
+            {/* La tabla necesita unos 1030 px; por debajo, una tarjeta por asesor para ver las cifras sin desplazarse. */}
+            <ul className="grid gap-3 p-3 md:grid-cols-2 xl:hidden">
+              {rows.map((r) => (
+                <li key={r.user_id} className="min-w-0 space-y-3 rounded-[10px] border border-line p-3">
+                  <div>
+                    <p className="font-medium">{r.user_name}</p>
+                    <p className="text-xs text-muted">{r.open_count} <Tr>abiertas</Tr></p>
+                  </div>
+                  {composition(r)}
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {figures(r).map((f) => (
+                      <div key={f.label}>
+                        <dt className="text-xs text-muted"><Tr>{f.label}</Tr></dt>
+                        <dd className="num"><Link className="link" href={f.href}>{formatCompactCurrency(f.value)}</Link></dd>
+                      </div>
+                    ))}
+                    <div className="col-span-2">
+                      <dt className="text-xs text-muted"><Tr>Meta</Tr></dt>
+                      <dd className="num">{r.quota ? formatCompactCurrency(r.quota) : "—"}</dd>
+                    </div>
+                  </dl>
+                  <div className="border-t border-line pt-3">
+                    <p className="text-xs text-muted"><Tr>Pronóstico final</Tr></p>
+                    {finalForecast(r, "h-10 min-w-0 flex-1 basis-32", "h-10 min-w-0 flex-1 basis-32")}
+                  </div>
+                </li>
+              ))}
+              <li className="min-w-0 rounded-[10px] bg-surface-2 p-3 md:col-span-2">
+                <p className="mb-2 font-medium"><Tr>Total</Tr></p>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                  {[["Cerrado", totals.closed], ["Compromiso", totals.commit], ["Mejor caso", totals.best], ["Pipeline", totals.pipeline], ["Meta", totals.quota], ["Pronóstico final", totals.forecast]].map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-xs text-muted"><Tr>{label as string}</Tr></dt>
+                      <dd className="num font-medium">{value ? formatCompactCurrency(value) : label === "Meta" ? "—" : formatCompactCurrency(0)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            </ul>
+            <div className="hidden overflow-x-auto xl:block">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th><Tr>Asesor</Tr></th>
+                    <th className="min-w-56"><Tr>Composición</Tr></th>
+                    <th className="text-right"><Tr>Cerrado</Tr></th>
+                    <th className="text-right"><Tr>Compromiso</Tr></th>
+                    <th className="text-right"><Tr>Mejor caso</Tr></th>
+                    <th className="text-right"><Tr>Pipeline</Tr></th>
+                    <th className="text-right"><Tr>Meta</Tr></th>
+                    <th className="min-w-64"><Tr>Pronóstico final</Tr></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
                     <tr key={r.user_id}>
                       <td className="font-medium">{r.user_name}<p className="text-xs text-muted">{r.open_count} <Tr>abiertas</Tr></p></td>
-                      <td>
-                        <div className="relative flex h-3.5 gap-[2px]" title={`${formatCurrency(r.closed)} · ${formatCurrency(r.commit_amount)} · ${formatCurrency(r.best_case)}`}>
-                          {SEGMENTS.map((s) => {
-                            const v = r[s.key];
-                            return v > 0 ? <span key={s.key} className="h-full first:rounded-l-[4px] last:rounded-r-[4px]" style={{ width: `${(v / scaleMax) * 100}%`, background: s.color }} /> : null;
-                          })}
-                          {r.quota ? <span className="absolute -top-1 h-5.5 w-0.5 rounded bg-ink" style={{ left: `${Math.min(100, (r.quota / scaleMax) * 100)}%` }} /> : null}
-                        </div>
-                      </td>
-                      <td className="num whitespace-nowrap text-right"><Link className="link" href={drill(r.user_id, [{ field: "is_won", op: "eq", value: "true" }])}>{formatCompactCurrency(r.closed)}</Link></td>
-                      <td className="num whitespace-nowrap text-right"><Link className="link" href={drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "commit" }, { field: "is_closed", op: "eq", value: "false" }])}>{formatCompactCurrency(r.commit_amount)}</Link></td>
-                      <td className="num whitespace-nowrap text-right"><Link className="link" href={drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "best_case" }, { field: "is_closed", op: "eq", value: "false" }])}>{formatCompactCurrency(r.best_case)}</Link></td>
-                      <td className="num whitespace-nowrap text-right"><Link className="link" href={drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "pipeline" }, { field: "is_closed", op: "eq", value: "false" }])}>{formatCompactCurrency(r.pipeline)}</Link></td>
+                      <td>{composition(r)}</td>
+                      {figures(r).map((f) => (
+                        <td key={f.label} className="num whitespace-nowrap text-right"><Link className="link" href={f.href}>{formatCompactCurrency(f.value)}</Link></td>
+                      ))}
                       <td className="num whitespace-nowrap text-right">{r.quota ? formatCompactCurrency(r.quota) : "—"}</td>
-                      <td>
-                        {r.can_adjust ? (
-                          <ActionForm action={saveForecastAdjustment.bind(null, r.user_id, type, start)} className="flex flex-wrap items-center gap-1.5">
-                            <input name="amount" inputMode="decimal" className="input num h-8 w-32 text-right" aria-label={`${t("Ajuste de")} ${r.user_name}`}
-                              defaultValue={r.adjustment ?? ""} placeholder={String(Math.round(r.closed + r.commit_amount))} />
-                            <input name="note" className="input h-8 w-36" placeholder={t("Nota")} aria-label={t("Nota del ajuste")} defaultValue={r.adjustment_note ?? ""} />
-                            <SubmitButton className="btn btn-sm" pendingText="…">Ajustar</SubmitButton>
-                          </ActionForm>
-                        ) : (
-                          <span className="num font-medium">{formatCompactCurrency(final)}</span>
-                        )}
-                        <p className="mt-1 text-xs text-muted">
-                          {r.adjustment !== null ? <><Tr>Ajustado por el gerente</Tr>{r.adjustment_note ? ` · ${r.adjustment_note}` : ""}</> : <Tr>Cerrado + compromiso</Tr>}
-                          {r.quota ? ` · ${formatPercent((final / r.quota) * 100)}` : ""}
-                        </p>
-                      </td>
+                      <td>{finalForecast(r, "h-8 w-32", "h-8 w-36")}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="bg-surface-2 font-medium">
-                  <td className="px-3 py-2"><Tr>Total</Tr></td><td />
-                  <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.closed)}</td>
-                  <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.commit)}</td>
-                  <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.best)}</td>
-                  <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.pipeline)}</td>
-                  <td className="num whitespace-nowrap px-3 py-2 text-right">{totals.quota ? formatCompactCurrency(totals.quota) : "—"}</td>
-                  <td className="num whitespace-nowrap px-3 py-2">{formatCompactCurrency(totals.forecast)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-surface-2 font-medium">
+                    <td className="px-3 py-2"><Tr>Total</Tr></td><td />
+                    <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.closed)}</td>
+                    <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.commit)}</td>
+                    <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.best)}</td>
+                    <td className="num whitespace-nowrap px-3 py-2 text-right">{formatCompactCurrency(totals.pipeline)}</td>
+                    <td className="num whitespace-nowrap px-3 py-2 text-right">{totals.quota ? formatCompactCurrency(totals.quota) : "—"}</td>
+                    <td className="num whitespace-nowrap px-3 py-2">{formatCompactCurrency(totals.forecast)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </>
         )}
       </section>
       {compareDate && (
