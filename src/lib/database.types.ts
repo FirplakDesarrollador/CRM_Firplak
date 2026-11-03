@@ -1944,6 +1944,7 @@ export type Database = {
           id: string
           is_read: boolean
           link: string | null
+          push_processed_at: string | null
           title: string
           user_id: string
         }
@@ -1955,6 +1956,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           link?: string | null
+          push_processed_at?: string | null
           title: string
           user_id: string
         }
@@ -1966,6 +1968,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           link?: string | null
+          push_processed_at?: string | null
           title?: string
           user_id?: string
         }
@@ -3080,6 +3083,47 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_success_at: string | null
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_success_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_success_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_line_items: {
         Row: {
           created_at: string
@@ -3961,6 +4005,27 @@ export type Database = {
       purge_demo_data: {
         Args: never
         Returns: Json
+      }
+      push_claim_pending: {
+        Args: {
+          p_limit?: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          title: string
+          body: string
+          link: string
+        }[]
+      }
+      push_subscribe: {
+        Args: {
+          p_endpoint: string
+          p_p256dh: string
+          p_auth: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
       recalc_order: {
         Args: {

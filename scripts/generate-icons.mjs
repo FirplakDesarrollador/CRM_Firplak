@@ -29,3 +29,7 @@ await icon('icon-192.png', 192, 0.62, 40);
 await icon('icon-512.png', 512, 0.62, 104);
 await icon('maskable-512.png', 512, 0.5);
 await icon('apple-touch-icon.png', 180, 0.62);
+
+// Ícono pequeño de la barra de estado de Android: solo la silueta, blanca sobre transparente.
+await sharp(mark).resize(96, 96, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toFile(join(out, 'badge-96.png'));
+console.log('public/icons/badge-96.png (96×96)');

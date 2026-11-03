@@ -768,4 +768,39 @@ await check('un pedido activado guarda su oferta de venta de SAP una sola vez', 
   await assert.rejects(q(`update orders set sap_quotation_entry = 501 where id = $1`, [other.id]));
 });
 
+console.log('Fase 25');
+await check('cada dispositivo de push pertenece a una persona y solo ella lo ve', async () => {
+  const ep = 'https://fcm.googleapis.com/fcm/send/prueba';
+  const sub = () => q(`select push_subscribe($1, 'clave', 'auth', 'Chrome')`, [ep]);
+  await as(rep, sub);
+  assert.equal((await as(rep, () => q(`select id from push_subscriptions`))).length, 1);
+  assert.equal((await as(admin, () => q(`select id from push_subscriptions`))).length, 0);
+  await assert.rejects(as(rep, () => q(`insert into push_subscriptions (endpoint, p256dh, auth) values ('https://x', 'k', 'a')`)));
+  // Otra persona inicia sesión en ese navegador: el dispositivo pasa a ella.
+  await as(admin, sub);
+  assert.equal((await as(rep, () => q(`select id from push_subscriptions`))).length, 0);
+  assert.equal((await q(`select user_id from push_subscriptions where endpoint = $1`, [ep]))[0].user_id, admin.id);
+  await as(rep, () => q(`delete from push_subscriptions where endpoint = $1`, [ep]));
+  assert.equal((await q(`select id from push_subscriptions`)).length, 1);
+  await as(admin, () => q(`delete from push_subscriptions where endpoint = $1`, [ep]));
+  assert.equal((await q(`select id from push_subscriptions`)).length, 0);
+});
+
+await check('las notificaciones se reclaman para push una sola vez y sin envíos viejos', async () => {
+  await q(`update notifications set push_processed_at = now()`);
+  await as(admin, () => q(`select notify_user($1, 'Hola push', 'Detalle', '/inicio')`, [rep.id]));
+  await q(`insert into notifications (user_id, title, created_at) values ($1, 'Vieja', now() - interval '2 days')`, [rep.id]);
+  const claimed = await q(`select * from push_claim_pending()`);
+  assert.deepEqual(claimed.map((n) => n.title), ['Hola push']);
+  assert.equal(claimed[0].link, '/inicio');
+  assert.equal((await q(`select * from push_claim_pending()`)).length, 0);
+  assert.equal((await q(`select id from notifications where title = 'Vieja' and push_processed_at is null`)).length, 0);
+  // Solo el servidor reclama, y a un usuario inactivo no se le envía (sigue en la campana).
+  await assert.rejects(as(rep, () => q(`select * from push_claim_pending()`)));
+  await q(`insert into notifications (user_id, title) values ($1, 'Para inactivo')`, [rep.id]);
+  await q(`update profiles set is_active = false where id = $1`, [rep.id]);
+  assert.equal((await q(`select * from push_claim_pending()`)).length, 0);
+  await q(`update profiles set is_active = true where id = $1`, [rep.id]);
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

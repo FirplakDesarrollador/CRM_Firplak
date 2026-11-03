@@ -8,6 +8,8 @@ import { OBJECTS } from "@/lib/objects";
 import { Tr } from "@/components/ui/Tr";
 import { DefaultTeam } from "@/components/teams/DefaultTeam";
 import { InstallApp } from "@/components/pwa/InstallApp";
+import { PushSettings } from "@/components/pwa/PushSettings";
+import { vapidPublicKey } from "@/lib/push/config";
 import { McpSettings } from "@/components/mcp/McpSettings";
 import { Ms365Settings } from "@/components/ms365/Ms365Settings";
 export const metadata: Metadata = { title: "Mis preferencias" };
@@ -38,7 +40,10 @@ export default async function PreferencesPage({ searchParams }: PageProps<"/pref
         {tab === "preferencias" && (
           <>
             <PreferencesForm prefs={user.preferences} />
-            <div className="px-4 pb-4"><InstallApp /></div>
+            <div className="space-y-3 px-4 pb-4">
+              <PushSettings publicKey={vapidPublicKey()} />
+              <InstallApp />
+            </div>
           </>
         )}
         {tab === "perfil" && <ProfileForm fullName={user.fullName} title={user.title} phone={user.phone} email={user.email} />}

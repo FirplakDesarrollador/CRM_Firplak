@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { NavTabs } from "@/components/shell/NavTabs";
 import { MobileTabBar } from "@/components/shell/MobileTabBar";
+import { PushSync } from "@/components/pwa/PushSettings";
+import { vapidPublicKey } from "@/lib/push/config";
 import { navItems } from "@/components/shell/nav";
 import { Alert } from "@/components/ui/Alert";
 import { getCurrentUser } from "@/lib/session";
@@ -22,6 +24,8 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("is_read", false),
   ]);
 
+  const pushKey = vapidPublicKey();
+
   return (
     <I18nProvider locale={locale} data={dataLabels}>
     <div className="min-h-dvh">
@@ -34,6 +38,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
       )}
       <main className="mx-auto max-w-[1600px] px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-5 sm:px-6 md:pb-5">{children}</main>
       <MobileTabBar items={navItems(user.access, t)} />
+      {pushKey && <PushSync publicKey={pushKey} userId={user.id} />}
     </div>
     </I18nProvider>
   );

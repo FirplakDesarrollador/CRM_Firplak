@@ -225,7 +225,43 @@ vez que se publica una versión nueva. Requiere el dominio final con **https**.
 Las mismas instrucciones están en Mis preferencias → *App en el celular*. La app necesita internet: sin
 conexión muestra un aviso y no guarda datos del CRM en el teléfono.
 
-## 12. Lista de verificación antes de anunciarlo
+## 12. Notificaciones push (TI)
+
+Lo que llega a la campana también puede llegar al celular o al computador, aunque el CRM esté cerrado.
+Es opcional: sin estas variables, la campana sigue funcionando igual.
+
+1. **Claves:** genera un par de claves una sola vez y guárdalas en el gestor de contraseñas. Si se cambian,
+   cada dispositivo se vuelve a suscribir solo la próxima vez que abra el CRM.
+
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+2. **Variables en el hosting** (solo servidor; requieren también `SUPABASE_SERVICE_ROLE_KEY`):
+
+   | Variable | Valor |
+   |---|---|
+   | `VAPID_PUBLIC_KEY` | Clave pública generada |
+   | `VAPID_PRIVATE_KEY` | Clave privada generada |
+   | `VAPID_SUBJECT` | Contacto de TI, p. ej. `mailto:ti@firplak.com` |
+   | `CRON_SECRET` | La misma cadena de la sección 9, o una nueva (`openssl rand -hex 32`) |
+
+3. **Envío inmediato:** en Supabase → *Database → Webhooks → Create a new hook*: tabla `notifications`,
+   evento **Insert**, tipo *HTTP Request*, método `POST`, URL
+   `https://crm.firplak.com/api/push/dispatch` y el encabezado
+   `Authorization: Bearer <CRON_SECRET>`.
+4. **Respaldo:** programa una llamada a esa misma dirección cada 5 a 15 minutos, con el mismo encabezado
+   (igual que la sincronización de la sección 9). Recoge lo que el webhook no alcance a enviar. Lo que lleve
+   más de un día sin enviarse ya no se envía, pero sigue en la campana.
+5. **Cada persona:** Mis preferencias → **Notificaciones push** → *Activar notificaciones* en cada dispositivo
+   y *Enviar prueba*. En **iPhone** primero debe instalar la app (sección 11) y activarlas desde ella
+   (iOS 16.4 o superior).
+
+**Privacidad:** el contenido viaja cifrado y los servicios de Google, Apple, Mozilla o Microsoft no pueden
+leerlo, pero el título y el texto se ven en la pantalla del dispositivo; cada persona decide en los ajustes
+de su celular si se muestran con la pantalla bloqueada. Al cerrar sesión, ese dispositivo deja de recibir.
+
+## 13. Lista de verificación antes de anunciarlo
 
 - [ ] Iniciar sesión, cerrar sesión y recuperar contraseña funcionan en el dominio final.
 - [ ] Un asesor solo ve lo que debe (prueba con un usuario de cada perfil).
@@ -234,6 +270,7 @@ conexión muestra un aviso y no guarda datos del CRM en el teléfono.
 - [ ] Las alertas programadas aparecen en la campana al día siguiente (pg_cron activo).
 - [ ] Copias de seguridad activas en Supabase.
 - [ ] La app se instala en un Android y en un iPhone y abre en Inicio.
+- [ ] Una notificación de la campana (p. ej. una aprobación) llega como push a un Android y a un iPhone.
 
 ## Lo que sigue después de salir en vivo
 

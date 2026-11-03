@@ -4,9 +4,9 @@ import type { Database } from "@/lib/database.types";
 import { hasSupabaseEnv, supabaseAnonKey, supabaseUrl } from "@/lib/env";
 
 // /api/mcp se autentica con su propio token; OAuth (descubrimiento, registro y tokens) es público.
-// /api/ms365/sync usa su propio secreto (CRON_SECRET).
+// /api/ms365/sync y /api/push/dispatch usan su propio secreto (CRON_SECRET).
 // La app instalable (manifest, service worker, íconos y la página sin conexión) es pública.
-const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/api/mcp", "/api/oauth", "/.well-known", "/api/ms365/sync",
+const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/api/mcp", "/api/oauth", "/.well-known", "/api/ms365/sync", "/api/push/dispatch",
   "/offline", "/sw.js", "/manifest.webmanifest", "/icons"];
 
 function isPublic(pathname: string) {

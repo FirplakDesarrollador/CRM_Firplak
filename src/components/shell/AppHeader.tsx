@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronDown, FileUp, LogOut, Mail, Plus, Settings, SlidersHorizontal, UserRound } from "lucide-react";
+import { ChevronDown, FileUp, Mail, Plus, Settings, SlidersHorizontal, UserRound } from "lucide-react";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { Dropdown, menuItemClass } from "@/components/ui/Dropdown";
 import { OBJECT_ICONS } from "@/components/ui/icons";
-import { signOut } from "@/app/(auth)/actions";
+import { SignOutForm } from "./SignOutForm";
 import { can, canSystem } from "@/lib/permissions";
 import { initials } from "@/lib/format";
 import type { CurrentUser } from "@/lib/session";
@@ -71,9 +71,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
             {(canSystem(user.access, "customize") || canSystem(user.access, "manage_users")) && (
               <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> {t("Configuración")}</Link>
             )}
-            <form action={signOut}>
-              <button type="submit" className={`${menuItemClass} text-danger`}><LogOut size={15} /> {t("Cerrar sesión")}</button>
-            </form>
+            <SignOutForm className={`${menuItemClass} text-danger`} label={t("Cerrar sesión")} />
           </div>
         </Dropdown>
       </div>

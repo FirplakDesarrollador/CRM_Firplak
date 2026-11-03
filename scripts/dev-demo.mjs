@@ -8,7 +8,7 @@
 
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
-import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { createDecipheriv, createECDH, createHash, createHmac, createPublicKey, createVerify, hkdfSync, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import http from 'node:http';
@@ -16,9 +16,10 @@ import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import webpush from 'web-push';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, MS_PORT = 54350, SAP_PORT = 54360, APP_PORT = 3000;
+const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, MS_PORT = 54350, SAP_PORT = 54360, PUSH_PORT = 54370, APP_PORT = 3000;
 const PASSWORD = 'demo1234';
 const USERS = [
   { email: 'luis.demo@firplak.com', name: 'Luis Demo', note: 'administrador' },
@@ -35,7 +36,7 @@ const portBusy = (port) => new Promise((resolve) => {
   const s = net.createServer().once('error', () => resolve(true)).once('listening', () => s.close(() => resolve(false)));
   s.listen(port, '127.0.0.1');
 });
-for (const port of [DB_PORT, PGRST_PORT, API_PORT, MS_PORT, SAP_PORT, APP_PORT]) {
+for (const port of [DB_PORT, PGRST_PORT, API_PORT, MS_PORT, SAP_PORT, PUSH_PORT, APP_PORT]) {
   if (await portBusy(port)) {
     console.error(`\nEl puerto ${port} está ocupado. Cierra la otra instancia (¿npm run dev o dev:demo abiertos?) e inténtalo de nuevo.\n`);
     process.exit(1);
@@ -63,6 +64,8 @@ const db = new PGlite();
 await db.exec(`
   create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
   create role authenticator login noinherit; grant anon, authenticated, service_role to authenticator;
+  -- Como en Supabase: las funciones nuevas se pueden ejecutar salvo que la migración lo revoque.
+  alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
   create schema auth;
   create table auth.users (id uuid primary key default gen_random_uuid(), email text unique, encrypted_password text,
     raw_user_meta_data jsonb default '{}'::jsonb, created_at timestamptz default now());
@@ -76,8 +79,7 @@ for (const f of readdirSync(join(root, 'supabase/migrations')).filter((f) => f.e
 }
 await db.exec(`grant usage on schema public to anon, authenticated, service_role;
   grant all on all tables in schema public to authenticated, service_role;
-  grant all on all sequences in schema public to authenticated, service_role;
-  grant execute on all functions in schema public to authenticated;`);
+  grant all on all sequences in schema public to authenticated, service_role;`);
 await db.exec(readFileSync(join(root, 'supabase/seed.sql'), 'utf8'));
 
 // El primer usuario (Luis) queda como administrador y recibe los registros de demostración.
@@ -560,9 +562,82 @@ const sapServer = http.createServer(async (req, res) => {
 });
 await new Promise((r) => sapServer.listen(SAP_PORT, '127.0.0.1', r));
 
+// ---------------------------------------------------------------- Push simulado
+// Servicio de push de prueba, para probar sin un navegador real: entrega suscripciones, comprueba la
+// firma VAPID y descifra cada mensaje (RFC 8291). Un navegador real usa su propio servicio (FCM…).
+const VAPID = webpush.generateVAPIDKeys();
+const b64u = (buf) => Buffer.from(buf).toString('base64url');
+const pushSubs = new Map();
+const pushReceived = [];
+
+function decryptPush(sub, body) {
+  const salt = body.subarray(0, 16);
+  const idLen = body[20];
+  const serverKey = body.subarray(21, 21 + idLen);
+  const data = body.subarray(21 + idLen);
+  const secret = sub.ecdh.computeSecret(serverKey);
+  const info = Buffer.concat([Buffer.from('WebPush: info\0'), sub.ecdh.getPublicKey(), serverKey]);
+  const ikm = Buffer.from(hkdfSync('sha256', secret, sub.auth, info, 32));
+  const cek = Buffer.from(hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: aes128gcm\0'), 16));
+  const nonce = Buffer.from(hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: nonce\0'), 12));
+  const decipher = createDecipheriv('aes-128-gcm', cek, nonce);
+  decipher.setAuthTag(data.subarray(data.length - 16));
+  const plain = Buffer.concat([decipher.update(data.subarray(0, data.length - 16)), decipher.final()]);
+  let end = plain.length - 1;
+  while (plain[end] === 0) end--;
+  return JSON.parse(plain.subarray(0, end).toString());
+}
+
+function vapidValid(header) {
+  const [, jwt, key] = /^vapid t=([^,]+), k=(.+)$/.exec(header ?? '') ?? [];
+  if (!jwt || key !== VAPID.publicKey) return false;
+  const [head, claims, signature] = jwt.split('.');
+  const point = Buffer.from(key, 'base64url');
+  const publicKey = createPublicKey({ format: 'jwk', key: { kty: 'EC', crv: 'P-256', x: b64u(point.subarray(1, 33)), y: b64u(point.subarray(33)) } });
+  const ok = createVerify('SHA256').update(`${head}.${claims}`).verify({ key: publicKey, dsaEncoding: 'ieee-p1363' }, Buffer.from(signature, 'base64url'));
+  return ok && JSON.parse(Buffer.from(claims, 'base64url')).aud === `http://127.0.0.1:${PUSH_PORT}`;
+}
+
+const pushServer = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://127.0.0.1:${PUSH_PORT}`);
+  const reply = (status, json) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(json ?? {})); };
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  const [, id] = /^\/(?:enviar|sim\/vencer)\/(.+)$/.exec(url.pathname) ?? [];
+  if (req.method === 'POST' && url.pathname === '/sim/suscribir') {
+    const subId = randomUUID();
+    const ecdh = createECDH('prime256v1');
+    ecdh.generateKeys();
+    const auth = randomBytes(16);
+    pushSubs.set(subId, { ecdh, auth, gone: false });
+    return reply(200, { endpoint: `http://127.0.0.1:${PUSH_PORT}/enviar/${subId}`, expirationTime: null, keys: { p256dh: b64u(ecdh.getPublicKey()), auth: b64u(auth) } });
+  }
+  if (req.method === 'GET' && url.pathname === '/sim/recibidos') return reply(200, pushReceived);
+  if (req.method === 'POST' && url.pathname.startsWith('/sim/vencer/') && pushSubs.has(id)) {
+    pushSubs.get(id).gone = true;
+    return reply(200);
+  }
+  if (req.method === 'POST' && url.pathname.startsWith('/enviar/') && pushSubs.has(id)) {
+    const sub = pushSubs.get(id);
+    if (sub.gone) return reply(410);
+    if (!vapidValid(req.headers.authorization)) return reply(401);
+    try {
+      const message = decryptPush(sub, Buffer.concat(chunks));
+      pushReceived.push({ to: id, ...message });
+      console.log(`[push simulado] ${message.title}: ${message.body}`);
+      return reply(201);
+    } catch {
+      return reply(400);
+    }
+  }
+  reply(404);
+});
+await new Promise((r) => pushServer.listen(PUSH_PORT, '127.0.0.1', r));
+
 // ---------------------------------------------------------------- App
 // Estas variables tienen prioridad sobre .env.local: la app solo habla con la base de demo y con
 // el Microsoft 365 simulado; nunca usa las claves reales ni envía correos aunque estén configurados.
+const cronSecret = randomBytes(16).toString('hex');
 const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'dev', '--hostname', 'localhost', '--port', String(APP_PORT)], {
   cwd: root,
   stdio: 'inherit',
@@ -577,7 +652,11 @@ const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'd
     MS365_CLIENT_ID: MS.clientId,
     MS365_CLIENT_SECRET: MS.clientSecret,
     MS365_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
-    CRON_SECRET: randomBytes(16).toString('hex'),
+    CRON_SECRET: cronSecret,
+    VAPID_PUBLIC_KEY: VAPID.publicKey,
+    VAPID_PRIVATE_KEY: VAPID.privateKey,
+    VAPID_SUBJECT: 'mailto:demo@firplak.com',
+    PUSH_EXTRA_ORIGINS: `http://127.0.0.1:${PUSH_PORT}`,
     SAP_SL_URL: `http://127.0.0.1:${SAP_PORT}/b1s/v1`,
     SAP_COMPANY_DB: SAP.company,
     SAP_USER: SAP.user,
@@ -593,12 +672,18 @@ const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'd
 });
 children.push(next);
 
+// En producción lo despierta el webhook de la base; aquí se revisa cada pocos segundos.
+const pushTimer = setInterval(() => {
+  fetch(`http://localhost:${APP_PORT}/api/push/dispatch`, { method: 'POST', headers: { authorization: `Bearer ${cronSecret}` } }).catch(() => {});
+}, 4000);
+
 console.log(`
 ──────────────────────────────────────────────────────────────
   Firplak CRM · modo demo (datos de prueba en memoria)
   Abre http://localhost:${APP_PORT}  ·  contraseña de todos: ${PASSWORD}
 ${USERS.map((u) => `    ${u.email.padEnd(30)} ${u.note}`).join('\n')}
   Microsoft 365 simulado: Mis preferencias → Microsoft 365 → Conectar.
+  Push: Mis preferencias → Notificaciones push → Activar (en Chrome o Edge, usa su servicio real).
   SAP simulado: pestaña SAP de Almacenes Casa Viva (C20001) y Altos del Valle (C20002).
   MCP: http://localhost:${APP_PORT}/api/mcp  ·  token de Luis:
     ${mcpToken}
@@ -610,7 +695,9 @@ let stopping = false;
 const stop = async () => {
   if (stopping) return;
   stopping = true;
+  clearInterval(pushTimer);
   for (const c of children) c.kill();
+  pushServer.close();
   api.close();
   ms.close();
   sapServer.close();
