@@ -32,6 +32,19 @@ test("la barra inferior reemplaza al menú y «Más» abre los demás módulos",
   await expect(hoja).toHaveCount(0);
 });
 
+test("el buscador muestra un texto que cabe en el celular", async ({ page }) => {
+  await page.goto("/inicio");
+  const buscador = page.getByRole("textbox", { name: "Búsqueda global" });
+  await expect(buscador).toHaveAttribute("placeholder", "Buscar");
+  const cabe = await buscador.evaluate((input: HTMLInputElement) => {
+    const estilo = getComputedStyle(input);
+    const lienzo = document.createElement("canvas").getContext("2d")!;
+    lienzo.font = estilo.font;
+    return lienzo.measureText(input.placeholder).width <= input.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+  });
+  expect(cabe).toBe(true);
+});
+
 test("la app es instalable: manifiesto, íconos y página sin conexión", async ({ page, request }) => {
   const manifiesto = await (await request.get("/manifest.webmanifest")).json();
   expect(manifiesto.display).toBe("standalone");
