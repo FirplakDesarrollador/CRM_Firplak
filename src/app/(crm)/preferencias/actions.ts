@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
+import { setAppearanceCookies } from "@/lib/appearance";
 import type { FormState } from "@/lib/records/form";
 
 const YEAR = 60 * 60 * 24 * 365;
@@ -29,9 +30,8 @@ export async function savePreferences(_prev: FormState, formData: FormData): Pro
   if (error) return { message: error.message };
 
   const store = await cookies();
-  store.set("fp-theme", preferences.theme, { path: "/", maxAge: YEAR, sameSite: "lax" });
+  await setAppearanceCookies(preferences);
   store.set("fp-density", preferences.density, { path: "/", maxAge: YEAR, sameSite: "lax" });
-  store.set("fp-glass", preferences.glass, { path: "/", maxAge: YEAR, sameSite: "lax" });
   store.set("fp-lang", preferences.language, { path: "/", maxAge: YEAR, sameSite: "lax" });
   revalidatePath("/", "layout");
   return { ok: true, message: "Preferencias guardadas" };

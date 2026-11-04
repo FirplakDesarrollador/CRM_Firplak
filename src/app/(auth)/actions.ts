@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { allowedEmailDomains, hasSupabaseEnv, siteUrl } from "@/lib/env";
+import { applyProfileAppearance } from "@/lib/appearance";
 import type { FormState } from "@/lib/records/form";
 
 function safeNext(next: FormDataEntryValue | null) {
@@ -35,8 +36,9 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
   if (!email || !password) return { message: "Escribe tu correo y contraseña.", values: { email } };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { message: translateAuthError(error.message), values: { email } };
+  await applyProfileAppearance(supabase, data.user.id);
   redirect(safeNext(formData.get("next")));
 }
 
