@@ -169,6 +169,7 @@ export const UI_EN: Record<string, string> = {
   "oportunidades · ponderado": "opportunities · weighted", "con cierre vencido": "past due", "Ninguna vencida": "None overdue",
   "reuniones esta semana": "meetings this week", respondieron: "responded", "Costo:": "Cost:", "Sin costo registrado": "No cost recorded",
   "Millones COP": "Million COP",
+  "Volver al resumen": "Back to summary", inactivo: "inactive",
   "Efecto de vidrio": "Glass effect", Transparente: "Clear", Medio: "Medium", "Sólido": "Solid", "Cifra de ejemplo": "Sample figure",
   "Deja ver más el logo detrás de las tarjetas de información. Tablas, gráficos y formularios no cambian.":
     "Shows more of the logo behind information cards. Tables, charts and forms don't change.",

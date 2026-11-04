@@ -1,0 +1,76 @@
+import { expect, test, type Page } from "@playwright/test";
+import { sesion } from "./ayuda";
+
+test.use({ storageState: sesion("admin") });
+
+test("Listas de valores: de Personalizar se puede volver al resumen y entrar de nuevo", async ({ page }) => {
+  page.on("dialog", (d) => d.accept());
+  await page.goto("/configuracion/listas");
+  const tarjeta = page.locator("section.card").filter({ has: page.getByRole("button", { name: "Personalizar" }) }).first();
+  const id = await tarjeta.getAttribute("id");
+  expect(id).toBeTruthy();
+  const lista = page.locator(`section[id="${id}"]`);
+  const opciones = await lista.locator(".badge").allInnerTexts();
+
+  await expect(async () => {
+    await lista.getByRole("button", { name: "Personalizar" }).click();
+    await expect(page).toHaveURL(/editar=/, { timeout: 3000 });
+  }).toPass();
+  await expect(lista.getByLabel("Nuevo valor")).toBeVisible();
+
+  // Vuelve al resumen, sin perder la personalización.
+  await lista.getByRole("link", { name: "Volver al resumen" }).click();
+  await expect(page).not.toHaveURL(/editar=/);
+  await expect(lista.getByLabel("Nuevo valor")).toHaveCount(0);
+  await expect(lista.getByText("Personalizada")).toBeVisible();
+  expect(opciones.length).toBeGreaterThan(1);
+  await expect(lista.locator(".badge").nth(1)).toBeVisible();
+
+  // Las demás listas siguen en resumen, y esta se puede abrir otra vez.
+  await lista.getByRole("link", { name: "Editar" }).click();
+  await expect(page).toHaveURL(/editar=/);
+  await expect(lista.getByLabel("Nuevo valor")).toBeVisible();
+  await expect(page.getByLabel("Nuevo valor")).toHaveCount(1);
+
+  // Queda como estaba para las demás pruebas.
+  await lista.getByRole("button", { name: "Restablecer" }).click();
+  await expect(lista.getByRole("button", { name: "Personalizar" })).toBeVisible();
+});
+
+async function compruebaLista(page: Page) {
+  const buscador = page.getByLabel("Cuenta principal");
+  await buscador.scrollIntoViewIfNeeded();
+  await expect(async () => {
+    await buscador.click();
+    await expect(page.getByRole("listbox")).toBeVisible({ timeout: 2000 });
+    await expect(page.getByRole("listbox").getByRole("option").nth(1)).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  const lista = page.getByRole("listbox");
+  await lista.scrollIntoViewIfNeeded();
+
+  // Toda la lista está encima: en cada opción, lo que recibe el clic es esa opción y no la tarjeta siguiente.
+  const tapadas = await lista.evaluate((ul) =>
+    [...ul.querySelectorAll('[role="option"]')].filter((o) => {
+      const c = o.getBoundingClientRect();
+      const y = c.top + c.height / 2;
+      if (y > ul.getBoundingClientRect().bottom || y > innerHeight) return false;
+      return !o.contains(document.elementFromPoint(c.left + c.width / 2, y));
+    }).length,
+  );
+  expect(tapadas).toBe(0);
+
+  // Un clic real sobre la segunda opción la selecciona.
+  const opcion = lista.getByRole("option").nth(1);
+  const nombre = await opcion.locator("p").first().innerText();
+  await opcion.click();
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(page.getByText(nombre, { exact: true }).first()).toBeVisible();
+}
+
+test("Cuenta principal: la lista del buscador queda encima de la tarjeta Direcciones", async ({ page }) => {
+  await page.goto("/cuentas/nueva");
+  await compruebaLista(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/cuentas/nueva");
+  await compruebaLista(page);
+});

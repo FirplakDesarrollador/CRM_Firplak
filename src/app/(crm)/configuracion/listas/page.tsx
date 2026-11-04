@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getObjectDef, getPicklistRows } from "@/lib/records/data";
@@ -48,14 +48,21 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
         const values = rows.filter((r) => r.field === fieldName).sort((a, b) => a.sort_order - b.sort_order);
         const customized = values.length > 0;
         const stdOptions = standard.fields.find((f) => f.name === fieldName)?.options ?? extra?.options ?? [];
+        // La edición se abre por lista y vive en la URL; el enlace lleva de vuelta a la misma tarjeta.
+        const editing = customized && sp.editar === fieldName;
+        const summaryHref = `/configuracion/listas?objeto=${object}#lista-${fieldName}`;
+        const editHref = `/configuracion/listas?objeto=${object}&editar=${fieldName}#lista-${fieldName}`;
         return (
-          <section key={fieldName} className="card overflow-hidden">
+          <section key={fieldName} id={`lista-${fieldName}`} className="card scroll-mt-28 overflow-hidden">
             <div className="card-header">
               <h2 className="card-title">{field.label} {customized ? <span className="badge badge-brand"><Tr>Personalizada</Tr></span> : <span className="badge"><Tr>Estándar</Tr></span>}</h2>
-              {customized && (
-                <ActionForm action={resetPicklist.bind(null, object, fieldName)}>
-                  <ConfirmSubmit message={`¿Restablecer “${field.label}” a los valores estándar?`} className="btn btn-sm"><RotateCcw size={14} /> <Tr>Restablecer</Tr></ConfirmSubmit>
-                </ActionForm>
+              {editing && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href={summaryHref} className="btn btn-sm"><ArrowLeft size={14} /> <Tr>Volver al resumen</Tr></Link>
+                  <ActionForm action={resetPicklist.bind(null, object, fieldName)}>
+                    <ConfirmSubmit message={`¿Restablecer “${field.label}” a los valores estándar?`} className="btn btn-sm"><RotateCcw size={14} /> <Tr>Restablecer</Tr></ConfirmSubmit>
+                  </ActionForm>
+                </div>
               )}
             </div>
             {!customized ? (
@@ -65,9 +72,29 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                     <span key={o} className="badge">{o}{VALUES_EN[o] && VALUES_EN[o] !== o ? <span className="text-muted"> · {VALUES_EN[o]}</span> : null}</span>
                   ))}
                 </p>
-                <ActionForm action={async () => { "use server"; return customizePicklist(object, fieldName, stdOptions); }}>
+                <ActionForm action={async () => {
+                  "use server";
+                  const result = await customizePicklist(object, fieldName, stdOptions);
+                  if (result.ok) redirect(editHref);
+                  return result;
+                }}>
                   <SubmitButton className="btn btn-sm btn-primary" pendingText="…"><Tr>Personalizar</Tr></SubmitButton>
                 </ActionForm>
+              </div>
+            ) : !editing ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <p className="flex flex-wrap gap-1.5">
+                  {values.map((v) => {
+                    const english = v.label_en || VALUES_EN[v.value];
+                    return (
+                      <span key={v.id} className={`badge ${v.is_active ? "" : "text-muted line-through"}`}>
+                        {v.value}{english && english !== v.value ? <span className="text-muted"> · {english}</span> : null}
+                        {!v.is_active && <span className="sr-only"> (<Tr>inactivo</Tr>)</span>}
+                      </span>
+                    );
+                  })}
+                </p>
+                <Link href={editHref} className="btn btn-sm btn-primary"><Tr>Editar</Tr></Link>
               </div>
             ) : (
               <>

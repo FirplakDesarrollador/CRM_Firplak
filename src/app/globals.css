@@ -1026,6 +1026,13 @@ svg.lucide {
   animation: none;
 }
 
+/* Un menú abierto dentro de una tarjeta queda encima de las siguientes y no se corta en su borde: cada tarjeta es su propio contexto de apilamiento. */
+.card:has([aria-expanded="true"]),
+.glass:has([aria-expanded="true"]) {
+  z-index: 30;
+  overflow: visible;
+}
+
 .nav-scroll {
   scrollbar-width: thin;
 }
