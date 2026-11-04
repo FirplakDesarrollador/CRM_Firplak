@@ -10,6 +10,7 @@ export type Preferences = {
   language: "es" | "en";
   home_page: string;
   density: "comfortable" | "compact";
+  glass: "clear" | "medium" | "solid";
   page_size: number;
 };
 
@@ -18,6 +19,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   language: "es",
   home_page: "/inicio",
   density: "comfortable",
+  glass: "medium",
   page_size: 25,
 };
 

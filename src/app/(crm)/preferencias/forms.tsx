@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { savePreferences, saveProfile } from "./actions";
+import { GlassField } from "./GlassField";
 import { updatePassword } from "@/app/(auth)/actions";
 import type { Preferences } from "@/lib/session";
 
@@ -24,6 +25,7 @@ export function PreferencesForm({ prefs }: { prefs: Preferences }) {
           ))}
         </div>
       </fieldset>
+      <GlassField saved={prefs.glass} />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="home_page"><Tr>Página de inicio</Tr></label>

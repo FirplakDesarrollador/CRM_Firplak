@@ -1749,6 +1749,7 @@
       "La Regla de la Capa Opaca.** Menús, diálogos y la hoja «Más» tapan lo de abajo con superficie opaca. El vidrio es para lo que reposa, no para lo que interrumpe.",
       "",
       "La Regla de la Preferencia Respetada.** Con menos transparencia, la marca desaparece y los paneles quedan sólidos. Con menos movimiento, la marca queda quieta. Al imprimir, la marca no sale.",
+      "La Regla del Vidrio a Elección.** Cada persona elige en Mis preferencias el nivel de vidrio, y por defecto es Medio. Transparente solo cambia las tarjetas de información (50 a 34 % en claro, 38 a 30 % en oscuro, con blur de 16 px); no se abre más porque los textos de estado bajarían de 4.5:1 cuando el logo pasa detrás. Sólido quita la transparencia y el blur en toda la app, y deja el logo quieto. La preferencia del dispositivo de menos transparencia manda sobre esta.",
       "",
       " Shapes",
       "",
@@ -1904,6 +1905,11 @@
       {
         "name": "La Regla de la Preferencia Respetada",
         "body": "Con menos transparencia, la marca desaparece y los paneles quedan sólidos. Con menos movimiento, la marca queda quieta. Al imprimir, la marca no sale.",
+        "section": "elevation"
+      },
+      {
+        "name": "La Regla del Vidrio a Elección",
+        "body": "Cada persona elige en Mis preferencias el nivel de vidrio, y por defecto es Medio. Transparente solo cambia las tarjetas de información (50 a 34 % en claro, 38 a 30 % en oscuro, con blur de 16 px); no se abre más porque los textos de estado bajarían de 4.5:1 cuando el logo pasa detrás. Sólido quita la transparencia y el blur en toda la app, y deja el logo quieto. La preferencia del dispositivo de menos transparencia manda sobre esta.",
         "section": "elevation"
       },
       {

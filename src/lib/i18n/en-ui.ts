@@ -169,6 +169,13 @@ export const UI_EN: Record<string, string> = {
   "oportunidades · ponderado": "opportunities · weighted", "con cierre vencido": "past due", "Ninguna vencida": "None overdue",
   "reuniones esta semana": "meetings this week", respondieron: "responded", "Costo:": "Cost:", "Sin costo registrado": "No cost recorded",
   "Millones COP": "Million COP",
+  "Efecto de vidrio": "Glass effect", Transparente: "Clear", Medio: "Medium", "Sólido": "Solid", "Cifra de ejemplo": "Sample figure",
+  "Deja ver más el logo detrás de las tarjetas de información. Tablas, gráficos y formularios no cambian.":
+    "Shows more of the logo behind information cards. Tables, charts and forms don't change.",
+  "Equilibrio entre el vidrio y la lectura.": "A balance between glass and readability.",
+  "Tarjetas sin transparencia ni blur, y el logo quieto. Es la opción más liviana.": "Cards with no transparency or blur, and a still logo. This is the lightest option.",
+  "Tu dispositivo pide menos transparencia, así que la app la desactiva sin importar este ajuste.":
+    "Your device asks for less transparency, so the app turns it off regardless of this setting.",
   // Periodos
   "Este mes": "This month", "Mes anterior": "Last month", "Este trimestre": "This quarter", "Este año": "This year",
   "Últimos 12 meses": "Last 12 months", Personalizado: "Custom", "Todo el equipo": "Whole team", "Mi calendario": "My calendar",

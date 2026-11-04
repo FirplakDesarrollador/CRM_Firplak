@@ -30,6 +30,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const store = await cookies();
   const theme = store.get("fp-theme")?.value;
   const density = store.get("fp-density")?.value;
+  const glass = store.get("fp-glass")?.value;
   const lang = store.get("fp-lang")?.value === "en" ? "en" : "es-CO";
 
   return (
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       className={outfit.variable}
       data-theme={theme === "light" || theme === "dark" ? theme : undefined}
       data-density={density === "compact" ? "compact" : undefined}
+      data-glass={glass === "clear" || glass === "solid" ? glass : undefined}
     >
       <body>
         {children}

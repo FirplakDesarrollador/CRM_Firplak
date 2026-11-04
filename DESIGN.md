@@ -383,6 +383,8 @@ El blur solo se nota porque hay algo detrás: lo que atraviesa el vidrio es la m
 
 **La Regla de la Preferencia Respetada.** Con menos transparencia, la marca desaparece y los paneles quedan sólidos. Con menos movimiento, la marca queda quieta. Al imprimir, la marca no sale.
 
+**La Regla del Vidrio a Elección.** Cada persona elige en Mis preferencias el nivel de vidrio, y por defecto es Medio. Transparente solo cambia las tarjetas de información (50 a 34 % en claro, 38 a 30 % en oscuro, con blur de 16 px); no se abre más porque los textos de estado bajarían de 4.5:1 cuando el logo pasa detrás. Sólido quita la transparencia y el blur en toda la app, y deja el logo quieto. La preferencia del dispositivo de menos transparencia manda sobre esta.
+
 ## Shapes
 
 Esquinas amplias en lo grande y justas en lo pequeño: paneles de 22 px, columnas del Pipeline y diálogos de 28 px, dock de 24 px, controles de 14 px, campos de 13 px, botones pequeños de 11 px, selector compacto de 8 px, filas de menú de 18 px, y píldoras para pestañas, insignias y avatares.
@@ -433,6 +435,9 @@ Los controles son directos y táctiles; el vidrio y el movimiento quedan en las 
 - **Columna:** vidrio con relleno denso y blur de 26 px, para que la marca se difumine detrás. Esquinas de 28 px y línea fina. Al recibir una tarjeta arrastrada, muestra un anillo de 2 px en color de marca.
 - **Marcador de etapa:** barra redondeada de 3 px dentro del encabezado de la columna, separada de los bordes por su relleno. Toma el color de la etapa; las cerradas usan éxito o peligro. No es un borde superior: sobre una columna redondeada, ese borde se curvaría con la esquina.
 - **Tarjeta:** superficie translúcida simple con línea fina y 12 px de relleno, sin blur ni sombra propios. Lleva el selector compacto para mover de etapa sin arrastrar.
+
+### Efecto de vidrio
+Barra de tres posiciones en Mis preferencias (Transparente, Medio, Sólido), con botón blanco de 46 por 28 px, relleno `--brand` y los tres nombres siempre visibles. Los nombres también son botones y la barra se maneja con el teclado. Arriba lleva una vista previa con dos tarjetas de cifras de ejemplo y el logo detrás. Al moverla, toda la pantalla cambia para ver el efecto; solo queda guardado con el botón del formulario, y al salir sin guardar vuelve el nivel anterior. El nivel va en `data-glass` del elemento raíz (sin atributo es Medio), y se guarda en el perfil y en la cookie `fp-glass`.
 
 ### Marca de fondo
 Un solo vector azul de la marca Firplak, redibujado a partir del PNG oficial (no es el archivo del manual de marca), fijo detrás de todo el contenido, decorativo y sin interacción. Mide 88 vmin y parte de la esquina inferior derecha, con parte de la forma fuera de la pantalla. Desde 768 px recorre el fondo en un ciclo de 40 s, con desplazamiento de hasta 26 vmin, giro de hasta 6 grados y escala de 0.97 a 1.04. En celular y con menos movimiento queda quieta.

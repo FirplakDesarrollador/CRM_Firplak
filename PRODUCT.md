@@ -16,7 +16,7 @@ CRM comercial interno de Firplak: reúne cuentas, contactos, prospectos, oportun
 
 ## Operating Context
 
-Se usa durante la jornada comercial, en oficina y entre visitas, y se instala en el celular como app. Se integra con SAP Business One y Microsoft 365. Los usuarios eligen tema claro u oscuro; por defecto sigue el dispositivo.
+Se usa durante la jornada comercial, en oficina y entre visitas, y se instala en el celular como app. Se integra con SAP Business One y Microsoft 365. Los usuarios eligen tema claro u oscuro; por defecto sigue el dispositivo. También eligen el nivel de vidrio (Transparente, Medio o Sólido); por defecto es Medio.
 
 ## Capabilities and Constraints
 

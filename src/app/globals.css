@@ -210,6 +210,35 @@
   --row-pad: 0.4rem;
 }
 
+/* Efecto de vidrio (Mis preferencias). Sin atributo es el nivel medio. */
+:root {
+  --glass-blur: 30px;
+}
+/* Transparente: solo las tarjetas de información; tablas, gráficos y formularios usan --card-*. */
+:root[data-glass="clear"] {
+  --glass-hi: rgba(255, 255, 255, 0.5);
+  --glass-lo: rgba(255, 255, 255, 0.34);
+  --glass-blur: 16px;
+}
+:root[data-theme="dark"][data-glass="clear"] {
+  --glass-hi: rgba(36, 40, 43, 0.38);
+  --glass-lo: rgba(14, 16, 17, 0.3);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-glass="clear"] {
+    --glass-hi: rgba(36, 40, 43, 0.38);
+    --glass-lo: rgba(14, 16, 17, 0.3);
+  }
+}
+/* Sólido: sin transparencia. Va en tokens para que los paneles anidados conserven su fondo. */
+:root[data-glass="solid"] {
+  --glass-hi: var(--surface);
+  --glass-lo: var(--surface);
+  --card-hi: var(--surface);
+  --card-lo: var(--surface);
+  --glass-sheen: transparent;
+}
+
 /* Barra superior, módulos y dock: vidrio navy en claro y negro en oscuro. */
 .shell-chrome {
   --bg: #000000;
@@ -370,6 +399,9 @@ svg.lucide {
   .brand-backdrop-logo {
     animation: logo-deriva 40s ease-in-out infinite;
   }
+  .glass-preview-logo {
+    animation: glass-preview-deriva 22s ease-in-out infinite;
+  }
 }
 
 @layer components {
@@ -394,8 +426,8 @@ svg.lucide {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     box-shadow: var(--glass-shadow);
-    -webkit-backdrop-filter: blur(30px) saturate(170%);
-    backdrop-filter: blur(30px) saturate(170%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
     transition: border-radius 0.6s var(--ease), box-shadow 0.3s var(--ease);
   }
   /* Gráficos y formularios se leen mejor sobre el vidrio denso. */
@@ -566,6 +598,158 @@ svg.lucide {
     background-position: right 0.7rem center;
     background-size: 14px;
     text-overflow: ellipsis;
+  }
+  .glass-preview {
+    position: relative;
+    height: 12.25rem;
+    margin-bottom: 0.65rem;
+    overflow: hidden;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .glass-preview-logo {
+    position: absolute;
+    right: 7%;
+    top: -2.1rem;
+    width: 18.75rem;
+    height: auto;
+    opacity: var(--logo-opacity);
+  }
+  .glass-preview-cards {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 1.1rem;
+  }
+  .glass-preview-card {
+    padding: 1rem 1.1rem;
+    background: linear-gradient(145deg, var(--glass-hi), var(--glass-lo));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  }
+  .glass-preview-label {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .glass-preview-value {
+    margin-top: 0.3rem;
+    font-size: 1.75rem;
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .glass-preview-value small {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .glass-preview-note {
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .glass-control {
+    padding: 0.65rem 1rem 0.55rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .glass-slider {
+    display: block;
+    width: 100%;
+    height: 1.75rem;
+    margin: 0;
+    appearance: none;
+    background: transparent;
+    cursor: grab;
+  }
+  .glass-slider:active {
+    cursor: grabbing;
+  }
+  .glass-slider:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 4px;
+    border-radius: 999px;
+  }
+  .glass-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand) var(--glass-fill), var(--border-strong) var(--glass-fill));
+  }
+  .glass-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand) var(--glass-fill), var(--border-strong) var(--glass-fill));
+  }
+  .glass-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 46px;
+    height: 28px;
+    margin-top: -11px;
+    background: #ffffff;
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(10, 24, 38, 0.3), 0 4px 12px rgba(10, 24, 38, 0.22);
+  }
+  .glass-slider::-moz-range-thumb {
+    width: 46px;
+    height: 28px;
+    background: #ffffff;
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(10, 24, 38, 0.3), 0 4px 12px rgba(10, 24, 38, 0.22);
+  }
+  .glass-stops {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-top: 0.3rem;
+  }
+  .glass-stop {
+    min-height: 1.75rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .glass-stop:first-child {
+    text-align: left;
+  }
+  .glass-stop:last-child {
+    text-align: right;
+  }
+  .glass-stop[aria-current="true"] {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .glass-reduced-note {
+    display: none;
+  }
+  @media (max-width: 520px) {
+    .glass-preview {
+      height: 14.5rem;
+    }
+    .glass-preview-cards {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 0.75rem;
+    }
+    .glass-preview-card {
+      padding: 0.65rem 0.9rem;
+    }
+    .glass-preview-value {
+      margin-top: 0.1rem;
+      font-size: 1.35rem;
+    }
   }
   .select-compact {
     width: auto;
@@ -824,6 +1008,24 @@ svg.lucide {
   }
 }
 
+:root[data-glass="solid"] .card,
+:root[data-glass="solid"] .glass,
+:root[data-glass="solid"] .kanban-column,
+:root[data-glass="solid"] .glass-preview-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-glass="solid"] .shell-chrome.shell-bar,
+:root[data-glass="solid"] .dock {
+  background: var(--surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-glass="solid"] .brand-backdrop-logo,
+:root[data-glass="solid"] .glass-preview-logo {
+  animation: none;
+}
+
 .nav-scroll {
   scrollbar-width: thin;
 }
@@ -881,6 +1083,16 @@ svg.lucide {
   margin-block: -3px;
 }
 
+@keyframes glass-preview-deriva {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(-11.9rem, 0.6rem) rotate(-5deg);
+  }
+}
+
 @keyframes shimmer {
   to {
     background-position: -200% 0;
@@ -894,6 +1106,7 @@ svg.lucide {
   }
   /* Un ciclo infinito de 0.01 ms parpadearía: el logo y el esqueleto simplemente quedan quietos. */
   .brand-backdrop-logo,
+  .glass-preview-logo,
   .skeleton {
     animation: none !important;
   }
@@ -904,8 +1117,15 @@ svg.lucide {
   .brand-backdrop {
     display: none;
   }
+  .glass-preview-logo {
+    display: none;
+  }
+  .glass-reduced-note {
+    display: block;
+  }
   .card,
   .glass,
+  .glass-preview-card,
   .kanban-column,
   .dock,
   .shell-chrome.shell-bar {
