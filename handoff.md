@@ -21,9 +21,8 @@
 
 **Datos en producción hoy:** 2 usuarios, 0 cuentas, 0 oportunidades, 0 cotizaciones, **0 productos y 0 precios**,
 0 registros demo. Listas de precios: «Lista estándar COP» (estándar), «Distribuidores 2026» (COP) y «Lista
-exportación USD». Proceso de aprobación activo: «Descuento superior al 15 %». Quedan **5 metas de compañía de
-ejemplo** de la semilla antigua (p. ej. 1.500 M en noviembre), que se ven en Inicio: pendiente que Luis decida si
-se borran (en Metas, dejando vacío el valor de la compañía de cada periodo).
+exportación USD». Proceso de aprobación activo: «Descuento superior al 15 %». **0 metas:** las 5 metas de compañía
+de ejemplo de la semilla antigua se borraron el 2026-11-07 a pedido de Luis, que cargará las reales en Metas.
 
 ## 2. Reglas de trabajo (fijas)
 
@@ -128,6 +127,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-07 | — | Borradas en producción las 5 metas de compañía de ejemplo (Luis cargará las reales). | Datos: 0 metas |
 | 2026-11-07 | `4fb30e2`, `e882886` (rama `codex/migraciones-seguras`, fusionada en `main`) | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Historial conciliado en producción (35/35); desplegado (sin cambios visibles en la app) |
 | 2026-11-07 | `079f13b` | Celular: «Guardar» de los formularios encima de la barra inferior; lint ignora `test-results/`. | Desplegado |
 | 2026-11-07 | `0d9f6d0` | Cotizaciones con descuento alto no se presentan sin aprobación. | Migración aplicada y probada |
