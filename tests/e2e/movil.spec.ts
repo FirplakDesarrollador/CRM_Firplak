@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { sesion } from "./ayuda";
+import { sesion, unico } from "./ayuda";
 
 const PAGINAS = ["/inicio", "/cuentas", "/contactos", "/prospectos", "/oportunidades", "/oportunidades/pipeline", "/cotizaciones", "/pedidos",
   "/productos", "/casos", "/campanas", "/actividades", "/aprobaciones", "/indicadores", "/metas", "/pronostico", "/informes",
@@ -143,4 +143,20 @@ test("instalada en el celular, los campos usan 16 px para que iOS no amplíe al 
   expect(activada).toBe(true);
   await expect.poll(letra).toBe("16px");
   await expect.poll(() => page.locator("#f-market").evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
+});
+
+test("en el celular el botón Guardar del formulario queda encima de la barra inferior y guarda con un toque", async ({ page }) => {
+  await page.goto("/cuentas/nueva");
+  await page.getByLabel(/Nombre de la cuenta/).fill(unico("Cuenta celular"));
+  const boton = page.getByRole("button", { name: "Guardar cuenta" });
+  await expect(boton).toBeInViewport();
+  // Lo que hay bajo el centro del botón es el botón, no la barra de navegación.
+  const encima = await boton.evaluate((b) => {
+    const r = b.getBoundingClientRect();
+    const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return Boolean(el && b.contains(el));
+  });
+  expect(encima).toBe(true);
+  await boton.tap();
+  await expect(page).toHaveURL(/\/cuentas\/[0-9a-f-]{36}/);
 });

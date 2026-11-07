@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "src/lib/database.types.ts",
+    // Informes de Playwright: si una prueba falla, traen el visor de trazas (JavaScript minificado).
+    "test-results/**",
   ]),
 ]);
 

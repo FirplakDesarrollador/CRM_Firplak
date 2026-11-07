@@ -92,7 +92,9 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
           </section>
         );
       })}
-      <div className="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
+      {/* En el celular la barra inferior de navegación (fija, 4 rem sobre el área segura) taparía este botón: la barra de
+          guardar flota justo encima. Desde md no hay barra inferior y vuelve al borde. */}
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] flex justify-end gap-2 rounded-lg border border-line bg-bg/95 px-4 py-3 backdrop-blur md:bottom-0">
         <Link href={cancelHref} className="btn">{t("Cancelar")}</Link>
         <SubmitButton pendingText={t("Guardando…")}>{t("Guardar")} {def.label.toLowerCase()}</SubmitButton>
       </div>
