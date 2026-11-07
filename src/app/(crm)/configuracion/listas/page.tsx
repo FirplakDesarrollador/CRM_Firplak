@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getObjectDef, getPicklistDependencies, getPicklistRows } from "@/lib/records/data";
@@ -12,7 +12,8 @@ import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { VALUES_EN } from "@/lib/i18n/values-en";
 import {
-  addPicklistValue, customizePicklist, deletePicklistValue, resetPicklist, savePicklistDependencyMap, setPicklistDependency, updatePicklistValue,
+  addPicklistDependency, addPicklistValue, customizePicklist, deletePicklistValue, removePicklistDependency, resetPicklist,
+  savePicklistDependencyMap, updatePicklistValue,
 } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
@@ -31,6 +32,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
     getT(),
   ]);
   const standard = getObject(object);
+  const labelOf = (name: string) => def.fields.find((f) => f.name === name)?.label ?? name;
 
   return (
     <>
@@ -59,18 +61,21 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
         const editing = customized && sp.editar === fieldName;
         const summaryHref = `/configuracion/listas?objeto=${object}#lista-${fieldName}`;
         const editHref = `/configuracion/listas?objeto=${object}&editar=${fieldName}#lista-${fieldName}`;
-        // Lista dependiente: de qué lista depende y cuáles pueden controlarla (del mismo objeto, sin ciclos).
-        const dependency = dependencies.find((d) => d.field === fieldName);
-        const controllingField = dependency ? def.fields.find((f) => f.name === dependency.controlling_field) : undefined;
+        // Lista dependiente: de qué listas depende y cuáles pueden controlarla (del mismo objeto, sin ciclos).
+        const orderOf = (name: string) => def.fields.findIndex((f) => f.name === name);
+        const fieldDeps = dependencies.filter((d) => d.field === fieldName).sort((x, y) => orderOf(x.controlling_field) - orderOf(y.controlling_field));
         const controllerCandidates = extra ? [] : (EDITABLE_PICKLISTS[object] ?? []).filter((n) =>
           n !== fieldName && !EXTRA_PICKLISTS[n] && def.fields.some((f) => f.name === n && f.type === "select")
           && !dependencies.some((d) => d.field === n && d.controlling_field === fieldName));
+        const addable = controllerCandidates.filter((n) => !fieldDeps.some((d) => d.controlling_field === n));
         return (
           <section key={fieldName} id={`lista-${fieldName}`} className="card scroll-mt-28 overflow-hidden">
             <div className="card-header">
               <h2 className="card-title">
                 {field.label} {customized ? <span className="badge badge-brand"><Tr>Personalizada</Tr></span> : <span className="badge"><Tr>Estándar</Tr></span>}
-                {customized && controllingField && <span className="badge"><Tr>Depende de la lista</Tr> {controllingField.label}</span>}
+                {customized && fieldDeps.length > 0 && (
+                  <span className="badge">{fieldDeps.length > 1 ? <Tr>Depende de las listas</Tr> : <Tr>Depende de la lista</Tr>} {fieldDeps.map((d) => labelOf(d.controlling_field)).join(" + ")}</span>
+                )}
               </h2>
               {editing && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -145,55 +150,76 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                   <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Agregar</Tr></SubmitButton>
                 </ActionForm>
                 {controllerCandidates.length > 0 && (
-                  <div className="space-y-3 border-t border-line p-4">
-                    <ActionForm key={dependency?.controlling_field ?? "ninguna"} action={setPicklistDependency.bind(null, object, fieldName)} className="flex flex-wrap items-end gap-2">
-                      <div className="min-w-48">
-                        <label className="label" htmlFor={`dep-${fieldName}`}><Tr>Depende de la lista</Tr></label>
-                        <select id={`dep-${fieldName}`} name="controlling_field" className="select" defaultValue={dependency?.controlling_field ?? ""}>
-                          <option value="">{t("Ninguna lista")}</option>
-                          {controllerCandidates.map((n) => (
-                            <option key={n} value={n}>{def.fields.find((f) => f.name === n)?.label ?? n}</option>
+                  <div className="space-y-4 border-t border-line p-4">
+                    <div className="space-y-2">
+                      <p className="label"><Tr>Depende de la lista</Tr></p>
+                      {fieldDeps.length > 0 && (
+                        <ul className="flex flex-wrap gap-2">
+                          {fieldDeps.map((d) => (
+                            <li key={d.controlling_field} className="flex items-center gap-1.5 rounded-full border border-line py-1 pl-3 pr-1 text-sm font-medium">
+                              {labelOf(d.controlling_field)}
+                              <ActionForm action={removePicklistDependency.bind(null, object, fieldName, d.controlling_field)}>
+                                <ConfirmSubmit message={`¿Quitar la dependencia de “${labelOf(d.controlling_field)}”?`} className="btn btn-sm btn-icon">
+                                  <X size={14} /><span className="sr-only"><Tr>Quitar</Tr> {labelOf(d.controlling_field)}</span>
+                                </ConfirmSubmit>
+                              </ActionForm>
+                            </li>
                           ))}
-                        </select>
-                      </div>
-                      <SubmitButton className="btn" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
-                      <p className="help basis-full">
-                        <Tr>Con una lista que la controla, el formulario solo ofrece los valores que marques para el valor elegido en esa lista.</Tr>
+                        </ul>
+                      )}
+                      {addable.length > 0 && (
+                        <ActionForm key={fieldDeps.length} action={addPicklistDependency.bind(null, object, fieldName)} className="flex flex-wrap items-end gap-2">
+                          <div className="min-w-48">
+                            <label className="sr-only" htmlFor={`dep-${fieldName}`}><Tr>Lista que la controla</Tr></label>
+                            <select id={`dep-${fieldName}`} name="controlling_field" className="select" defaultValue={addable[0]}>
+                              {addable.map((n) => <option key={n} value={n}>{labelOf(n)}</option>)}
+                            </select>
+                          </div>
+                          <SubmitButton className="btn" pendingText="…"><Plus size={14} /> <Tr>Agregar lista</Tr></SubmitButton>
+                        </ActionForm>
+                      )}
+                      <p className="help">
+                        <Tr>Si depende de varias listas, el formulario solo ofrece los valores que correspondan a lo elegido en todas.</Tr>
                       </p>
-                    </ActionForm>
-                    {controllingField && (
-                      <ActionForm action={savePicklistDependencyMap.bind(null, object, fieldName)} className="space-y-3">
-                        <p className="text-sm text-muted">
-                          <Tr>Marca con qué valores de</Tr> «{controllingField.label}» <Tr>se puede elegir cada valor. Un valor sin marcas no aparece en el formulario.</Tr>
-                        </p>
-                        <div className="overflow-x-auto rounded-lg border border-line">
-                          <table className="table">
-                            <thead>
-                              <tr>
-                                <th scope="col" className="sticky left-0 z-[1] bg-surface">{field.label}</th>
-                                {(controllingField.options ?? []).map((c) => (
-                                  <th key={c} scope="col" className="text-center">{controllingField.optionLabels?.[c] ?? c}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {values.map((v) => (
-                                <tr key={v.id}>
-                                  <th scope="row" className={`sticky left-0 z-[1] bg-surface font-medium ${v.is_active ? "" : "text-muted line-through"}`}>{v.value}</th>
+                    </div>
+                    {fieldDeps.map((d) => {
+                      const controllingField = def.fields.find((f) => f.name === d.controlling_field);
+                      if (!controllingField) return null;
+                      return (
+                        <ActionForm key={d.controlling_field} action={savePicklistDependencyMap.bind(null, object, fieldName, d.controlling_field)} className="space-y-3">
+                          <p className="text-sm text-muted">
+                            <Tr>Marca con qué valores de</Tr> «{controllingField.label}» <Tr>se puede elegir cada valor. Un valor sin marcas no aparece en el formulario.</Tr>
+                          </p>
+                          <div className="overflow-x-auto rounded-lg border border-line">
+                            <table className="table">
+                              <thead>
+                                <tr>
+                                  <th scope="col" className="sticky left-0 z-[1] bg-surface">{field.label}</th>
                                   {(controllingField.options ?? []).map((c) => (
-                                    <td key={c} className="text-center">
-                                      <input type="checkbox" name={`map:${v.id}`} value={c} defaultChecked={(v.controlling_values ?? []).includes(c)}
-                                        aria-label={`${v.value} · ${controllingField.optionLabels?.[c] ?? c}`} className="h-4 w-4 accent-[var(--brand)]" />
-                                    </td>
+                                    <th key={c} scope="col" className="text-center">{controllingField.optionLabels?.[c] ?? c}</th>
                                   ))}
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Guardar relaciones</Tr></SubmitButton>
-                      </ActionForm>
-                    )}
+                              </thead>
+                              <tbody>
+                                {values.map((v) => (
+                                  <tr key={v.id}>
+                                    <th scope="row" className={`sticky left-0 z-[1] bg-surface font-medium ${v.is_active ? "" : "text-muted line-through"}`}>{v.value}</th>
+                                    {(controllingField.options ?? []).map((c) => (
+                                      <td key={c} className="text-center">
+                                        <input type="checkbox" name={`map:${v.id}`} value={c}
+                                          defaultChecked={(v.controlling_map?.[d.controlling_field] ?? []).includes(c)}
+                                          aria-label={`${v.value} · ${controllingField.optionLabels?.[c] ?? c}`} className="h-4 w-4 accent-[var(--brand)]" />
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Guardar relaciones con</Tr> {controllingField.label}</SubmitButton>
+                        </ActionForm>
+                      );
+                    })}
                   </div>
                 )}
               </>

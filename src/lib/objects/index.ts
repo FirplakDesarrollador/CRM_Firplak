@@ -53,7 +53,7 @@ export function customFieldToDef(row: CustomFieldRow): FieldDef {
 export function withCustomFields(
   def: ObjectDef,
   rows: CustomFieldRow[],
-  picklists: { object: string; field: string; value: string; sort_order: number; is_active: boolean; controlling_values?: string[] }[] = [],
+  picklists: { object: string; field: string; value: string; sort_order: number; is_active: boolean; controlling_map?: Record<string, string[]> }[] = [],
   dependencies: { object: string; field: string; controlling_field: string }[] = [],
 ): ObjectDef & { listCustom: string[] } {
   const active = rows.filter((r) => r.object === def.key && r.is_active).sort((a, b) => a.sort_order - b.sort_order);
@@ -62,14 +62,17 @@ export function withCustomFields(
     const values = picklists.filter((p) => p.object === def.key && p.field === f.name && p.is_active).sort((a, b) => a.sort_order - b.sort_order);
     if (!values.length || f.type !== "select" || f.optionLabels) return f;
     const withValues = { ...f, options: values.map((v) => v.value) };
-    // Lista dependiente: para cada valor del campo que la controla, los valores que se pueden elegir.
-    const dep = dependencies.find((d) => d.object === def.key && d.field === f.name);
-    if (!dep) return withValues;
-    const optionsByController: Record<string, string[]> = {};
-    for (const v of values) {
-      for (const c of v.controlling_values ?? []) (optionsByController[c] ??= []).push(v.value);
-    }
-    return { ...withValues, dependsOn: dep.controlling_field, optionsByController };
+    // Lista dependiente: por cada lista que la controla, los valores que se pueden elegir con cada valor de esa lista.
+    const deps = dependencies.filter((d) => d.object === def.key && d.field === f.name).sort((a, b) => a.controlling_field.localeCompare(b.controlling_field));
+    if (!deps.length) return withValues;
+    const dependsOn = deps.map((d) => {
+      const optionsByController: Record<string, string[]> = {};
+      for (const v of values) {
+        for (const c of v.controlling_map?.[d.controlling_field] ?? []) (optionsByController[c] ??= []).push(v.value);
+      }
+      return { field: d.controlling_field, optionsByController };
+    });
+    return { ...withValues, dependsOn };
   });
   return {
     ...def,

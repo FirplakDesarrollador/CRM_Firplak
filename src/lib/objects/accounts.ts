@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { ACCOUNT_TYPES, INDUSTRIES, RATINGS, SEGMENTS } from "./picklists";
+import { ACCOUNT_TYPES, INDUSTRIES, MARKETS, RATINGS, SEGMENTS } from "./picklists";
 
 export const accounts: ObjectDef = {
   key: "accounts",
@@ -26,7 +26,8 @@ export const accounts: ObjectDef = {
     { name: "name", label: "Nombre de la cuenta", type: "text", required: true, section: "info" },
     { name: "account_number", label: "Número de cuenta", type: "text", readOnly: true, section: "info" },
     { name: "account_type", label: "Tipo", type: "select", options: ACCOUNT_TYPES, required: true, section: "info" },
-    { name: "industry", label: "Sector", type: "select", options: INDUSTRIES, section: "info" },
+    { name: "market", label: "Mercado", type: "select", options: MARKETS, section: "info" },
+    { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, section: "info" },
     { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "info" },
     { name: "rating", label: "Calificación", type: "select", options: RATINGS, section: "info" },
     { name: "tax_id", label: "NIT", type: "text", section: "info" },

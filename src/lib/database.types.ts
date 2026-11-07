@@ -92,6 +92,7 @@ export type Database = {
           id: string
           industry: string | null
           is_demo: boolean
+          market: string | null
           name: string
           owner_id: string | null
           parent_account_id: string | null
@@ -124,6 +125,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_demo?: boolean
+          market?: string | null
           name: string
           owner_id?: string | null
           parent_account_id?: string | null
@@ -156,6 +158,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_demo?: boolean
+          market?: string | null
           name?: string
           owner_id?: string | null
           parent_account_id?: string | null
@@ -2784,6 +2787,7 @@ export type Database = {
       }
       picklist_values: {
         Row: {
+          controlling_map: Json
           controlling_values: string[]
           created_at: string
           field: string
@@ -2795,6 +2799,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          controlling_map?: Json
           controlling_values?: string[]
           created_at?: string
           field: string
@@ -2806,6 +2811,7 @@ export type Database = {
           value: string
         }
         Update: {
+          controlling_map?: Json
           controlling_values?: string[]
           created_at?: string
           field?: string

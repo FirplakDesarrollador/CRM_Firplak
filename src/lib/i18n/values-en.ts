@@ -4,6 +4,7 @@
 
 export const VALUES_EN: Record<string, string> = {
   // Cuentas
+  Nacional: "Domestic", Internacional: "International",
   Prospecto: "Prospect", Cliente: "Customer", Distribuidor: "Distributor", Partner: "Partner", Competidor: "Competitor", Otro: "Other",
   Construcción: "Construction", Inmobiliario: "Real estate", "Vivienda social": "Social housing", Hotelería: "Hospitality", Salud: "Healthcare",
   Educación: "Education", Retail: "Retail", Comercio: "Commerce", "Distribución de materiales": "Building materials distribution",

@@ -2,6 +2,7 @@
 // personalizados desde Configuración → Campos personalizados.
 
 export const ACCOUNT_TYPES = ["Prospecto", "Cliente", "Distribuidor", "Partner", "Competidor", "Otro"];
+export const MARKETS = ["Nacional", "Internacional"];
 export const INDUSTRIES = [
   "Construcción", "Inmobiliario", "Vivienda social", "Hotelería", "Salud", "Educación", "Retail", "Comercio",
   "Distribución de materiales", "Ferretería", "Arquitectura y diseño", "Gobierno", "Otro",

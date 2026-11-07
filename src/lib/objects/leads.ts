@@ -44,7 +44,7 @@ export const leads: ObjectDef = {
     { name: "campaign_id", label: "Campaña", type: "lookup", lookup: "campaigns", relation: "campaign", section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
     { name: "company", label: "Empresa", type: "text", required: true, section: "company" },
-    { name: "industry", label: "Sector", type: "select", options: INDUSTRIES, section: "company" },
+    { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, section: "company" },
     { name: "website", label: "Sitio web", type: "url", section: "company" },
     { name: "annual_revenue", label: "Ingresos anuales", type: "currency", section: "company" },
     { name: "employees", label: "Empleados", type: "number", section: "company" },

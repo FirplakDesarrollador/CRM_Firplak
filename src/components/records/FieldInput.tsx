@@ -20,41 +20,50 @@ function toDateTimeLocal(value: unknown) {
   return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16);
 }
 
+/** Valores que se pueden elegir con lo elegido en cada lista que controla (vacío si falta alguna). */
+function allowedOptions(field: FieldDef, controls: Record<string, string>) {
+  const deps = field.dependsOn ?? [];
+  if (deps.some((d) => !controls[d.field])) return [];
+  return (field.options ?? []).filter((o) => deps.every((d) => d.optionsByController[controls[d.field]]?.includes(o)));
+}
+
 /**
- * Lista que depende de otra del mismo formulario (p. ej. Segmento según Sector): solo ofrece los
- * valores ligados al valor elegido arriba y se vacía si el elegido deja de corresponder.
+ * Lista que depende de otras del mismo formulario (p. ej. Segmento según Mercado y Canal): solo ofrece
+ * los valores que corresponden a lo elegido en todas y se vacía si el elegido deja de corresponder.
  */
 function DependentSelect({
   common,
   field,
   initialValue,
-  controller: initialController,
-  controllerLabel,
+  controllers,
 }: {
   common: { id: string; name: string; "aria-invalid": boolean; required?: boolean };
   field: FieldDef;
   initialValue: string;
-  controller: string;
-  controllerLabel: string;
+  controllers: { name: string; label: string; value: string }[];
 }) {
   const t = useT();
   const ref = useRef<HTMLSelectElement>(null);
-  const [controller, setController] = useState(initialController);
+  const [controls, setControls] = useState<Record<string, string>>(() => Object.fromEntries(controllers.map((c) => [c.name, c.value])));
   const [value, setValue] = useState(initialValue);
-  const allowed = controller ? field.optionsByController?.[controller] ?? [] : [];
+  const allowed = allowedOptions(field, controls);
+  const missing = controllers.filter((c) => !controls[c.name]).map((c) => `«${c.label}»`);
 
   useEffect(() => {
     const form = ref.current?.form;
-    if (!form || !field.dependsOn) return;
+    if (!form) return;
+    const names = new Set((field.dependsOn ?? []).map((d) => d.field));
     const onChange = (e: Event) => {
       const target = e.target as HTMLSelectElement;
-      if (target.name !== field.dependsOn) return;
-      setController(target.value);
-      setValue((v) => ((field.optionsByController?.[target.value] ?? []).includes(v) ? v : ""));
+      if (!names.has(target.name)) return;
+      const next = { ...controls, [target.name]: target.value };
+      const ok = allowedOptions(field, next);
+      setControls(next);
+      setValue((v) => (ok.includes(v) ? v : ""));
     };
     form.addEventListener("change", onChange);
     return () => form.removeEventListener("change", onChange);
-  }, [field.dependsOn, field.optionsByController]);
+  }, [field, controls]);
 
   return (
     <>
@@ -66,7 +75,7 @@ function DependentSelect({
         {/* Un registro antiguo con una combinación que ya no corresponde conserva su valor hasta que se cambie. */}
         {value && !allowed.includes(value) && <option value={value}>{field.optionLabels?.[value] ?? value}</option>}
       </select>
-      {!controller && <p className="help">{t("Elige primero")} «{controllerLabel}».</p>}
+      {missing.length > 0 && <p className="help">{t("Elige primero")} {missing.join(` ${t("y")} `)}.</p>}
     </>
   );
 }
@@ -87,8 +96,8 @@ export function FieldInput({
   ctx: FieldInputContext;
   /** Valor devuelto por el servidor tras un error de validación. */
   echo?: string;
-  /** Lista dependiente: valor inicial y nombre del campo que la controla. */
-  dependency?: { controller: string; controllerLabel: string };
+  /** Lista dependiente: las listas del formulario que la controlan, con su valor inicial. */
+  dependency?: { controllers: { name: string; label: string; value: string }[] };
 }) {
   const t = useT();
   const id = `f-${field.name.replace(".", "-")}`;
@@ -102,7 +111,7 @@ export function FieldInput({
       control = <textarea {...common} className="textarea" defaultValue={str} rows={4} />;
       break;
     case "select":
-      if (field.dependsOn && dependency) {
+      if (field.dependsOn?.length && dependency?.controllers.length) {
         control = <DependentSelect common={common} field={field} initialValue={str} {...dependency} />;
         break;
       }

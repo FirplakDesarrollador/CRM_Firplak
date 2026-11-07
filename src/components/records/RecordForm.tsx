@@ -29,9 +29,14 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
     return v === null || v === undefined ? "" : String(v);
   };
   const dependencyOf = (field: FieldDef) => {
-    if (!field.dependsOn) return undefined;
-    const controlling = fields.find((f) => f.name === field.dependsOn);
-    return controlling ? { controller: currentValue(field.dependsOn), controllerLabel: controlling.label } : undefined;
+    if (!field.dependsOn?.length) return undefined;
+    // Solo cuentan las listas que están en el formulario.
+    // En el orden del formulario, para que el aviso nombre las listas como aparecen en pantalla.
+    const controllers = field.dependsOn.flatMap((d) => {
+      const at = fields.findIndex((f) => f.name === d.field);
+      return at >= 0 ? [{ at, name: d.field, label: fields[at].label, value: currentValue(d.field) }] : [];
+    }).sort((a, b) => a.at - b.at).map(({ name, label, value }) => ({ name, label, value }));
+    return controllers.length ? { controllers } : undefined;
   };
 
   return (

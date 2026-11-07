@@ -7,7 +7,7 @@ import { TEAM_ROLES } from "@/lib/teams/config";
  * prioridades) no se editan aquí para no romper esas reglas.
  */
 export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
-  accounts: ["account_type", "industry", "segment"],
+  accounts: ["account_type", "market", "industry", "segment"],
   contacts: ["salutation", "lead_source"],
   leads: ["salutation", "industry", "lead_source"],
   opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role"],
@@ -24,9 +24,9 @@ export const EXTRA_PICKLISTS: Record<string, { label: string; options: string[] 
 
 export type PicklistRow = {
   id: string; object: string; field: string; value: string; sort_order: number; is_active: boolean; label_en: string | null;
-  /** Valores de la lista que controla con los que este valor se puede elegir (si la lista es dependiente). */
-  controlling_values: string[];
+  /** Por cada lista que la controla, los valores de esa lista con los que este valor se puede elegir. */
+  controlling_map: Record<string, string[]>;
 };
 
-/** Lista dependiente: `field` solo ofrece los valores ligados al valor elegido en `controlling_field`. */
+/** Lista dependiente: `field` solo ofrece los valores ligados al valor elegido en `controlling_field` (puede haber varias). */
 export type PicklistDependency = { object: string; field: string; controlling_field: string };

@@ -37,7 +37,7 @@ test("Listas de valores: de Personalizar se puede volver al resumen y entrar de 
   await expect(lista.getByRole("button", { name: "Personalizar" })).toBeVisible();
 });
 
-test("Listas dependientes: Segmento solo ofrece lo que corresponde al Sector elegido", async ({ page }) => {
+test("Listas dependientes: Segmento solo ofrece lo que corresponde a Mercado y Canal", async ({ page }) => {
   page.on("dialog", (d) => d.accept());
   await page.goto("/configuracion/listas?objeto=accounts");
   const lista = page.locator("section#lista-segment");
@@ -51,31 +51,43 @@ test("Listas dependientes: Segmento solo ofrece lo que corresponde al Sector ele
     await lista.getByRole("link", { name: "Editar" }).click();
   }
 
-  // Segmento pasa a depender de Sector.
-  await lista.getByLabel("Depende de la lista").selectOption({ label: "Sector" });
-  await lista.locator("form").filter({ has: page.getByLabel("Depende de la lista") }).getByRole("button", { name: "Guardar", exact: true }).click();
-  await expect(lista.getByText("Depende de la lista Sector")).toBeVisible();
-  const columnas = await lista.locator("table thead th").allInnerTexts();
-  const [sectorA, sectorB] = [columnas[1], columnas[2]];
-  const segmento = (await lista.locator("table tbody th").first().innerText()).trim();
-  await lista.getByRole("checkbox", { name: `${segmento} · ${sectorA}` }).check();
-  await lista.getByRole("button", { name: "Guardar relaciones" }).click();
-  await expect(lista.getByText("Relaciones guardadas")).toBeVisible();
+  // Segmento pasa a depender de Mercado y de Canal.
+  for (const controladora of ["Mercado", "Canal"]) {
+    await lista.getByLabel("Lista que la controla").selectOption({ label: controladora });
+    await lista.getByRole("button", { name: "Agregar lista" }).click();
+    await expect(lista.getByText(`«${controladora}»`)).toBeVisible();
+  }
+  await expect(lista.getByText("Depende de las listas Mercado + Canal")).toBeVisible();
+  const matriz = (nombre: string) => lista.locator("form").filter({ hasText: `«${nombre}»` });
+  const [seg1, seg2] = (await matriz("Mercado").locator("tbody th").allInnerTexts()).map((x) => x.trim());
+  const canal = (await matriz("Canal").locator("thead th").allInnerTexts())[1];
 
-  // En el formulario, Segmento depende de lo elegido en Sector.
+  await matriz("Mercado").getByRole("checkbox", { name: `${seg1} · Nacional` }).check();
+  await matriz("Mercado").getByRole("checkbox", { name: `${seg2} · Internacional` }).check();
+  await matriz("Mercado").getByRole("button", { name: "Guardar relaciones con Mercado" }).click();
+  await expect(matriz("Mercado").getByText("Relaciones guardadas")).toBeVisible();
+  await matriz("Canal").getByRole("checkbox", { name: `${seg1} · ${canal}` }).check();
+  await matriz("Canal").getByRole("checkbox", { name: `${seg2} · ${canal}` }).check();
+  await matriz("Canal").getByRole("button", { name: "Guardar relaciones con Canal" }).click();
+  await expect(matriz("Canal").getByText("Relaciones guardadas")).toBeVisible();
+
+  // En el formulario, Segmento depende de lo elegido en las dos listas.
   await page.goto("/cuentas/nueva");
-  const sector = page.getByLabel("Sector", { exact: true });
+  const mercado = page.getByLabel("Mercado", { exact: true });
+  // La semilla trae además un campo personalizado «Canal»: el de la lista es industry.
+  const canalSel = page.locator("#f-industry");
   const seg = page.getByLabel("Segmento", { exact: true });
-  await expect(page.getByText("Elige primero «Sector».")).toBeVisible();
+  await expect(page.getByText("Elige primero «Mercado» y «Canal».")).toBeVisible();
   await expect(seg.locator("option")).toHaveText(["— Ninguno —"]);
   await expect(async () => {
-    await sector.selectOption({ label: sectorA });
-    await expect(seg.locator("option")).toHaveText(["— Ninguno —", segmento], { timeout: 1500 });
+    await mercado.selectOption({ label: "Nacional" });
+    await canalSel.selectOption({ label: canal });
+    await expect(seg.locator("option")).toHaveText(["— Ninguno —", seg1], { timeout: 1500 });
   }).toPass();
-  await seg.selectOption({ label: segmento });
-  await sector.selectOption({ label: sectorB });
+  await seg.selectOption({ label: seg1 });
+  await mercado.selectOption({ label: "Internacional" });
   await expect(seg).toHaveValue("");
-  await expect(seg.locator("option")).toHaveText(["— Ninguno —"]);
+  await expect(seg.locator("option")).toHaveText(["— Ninguno —", seg2]);
 
   // Queda como estaba para las demás pruebas.
   await page.goto("/configuracion/listas?objeto=accounts&editar=segment");

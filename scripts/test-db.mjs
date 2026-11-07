@@ -804,30 +804,35 @@ await check('las notificaciones se reclaman para push una sola vez y sin envíos
 });
 
 console.log('Listas dependientes');
-await check('Segmento depende de Sector: la base rechaza combinaciones que no corresponden', async () => {
+await check('Segmento depende de Mercado y Canal: la base rechaza combinaciones que no corresponden', async () => {
   await as(admin, () => q(`
-    insert into picklist_values (object, field, value, sort_order, controlling_values) values
-      ('accounts', 'segment', 'Mayorista', 10, '{"Canal Distribución"}'),
-      ('accounts', 'segment', 'Obra nueva', 20, '{"Canal Constructores","Canal Distribución"}')`));
-  await as(admin, () => q(`insert into picklist_dependencies (object, field, controlling_field) values ('accounts', 'segment', 'industry')`));
+    insert into picklist_values (object, field, value, sort_order, controlling_map) values
+      ('accounts', 'segment', 'Detallista Nacional', 10, '{"market":["Nacional"],"industry":["Canal Distribución"]}'),
+      ('accounts', 'segment', 'Detallista del Exterior', 20, '{"market":["Internacional"],"industry":["Canal Distribución"]}'),
+      ('accounts', 'segment', 'Obra nueva', 30, '{"market":["Nacional","Internacional"],"industry":["Canal Constructores"]}')`));
+  await as(admin, () => q(`insert into picklist_dependencies (object, field, controlling_field) values ('accounts', 'segment', 'market'), ('accounts', 'segment', 'industry')`));
   // El asesor no puede configurar dependencias.
   await assert.rejects(as(rep, () => q(`insert into picklist_dependencies (object, field, controlling_field) values ('cases', 'origin', 'case_type')`)));
 
-  const crear = (industry, segment) => as(admin, () => q(
-    `insert into accounts (name, industry, segment) values ('Dependencias ' || gen_random_uuid(), $1, $2) returning id`, [industry, segment]));
-  const [ok] = await crear('Canal Distribución', 'Mayorista');
-  await crear('Canal Constructores', 'Obra nueva');
-  await crear('Canal Constructores', null);
-  await assert.rejects(crear('Canal Constructores', 'Mayorista'), /no corresponde/);
-  await assert.rejects(crear(null, 'Mayorista'), /Elige primero/);
-  await assert.rejects(as(admin, () => q(`update accounts set industry = 'Canal Constructores' where id = $1`, [ok.id])), /no corresponde/);
+  const crear = (market, industry, segment) => as(admin, () => q(
+    `insert into accounts (name, market, industry, segment) values ('Dependencias ' || gen_random_uuid(), $1, $2, $3) returning id`,
+    [market, industry, segment]));
+  const [ok] = await crear('Nacional', 'Canal Distribución', 'Detallista Nacional');
+  await crear('Internacional', 'Canal Distribución', 'Detallista del Exterior');
+  await crear('Internacional', 'Canal Constructores', 'Obra nueva');
+  await crear('Nacional', 'Canal Distribución', null);
+  // Corresponde al canal pero no al mercado, y al revés.
+  await assert.rejects(crear('Internacional', 'Canal Distribución', 'Detallista Nacional'), /no corresponde/);
+  await assert.rejects(crear('Nacional', 'Canal Constructores', 'Detallista Nacional'), /no corresponde/);
+  await assert.rejects(crear(null, 'Canal Distribución', 'Detallista Nacional'), /Elige primero/);
+  await assert.rejects(as(admin, () => q(`update accounts set market = 'Internacional' where id = $1`, [ok.id])), /no corresponde/);
 
   // Una combinación que ya existía se conserva si no se tocan esos campos.
   await q(`alter table accounts disable trigger accounts_picklist_dependencies`);
-  const [viejo] = await q(`insert into accounts (name, industry, segment) values ('Dependencias legado', 'Canal Constructores', 'Mayorista') returning id`);
+  const [viejo] = await q(`insert into accounts (name, market, industry, segment) values ('Dependencias legado', 'Internacional', 'Canal Constructores', 'Detallista Nacional') returning id`);
   await q(`alter table accounts enable trigger accounts_picklist_dependencies`);
   await as(admin, () => q(`update accounts set phone = '6045550000' where id = $1`, [viejo.id]));
-  await assert.rejects(as(admin, () => q(`update accounts set segment = 'Mayorista', industry = 'Canal B2C' where id = $1`, [viejo.id])), /no corresponde/);
+  await assert.rejects(as(admin, () => q(`update accounts set industry = 'Canal B2C' where id = $1`, [viejo.id])), /no corresponde/);
 
   await q(`delete from accounts where name like 'Dependencias %'`);
   await q(`delete from picklist_dependencies`);
