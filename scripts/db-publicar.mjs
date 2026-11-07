@@ -36,7 +36,8 @@ export function parseMigrationList(text) {
     for (const m of migrations) rows.push({ local: m.local || null, remote: m.remote || null });
   }
   for (const line of json >= 0 ? [] : text.split('\n')) {
-    const cells = line.split(/[│|]/).map((c) => c.trim());
+    // En una terminal la CLI 2.x imprime la tabla con las celdas entre comillas invertidas (`20261201000100`).
+    const cells = line.split(/[│|]/).map((c) => c.replace(/`/g, '').trim());
     if (cells.length < 2) continue;
     const [local, remote] = cells;
     if (!/^\d{14}$/.test(local) && !/^\d{14}$/.test(remote)) continue;
