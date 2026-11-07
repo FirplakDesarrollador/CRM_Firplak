@@ -5,6 +5,9 @@
 export const VALUES_EN: Record<string, string> = {
   // Cuentas
   Nacional: "Domestic", Internacional: "International",
+  "Canal Constructores": "Builders channel", "Canal Distribución": "Distribution channel", "Canal B2C": "B2C channel",
+  Contado: "Cash", Anticipado: "Prepaid", "8 días": "8 days", "15 días": "15 days", "30 días": "30 days", "45 días": "45 days",
+  "60 días": "60 days", "90 días": "90 days",
   Prospecto: "Prospect", Cliente: "Customer", Distribuidor: "Distributor", Partner: "Partner", Competidor: "Competitor", Otro: "Other",
   Construcción: "Construction", Inmobiliario: "Real estate", "Vivienda social": "Social housing", Hotelería: "Hospitality", Salud: "Healthcare",
   Educación: "Education", Retail: "Retail", Comercio: "Commerce", "Distribución de materiales": "Building materials distribution",

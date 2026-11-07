@@ -46,6 +46,8 @@ export const FIELD_OVERRIDES_EN: Record<string, string> = {
   "orders.order_date": "Order date", "orders.requested_delivery_date": "Requested delivery", "orders.quote_id": "Quote",
   "orders.activated_at": "Activated on", "orders.delivered_at": "Delivered on", "orders.description": "Notes",
   "orders.contact_id": "Contact", "quotes.discount_percent": "Discount (%)",
+  "quotes.account_id": "Bill to", "quotes.shipping_manual": "Ship to another address", "quotes.payment_terms_manual": "Change payment terms",
+  "accounts.price_book_id": "Own price book", "accounts.industry": "Channel", "leads.industry": "Channel",
   "accounts.name": "Account name", "opportunities.name": "Opportunity name", "quotes.name": "Quote name",
   "campaigns.name": "Campaign name", "products.name": "Product name", "activities.owner_id": "Assigned to",
   "opportunities.contact_id": "Primary contact", "opportunities.campaign_id": "Primary campaign source",

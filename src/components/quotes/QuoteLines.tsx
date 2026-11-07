@@ -17,6 +17,8 @@ export type QuoteLine = {
   unit_price: number;
   discount: number;
   line_total: number;
+  /** Producto que no está en la lista propia del cliente (precio de la lista del canal). */
+  not_listed?: boolean;
   product: { id: string; name: string; product_code: string | null; unit: string } | null;
 };
 
@@ -34,7 +36,10 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
     <li className="grid gap-2 px-4 py-3 md:grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_auto] md:items-center">
       <div className="min-w-0">
         <p className="truncate font-medium">{line.description ?? line.product?.name}</p>
-        <p className="text-xs text-muted">{line.product?.product_code} · {line.product?.unit}</p>
+        <p className="text-xs text-muted">
+          {line.product?.product_code} · {line.product?.unit}
+          {line.not_listed && <span className="badge badge-warning ml-2" title="No está en la lista de precios del cliente: se cotiza con la lista del canal."><Tr>No codificado</Tr></span>}
+        </p>
       </div>
       {canEdit ? (
         <form action={action} className="contents">

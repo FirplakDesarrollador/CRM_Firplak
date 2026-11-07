@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { ACCOUNT_TYPES, INDUSTRIES, MARKETS, RATINGS, SEGMENTS } from "./picklists";
+import { ACCOUNT_TYPES, INDUSTRIES, MARKETS, PAYMENT_TERMS, RATINGS, SEGMENTS } from "./picklists";
 
 export const accounts: ObjectDef = {
   key: "accounts",
@@ -10,7 +10,7 @@ export const accounts: ObjectDef = {
   permission: "accounts",
   nameField: "name",
   select:
-    "*, owner:profiles!accounts_owner_id_fkey(id, full_name, email), parent:parent_account_id(id, name)",
+    "*, owner:profiles!accounts_owner_id_fkey(id, full_name, email), parent:parent_account_id(id, name), price_book:price_books!accounts_price_book_id_fkey(id, name)",
   searchColumns: ["name", "account_number", "tax_id", "sap_card_code", "billing_city", "email"],
   defaultColumns: ["name", "account_type", "billing_city", "phone", "owner_id"],
   defaultSort: { field: "name", dir: "asc" },
@@ -27,7 +27,10 @@ export const accounts: ObjectDef = {
     { name: "account_number", label: "Número de cuenta", type: "text", readOnly: true, section: "info" },
     { name: "account_type", label: "Tipo", type: "select", options: ACCOUNT_TYPES, required: true, section: "info" },
     { name: "market", label: "Mercado", type: "select", options: MARKETS, section: "info" },
-    { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, section: "info" },
+    {
+      name: "industry", label: "Canal", type: "select", options: INDUSTRIES, required: true, section: "info",
+      help: "Define el pipeline de sus oportunidades y la lista de precios de sus cotizaciones.",
+    },
     { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "info" },
     { name: "rating", label: "Calificación", type: "select", options: RATINGS, section: "info" },
     { name: "tax_id", label: "NIT", type: "text", section: "info" },
@@ -40,6 +43,12 @@ export const accounts: ObjectDef = {
     { name: "website", label: "Sitio web", type: "url", section: "info" },
     { name: "annual_revenue", label: "Ingresos anuales", type: "currency", section: "info" },
     { name: "employees", label: "Empleados", type: "number", section: "info" },
+    { name: "payment_terms", label: "Condiciones de pago", type: "select", options: PAYMENT_TERMS, section: "info" },
+    {
+      name: "price_book_id", label: "Lista de precios propia", type: "text", relation: "price_book", choices: "clientPriceBooks",
+      section: "info", sortable: false, hideEmpty: true,
+      help: "Solo para clientes con productos codificados y precios propios. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».",
+    },
     { name: "parent_account_id", label: "Cuenta principal", type: "lookup", lookup: "accounts", relation: "parent", section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
     { name: "billing_street", label: "Dirección de facturación", type: "text", section: "address" },

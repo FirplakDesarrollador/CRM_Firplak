@@ -46,7 +46,7 @@ export const leads: ObjectDef = {
     { name: "company", label: "Empresa", type: "text", required: true, section: "company" },
     // Mercado, Canal y Segmento usan las listas de Cuentas (SHARED_PICKLISTS): al convertir pasan tal cual.
     { name: "market", label: "Mercado", type: "select", options: MARKETS, section: "company" },
-    { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, section: "company" },
+    { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, required: true, section: "company" },
     { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "company" },
     { name: "website", label: "Sitio web", type: "url", section: "company" },
     { name: "annual_revenue", label: "Ingresos anuales", type: "currency", section: "company" },

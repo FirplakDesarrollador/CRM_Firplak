@@ -4,9 +4,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PERIODS } from "@/lib/periods";
 import { useT } from "@/lib/i18n/client";
 
-export function DashboardFilters({ period, from, to, owner, pipeline, users, pipelines, canPickOwner }: {
-  period: string; from: string; to: string; owner: string; pipeline: string;
-  users: { id: string; name: string }[]; pipelines: { id: string; name: string }[]; canPickOwner: boolean;
+export function DashboardFilters({ period, from, to, owner, users, canPickOwner }: {
+  period: string; from: string; to: string; owner: string;
+  users: { id: string; name: string }[]; canPickOwner: boolean;
 }) {
   const router = useRouter();
   const t = useT();
@@ -35,9 +35,6 @@ export function DashboardFilters({ period, from, to, owner, pipeline, users, pip
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       )}
-      <select aria-label="Pipeline del embudo" className="select w-auto" value={pipeline} onChange={(e) => set({ pipeline: e.target.value })}>
-        {pipelines.map((p) => <option key={p.id} value={p.id}>{t(p.name)}</option>)}
-      </select>
     </div>
   );
 }

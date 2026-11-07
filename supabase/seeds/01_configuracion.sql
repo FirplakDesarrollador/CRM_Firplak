@@ -125,6 +125,11 @@ from (values
 ) as v(pipeline, name, sort_order, probability, category, forecast, color)
 on conflict (pipeline_id, name) do nothing;
 
+-- Cada canal de venta (campo Canal de la cuenta) con su pipeline. El Canal B2C aún no tiene el suyo: usa el
+-- pipeline por defecto hasta que se cree en Configuración → Pipelines.
+update public.pipelines set channel = 'Canal Constructores' where name = 'Proyectos y constructoras' and channel is null;
+update public.pipelines set channel = 'Canal Distribución' where name = 'Distribución y retail' and channel is null;
+
 -- ---------------------------------------------------------------------------
 -- Campos personalizados (definidos en JSON, valores en custom_fields jsonb)
 -- ---------------------------------------------------------------------------
@@ -213,9 +218,9 @@ insert into public.sharing_settings (object, access) values
 ('cases', 'read')
 on conflict (object) do nothing;
 
-insert into public.price_books (name, description, is_standard) values
-('Lista estándar COP', 'Precios de lista para proyectos y clientes directos.', true),
-('Distribuidores 2026', 'Precios para distribuidores y ferreterías.', false)
+insert into public.price_books (name, description, is_standard, channel) values
+('Lista estándar COP', 'Precios de lista para proyectos y clientes directos.', true, 'Canal Constructores'),
+('Distribuidores 2026', 'Precios para distribuidores y ferreterías.', false, 'Canal Distribución')
 on conflict (name) do nothing;
 
 insert into public.list_views (object, name, owner_id, is_shared, definition)

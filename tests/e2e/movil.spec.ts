@@ -148,6 +148,7 @@ test("instalada en el celular, los campos usan 16 px para que iOS no amplíe al 
 test("en el celular el botón Guardar del formulario queda encima de la barra inferior y guarda con un toque", async ({ page }) => {
   await page.goto("/cuentas/nueva");
   await page.getByLabel(/Nombre de la cuenta/).fill(unico("Cuenta celular"));
+  await page.locator("#f-industry").selectOption({ label: "Canal Constructores" });
   const boton = page.getByRole("button", { name: "Guardar cuenta" });
   await expect(boton).toBeInViewport();
   // Lo que hay bajo el centro del botón es el botón, no la barra de navegación.

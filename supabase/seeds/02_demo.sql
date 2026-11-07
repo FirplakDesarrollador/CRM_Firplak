@@ -33,51 +33,51 @@ begin
     (name, account_type, industry, segment, tax_id, phone, email, website, rating, annual_revenue, employees,
      billing_street, billing_city, billing_state, description, custom_fields, is_demo, created_at)
   values
-  ('Constructora Altos del Valle S.A.S.', 'Cliente', 'Construcción', 'Grandes cuentas', '900.456.123-1', '+57 604 444 1020',
+  ('Constructora Altos del Valle S.A.S.', 'Cliente', 'Canal Constructores', 'Grandes cuentas', '900.456.123-1', '+57 604 444 1020',
    'compras@altosdelvalle.example', 'https://altosdelvalle.example', 'Caliente', 185000000000, 420,
    'Cra. 43A # 1-50', 'Medellín', 'Antioquia', 'Desarrolla vivienda VIS y no VIS en el Valle de Aburrá.',
    '{"canal":"Constructora","zona_comercial":"Antioquia","cupo_credito":800000000}', true, now() - interval '400 days'),
-  ('Inmobiliaria Brisas del Caribe', 'Cliente', 'Inmobiliario', 'Grandes cuentas', '901.223.874-5', '+57 605 330 2211',
+  ('Inmobiliaria Brisas del Caribe', 'Cliente', 'Canal Constructores', 'Grandes cuentas', '901.223.874-5', '+57 605 330 2211',
    'proyectos@brisascaribe.example', 'https://brisascaribe.example', 'Templada', 92000000000, 180,
    'Av. San Martín # 8-120', 'Cartagena', 'Bolívar', 'Proyectos turísticos y de segunda vivienda.',
    '{"canal":"Constructora","zona_comercial":"Costa Atlántica"}', true, now() - interval '320 days'),
-  ('Hotel Mirador de la Bahía', 'Cliente', 'Hotelería', 'Empresarial', '890.778.410-2', '+57 605 664 9000',
+  ('Hotel Mirador de la Bahía', 'Cliente', 'Canal Constructores', 'Empresarial', '890.778.410-2', '+57 605 664 9000',
    'mantenimiento@miradorbahia.example', null, 'Caliente', 41000000000, 260,
    'Bocagrande Cl. 5 # 2-33', 'Cartagena', 'Bolívar', 'Remodelación de 180 habitaciones programada.',
    '{"canal":"Hotelería","zona_comercial":"Costa Atlántica"}', true, now() - interval '210 days'),
-  ('Distribuidora Hogar y Acabados Ltda.', 'Distribuidor', 'Distribución de materiales', 'Canal', '800.334.902-7', '+57 601 745 3300',
+  ('Distribuidora Hogar y Acabados Ltda.', 'Distribuidor', 'Canal Distribución', 'Canal', '800.334.902-7', '+57 601 745 3300',
    'gerencia@hogaryacabados.example', 'https://hogaryacabados.example', 'Caliente', 38000000000, 95,
    'Autopista Norte # 150-20', 'Bogotá', 'Cundinamarca', 'Distribuidor con 6 puntos de venta en la Sabana.',
    '{"canal":"Distribuidor","zona_comercial":"Bogotá y Centro","cupo_credito":450000000}', true, now() - interval '500 days'),
-  ('Ferretería El Constructor del Eje', 'Distribuidor', 'Ferretería', 'Canal', '816.002.561-3', '+57 606 335 1188',
+  ('Ferretería El Constructor del Eje', 'Distribuidor', 'Canal Distribución', 'Canal', '816.002.561-3', '+57 606 335 1188',
    'compras@constructoreje.example', null, 'Templada', 12500000000, 40,
    'Cl. 19 # 10-44', 'Pereira', 'Risaralda', null,
    '{"canal":"Distribuidor","zona_comercial":"Eje Cafetero","cupo_credito":150000000}', true, now() - interval '280 days'),
-  ('Grupo Urbano Sabana S.A.', 'Prospecto', 'Construcción', 'Grandes cuentas', '900.887.003-9', '+57 601 600 4545',
+  ('Grupo Urbano Sabana S.A.', 'Prospecto', 'Canal Constructores', 'Grandes cuentas', '900.887.003-9', '+57 601 600 4545',
    'licitaciones@urbanosabana.example', 'https://urbanosabana.example', 'Templada', 240000000000, 610,
    'Cl. 100 # 19-61', 'Bogotá', 'Cundinamarca', 'Licita acabados para 3 torres en Chía.',
    '{"canal":"Constructora","zona_comercial":"Bogotá y Centro"}', true, now() - interval '60 days'),
-  ('Clínica Santa Lucía del Sur', 'Prospecto', 'Salud', 'Institucional', '890.101.776-4', '+57 602 485 7700',
+  ('Clínica Santa Lucía del Sur', 'Prospecto', 'Canal Constructores', 'Institucional', '890.101.776-4', '+57 602 485 7700',
    'infraestructura@santalucia.example', null, 'Fría', 76000000000, 900,
    'Cra. 98 # 18-49', 'Cali', 'Valle del Cauca', 'Ampliación de torre de hospitalización.',
    '{"canal":"Institucional","zona_comercial":"Suroccidente"}', true, now() - interval '35 days'),
-  ('Estudio Lineal Arquitectos', 'Partner', 'Arquitectura y diseño', 'Prescriptor', '901.554.120-0', '+57 604 322 8090',
+  ('Estudio Lineal Arquitectos', 'Partner', 'Canal Constructores', 'Prescriptor', '901.554.120-0', '+57 604 322 8090',
    'hola@estudiolineal.example', 'https://estudiolineal.example', 'Caliente', 2100000000, 18,
    'Cl. 10 Sur # 50FF-28', 'Medellín', 'Antioquia', 'Especifica productos en proyectos residenciales premium.',
    '{"canal":"Arquitecto / diseñador","zona_comercial":"Antioquia"}', true, now() - interval '150 days'),
-  ('Centro Comercial Plaza Andina', 'Prospecto', 'Comercio', 'Empresarial', '900.612.334-8', '+57 607 643 2100',
+  ('Centro Comercial Plaza Andina', 'Prospecto', 'Canal Constructores', 'Empresarial', '900.612.334-8', '+57 607 643 2100',
    'administracion@plazaandina.example', null, 'Fría', 18000000000, 75,
    'Cra. 27 # 29-145', 'Bucaramanga', 'Santander', 'Renovación de baterías sanitarias.',
    '{"canal":"Institucional","zona_comercial":"Santanderes"}', true, now() - interval '20 days'),
-  ('Almacenes Casa Viva', 'Cliente', 'Retail', 'Canal', '860.045.998-1', '+57 601 487 6600',
+  ('Almacenes Casa Viva', 'Cliente', 'Canal Distribución', 'Canal', '860.045.998-1', '+57 601 487 6600',
    'categoria.banos@casaviva.example', 'https://casaviva.example', 'Caliente', 520000000000, 3200,
    'Av. Boyacá # 80-94', 'Bogotá', 'Cundinamarca', 'Cadena de mejoramiento del hogar con 22 tiendas.',
    '{"canal":"Retail / gran superficie","zona_comercial":"Bogotá y Centro","cupo_credito":1500000000}', true, now() - interval '700 days'),
-  ('Vivienda Futura Caja de Compensación', 'Prospecto', 'Vivienda social', 'Institucional', '890.900.842-6', '+57 604 510 7000',
+  ('Vivienda Futura Caja de Compensación', 'Prospecto', 'Canal Constructores', 'Institucional', '890.900.842-6', '+57 604 510 7000',
    'proyectos@viviendafutura.example', null, 'Templada', 310000000000, 1500,
    'Cl. 49 # 50-21', 'Medellín', 'Antioquia', 'Programa de 1.200 viviendas VIS en Bello y Rionegro.',
    '{"canal":"Institucional","zona_comercial":"Antioquia"}', true, now() - interval '90 days'),
-  ('Distribuidora Costa Acabados', 'Distribuidor', 'Distribución de materiales', 'Canal', '802.009.551-2', '+57 605 385 4410',
+  ('Distribuidora Costa Acabados', 'Distribuidor', 'Canal Distribución', 'Canal', '802.009.551-2', '+57 605 385 4410',
    'ventas@costaacabados.example', null, 'Templada', 9800000000, 32,
    'Cra. 46 # 76-120', 'Barranquilla', 'Atlántico', null,
    '{"canal":"Distribuidor","zona_comercial":"Costa Atlántica","cupo_credito":120000000}', true, now() - interval '240 days');
@@ -244,6 +244,20 @@ begin
   cross join public.price_books pb
   where pb.name in ('Lista estándar COP', 'Distribuidores 2026');
 
+  -- Lista propia de un cliente grande: solo sus productos codificados, con precios negociados.
+  insert into public.price_books (name, description, is_client_list)
+  values ('Casa Viva 2026', 'Productos codificados de Almacenes Casa Viva y sus precios negociados.', true)
+  on conflict (name) do nothing;
+  insert into public.price_book_entries (price_book_id, product_id, unit_price)
+  select (select id from public.price_books where name = 'Casa Viva 2026'), p.id, v.price
+  from (values ('DEMO-MB-060', 960000), ('DEMO-MB-080', 1150000), ('DEMO-LV-RD', 320000), ('DEMO-AC-ESP', 410000)) as v(code, price)
+  join public.products p on p.product_code = v.code
+  on conflict do nothing;
+  update public.accounts set price_book_id = (select id from public.price_books where name = 'Casa Viva 2026')
+  where name = 'Almacenes Casa Viva' and is_demo;
+  update public.accounts set payment_terms = case when account_type = 'Distribuidor' or name = 'Almacenes Casa Viva' then '60 días' else '30 días' end
+  where is_demo and account_type <> 'Competidor';
+
   insert into public.campaigns (name, campaign_type, status, start_date, end_date, budgeted_cost, actual_cost,
                                 expected_revenue, expected_response, description, is_demo)
   values
@@ -260,13 +274,13 @@ begin
          v.status, v.rating, v.city, v.state, (select id from public.campaigns where name = v.campaign and is_demo),
          v.description, true, now() - (v.age || ' days')::interval
   from (values
-    ('Arq.', 'Sofía', 'Henao Vélez', 'Estudio Prisma Arquitectura', 'Socia', 'shenao@prisma.example', '+57 310 555 0201', 'Arquitectura y diseño', 'Evento', 'Contactado', 'Caliente', 'Medellín', 'Antioquia', 'Showroom arquitectos Medellín', 'Especifica baños para 3 proyectos residenciales.', 12),
-    ('Ing.', 'Tomás', 'Quintero Ríos', 'Constructora Horizonte Verde', 'Director de Compras', 'tquintero@horizonteverde.example', '+57 311 555 0202', 'Construcción', 'Feria', 'Calificado', 'Caliente', 'Rionegro', 'Antioquia', 'Feria de la construcción 2026', 'Proyecto de 180 apartamentos, entrega 2027.', 110),
-    ('Sra.', 'Lucía', 'Martínez Pardo', 'Hotel Bahía Serena', 'Jefe de Mantenimiento', 'lmartinez@bahiaserena.example', '+57 312 555 0203', 'Hotelería', 'Web', 'Nuevo', 'Templada', 'Santa Marta', 'Magdalena', null, 'Pide catálogo de hidromasajes.', 3),
-    ('Sr.', 'Daniel', 'Arango Soto', 'Ferretería La Esquina', 'Propietario', 'darango@laesquina.example', '+57 313 555 0204', 'Ferretería', 'Llamada entrante', 'Nuevo', 'Fría', 'Manizales', 'Caldas', null, null, 1),
-    ('Ing.', 'Paula', 'Ramírez Gil', 'Inmobiliaria Altamira', 'Gerente de Proyectos', 'pramirez@altamira.example', '+57 314 555 0205', 'Inmobiliario', 'Feria', 'Contactado', 'Templada', 'Bogotá', 'Cundinamarca', 'Feria de la construcción 2026', 'Interesada en cocinas para torre de 90 unidades.', 100),
-    ('Sr.', 'Andrés', 'Molina Cruz', 'Distribuidora Sur Acabados', 'Gerente', 'amolina@surabados.example', '+57 315 555 0206', 'Distribución de materiales', 'Referido', 'No calificado', 'Fría', 'Pasto', 'Nariño', null, 'Sin cobertura logística por ahora.', 60),
-    ('Arq.', 'Juliana', 'Ortega Mesa', 'Taller Norte Diseño', 'Directora', 'jortega@tallernorte.example', '+57 316 555 0207', 'Arquitectura y diseño', 'Evento', 'Nuevo', 'Templada', 'Envigado', 'Antioquia', 'Showroom arquitectos Medellín', null, 6)
+    ('Arq.', 'Sofía', 'Henao Vélez', 'Estudio Prisma Arquitectura', 'Socia', 'shenao@prisma.example', '+57 310 555 0201', 'Canal Constructores', 'Evento', 'Contactado', 'Caliente', 'Medellín', 'Antioquia', 'Showroom arquitectos Medellín', 'Especifica baños para 3 proyectos residenciales.', 12),
+    ('Ing.', 'Tomás', 'Quintero Ríos', 'Constructora Horizonte Verde', 'Director de Compras', 'tquintero@horizonteverde.example', '+57 311 555 0202', 'Canal Constructores', 'Feria', 'Calificado', 'Caliente', 'Rionegro', 'Antioquia', 'Feria de la construcción 2026', 'Proyecto de 180 apartamentos, entrega 2027.', 110),
+    ('Sra.', 'Lucía', 'Martínez Pardo', 'Hotel Bahía Serena', 'Jefe de Mantenimiento', 'lmartinez@bahiaserena.example', '+57 312 555 0203', 'Canal Constructores', 'Web', 'Nuevo', 'Templada', 'Santa Marta', 'Magdalena', null, 'Pide catálogo de hidromasajes.', 3),
+    ('Sr.', 'Daniel', 'Arango Soto', 'Ferretería La Esquina', 'Propietario', 'darango@laesquina.example', '+57 313 555 0204', 'Canal Distribución', 'Llamada entrante', 'Nuevo', 'Fría', 'Manizales', 'Caldas', null, null, 1),
+    ('Ing.', 'Paula', 'Ramírez Gil', 'Inmobiliaria Altamira', 'Gerente de Proyectos', 'pramirez@altamira.example', '+57 314 555 0205', 'Canal Constructores', 'Feria', 'Contactado', 'Templada', 'Bogotá', 'Cundinamarca', 'Feria de la construcción 2026', 'Interesada en cocinas para torre de 90 unidades.', 100),
+    ('Sr.', 'Andrés', 'Molina Cruz', 'Distribuidora Sur Acabados', 'Gerente', 'amolina@surabados.example', '+57 315 555 0206', 'Canal Distribución', 'Referido', 'No calificado', 'Fría', 'Pasto', 'Nariño', null, 'Sin cobertura logística por ahora.', 60),
+    ('Arq.', 'Juliana', 'Ortega Mesa', 'Taller Norte Diseño', 'Directora', 'jortega@tallernorte.example', '+57 316 555 0207', 'Canal Constructores', 'Evento', 'Nuevo', 'Templada', 'Envigado', 'Antioquia', 'Showroom arquitectos Medellín', null, 6)
   ) as v(salutation, first_name, last_name, company, title, email, mobile, industry, source, status, rating, city, state, campaign, description, age);
 
   insert into public.campaign_members (campaign_id, lead_id, status)
@@ -281,8 +295,8 @@ begin
   where is_demo and lead_source = 'Feria';
 
   -- Cotizaciones con líneas
-  insert into public.quotes (name, opportunity_id, status, expiration_date, payment_terms, delivery_terms, is_demo, created_at)
-  select v.name, o.id, v.status, current_date + v.exp, v.payment, v.delivery, true, now() - (v.age || ' days')::interval
+  insert into public.quotes (name, opportunity_id, status, expiration_date, payment_terms, payment_terms_manual, delivery_terms, is_demo, created_at)
+  select v.name, o.id, v.status, current_date + v.exp, v.payment, true, v.delivery, true, now() - (v.age || ' days')::interval
   from (values
     ('Torre 3 · propuesta muebles de baño', 'Altos del Valle · Torre 3 muebles de baño', 'Presentada', 20, '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 15),
     ('Remodelación 180 habitaciones · opción A', 'Mirador de la Bahía · Remodelación 180 hab.', 'Borrador', 25, '30 días', 'Instalación incluida', 6),

@@ -7,7 +7,7 @@ import { TEAM_ROLES } from "@/lib/teams/config";
  * prioridades) no se editan aquí para no romper esas reglas.
  */
 export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
-  accounts: ["account_type", "market", "industry", "segment"],
+  accounts: ["account_type", "market", "industry", "segment", "payment_terms"],
   contacts: ["salutation", "lead_source"],
   leads: ["salutation", "lead_source"],
   opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role"],

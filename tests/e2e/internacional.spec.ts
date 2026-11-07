@@ -11,6 +11,7 @@ async function cuentaInternacional(page: Page) {
   await page.getByLabel(/Nombre de la cuenta/).fill(nombre);
   await expect(async () => {
     await page.locator("#f-market").selectOption({ label: "Internacional" });
+    await page.locator("#f-industry").selectOption({ label: "Canal Distribución" });
     await expect(page.locator("#f-market")).toHaveValue("Internacional", { timeout: 1000 });
   }).toPass();
   await guardar(page);
@@ -50,6 +51,7 @@ test("la dirección elige país, departamento y ciudad de las listas; fuera de C
   const dpto = page.locator("#f-billing_state");
   const ciudad = page.locator("#f-billing_city");
   await page.getByLabel(/Nombre de la cuenta/).fill(unico("Ferretería Lugares"));
+  await page.locator("#f-industry").selectOption({ label: "Canal Distribución" });
   await expect(pais).toHaveValue("Colombia");
   await expect(ciudad).toBeDisabled();
   await expect(async () => {

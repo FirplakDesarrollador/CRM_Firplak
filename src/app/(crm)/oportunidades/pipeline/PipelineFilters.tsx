@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useT } from "@/lib/i18n/client";
 
 export function PipelineFilters({ pipelines, users, pipeline, owner, closed }: {
-  pipelines: { id: string; name: string }[];
+  pipelines: { id: string; name: string; channel?: string | null }[];
   users: { id: string; name: string }[];
   pipeline: string;
   owner: string;
@@ -22,7 +22,7 @@ export function PipelineFilters({ pipelines, users, pipeline, owner, closed }: {
   return (
     <div className="flex flex-wrap gap-2">
       <select aria-label="Pipeline" className="select w-auto" value={pipeline} onChange={(e) => set("pipeline", e.target.value)}>
-        {pipelines.map((p) => <option key={p.id} value={p.id}>{t(p.name)}</option>)}
+        {pipelines.map((p) => <option key={p.id} value={p.id}>{p.channel ? `${p.channel} · ${t(p.name)}` : t(p.name)}</option>)}
       </select>
       <select aria-label="Propietario" className="select w-auto" value={owner} onChange={(e) => set("owner", e.target.value)}>
         <option value="all">{t("Todo el equipo")}</option>

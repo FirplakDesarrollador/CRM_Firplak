@@ -96,7 +96,9 @@ export type Database = {
           name: string
           owner_id: string | null
           parent_account_id: string | null
+          payment_terms: string | null
           phone: string | null
+          price_book_id: string | null
           rating: string | null
           sap_card_code: string | null
           segment: string | null
@@ -129,7 +131,9 @@ export type Database = {
           name: string
           owner_id?: string | null
           parent_account_id?: string | null
+          payment_terms?: string | null
           phone?: string | null
+          price_book_id?: string | null
           rating?: string | null
           sap_card_code?: string | null
           segment?: string | null
@@ -162,7 +166,9 @@ export type Database = {
           name?: string
           owner_id?: string | null
           parent_account_id?: string | null
+          payment_terms?: string | null
           phone?: string | null
+          price_book_id?: string | null
           rating?: string | null
           sap_card_code?: string | null
           segment?: string | null
@@ -194,6 +200,13 @@ export type Database = {
             columns: ["parent_account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_price_book_id_fkey"
+            columns: ["price_book_id"]
+            isOneToOne: false
+            referencedRelation: "price_books"
             referencedColumns: ["id"]
           },
         ]
@@ -2961,6 +2974,7 @@ export type Database = {
       }
       pipelines: {
         Row: {
+          channel: string | null
           created_at: string
           description: string | null
           id: string
@@ -2972,6 +2986,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          channel?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -2983,6 +2998,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          channel?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -3043,31 +3059,37 @@ export type Database = {
       }
       price_books: {
         Row: {
+          channel: string | null
           created_at: string
           currency: string
           description: string | null
           id: string
           is_active: boolean
+          is_client_list: boolean
           is_standard: boolean
           name: string
           updated_at: string
         }
         Insert: {
+          channel?: string | null
           created_at?: string
           currency?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          is_client_list?: boolean
           is_standard?: boolean
           name: string
           updated_at?: string
         }
         Update: {
+          channel?: string | null
           created_at?: string
           currency?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          is_client_list?: boolean
           is_standard?: boolean
           name?: string
           updated_at?: string
@@ -3246,6 +3268,7 @@ export type Database = {
           discount: number
           id: string
           line_total: number | null
+          not_listed: boolean
           product_id: string | null
           quantity: number
           quote_id: string
@@ -3258,6 +3281,7 @@ export type Database = {
           discount?: number
           id?: string
           line_total?: never
+          not_listed?: boolean
           product_id?: string | null
           quantity?: number
           quote_id: string
@@ -3270,6 +3294,7 @@ export type Database = {
           discount?: number
           id?: string
           line_total?: never
+          not_listed?: boolean
           product_id?: string | null
           quantity?: number
           quote_id?: string
@@ -3319,10 +3344,12 @@ export type Database = {
           opportunity_id: string
           owner_id: string | null
           payment_terms: string | null
+          payment_terms_manual: boolean
           price_book_id: string | null
           quote_number: string
           shipping: number
           shipping_address: string | null
+          shipping_manual: boolean
           status: string
           subtotal: number
           tax: number
@@ -3354,10 +3381,12 @@ export type Database = {
           opportunity_id: string
           owner_id?: string | null
           payment_terms?: string | null
+          payment_terms_manual?: boolean
           price_book_id?: string | null
           quote_number?: string
           shipping?: number
           shipping_address?: string | null
+          shipping_manual?: boolean
           status?: string
           subtotal?: number
           tax?: number
@@ -3389,10 +3418,12 @@ export type Database = {
           opportunity_id?: string
           owner_id?: string | null
           payment_terms?: string | null
+          payment_terms_manual?: boolean
           price_book_id?: string | null
           quote_number?: string
           shipping?: number
           shipping_address?: string | null
+          shipping_manual?: boolean
           status?: string
           subtotal?: number
           tax?: number
@@ -3798,6 +3829,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      channel_pipeline: {
+        Args: {
+          p_account: string
+        }
+        Returns: string
+      }
+      channel_price_book: {
+        Args: {
+          p_account: string
+          p_currency: string
+        }
+        Returns: string
+      }
       claim_demo_records: {
         Args: {
           p_owner: string
@@ -3881,6 +3925,14 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_funnels: {
+        Args: {
+          p_from: string
+          p_to: string
+          p_owner?: string
+        }
+        Returns: Json
+      }
       decide_approval: {
         Args: {
           p_request: string
@@ -3889,9 +3941,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      default_price_book: {
+        Args: {
+          p_account: string
+          p_currency: string
+        }
+        Returns: string
+      }
       demo_data_counts: {
         Args: never
         Returns: Json
+      }
+      equivalent_stage: {
+        Args: {
+          p_stage: string
+          p_pipeline: string
+        }
+        Returns: string
       }
       exchange_rate_on: {
         Args: {
@@ -3953,6 +4019,15 @@ export type Database = {
           quota: number
           forecast: number
         }[]
+      }
+      format_address: {
+        Args: {
+          p_street: string
+          p_city: string
+          p_state: string
+          p_country: string
+        }
+        Returns: string
       }
       generate_alerts: {
         Args: never
@@ -4181,6 +4256,13 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      quote_line_price: {
+        Args: {
+          p_quote: string
+          p_product: string
+        }
+        Returns: Json
       }
       recalc_foreign_opportunities: {
         Args: never

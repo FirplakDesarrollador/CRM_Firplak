@@ -6,7 +6,8 @@ import type { CurrentUser } from "@/lib/session";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
 import { syncActivityToMicrosoft } from "@/lib/ms365/sync";
-import { getObjectDef, untypedClient } from "./data";
+import { addDaysISO, todayISO } from "@/lib/format";
+import { getObjectDef, getPipelines, untypedClient } from "./data";
 import { parseRecordForm, type FormState } from "./form";
 
 export function friendlyError(message: string) {
@@ -61,6 +62,16 @@ export async function persistRecord(
     values.pipeline_id = stage.pipeline_id;
   }
   if (!values.owner_id) delete values.owner_id;
+
+  // Cotización sin oportunidad: al crearla se crea una oportunidad con su nombre (ver más abajo). Al editar, es obligatoria.
+  const newOpportunityForQuote = objectKey === "quotes" && !values.opportunity_id;
+  if (newOpportunityForQuote) {
+    if (id) return { ok: false, state: { errors: { opportunity_id: "Campo obligatorio" }, values: echo, message: "Revisa los campos marcados." } };
+    if (!can(user.access, "opportunities", "create")) {
+      return { ok: false, state: { errors: { opportunity_id: "Elige la oportunidad (no tienes permiso para crear oportunidades)." }, values: echo } };
+    }
+    delete values.opportunity_id;
+  }
 
   // Moneda según el Mercado de la cuenta: en USD se pide el Valor en USD y el Valor en pesos lo calcula la
   // base con la TRM del día; en pesos se pide el Valor. (La base aplica lo mismo en cualquier otra vía.)
@@ -129,16 +140,46 @@ export async function persistRecord(
   }
   if (opts.dryRun) return { ok: true, id, values, before };
 
+  // La oportunidad nueva va al pipeline del canal de la cuenta (la base lleva la etapa al de ese canal), cierra
+  // cuando vence la cotización y su valor queda sincronizado con ella.
+  let createdOpportunity: string | null = null;
+  if (newOpportunityForQuote) {
+    const pipelines = await getPipelines();
+    const pipeline = pipelines.find((p) => p.is_default && p.is_active) ?? pipelines.find((p) => p.is_active);
+    const stage = pipeline?.stages.find((s) => s.category === "open");
+    if (!stage) return { ok: false, state: { values: echo, message: "No hay un pipeline activo con etapas abiertas para crear la oportunidad." } };
+    const { data: opp, error: oppError } = await db.from("opportunities").insert({
+      name: values.name,
+      account_id: values.account_id,
+      contact_id: values.contact_id ?? null,
+      stage_id: stage.id,
+      pipeline_id: stage.pipeline_id,
+      amount: 0,
+      close_date: values.expiration_date ?? addDaysISO(todayISO(), 30),
+      owner_id: values.owner_id ?? user.id,
+    }).select("id").single();
+    if (oppError || !opp) {
+      return { ok: false, state: { values: echo, message: `No se pudo crear la oportunidad: ${friendlyError(oppError?.message ?? "sin permiso")}` } };
+    }
+    createdOpportunity = String(opp.id);
+    values.opportunity_id = createdOpportunity;
+  }
+
   const result = id
     ? await db.from(def.table).update(values).eq("id", id).select("id").maybeSingle()
     : await db.from(def.table).insert(values).select("id").single();
   if (result.error || !result.data) {
+    if (createdOpportunity) await db.from("opportunities").delete().eq("id", createdOpportunity);
     return {
       ok: false,
       state: { values: echo, message: result.error ? friendlyError(result.error.message) : "No tienes permiso para editar este registro." },
     };
   }
 
+  if (createdOpportunity) {
+    await db.rpc("sync_quote", { p_quote: result.data.id });
+    await runAutomations("opportunities", "create", createdOpportunity, null, user.id);
+  }
   await runAutomations(objectKey, id ? "update" : "create", result.data.id, before, user.id);
   // Reuniones a Outlook y tareas a Planner del propietario, si conectó su cuenta de Microsoft.
   if (objectKey === "activities") await syncActivityToMicrosoft(result.data.id);

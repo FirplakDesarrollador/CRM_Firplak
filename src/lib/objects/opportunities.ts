@@ -12,7 +12,7 @@ export const opportunities: ObjectDef = {
   select: [
     "*",
     "owner:profiles!opportunities_owner_id_fkey(id, full_name, email)",
-    "account:accounts!opportunities_account_id_fkey(id, name)",
+    "account:accounts!opportunities_account_id_fkey(id, name, industry)",
     "contact:contacts!opportunities_contact_id_fkey(id, full_name)",
     "stage:pipeline_stages!opportunities_stage_id_fkey(id, name, color, category, sort_order, pipeline_id)",
     "pipeline:pipelines!opportunities_pipeline_id_fkey(id, name)",

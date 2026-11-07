@@ -19,6 +19,7 @@ test.describe("administrador", () => {
     await page.goto("/cuentas/nueva");
     await page.getByLabel(/Nombre de la cuenta/).fill(nombre);
     await page.getByLabel(/Código SAP/).fill(codigo.toLowerCase());
+    await page.locator("#f-industry").selectOption({ label: "Canal Constructores" });
     await guardar(page);
     await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
     await page.getByRole("tab", { name: "Detalles" }).click();
@@ -30,6 +31,7 @@ test.describe("administrador", () => {
     await page.goto("/cuentas/nueva");
     await page.getByLabel(/Nombre de la cuenta/).fill(unico("Otra con el mismo código"));
     await page.getByLabel(/Código SAP/).fill(codigo);
+    await page.locator("#f-industry").selectOption({ label: "Canal Constructores" });
     await guardar(page);
     await expect(page).toHaveURL(/\/cuentas\/nueva/);
     await expect(page.getByText(/ya (existe|está|tiene)|repit|otra cuenta/i).first()).toBeVisible();
@@ -42,6 +44,7 @@ test.describe("administrador", () => {
       await expect(async () => {
         await page.locator("#f-account_type").selectOption({ label: "Cliente" });
         await page.locator("#f-market").selectOption({ label: mercado });
+        await page.locator("#f-industry").selectOption({ label: "Canal Distribución" });
         await expect(page.locator("#f-market")).toHaveValue(mercado, { timeout: 1000 });
       }).toPass();
       await guardar(page);
@@ -59,14 +62,91 @@ test.describe("administrador", () => {
     await page.goto("/oportunidades/nueva");
     await page.getByLabel(/Nombre de la oportunidad/).fill(nombre);
     await buscarYElegir(page, /^Cuenta/, "Casa Viva");
-    await page.getByLabel(/Etapa/).selectOption({ label: "Prospección (10%)" });
+    // Casa Viva es del Canal Distribución: solo se ofrecen las etapas de su pipeline.
+    await expect(page.getByText("Pipeline del Canal Distribución: Distribución y retail.")).toBeVisible();
+    await expect(page.getByLabel(/Etapa/).locator("option", { hasText: "Prospección" })).toHaveCount(0);
+    await page.getByLabel(/Etapa/).selectOption({ label: "Contacto inicial (10%)" });
     await page.getByLabel(/Valor/).fill("150000000");
     await guardar(page);
     await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
     await expect(page.getByRole("link", { name: "Almacenes Casa Viva" }).first()).toBeVisible();
 
     await page.goto("/oportunidades/pipeline");
+    await page.getByLabel("Pipeline", { exact: true }).selectOption({ label: "Canal Distribución · Distribución y retail" });
     await expect(page.getByText(nombre).first()).toBeVisible();
+  });
+
+  test("una cotización sin oportunidad crea la suya en el pipeline del canal, factura a la cuenta y usa la lista propia del cliente", async ({ page }) => {
+    const nombre = unico("Cotización canal");
+    await page.goto("/cotizaciones/nueva");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel(/Nombre de la cotización/).fill(nombre);
+    await buscarYElegir(page, /^Facturar a/, "Casa Viva");
+    // Direcciones y condiciones de pago vienen de la cuenta y no se editan…
+    await expect(page.locator("#f-billing_address")).toHaveValue(/Av\. Boyacá/);
+    await expect(page.locator("#f-billing_address")).toBeDisabled();
+    await expect(page.locator("#f-payment_terms")).toHaveValue("60 días");
+    await expect(page.locator("#f-shipping_address")).toBeDisabled();
+    // …salvo la entrega con su casilla: se parte de la dirección de la cuenta y se cambia.
+    await page.getByLabel("Entregar en otra dirección").check();
+    await expect(page.locator("#f-shipping_address")).toBeEnabled();
+    await expect(page.locator("#f-shipping_address")).toHaveValue(/Av\. Boyacá/);
+    await page.locator("#f-shipping_address").fill("Bodega del cliente final, Funza");
+    await guardar(page);
+    await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+    await expect(page.getByText("Sincronizada").first()).toBeVisible();
+
+    // Un producto codificado del cliente toma su precio; uno no codificado, el de la lista del canal, marcado.
+    for (const ref of ["DEMO-MB-060", "DEMO-CO-240"]) {
+      await expect(async () => {
+        await page.locator("#ql-product").fill(ref);
+        await page.getByRole("option", { name: new RegExp(ref) }).first().click({ timeout: 2000 });
+      }).toPass();
+      await page.getByRole("button", { name: "Agregar" }).click();
+      await expect(page.getByText(ref).first()).toBeVisible();
+    }
+    const fila = (ref: string) => page.getByRole("listitem").filter({ hasText: ref });
+    await expect(fila("DEMO-MB-060").getByLabel("Precio unitario")).toHaveValue("960000");
+    await expect(fila("DEMO-MB-060").getByText("No codificado")).toHaveCount(0);
+    await expect(fila("DEMO-CO-240").getByLabel("Precio unitario")).toHaveValue("5248000");
+    await expect(fila("DEMO-CO-240").getByText("No codificado")).toBeVisible();
+
+    await page.getByRole("tab", { name: "Detalles" }).click();
+    await expect(page.getByText("Casa Viva 2026").first()).toBeVisible();
+    await expect(page.getByText("Bodega del cliente final, Funza").first()).toBeVisible();
+    await expect(page.getByText("60 días").first()).toBeVisible();
+
+    // La oportunidad nueva lleva el nombre de la cotización, está en el pipeline del canal y vale lo cotizado.
+    // (los nombres de oportunidad se guardan con mayúscula inicial en cada palabra)
+    await page.getByRole("link", { name: new RegExp(nombre.split(" ").slice(-1)[0], "i") }).first().click();
+    await expect(page).toHaveURL(/\/oportunidades\/[0-9a-f-]{36}/);
+    await expect(page.getByText("Distribución y retail").first()).toBeVisible();
+    await expect(page.getByText("$6,208,000").first()).toBeVisible();
+  });
+
+  test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {
+    await page.goto("/cotizaciones/nueva");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel(/Nombre de la cotización/).fill(unico("Cuenta cruzada"));
+    await buscarYElegir(page, /^Oportunidad/, "Exhibición nueva tienda");
+    // Al elegir la oportunidad, «Facturar a» toma su cuenta.
+    await expect(page.locator("main").getByText("Distribuidora Hogar y Acabados Ltda.").first()).toBeVisible();
+    await page.getByRole("button", { name: "Quitar selección" }).nth(1).click();
+    await buscarYElegir(page, /^Facturar a/, "Casa Viva");
+    await guardar(page);
+    await expect(page.getByText(/debe ser la misma de la oportunidad \(Distribuidora Hogar y Acabados Ltda\.\)/).first()).toBeVisible();
+    await expect(page).toHaveURL(/\/cotizaciones\/nueva/);
+  });
+
+  test("Indicadores muestra un embudo por canal", async ({ page }) => {
+    await page.goto("/indicadores");
+    await expect(page.getByRole("heading", { name: "Embudos de ventas por canal" })).toBeVisible();
+    const constructores = page.getByRole("region", { name: "Embudo Canal Constructores" });
+    const distribucion = page.getByRole("region", { name: "Embudo Canal Distribución" });
+    await expect(constructores.getByText("Especificación técnica", { exact: true })).toBeVisible();
+    await expect(constructores.getByText("Muestras y catálogo", { exact: true })).toHaveCount(0);
+    await expect(distribucion.getByText("Muestras y catálogo", { exact: true })).toBeVisible();
+    await expect(distribucion.getByText("Especificación técnica", { exact: true })).toHaveCount(0);
   });
 
   test("registra una tarea y la completa", async ({ page }) => {

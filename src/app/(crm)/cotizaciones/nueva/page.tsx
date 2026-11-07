@@ -13,12 +13,14 @@ export default async function NewQuotePage({ searchParams }: PageProps<"/cotizac
     const supabase = await createClient();
     const { data } = await supabase
       .from("opportunities")
-      .select("id, name, contact:contacts!opportunities_contact_id_fkey(id, full_name)")
+      .select("id, name, account:accounts!opportunities_account_id_fkey(id, name), contact:contacts!opportunities_contact_id_fkey(id, full_name)")
       .eq("id", sp.opportunity)
       .maybeSingle();
     if (data) {
       Object.assign(defaults, { opportunity_id: data.id, opportunity: data, name: `${data.name} · Cotización` });
       if (data.contact) Object.assign(defaults, { contact_id: data.contact.id, contact: data.contact });
+      // «Facturar a» es la cuenta de la oportunidad.
+      if (data.account) Object.assign(defaults, { account_id: data.account.id, account: data.account });
     }
   }
   return <RecordFormPage object="quotes" user={user} defaults={defaults} />;

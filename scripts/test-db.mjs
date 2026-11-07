@@ -174,7 +174,7 @@ await check('la semilla crea catálogo, precios, campañas, prospectos, cotizaci
   const [r] = await q(`select (select count(*) from products)::int p, (select count(*) from price_book_entries)::int e,
     (select count(*) from campaigns)::int c, (select count(*) from leads)::int l, (select count(*) from quotes)::int qt,
     (select count(*) from cases)::int cs`);
-  assert.deepEqual(r, { p: 13, e: 26, c: 3, l: 7, qt: 3, cs: 5 });
+  assert.deepEqual(r, { p: 13, e: 30, c: 3, l: 7, qt: 3, cs: 5 });
 });
 await check('totales de cotización: subtotal, descuento, IVA 19% y total', async () => {
   const [qt] = await as(admin, () => q(`select * from quotes where name like 'Torre 3%'`));
@@ -1093,6 +1093,139 @@ await check('una cotización con descuento alto no se presenta ni se marca aprob
   // Sin sesión (cargas, tareas del sistema) no se revisa.
   await q(`update quote_line_items set discount = 30 where id = $1`, [line.id]);
   await q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]);
+});
+
+console.log('Canales de venta: pipeline, lista de precios y facturación');
+const pipelineOf = async (oppId) => (await q(`select p.name pipeline, s.name stage from opportunities o join pipelines p on p.id = o.pipeline_id
+  join pipeline_stages s on s.id = o.stage_id where o.id = $1`, [oppId]))[0];
+let distOpp;
+await check('una oportunidad va al pipeline del canal de su cuenta, con la etapa equivalente', async () => {
+  distOpp = await as(rep, async () => {
+    const [acc] = await q(`insert into accounts (name, industry, billing_street, billing_city, billing_state, billing_country, payment_terms)
+      values ('Ferretería del Canal', 'Canal Distribución', 'Cl. 10 # 20-30', 'Medellín', 'Antioquia', 'Colombia', '60 días') returning id`);
+    // Se pide una etapa del pipeline por defecto (Calificación, 20 %): queda en el de Distribución.
+    const [st] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación'`);
+    const [o] = await q(`insert into opportunities (name, account_id, stage_id, amount) values ('Opp distribución', $1, $2, 0) returning id, account_id`, [acc.id, st.id]);
+    return o;
+  });
+  assert.deepEqual(await pipelineOf(distOpp.id), { pipeline: 'Distribución y retail', stage: 'Contacto inicial' });
+  // Una etapa de otro pipeline no se puede elegir.
+  const [other] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.name = 'Proyectos y constructoras' and s.name = 'Negociación'`);
+  await assert.rejects(as(rep, () => q(`update opportunities set stage_id = $1 where id = $2`, [other.id, distOpp.id])), /pipeline «Distribución y retail»/);
+  // Sin canal (o un canal sin pipeline) sigue en el pipeline elegido.
+  const [noChannelAcc] = await as(rep, () => q(`insert into accounts (name) values ('Cuenta sin canal') returning id`));
+  const [noChannel] = await as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount)
+    select 'Opp sin canal', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where p.is_default and s.name = 'Negociación' returning id`, [noChannelAcc.id]));
+  assert.deepEqual(await pipelineOf(noChannel.id), { pipeline: 'Proyectos y constructoras', stage: 'Negociación' });
+});
+await check('si cambia el canal de la cuenta, sus oportunidades abiertas pasan al pipeline del nuevo canal', async () => {
+  const [st] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.name = 'Distribución y retail' and s.name = 'Pedido en negociación'`);
+  await as(rep, () => q(`update opportunities set stage_id = $1 where id = $2`, [st.id, distOpp.id]));
+  await as(rep, () => q(`update accounts set industry = 'Canal Constructores' where id = $1`, [distOpp.account_id]));
+  assert.deepEqual(await pipelineOf(distOpp.id), { pipeline: 'Proyectos y constructoras', stage: 'Negociación' });
+  await as(rep, () => q(`update accounts set industry = 'Canal Distribución' where id = $1`, [distOpp.account_id]));
+  assert.deepEqual(await pipelineOf(distOpp.id), { pipeline: 'Distribución y retail', stage: 'Pedido en negociación' });
+});
+await check('la cotización usa la lista de precios del canal de la cuenta', async () => {
+  const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización canal', $1)
+    returning (select name from price_books b where b.id = price_book_id) book`, [distOpp.id]));
+  assert.equal(qt.book, 'Distribuidores 2026');
+  const [consAcc] = await as(rep, () => q(`insert into accounts (name, industry) values ('Constructora del Canal', 'Canal Constructores') returning id`));
+  const [consOpp] = await as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount)
+    select 'Opp constructora', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where p.is_default and s.name = 'Prospección' returning id`, [consAcc.id]));
+  const [cons] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización constructora', $1)
+    returning (select name from price_books b where b.id = price_book_id) book`, [consOpp.id]));
+  assert.equal(cons.book, 'Lista estándar COP');
+  // Sin canal: la estándar.
+  const [plain] = await as(rep, () => q(`insert into quotes (name, opportunity_id) select 'Cotización sin canal', id from opportunities where name ilike 'Opp sin canal'
+    returning (select name from price_books b where b.id = price_book_id) book`));
+  assert.equal(plain.book, 'Lista estándar COP');
+});
+await check('«Facturar a» es la cuenta de la oportunidad; direcciones y condiciones de pago vienen de la cuenta', async () => {
+  const [qt] = await as(rep, () => q(`select * from quotes where name = 'Cotización canal'`));
+  assert.equal(qt.bill_to_name, 'Ferretería del Canal');
+  assert.equal(qt.billing_address, 'Cl. 10 # 20-30, Medellín, Antioquia, Colombia');
+  assert.equal(qt.shipping_address, qt.billing_address, 'sin dirección de entrega en la cuenta, se entrega en la de facturación');
+  assert.equal(qt.payment_terms, '60 días');
+  const [otherAcc] = await q(`select id from accounts where name ilike 'Cuenta sin canal'`);
+  await assert.rejects(as(rep, () => q(`insert into quotes (name, opportunity_id, account_id) values ('Otra cuenta', $1, $2)`, [distOpp.id, otherAcc.id])),
+    /misma de la oportunidad \(Ferretería del Canal\)/);
+  await assert.rejects(as(rep, () => q(`update quotes set account_id = $1 where id = $2`, [otherAcc.id, qt.id])), /misma de la oportunidad/);
+  const [noAccOpp] = await as(rep, () => q(`insert into opportunities (name, stage_id, amount)
+    select 'Opp sin cuenta', s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.category = 'open' order by s.sort_order limit 1 returning id`));
+  await assert.rejects(as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Sin cuenta', $1)`, [noAccOpp.id])), /no tiene cuenta/);
+});
+await check('entrega y condiciones de pago manuales se conservan; en Borrador lo demás sigue a la cuenta', async () => {
+  const [qt] = await q(`select id from quotes where name = 'Cotización canal'`);
+  await as(rep, () => q(`update quotes set shipping_manual = true, shipping_address = 'Bodega del cliente final, Rionegro',
+    payment_terms_manual = true, payment_terms = 'Contado' where id = $1`, [qt.id]));
+  await as(rep, () => q(`update accounts set billing_street = 'Cra. 50 # 1-2', shipping_street = 'Bodega 7', shipping_city = 'Itagüí', payment_terms = '30 días'
+    where id = $1`, [distOpp.account_id]));
+  await as(rep, () => q(`update quotes set description = 'Revisada' where id = $1`, [qt.id]));
+  let [r] = await q(`select billing_address, shipping_address, payment_terms from quotes where id = $1`, [qt.id]);
+  assert.deepEqual(r, { billing_address: 'Cra. 50 # 1-2, Medellín, Antioquia, Colombia', shipping_address: 'Bodega del cliente final, Rionegro', payment_terms: 'Contado' });
+  // Al quitar la casilla vuelven los de la cuenta.
+  await as(rep, () => q(`update quotes set shipping_manual = false, payment_terms_manual = false where id = $1`, [qt.id]));
+  [r] = await q(`select shipping_address, payment_terms from quotes where id = $1`, [qt.id]);
+  assert.deepEqual(r, { shipping_address: 'Bodega 7, Itagüí, Antioquia, Colombia', payment_terms: '30 días' });
+  // Presentada, queda como se envió aunque cambie la cuenta.
+  await as(rep, () => q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]));
+  await as(rep, () => q(`update accounts set billing_street = 'Otra dirección', payment_terms = 'Contado' where id = $1`, [distOpp.account_id]));
+  await as(rep, () => q(`update quotes set description = 'Enviada' where id = $1`, [qt.id]));
+  [r] = await q(`select billing_address, payment_terms from quotes where id = $1`, [qt.id]);
+  assert.deepEqual(r, { billing_address: 'Cra. 50 # 1-2, Medellín, Antioquia, Colombia', payment_terms: '30 días' });
+});
+await check('lista propia del cliente: sus productos con su precio; los no codificados con el precio del canal y marcados', async () => {
+  await as(admin, async () => {
+    await q(`insert into products (name, product_code) values ('Mueble codificado', 'PR-COD'), ('Cocina nueva', 'PR-NUEVA')`);
+    await q(`insert into price_books (name, is_client_list) values ('Gran Cliente 2026', true)`);
+    await q(`insert into price_book_entries (price_book_id, product_id, unit_price)
+      select b.id, p.id, v.price from (values ('Gran Cliente 2026', 'PR-COD', 900000), ('Distribuidores 2026', 'PR-COD', 1000000),
+        ('Distribuidores 2026', 'PR-NUEVA', 5000000)) v(book, code, price)
+      join price_books b on b.name = v.book join products p on p.product_code = v.code`);
+    const [acc] = await q(`insert into accounts (name, industry, price_book_id) values ('Gran Cliente', 'Canal Distribución',
+      (select id from price_books where name = 'Gran Cliente 2026')) returning id`);
+    const [opp] = await q(`insert into opportunities (name, account_id, stage_id, amount)
+      select 'Opp gran cliente', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.is_default and s.name = 'Prospección' returning id`, [acc.id]);
+    const [qt] = await q(`insert into quotes (name, opportunity_id) values ('Cotización gran cliente', $1)
+      returning id, (select name from price_books b where b.id = price_book_id) book`, [opp.id]);
+    assert.equal(qt.book, 'Gran Cliente 2026');
+    const price = async (code) => (await q(`select quote_line_price($1, (select id from products where product_code = $2)) p`, [qt.id, code]))[0].p;
+    assert.deepEqual(await price('PR-COD'), { unit_price: 900000, source: 'lista' });
+    assert.deepEqual(await price('PR-NUEVA'), { unit_price: 5000000, source: 'canal', price_book: 'Distribuidores 2026' });
+    const lines = await q(`insert into quote_line_items (quote_id, product_id, quantity, unit_price)
+      select $1, id, 1, 1 from products where product_code in ('PR-COD', 'PR-NUEVA') returning (select product_code from products p where p.id = product_id) code, not_listed`, [qt.id]);
+    assert.deepEqual(Object.fromEntries(lines.map((l) => [l.code, l.not_listed])), { 'PR-COD': false, 'PR-NUEVA': true });
+    // En una cotización con la lista del canal nada se marca como no codificado.
+    const [canal] = await q(`select id from quotes where name = 'Cotización canal'`);
+    const [l] = await q(`insert into quote_line_items (quote_id, product_id, quantity, unit_price)
+      select $1, id, 1, 1 from products where product_code = 'PR-NUEVA' returning not_listed`, [canal.id]);
+    assert.equal(l.not_listed, false);
+  });
+});
+await check('indicadores: un embudo por pipeline, cada uno con sus etapas (sin las perdidas)', async () => {
+  const funnels = await as(admin, async () => (await q(`select crm_funnels(current_date - 365, current_date) f`))[0].f);
+  assert.deepEqual(funnels.map((f) => [f.name, f.channel]), [['Proyectos y constructoras', 'Canal Constructores'], ['Distribución y retail', 'Canal Distribución']]);
+  assert.deepEqual(funnels[1].stages.map((s) => s.name), ['Contacto inicial', 'Muestras y catálogo', 'Propuesta comercial', 'Pedido en negociación', 'Ganada']);
+  assert.ok(funnels.every((f) => f.stages.every((s) => s.category !== 'lost')));
+  const dashboard = await as(admin, async () => (await q(`select crm_dashboard(current_date - 365, current_date, null, (select id from pipelines where name = 'Distribución y retail')) d`))[0].d);
+  assert.deepEqual(funnels[1].stages.map((s) => Number(s.amount)), dashboard.funnel.map((s) => Number(s.amount)));
+});
+await check('un canal tiene un solo pipeline y una sola lista por moneda; una lista de cliente no tiene canal', async () => {
+  await assert.rejects(q(`update pipelines set channel = 'Canal Distribución' where name = 'Proyectos y constructoras'`), /pipelines_one_per_channel/);
+  await assert.rejects(q(`insert into price_books (name, channel) values ('Otra de distribución', 'Canal Distribución')`), /price_books_one_per_channel/);
+  await assert.rejects(q(`insert into price_books (name, channel, is_client_list) values ('Cliente con canal', 'Canal B2C', true)`), /price_books_client_without_channel/);
+});
+await check('permisos de las funciones nuevas', async () => {
+  for (const fn of ['quote_line_price(uuid,uuid)', 'crm_funnels(date,date,uuid)', 'default_price_book(uuid,text)', 'channel_price_book(uuid,text)', 'channel_pipeline(uuid)']) {
+    assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
+  }
+  for (const fn of ['equivalent_stage(uuid,uuid)', 'opportunity_channel_pipeline()', 'account_channel_moves_opportunities()', 'quote_line_listed()']) {
+    assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, false, fn);
+  }
 });
 
 console.log('Semillas: configuración inicial separada de los datos de demostración');

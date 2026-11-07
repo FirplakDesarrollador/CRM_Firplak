@@ -816,6 +816,24 @@ export const UI_EN: Record<string, string> = {
   "Valor agregado": "Value added",
   "Abierta": "Open",
   "Embudo de ventas": "Sales funnel",
+  // Canales de venta, listas de precios y facturación
+  "Embudos de ventas por canal": "Sales funnels by channel", Embudo: "Funnel", "Sin pipelines activos.": "No active pipelines.",
+  "Pipeline del": "Pipeline for", "Se toma de la cuenta": "Taken from the account", "— Sin canal —": "— No channel —",
+  "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
+  "No codificado": "Not listed",
+  "Define el pipeline de sus oportunidades y la lista de precios de sus cotizaciones.": "Sets the pipeline of its opportunities and the price book of its quotes.",
+  "Solo para clientes con productos codificados y precios propios. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».":
+    "Only for customers with their own listed products and prices. Anything not in it is quoted from the channel price book and marked “Not listed”.",
+  "Si la dejas vacía, se crea una oportunidad con el nombre de la cotización.": "If left empty, an opportunity is created with the quote name.",
+  "Cliente o prospecto. Debe ser la misma cuenta de la oportunidad.": "Customer or prospect. Must be the opportunity's account.",
+  "De la cuenta.": "From the account.",
+  "De la cuenta. Marca «Entregar en otra dirección» para escribirla (cliente final, otra bodega).":
+    "From the account. Check “Ship to another address” to type it (end customer, another warehouse).",
+  "De la cuenta. Marca «Cambiar condiciones de pago» para escribirlas a mano.": "From the account. Check “Change payment terms” to type them.",
+  "Cada canal de venta tiene su pipeline: las oportunidades de una cuenta van al pipeline de su Canal, y en Indicadores cada canal tiene su embudo. Un canal sin pipeline usa el pipeline por defecto.":
+    "Each sales channel has its pipeline: an account's opportunities go to its channel's pipeline, and each channel has its own funnel in Dashboards. A channel without a pipeline uses the default one.",
+  "Cada canal tiene su lista (una por moneda). Una cotización usa la lista propia de la cuenta, si la tiene; si no, la de su canal; si no, la estándar. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.":
+    "Each channel has its price book (one per currency). A quote uses the account's own price book if it has one; otherwise its channel's; otherwise the standard one. A customer price book holds only its listed products: anything else is quoted from the channel price book and marked “Not listed”. Assign it on the account record. Product prices are edited on the product record.",
   "ponderado": "weighted",
   "por": "by",
   "y": "and",

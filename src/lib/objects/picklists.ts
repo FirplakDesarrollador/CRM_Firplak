@@ -5,10 +5,10 @@ export const ACCOUNT_TYPES = ["Prospecto", "Cliente", "Distribuidor", "Partner",
 export const MARKETS = ["Nacional", "Internacional"];
 /** Incoterms 2020: condiciones de entrega en exportación. */
 export const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
-export const INDUSTRIES = [
-  "Construcción", "Inmobiliario", "Vivienda social", "Hotelería", "Salud", "Educación", "Retail", "Comercio",
-  "Distribución de materiales", "Ferretería", "Arquitectura y diseño", "Gobierno", "Otro",
-];
+/** Canal de venta de la cuenta (columna `industry`): decide el pipeline de sus oportunidades y su lista de precios. */
+export const INDUSTRIES = ["Canal Constructores", "Canal Distribución", "Canal B2C"];
+/** Condiciones de pago de la cuenta; la cotización las toma de ahí (o se escriben a mano). */
+export const PAYMENT_TERMS = ["Contado", "Anticipado", "8 días", "15 días", "30 días", "45 días", "60 días", "90 días"];
 export const SEGMENTS = ["Grandes cuentas", "Empresarial", "Canal", "Institucional", "Prescriptor", "Pyme"];
 export const RATINGS = ["Caliente", "Templada", "Fría"];
 export const SALUTATIONS = ["Sr.", "Sra.", "Ing.", "Arq.", "Dr.", "Dra."];

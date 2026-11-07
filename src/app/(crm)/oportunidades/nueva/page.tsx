@@ -22,10 +22,14 @@ export default async function NewOpportunityPage({ searchParams }: PageProps<"/o
   };
   const supabase = await createClient();
   if (accountId) {
-    const { data } = await supabase.from("accounts").select("id, name, market").eq("id", accountId).maybeSingle();
+    const { data } = await supabase.from("accounts").select("id, name, market, industry").eq("id", accountId).maybeSingle();
     if (data) {
+      // La etapa inicial es la primera del pipeline del canal de la cuenta.
+      const channelPipeline = pipelines.find((p) => p.channel === data.industry && p.is_active);
+      const channelStage = channelPipeline?.stages.find((s) => s.category === "open");
       Object.assign(defaults, {
-        account_id: data.id, account: { id: data.id, name: data.name }, name: `${data.name} · Nueva oportunidad`,
+        account_id: data.id, account: { id: data.id, name: data.name, industry: data.industry }, name: `${data.name} · Nueva oportunidad`,
+        ...(channelStage ? { stage_id: channelStage.id } : {}),
         currency: data.market === "Internacional" ? "USD" : "COP",
       });
     }

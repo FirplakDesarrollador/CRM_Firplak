@@ -84,7 +84,7 @@ export default async function PipelinePage({ searchParams }: PageProps<"/oportun
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PipelineFilters
-          pipelines={pipelines.map((p) => ({ id: p.id, name: p.name }))}
+          pipelines={pipelines.map((p) => ({ id: p.id, name: p.name, channel: p.channel }))}
           users={users.map((u) => ({ id: u.id, name: u.full_name }))}
           pipeline={pipeline.id}
           owner={owner}

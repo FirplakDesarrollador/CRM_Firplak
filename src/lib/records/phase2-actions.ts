@@ -119,13 +119,24 @@ export async function removeProductPrice(entryId: string, _prev?: FormState, _fd
 export async function savePriceBook(id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
   const name = str(fd, "name");
   if (!name) return { message: "Escribe el nombre de la lista" };
+  // Tipo: lista de un canal, lista de cliente (se asigna a cuentas) o general.
+  const kind = str(fd, "kind");
+  const isClient = kind === "cliente";
+  const channel = !isClient && kind.startsWith("canal:") ? kind.slice(6) : null;
+  const currency = ["COP", "USD"].includes(str(fd, "currency")) ? str(fd, "currency") : "COP";
   const supabase = await createClient();
-  const payload = { name, description: str(fd, "description") || null, is_active: id ? fd.get("is_active") === "on" : true };
+  const payload = {
+    name, description: str(fd, "description") || null, is_active: id ? fd.get("is_active") === "on" : true,
+    channel, is_client_list: isClient, currency,
+  };
   const result = id
     ? await supabase.from("price_books").update(payload).eq("id", id).select("id").single()
     : await supabase.from("price_books").insert(payload).select("id").single();
-  if (result.error) return { message: friendly(result.error.message) };
-  if (fd.get("is_standard") === "on") {
+  if (result.error) {
+    if (result.error.message.includes("price_books_one_per_channel")) return { message: `${channel} ya tiene una lista activa en ${currency}.` };
+    return { message: friendly(result.error.message) };
+  }
+  if (fd.get("is_standard") === "on" && !isClient) {
     await supabase.from("price_books").update({ is_standard: false }).neq("id", result.data.id).eq("is_standard", true);
     await supabase.from("price_books").update({ is_standard: true, is_active: true }).eq("id", result.data.id);
   }
@@ -144,16 +155,16 @@ export async function addQuoteLine(quoteId: string, _prev: FormState, fd: FormDa
   const discount = Math.min(100, Math.max(0, Number(str(fd, "discount").replace(",", ".")) || 0));
 
   const supabase = await createClient();
-  const { data: quote } = await supabase.from("quotes").select("price_book_id").eq("id", quoteId).maybeSingle();
-  if (!quote) return { message: "Cotización no encontrada" };
-  const [{ data: entry }, { data: product }, { count }] = await Promise.all([
-    supabase.from("price_book_entries").select("unit_price")
-      .eq("product_id", productId).eq("price_book_id", quote.price_book_id ?? "").eq("is_active", true).maybeSingle(),
+  // Precio de la lista de la cotización; con la lista propia del cliente, un producto no codificado toma el de la
+  // lista del canal (la línea queda marcada «No codificado»).
+  const [{ data: price, error: priceError }, { data: product }, { count }] = await Promise.all([
+    supabase.rpc("quote_line_price", { p_quote: quoteId, p_product: productId }),
     supabase.from("products").select("name").eq("id", productId).maybeSingle(),
     supabase.from("quote_line_items").select("id", { count: "exact", head: true }).eq("quote_id", quoteId),
   ]);
+  if (priceError || !price) return { message: priceError ? friendly(priceError.message) : "Cotización no encontrada" };
   const manualPrice = parseAmount(str(fd, "unit_price"));
-  const unitPrice = manualPrice ?? entry?.unit_price;
+  const unitPrice = manualPrice ?? (price as { unit_price: number | null }).unit_price;
   if (unitPrice === undefined || unitPrice === null) {
     return { errors: { unit_price: "El producto no tiene precio en la lista de esta cotización; escribe el precio." } };
   }

@@ -29,7 +29,9 @@ export async function GET(request: NextRequest) {
     cases: "case_number, status",
     campaigns: "campaign_type, status",
   };
-  const extra = object === "accounts" ? ", market" : "";
+  // Lo que el formulario necesita de lo elegido: el Mercado y el Canal de una cuenta; la cuenta de una oportunidad.
+  const extra = object === "accounts" ? ", market, industry"
+    : object === "opportunities" ? ", account:accounts!opportunities_account_id_fkey(id, name)" : "";
   let query = db.from(def.table).select(`id, ${def.nameField}, ${subtitle[object]}${extra}`).limit(10).order(def.nameField);
   // Por todas las columnas de búsqueda del objeto: p. ej. un producto por su referencia o una cuenta por su NIT.
   query = applySearch(query, def, term);
@@ -44,7 +46,9 @@ export async function GET(request: NextRequest) {
     id: String(r.id),
     label: String(r[def.nameField] ?? ""),
     sub: subtitle[object].split(", ").map((k) => r[k]).filter(Boolean).join(" · "),
-    ...(object === "accounts" ? { market: (r.market as string | null) ?? null } : {}),
+    ...(object === "accounts" ? { market: (r.market as string | null) ?? null, channel: (r.industry as string | null) ?? null } : {}),
+    ...(object === "opportunities" && r.account
+      ? { account: { id: String((r.account as { id: string }).id), label: String((r.account as { name: string }).name) } } : {}),
   }));
   return NextResponse.json({ results });
 }

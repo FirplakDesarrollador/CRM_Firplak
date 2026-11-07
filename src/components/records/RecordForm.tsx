@@ -6,7 +6,7 @@ import type { FieldDef, ObjectDef } from "@/lib/objects";
 import type { FormState } from "@/lib/records/form";
 import { Alert } from "@/components/ui/Alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { FieldInput, type FieldInputContext } from "./FieldInput";
+import { FieldInput, type FieldInputContext, type FieldLinks } from "./FieldInput";
 import { useT } from "@/lib/i18n/client";
 
 type Props = {
@@ -52,6 +52,16 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
     return controllers.length ? { controllers } : undefined;
   };
 
+  // Valores de otros campos que un campo necesita: la cuenta elegida, su casilla manual, el canal de la cuenta.
+  const linksOf = (field: FieldDef): FieldLinks | undefined => {
+    if (field.derived) {
+      return { source: currentValue(field.derived.from), manual: field.manualFlag ? ["true", "on"].includes(currentValue(field.manualFlag)) : false };
+    }
+    if (field.lookupFilter) return { source: currentValue(field.lookupFilter) };
+    if (field.type === "stage") return { channel: (record?.account as { industry?: string | null } | null | undefined)?.industry ?? null };
+    return undefined;
+  };
+
   return (
     <form ref={formRef} action={formAction} className="space-y-5" noValidate>
       {returnTo && <input type="hidden" name="_return" value={returnTo} />}
@@ -81,6 +91,7 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
                     error={state.errors?.[field.name]}
                     echo={state.values?.[field.name]}
                     dependency={dependencyOf(field)}
+                    links={linksOf(field)}
                     place={field.geo ? {
                       country: currentValue(field.geo.country) || (ctx.isNew && !state.values ? "Colombia" : ""),
                       state: currentValue(field.geo.state),

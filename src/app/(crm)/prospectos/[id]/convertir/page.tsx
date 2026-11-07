@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Convertir prospecto" };
 export default async function ConvertLeadPage({ params }: PageProps<"/prospectos/[id]/convertir">) {
   const [user, { id }] = await Promise.all([requireUser(), params]);
   const supabase = await createClient();
-  const { data: lead } = await supabase.from("leads").select("id, full_name, company, owner_id, is_converted").eq("id", id).maybeSingle();
+  const { data: lead } = await supabase.from("leads").select("id, full_name, company, owner_id, is_converted, industry").eq("id", id).maybeSingle();
   if (!lead) notFound();
   if (lead.is_converted) redirect(`/prospectos/${id}`);
   const { canEdit } = await getRecordAccess("leads", lead.owner_id, lead.id);
@@ -26,7 +26,9 @@ export default async function ConvertLeadPage({ params }: PageProps<"/prospectos
     getUsers(),
     supabase.from("accounts").select("id, name, billing_city").ilike("name", `%${lead.company.replace(/[%_,()]/g, " ").slice(0, 40)}%`).limit(5),
   ]);
-  const pipeline = pipelines.find((p) => p.is_default) ?? pipelines[0];
+  // El pipeline del canal del prospecto (si se elige una cuenta existente, la base lo lleva al canal de esa cuenta).
+  const channelPipeline = pipelines.find((p) => p.channel && p.channel === lead.industry && p.is_active);
+  const pipeline = channelPipeline ?? pipelines.find((p) => p.is_default) ?? pipelines[0];
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -45,7 +47,7 @@ export default async function ConvertLeadPage({ params }: PageProps<"/prospectos
         contactName={lead.full_name ?? lead.company}
         ownerId={lead.owner_id ?? user.id}
         matches={(matches ?? []).map((m) => ({ id: m.id, name: m.name, city: m.billing_city }))}
-        pipelines={pipelines.filter((p) => p.is_active).map((p) => ({
+        pipelines={(channelPipeline ? [channelPipeline] : pipelines.filter((p) => p.is_active)).map((p) => ({
           id: p.id, name: p.name, stages: p.stages.filter((s) => s.category === "open").map((s) => ({ id: s.id, name: s.name })),
         }))}
         defaultStage={pipeline?.stages.find((s) => s.category === "open")?.id ?? ""}

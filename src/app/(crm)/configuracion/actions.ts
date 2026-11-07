@@ -153,10 +153,15 @@ export async function savePipeline(id: string | null, _prev: FormState, fd: Form
   const { supabase } = g;
   const name = str(fd, "name");
   if (!name) return { message: "Escribe el nombre del pipeline" };
-  const payload = { name, name_en: nullable(fd, "name_en"), description: nullable(fd, "description"), is_active: id ? fd.get("is_active") === "on" : true };
+  const payload = {
+    name, name_en: nullable(fd, "name_en"), description: nullable(fd, "description"), is_active: id ? fd.get("is_active") === "on" : true,
+    // Canal de venta cuyas oportunidades van a este pipeline (uno por canal).
+    channel: nullable(fd, "channel"),
+  };
   const result = id
     ? await supabase.from("pipelines").update(payload).eq("id", id).select("id").single()
     : await supabase.from("pipelines").insert({ ...payload, sort_order: 99 }).select("id").single();
+  if (result.error?.message.includes("pipelines_one_per_channel")) return { message: `${payload.channel} ya tiene un pipeline activo.` };
   if (result.error) return fail(result.error);
   if (!id) {
     // Todo pipeline nuevo nace con una etapa inicial y las de cierre.

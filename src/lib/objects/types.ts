@@ -49,12 +49,26 @@ export type FieldDef = {
   formCurrency?: "COP" | "USD";
   /** En el detalle, no se muestra si está vacío. */
   hideEmpty?: boolean;
+  /** Solo en el formulario (p. ej. una casilla que habilita otro campo); no se muestra en el detalle. */
+  formOnly?: boolean;
   /**
    * Parte de una dirección: País (lista), Departamento y Ciudad (listas de Colombia, dependientes; texto
    * libre en otros países). `geo` nombra los campos de país y departamento de la misma dirección.
    */
   geoRole?: "country" | "state" | "city";
   geo?: { country: string; state: string };
+  /** Se elige de una lista que viene de la base (p. ej. las listas de precios de cliente). Guarda el id. */
+  choices?: "clientPriceBooks";
+  /**
+   * Se toma de la cuenta elegida en el campo `from` (la base lo calcula al guardar). En el formulario se ve sin
+   * editar; con `manualFlag` (casilla del mismo formulario) se puede escribir a mano.
+   */
+  derived?: { from: string };
+  manualFlag?: string;
+  /** Búsqueda limitada a la cuenta elegida en ese campo del formulario (p. ej. oportunidades de la cuenta). */
+  lookupFilter?: string;
+  /** Se llena con la cuenta del registro elegido en ese campo (p. ej. la cuenta de la oportunidad). */
+  fillFrom?: string;
 };
 
 export type ObjectDef = {

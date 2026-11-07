@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { getPipelines } from "@/lib/records/data";
+import { getChannels, getPipelines } from "@/lib/records/data";
 import { canSystem } from "@/lib/permissions";
 import { FORECAST_CATEGORIES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
@@ -15,6 +15,17 @@ import { Opt } from "@/components/ui/Opt";
 export const metadata: Metadata = { title: "Pipelines y etapas" };
 
 const CATEGORIES = { open: "Abierta", won: "Ganada", lost: "Perdida" };
+
+/** Canal de venta cuyas oportunidades van al pipeline. */
+function ChannelSelect({ id, value, channels }: { id: string; value: string | null; channels: string[] }) {
+  return (
+    <select id={id} name="channel" className="select" defaultValue={value ?? ""}>
+      <Opt value="">— Sin canal —</Opt>
+      {channels.map((c) => <option key={c} value={c}>{c}</option>)}
+      {value && !channels.includes(value) && <option value={value}>{value}</option>}
+    </select>
+  );
+}
 
 function StageFields({ stage }: { stage?: { id: string; name: string; name_en?: string | null; probability: number; category: string; forecast_category: string; color: string; sort_order: number } }) {
   const id = stage?.id ?? "new";
@@ -60,13 +71,14 @@ function StageFields({ stage }: { stage?: { id: string; name: string; name_en?: 
 export default async function PipelinesPage() {
   const me = await requireUser();
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
-  const pipelines = await getPipelines();
+  const [pipelines, channels] = await Promise.all([getPipelines(), getChannels()]);
 
   return (
     <>
       <div>
         <h1 className="text-xl font-medium"><Tr>Pipelines y etapas</Tr></h1>
         <p className="text-sm text-muted"><Tr>Cada pipeline necesita al menos una etapa abierta, una ganada y una perdida. La probabilidad y el pronóstico se aplican al mover una oportunidad.</Tr></p>
+        <p className="text-sm text-muted"><Tr>Cada canal de venta tiene su pipeline: las oportunidades de una cuenta van al pipeline de su Canal, y en Indicadores cada canal tiene su embudo. Un canal sin pipeline usa el pipeline por defecto.</Tr></p>
       </div>
       <section className="card">
         <div className="card-header"><h2 className="card-title"><Tr>Nuevo pipeline</Tr></h2></div>
@@ -74,6 +86,7 @@ export default async function PipelinesPage() {
           <div className="min-w-48 flex-1"><label className="label" htmlFor="np-name"><Tr>Nombre</Tr></label><input id="np-name" name="name" className="input" required /></div>
           <div className="min-w-40 flex-1"><label className="label" htmlFor="np-en"><Tr>En inglés (opcional)</Tr></label><input id="np-en" name="name_en" className="input" placeholder="English name" /></div>
           <div className="min-w-48 flex-1"><label className="label" htmlFor="np-desc"><Tr>Descripción</Tr></label><input id="np-desc" name="description" className="input" /></div>
+          <div className="w-48"><label className="label" htmlFor="np-channel"><Tr>Canal de venta</Tr></label><ChannelSelect id="np-channel" value={null} channels={channels} /></div>
           <SubmitButton pendingText="Creando…"><Tr>Crear pipeline</Tr></SubmitButton>
         </ActionForm>
       </section>
@@ -94,6 +107,10 @@ export default async function PipelinesPage() {
               <div className="min-w-48 flex-1">
                 <label className="label" htmlFor={`pd-${p.id}`}><Tr>Descripción</Tr></label>
                 <input id={`pd-${p.id}`} name="description" className="input" defaultValue={p.description ?? ""} />
+              </div>
+              <div className="w-48">
+                <label className="label" htmlFor={`pc-${p.id}`}><Tr>Canal de venta</Tr></label>
+                <ChannelSelect id={`pc-${p.id}`} value={p.channel} channels={channels} />
               </div>
               <label className="flex items-center gap-1.5 pb-2 text-sm font-semibold">
                 <input type="checkbox" name="is_default" defaultChecked={p.is_default} className="accent-[var(--brand)]" /> <Tr>Por defecto</Tr>

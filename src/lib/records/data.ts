@@ -24,6 +24,8 @@ export type StageRow = {
 };
 export type PipelineWithStages = {
   id: string; name: string; name_en?: string | null; description: string | null; is_default: boolean; is_active: boolean; sort_order: number;
+  /** Canal de venta cuyas oportunidades van a este pipeline. */
+  channel: string | null;
   stages: StageRow[];
 };
 
@@ -88,6 +90,19 @@ export const getPipelines = cache(async (): Promise<PipelineWithStages[]> => {
     ...p,
     stages: [...((p.stages ?? []) as StageRow[])].sort((a, b) => a.sort_order - b.sort_order),
   })) as PipelineWithStages[];
+});
+
+/** Canales de venta: los valores del campo Canal de las cuentas (Configuración → Listas). */
+export const getChannels = cache(async (): Promise<string[]> => {
+  const def = await getObjectDef("accounts");
+  return def.fields.find((f) => f.name === "industry")?.options ?? [];
+});
+
+/** Listas de precios de cliente activas (para asignarlas a una cuenta). */
+export const getClientPriceBooks = cache(async (): Promise<{ id: string; name: string }[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("price_books").select("id, name").eq("is_client_list", true).eq("is_active", true).order("name");
+  return data ?? [];
 });
 
 export async function getListViews(object: ObjectKey) {

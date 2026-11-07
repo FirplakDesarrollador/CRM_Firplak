@@ -5,7 +5,7 @@ import { ObjectIcon } from "@/components/ui/icons";
 import { BarList, Funnel, KpiTile, MonthlyColumns } from "@/components/dashboard/Charts";
 import { StageBadge } from "@/components/records/FieldValue";
 import { createClient } from "@/lib/supabase/server";
-import { getPipelines, getUsers } from "@/lib/records/data";
+import { getUsers } from "@/lib/records/data";
 import { canSystem } from "@/lib/permissions";
 import { ACTIVITY_TYPES } from "@/lib/objects/picklists";
 import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, formatNumber, formatPercent, todayISO } from "@/lib/format";
@@ -20,6 +20,10 @@ import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
 import { Val } from "@/components/ui/Val";
 export const metadata: Metadata = { title: "Indicadores" };
+
+type FunnelStage = Dashboard["funnel"][number];
+/** Un embudo por pipeline: cada canal de venta el suyo (crm_funnels). */
+type PipelineFunnel = { id: string; name: string; channel: string | null; is_default: boolean; stages: FunnelStage[] };
 
 type Dashboard = {
   kpis: Record<string, number | null>;
@@ -39,8 +43,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
   const { from, to, period } = resolvePeriod(one(sp.periodo) || "this_year", one(sp.desde), one(sp.hasta));
   const owner = one(sp.asesor) || null;
 
-  const [pipelines, users] = await Promise.all([getPipelines(), getUsers()]);
-  const pipeline = pipelines.find((p) => p.id === one(sp.pipeline)) ?? pipelines.find((p) => p.is_default) ?? pipelines[0];
+  const users = await getUsers();
 
   const supabase = await createClient();
   const today = todayISO();
@@ -53,11 +56,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
     .limit(8);
   if (owner) closingQuery = closingQuery.eq("owner_id", owner);
 
-  const [{ data: raw, error }, { data: closing }, { data: extraRaw }] = await Promise.all([
-    supabase.rpc("crm_dashboard", { p_from: from, p_to: to, p_owner: owner ?? undefined, p_pipeline: pipeline?.id }),
+  const [{ data: raw, error }, { data: closing }, { data: extraRaw }, { data: funnelsRaw }] = await Promise.all([
+    supabase.rpc("crm_dashboard", { p_from: from, p_to: to, p_owner: owner ?? undefined }),
     closingQuery,
     supabase.rpc("crm_dashboard_extra", { p_from: from, p_to: to, p_owner: owner ?? undefined }),
+    supabase.rpc("crm_funnels", { p_from: from, p_to: to, p_owner: owner ?? undefined }),
   ]);
+  // Los pipelines de un canal siempre; uno sin canal solo si tiene oportunidades.
+  const funnels = ((funnelsRaw ?? []) as unknown as PipelineFunnel[])
+    .filter((f) => f.channel || f.stages.some((s) => Number(s.count) > 0));
   const x = (extraRaw ?? {}) as Record<string, number | null>;
   const xn = (key: string) => Number(x[key] ?? 0);
   const d = raw as unknown as Dashboard | null;
@@ -74,9 +81,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
             <h1 className="text-xl font-medium">{t("Indicadores")} · {t(PERIODS[period])} · <Fmt date={from} /> – <Fmt date={to} /></h1>
           </div>
         </div>
-        <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"} pipeline={pipeline?.id ?? ""}
-          users={users.filter((u) => u.is_active).map((u) => ({ id: u.id, name: u.full_name }))}
-          pipelines={pipelines.map((p) => ({ id: p.id, name: p.name }))} canPickOwner={canPickOwner} />
+        <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"}
+          users={users.filter((u) => u.is_active).map((u) => ({ id: u.id, name: u.full_name }))} canPickOwner={canPickOwner} />
       </div>
 
       {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">No se pudieron calcular los indicadores: {error.message}</p>}
@@ -115,17 +121,29 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
           tone={xn("cases_high") ? "warning" : undefined} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className="glass">
-          <div className="card-header"><h2 className="card-title"><Tr>Embudo de ventas</Tr> · <Val>{pipeline?.name}</Val></h2></div>
-          <div className="p-4"><Funnel stages={d?.funnel ?? []} /></div>
-          <p className="px-4 pb-3 text-xs text-muted"><Tr>Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</Tr></p>
-        </section>
-        <section className="glass">
-          <div className="card-header"><h2 className="card-title"><Tr>Ventas ganadas por mes</Tr></h2></div>
-          <div className="p-4"><MonthlyColumns data={d?.by_month ?? []} /></div>
-        </section>
-      </div>
+      <section aria-labelledby="embudos" className="space-y-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="embudos" className="text-base font-medium"><Tr>Embudos de ventas por canal</Tr></h2>
+          <p className="text-xs text-muted"><Tr>Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</Tr></p>
+        </div>
+        <div className={`grid gap-4 ${funnels.length > 1 ? "lg:grid-cols-2" : ""} ${funnels.length > 2 ? "2xl:grid-cols-3" : ""}`}>
+          {funnels.length === 0 && <p className="glass p-6 text-center text-sm text-muted"><Tr>Sin pipelines activos.</Tr></p>}
+          {funnels.map((f) => (
+            <section key={f.id} className="glass" aria-label={`${t("Embudo")} ${f.channel ?? f.name}`}>
+              <div className="card-header">
+                <h3 className="card-title"><Val>{f.channel ?? f.name}</Val></h3>
+                {f.channel && <span className="text-xs text-muted"><Val>{f.name}</Val></span>}
+              </div>
+              <div className="p-4"><Funnel stages={f.stages} /></div>
+            </section>
+          ))}
+        </div>
+      </section>
+
+      <section className="glass">
+        <div className="card-header"><h2 className="card-title"><Tr>Ventas ganadas por mes</Tr></h2></div>
+        <div className="p-4"><MonthlyColumns data={d?.by_month ?? []} /></div>
+      </section>
 
       <section className="card overflow-hidden">
         <div className="card-header"><h2 className="card-title"><Tr>Ventas por asesor</Tr></h2></div>

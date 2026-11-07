@@ -60,6 +60,8 @@ export function parseRecordForm(def: ObjectDef, formData: FormData, existingCust
   const echo: Record<string, string> = {};
 
   for (const field of editableFields(def)) {
+    // Un campo que viene de la cuenta lo calcula la base; solo se guarda lo escrito a mano (con su casilla).
+    if (field.derived && !(field.manualFlag && ["on", "true"].includes(String(formData.get(field.manualFlag) ?? "")))) continue;
     const raw = formData.getAll(field.name).map((v) => String(v).trim());
     echo[field.name] = raw.join("|");
     const value = convert(field, raw, errors);

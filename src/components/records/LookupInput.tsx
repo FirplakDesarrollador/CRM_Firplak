@@ -4,7 +4,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 
-type Option = { id: string; label: string; sub?: string; market?: string | null };
+export type LookupOption = {
+  id: string; label: string; sub?: string;
+  /** Cuentas: Mercado y Canal. Oportunidades: su cuenta. */
+  market?: string | null; channel?: string | null; account?: { id: string; label: string } | null;
+};
+type Option = LookupOption;
 
 /** Campo de relación con búsqueda remota. Envía el id en un input oculto `name`. */
 export function LookupInput({

@@ -30,7 +30,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
     getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
-      .select("id, description, quantity, unit_price, discount, line_total, product:products!quote_line_items_product_id_fkey(id, name, product_code, unit)")
+      .select("id, description, quantity, unit_price, discount, line_total, not_listed, product:products!quote_line_items_product_id_fkey(id, name, product_code, unit)")
       .eq("quote_id", id)
       .order("sort_order"),
     supabase.from("orders").select("id, order_number").eq("quote_id", id).maybeSingle(),
