@@ -1032,7 +1032,8 @@ await check('quien inicia sesión sigue usando las funciones de la aplicación',
   for (const fn of ['has_perm(text,text)', 'global_search(text,integer)', 'normalize_text(text)', 'crm_dashboard(date,date,uuid,uuid)']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
   }
-  for (const fn of ['copy_default_team(text,uuid,uuid)', 'recalc_quote(uuid)', 'apply_field_updates(text,uuid,jsonb)']) {
+  for (const fn of ['copy_default_team(text,uuid,uuid)', 'recalc_quote(uuid)', 'apply_field_updates(text,uuid,jsonb)',
+    'save_exchange_rate(text,date,date,numeric,text)', 'recalc_foreign_opportunities()']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, false, fn);
   }
   // Una función creada después no queda abierta a quien no tiene sesión.
