@@ -964,6 +964,25 @@ export type Database = {
           },
         ]
       }
+      co_municipalities: {
+        Row: {
+          city: string
+          code: string
+          department: string
+        }
+        Insert: {
+          city: string
+          code: string
+          department: string
+        }
+        Update: {
+          city?: string
+          code?: string
+          department?: string
+        }
+        Relationships: [
+        ]
+      }
       contacts: {
         Row: {
           account_id: string | null
@@ -1081,6 +1100,22 @@ export type Database = {
             referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      countries: {
+        Row: {
+          code: string
+          name: string
+        }
+        Insert: {
+          code: string
+          name: string
+        }
+        Update: {
+          code?: string
+          name?: string
+        }
+        Relationships: [
         ]
       }
       custom_field_definitions: {
@@ -3765,6 +3800,18 @@ export type Database = {
           p_owner: string
         }
         Returns: undefined
+      }
+      clean_place: {
+        Args: {
+          p_country: string
+          p_state: string
+          p_city: string
+        }
+        Returns: {
+          country: string
+          state: string
+          city: string
+        }[]
       }
       condition_matches: {
         Args: {

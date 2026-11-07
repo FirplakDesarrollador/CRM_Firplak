@@ -81,6 +81,10 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
                     error={state.errors?.[field.name]}
                     echo={state.values?.[field.name]}
                     dependency={dependencyOf(field)}
+                    place={field.geo ? {
+                      country: currentValue(field.geo.country) || (ctx.isNew && !state.values ? "Colombia" : ""),
+                      state: currentValue(field.geo.state),
+                    } : undefined}
                   />
                 </div>
               ))}

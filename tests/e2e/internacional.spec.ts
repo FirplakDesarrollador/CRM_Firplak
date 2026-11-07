@@ -44,6 +44,35 @@ test("una oportunidad de una cuenta del exterior se registra en USD y se convier
   await expect(page.getByLabel("Valor", { exact: true })).toHaveCount(0);
 });
 
+test("la dirección elige país, departamento y ciudad de las listas; fuera de Colombia es texto libre", async ({ page }) => {
+  await page.goto("/cuentas/nueva");
+  const pais = page.locator("#f-billing_country");
+  const dpto = page.locator("#f-billing_state");
+  const ciudad = page.locator("#f-billing_city");
+  await page.getByLabel(/Nombre de la cuenta/).fill(unico("Ferretería Lugares"));
+  await expect(pais).toHaveValue("Colombia");
+  await expect(ciudad).toBeDisabled();
+  await expect(async () => {
+    await dpto.selectOption({ label: "Antioquia" });
+    await expect(ciudad).toBeEnabled({ timeout: 1000 });
+  }).toPass();
+  await expect(ciudad.locator("option", { hasText: "Medellín" })).toHaveCount(1);
+  await expect(ciudad.locator("option", { hasText: "Cali" })).toHaveCount(0);
+  await ciudad.selectOption({ label: "Medellín" });
+
+  // En otro país, departamento y ciudad se escriben.
+  await page.locator("#f-shipping_country").selectOption({ label: "Panamá" });
+  await expect(page.locator("#f-shipping_state")).toHaveJSProperty("tagName", "INPUT");
+  await page.locator("#f-shipping_city").fill("Ciudad de Panamá");
+
+  await guardar(page);
+  await expect(page).toHaveURL(/\/cuentas\/[0-9a-f-]{36}/);
+  await page.getByRole("tab", { name: "Detalles" }).click();
+  await expect(page.getByText("Medellín").first()).toBeVisible();
+  await expect(page.getByText("Antioquia").first()).toBeVisible();
+  await expect(page.getByText("Ciudad de Panamá").first()).toBeVisible();
+});
+
 test("Configuración → Monedas muestra la TRM vigente y permite registrarla a mano", async ({ page }) => {
   await page.goto("/configuracion/monedas");
   await expect(page.getByTestId("trm-vigente")).toHaveText(/\$\d/);

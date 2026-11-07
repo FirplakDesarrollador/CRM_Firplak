@@ -980,6 +980,38 @@ await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte 
   await q(`delete from exchange_rates where source = 'Manual'`);
 });
 
+console.log('Lugares limpios');
+await check('país, departamento y ciudad quedan como en las listas y deben corresponder', async () => {
+  const [{ n, d }] = await q(`select count(*)::int n, count(distinct department)::int d from co_municipalities`);
+  assert.deepEqual([n, d], [1122, 33]);
+  const lugar = async (pais, dpto, ciudad) => {
+    const [r] = await as(rep, () => q(`select * from clean_place($1, $2, $3)`, [pais, dpto, ciudad]));
+    return [r.country, r.state, r.city];
+  };
+  assert.deepEqual(await lugar('colombia', 'ANTIOQUIA', 'medellin'), ['Colombia', 'Antioquia', 'Medellín']);
+  assert.deepEqual(await lugar(null, null, 'bogota dc'), ['Colombia', 'Bogotá D.C.', 'Bogotá D.C.']);
+  assert.deepEqual(await lugar(null, 'valle', null), [null, 'valle', null]);
+  assert.deepEqual(await lugar('CO', 'valle del cauca', 'cali'), ['Colombia', 'Valle del Cauca', 'Cali']);
+  assert.deepEqual(await lugar('US', 'Florida', 'Miami'), ['Estados Unidos', 'Florida', 'Miami']);
+  assert.deepEqual(await lugar('estados unidos', null, null), ['Estados Unidos', null, null]);
+  await assert.rejects(lugar('Colombia', 'Antioquia', 'Cali'), /no es un municipio de Antioquia/);
+  await assert.rejects(lugar('Colombia', 'Antiokia', null), /no es un departamento/);
+  await assert.rejects(lugar(null, null, 'Caldas'), /varios municipios/);
+  await assert.rejects(lugar('Narnia', null, null), /lista de países/);
+
+  // Al guardar, se corrige; un dato antiguo se respeta mientras no se toque la dirección.
+  const [c] = await as(admin, () => q(`insert into accounts (name, billing_city, shipping_country, shipping_city)
+    values ('Lugares Prueba', 'cucuta', 'panama', 'Ciudad de Panamá') returning billing_country, billing_state, billing_city, shipping_country`));
+  assert.deepEqual(c, { billing_country: 'Colombia', billing_state: 'Norte de Santander', billing_city: 'Cúcuta', shipping_country: 'Panamá' });
+  await assert.rejects(as(admin, () => q(`insert into contacts (last_name, mailing_country, mailing_state, mailing_city) values ('Lugar', 'Colombia', 'Caldas', 'Medellín')`)), /no es un municipio de Caldas/);
+  await q(`alter table accounts disable trigger accounts_places`);
+  const [viejo] = await q(`insert into accounts (name, billing_city) values ('Lugares Legado', 'Ciudad Inventada') returning id`);
+  await q(`alter table accounts enable trigger accounts_places`);
+  await as(admin, () => q(`update accounts set phone = '6045550000' where id = $1`, [viejo.id]));
+  await assert.rejects(as(admin, () => q(`update accounts set billing_state = 'Antioquia' where id = $1`, [viejo.id])), /no es un municipio/);
+  await q(`delete from accounts where name in ('Lugares Prueba', 'Lugares Legado')`);
+});
+
 console.log('Permisos de las funciones');
 await check('sin sesión solo se ejecutan las funciones del servidor MCP y OAuth', async () => {
   const abiertas = (await q(`

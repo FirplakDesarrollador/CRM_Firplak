@@ -49,6 +49,12 @@ export type FieldDef = {
   formCurrency?: "COP" | "USD";
   /** En el detalle, no se muestra si está vacío. */
   hideEmpty?: boolean;
+  /**
+   * Parte de una dirección: País (lista), Departamento y Ciudad (listas de Colombia, dependientes; texto
+   * libre en otros países). `geo` nombra los campos de país y departamento de la misma dirección.
+   */
+  geoRole?: "country" | "state" | "city";
+  geo?: { country: string; state: string };
 };
 
 export type ObjectDef = {

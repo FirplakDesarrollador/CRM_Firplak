@@ -6,7 +6,7 @@ import { can } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/session";
 import type { ObjectKey } from "@/lib/objects";
 import { recordTitle } from "@/lib/objects";
-import { getObjectDef, getPipelines, getRecord, getRecordAccess, getUsers } from "@/lib/records/data";
+import { getGeo, getObjectDef, getPipelines, getRecord, getRecordAccess, getUsers } from "@/lib/records/data";
 import { editableFields } from "@/lib/records/form";
 import { saveRecord } from "@/lib/records/actions";
 import { makeT } from "@/lib/i18n";
@@ -28,6 +28,7 @@ export async function RecordFormPage({
 }) {
   const [def, users, pipelines, locale] = await Promise.all([getObjectDef(object), getUsers(), getPipelines(), getLocale()]);
   const t = makeT(locale);
+  const geo = def.fields.some((f) => f.geoRole) ? await getGeo() : undefined;
   let record: Record<string, unknown> | null = null;
 
   if (id) {
@@ -59,7 +60,7 @@ export async function RecordFormPage({
         def={{ sections: def.sections, label: def.label }}
         fields={editableFields(def)}
         record={record}
-        ctx={{ users, pipelines }}
+        ctx={{ users, pipelines, geo, isNew: !id }}
         action={saveRecord.bind(null, object, id ?? null)}
         cancelHref={cancelHref}
         returnTo={returnTo}

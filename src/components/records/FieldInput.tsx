@@ -10,6 +10,9 @@ import { Opt } from "@/components/ui/Opt";
 export type FieldInputContext = {
   users: UserOption[];
   pipelines: PipelineWithStages[];
+  /** Países y municipios de Colombia, si el formulario tiene direcciones. */
+  geo?: { countries: string[]; departments: Record<string, string[]> };
+  isNew?: boolean;
 };
 
 function toDateTimeLocal(value: unknown) {
@@ -80,6 +83,76 @@ function DependentSelect({
   );
 }
 
+/**
+ * Parte de una dirección. País: lista. Departamento y Ciudad: listas de Colombia (la ciudad según el
+ * departamento); en otros países, texto libre. Escucha los cambios del país y el departamento de la misma
+ * dirección en el formulario.
+ */
+function GeoInput({
+  common,
+  field,
+  initialValue,
+  initialPlace,
+  geo,
+}: {
+  common: { id: string; name: string; "aria-invalid": boolean; required?: boolean };
+  field: FieldDef;
+  initialValue: string;
+  initialPlace: { country: string; state: string };
+  geo: NonNullable<FieldInputContext["geo"]>;
+}) {
+  const t = useT();
+  const ref = useRef<HTMLElement>(null);
+  const [place, setPlace] = useState(initialPlace);
+  const [value, setValue] = useState(initialValue);
+  const role = field.geoRole!;
+  const names = field.geo!;
+
+  useEffect(() => {
+    const form = (ref.current as HTMLInputElement | null)?.form;
+    if (!form) return;
+    const onChange = (e: Event) => {
+      const target = e.target as HTMLSelectElement;
+      if (target.name === names.country && role !== "country") {
+        setPlace((p) => ({ country: target.value, state: p.country === target.value ? p.state : "" }));
+        setValue("");
+      } else if (target.name === names.state && role === "city") {
+        setPlace((p) => ({ ...p, state: target.value }));
+        setValue("");
+      }
+    };
+    form.addEventListener("change", onChange);
+    return () => form.removeEventListener("change", onChange);
+  }, [names, role]);
+
+  const options = (list: string[]) => (
+    <>
+      <option value="">{t("— Ninguno —")}</option>
+      {list.map((o) => <option key={o} value={o}>{o}</option>)}
+      {value && !list.includes(value) && <option value={value}>{value}</option>}
+    </>
+  );
+  const select = (list: string[], disabled = false) => (
+    <select {...common} ref={ref as React.RefObject<HTMLSelectElement>} className="select" value={value} disabled={disabled}
+      onChange={(e) => setValue(e.target.value)}>
+      {options(list)}
+    </select>
+  );
+
+  if (role === "country") return select(geo.countries);
+  if (place.country !== "Colombia") {
+    return <input {...common} ref={ref as React.RefObject<HTMLInputElement>} className="input" value={value} onChange={(e) => setValue(e.target.value)} />;
+  }
+  if (role === "state") return select(Object.keys(geo.departments));
+  const cities = geo.departments[place.state] ?? [];
+  return (
+    <>
+      {select(cities, !place.state && !value)}
+      {!place.state && <p className="help">{t("Elige primero el departamento.")}</p>}
+    </>
+  );
+}
+
 export function FieldInput({
   field,
   value,
@@ -88,6 +161,7 @@ export function FieldInput({
   ctx,
   echo,
   dependency,
+  place,
 }: {
   field: FieldDef;
   value: unknown;
@@ -98,6 +172,8 @@ export function FieldInput({
   echo?: string;
   /** Lista dependiente: las listas del formulario que la controlan, con su valor inicial. */
   dependency?: { controllers: { name: string; label: string; value: string }[] };
+  /** Dirección: país y departamento iniciales de la misma dirección. */
+  place?: { country: string; state: string };
 }) {
   const t = useT();
   const id = `f-${field.name.replace(".", "-")}`;
@@ -106,7 +182,12 @@ export function FieldInput({
   const common = { id, name: field.name, "aria-invalid": invalid, required: field.required };
 
   let control: React.ReactNode;
-  switch (field.type) {
+  // Un país nuevo empieza en Colombia; los registros existentes conservan lo que tenían.
+  const geoValue = field.geoRole === "country" && !str && ctx.isNew && !echo ? "Colombia" : str;
+  switch (field.geoRole && ctx.geo && place ? "geo" : field.type) {
+    case "geo":
+      control = <GeoInput common={common} field={field} initialValue={geoValue} initialPlace={place!} geo={ctx.geo!} />;
+      break;
     case "textarea":
       control = <textarea {...common} className="textarea" defaultValue={str} rows={4} />;
       break;

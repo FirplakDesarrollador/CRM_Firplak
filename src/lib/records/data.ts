@@ -63,6 +63,20 @@ export const getUsers = cache(async (): Promise<UserOption[]> => {
   return (data ?? []).map((u) => ({ ...u, full_name: u.full_name || u.email }));
 });
 
+/** Países (Colombia primero) y municipios de Colombia por departamento, para los campos de dirección. */
+export type GeoData = { countries: string[]; departments: Record<string, string[]> };
+export const getGeo = cache(async (): Promise<GeoData> => {
+  const supabase = await createClient();
+  const [{ data: countries }, { data: places }] = await Promise.all([
+    supabase.from("countries").select("name").order("name"),
+    supabase.from("co_municipalities").select("department, city").order("department").order("city").limit(2000),
+  ]);
+  const departments: Record<string, string[]> = {};
+  for (const p of places ?? []) (departments[p.department] ??= []).push(p.city);
+  const names = (countries ?? []).map((c) => c.name);
+  return { countries: names.includes("Colombia") ? ["Colombia", ...names.filter((n) => n !== "Colombia")] : names, departments };
+});
+
 export const getPipelines = cache(async (): Promise<PipelineWithStages[]> => {
   const supabase = await createClient();
   const { data } = await supabase

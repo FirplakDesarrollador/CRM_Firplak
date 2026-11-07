@@ -173,6 +173,7 @@ export const UI_EN: Record<string, string> = {
   "Depende de la lista": "Depends on the list", "Guardar relaciones con": "Save relationships with", "Elige primero": "First choose",
   "Lista que la controla": "Controlling list", "Agregar lista": "Add list", "Dependencia quitada": "Dependency removed", "Depende de las listas": "Depends on the lists",
   "Mercado, Canal y Segmento usan las mismas listas de Cuentas, con sus dependencias: se editan en la pestaña": "Market, Channel and Segment use the same lists as Accounts, with their dependencies: edit them in the tab",
+  "Elige primero el departamento.": "Choose the department first.",
   Monedas: "Currencies", Moneda: "Currency", TRM: "Exchange rate", Incoterm: "Incoterm", "Valor en USD": "Amount in USD",
   "Cuenta del mercado Internacional: el Valor en pesos se calcula con la TRM oficial del día.": "International market account: the amount in pesos is calculated with the day's official exchange rate.",
   "En dólares (mercado Internacional) siempre es 0 %.": "In US dollars (International market) it is always 0%.",
