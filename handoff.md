@@ -84,8 +84,8 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
   `db:publicar` y visto bueno de Luis (historial 36/36, 0 pendientes). Ligó en producción «Proyectos y constructoras» y
   «Constructor Nacional» → Canal Constructores, «Distribución y retail» y «Distribucion Nacional» → Canal Distribución;
   «Lista exportación USD» quedó general. La cotización de prueba COT-1002 conservó su entrega y condiciones de pago
-  (marcadas como manuales). La oportunidad de prueba «Prueba» es anterior a la regla: quedó en «Proyectos y
-  constructoras» aunque su cuenta es Canal Distribución (se moverá si se cambia su cuenta o el canal de la cuenta).
+  (marcadas como manuales). La oportunidad de prueba «Prueba» (anterior a la regla) se movió a mano, con visto
+  bueno de Luis, de «Proyectos y constructoras» · Prospección a «Distribución y retail» · Contacto inicial (canal de su cuenta).
 - Historia previa: las primeras 35 migraciones (hasta `20261130000100_quote_approval_gate`). Se aplicaron con el MCP,
   que las guardó con **versiones distintas** a los nombres de archivo: un `supabase db push` intentaría correrlas
   todas de nuevo. **Verificado el 2026-11-07 (solo lectura):** las 35 corresponden una a una; 29 idénticas byte a
@@ -141,6 +141,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-07 | — | Oportunidad de prueba «Prueba» movida al pipeline de su canal (Distribución y retail · Contacto inicial). | Datos |
 | 2026-11-07 | `64d9d84` | `db:publicar` leía 0 pendientes con la tabla de la CLI en terminal (comillas invertidas); corregido con prueba. | Desplegado |
 | 2026-11-07 | `1a61057` | Canales de venta: pipeline y lista de precios por canal, lista propia del cliente («No codificado»), «Facturar a» = cuenta de la oportunidad (o se crea la oportunidad), direcciones y condiciones de pago desde la cuenta con opción manual, Canal obligatorio, un embudo por canal en Indicadores. | Migración `20261201000100` aplicada; desplegado (Vercel OK) |
 | 2026-11-07 | — | Borradas en producción las 5 metas de compañía de ejemplo (Luis cargará las reales). | Datos: 0 metas |
