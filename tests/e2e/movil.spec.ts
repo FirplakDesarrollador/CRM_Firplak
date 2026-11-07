@@ -106,3 +106,17 @@ test("la app es instalable: manifiesto, íconos y página sin conexión", async 
   await page.goto("/offline");
   await expect(page.getByRole("heading", { name: "Sin conexión" })).toBeVisible();
 });
+
+test("instalada en el iPhone, la cabecera baja bajo la hora y la isla dinámica; en el navegador queda igual", async ({ page }) => {
+  await page.goto("/inicio");
+  const cabecera = page.locator("header.shell-bar");
+  const medir = () => cabecera.evaluate((h) => ({ relleno: getComputedStyle(h).paddingTop, arriba: h.firstElementChild!.getBoundingClientRect().top }));
+  // En el navegador no hay franja superior: la cabecera sigue pegada arriba, sin relleno.
+  expect(await medir()).toEqual({ relleno: "0px", arriba: 0 });
+
+  // Como app instalada, iOS reporta un área segura de 59 px (hora, señal, batería e isla dinámica).
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setSafeAreaInsetsOverride" as never, { insets: { top: 59, topMax: 59 } } as never);
+  await expect.poll(medir).toEqual({ relleno: "59px", arriba: 59 });
+  await expect(page.getByRole("link", { name: "Inicio" }).first()).toBeInViewport();
+});

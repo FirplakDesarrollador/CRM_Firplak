@@ -22,8 +22,10 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
     { href: "/actividades/nueva", label: t("Actividad"), icon: "activities", ok: can(user.access, "activities", "create") },
   ].filter((q) => q.ok);
 
+  // Instalada en iPhone, la app ocupa también la franja de la hora y la isla dinámica (viewport-fit=cover con barra
+  // translúcida): el relleno del área segura baja la cabecera bajo esa franja. En Safari y Chrome el área segura superior es 0.
   return (
-    <header className="shell-chrome shell-bar sticky top-0 z-30">
+    <header className="shell-chrome shell-bar sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <Link href="/inicio" className="flex-none no-underline" aria-label="Inicio">
           <span className="hidden sm:inline-flex"><Logo height={30} /></span>
