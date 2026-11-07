@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { INDUSTRIES, LEAD_SOURCES, LEAD_STATUSES, RATINGS, SALUTATIONS } from "./picklists";
+import { INDUSTRIES, LEAD_SOURCES, LEAD_STATUSES, MARKETS, RATINGS, SALUTATIONS, SEGMENTS } from "./picklists";
 
 export const leads: ObjectDef = {
   key: "leads",
@@ -44,7 +44,10 @@ export const leads: ObjectDef = {
     { name: "campaign_id", label: "Campaña", type: "lookup", lookup: "campaigns", relation: "campaign", section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
     { name: "company", label: "Empresa", type: "text", required: true, section: "company" },
+    // Mercado, Canal y Segmento usan las listas de Cuentas (SHARED_PICKLISTS): al convertir pasan tal cual.
+    { name: "market", label: "Mercado", type: "select", options: MARKETS, section: "company" },
     { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, section: "company" },
+    { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "company" },
     { name: "website", label: "Sitio web", type: "url", section: "company" },
     { name: "annual_revenue", label: "Ingresos anuales", type: "currency", section: "company" },
     { name: "employees", label: "Empleados", type: "number", section: "company" },

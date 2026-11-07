@@ -9,12 +9,20 @@ import { TEAM_ROLES } from "@/lib/teams/config";
 export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
   accounts: ["account_type", "market", "industry", "segment"],
   contacts: ["salutation", "lead_source"],
-  leads: ["salutation", "industry", "lead_source"],
+  leads: ["salutation", "lead_source"],
   opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role"],
   cases: ["case_type", "origin"],
   campaigns: ["campaign_type"],
   products: ["family", "unit"],
   activities: ["call_result"],
+};
+
+/**
+ * Listas que un objeto toma de otro, con sus dependencias: los prospectos usan Mercado, Canal y Segmento
+ * de Cuentas para que al convertir la cuenta reciba valores de su propia lista. Se editan en la pestaña de Cuentas.
+ */
+export const SHARED_PICKLISTS: Partial<Record<ObjectKey, { from: ObjectKey; fields: string[] }>> = {
+  leads: { from: "accounts", fields: ["market", "industry", "segment"] },
 };
 
 /** Listas que no son un campo del objeto: se guardan con el objeto de la pestaña donde aparecen. */

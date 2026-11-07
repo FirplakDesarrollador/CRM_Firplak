@@ -6,7 +6,7 @@ import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getObjectDef, getPicklistDependencies, getPicklistRows } from "@/lib/records/data";
 import { OBJECTS, getObject, type ObjectKey } from "@/lib/objects";
-import { EDITABLE_PICKLISTS, EXTRA_PICKLISTS } from "@/lib/objects/picklist-config";
+import { EDITABLE_PICKLISTS, EXTRA_PICKLISTS, SHARED_PICKLISTS } from "@/lib/objects/picklist-config";
 import { getT } from "@/lib/i18n/server";
 import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
@@ -50,6 +50,12 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
           ))}
         </div>
       </div>
+      {SHARED_PICKLISTS[object] && (
+        <p className="card px-4 py-3 text-sm text-muted">
+          {t("Mercado, Canal y Segmento usan las mismas listas de Cuentas, con sus dependencias: se editan en la pestaña")}{" "}
+          <Link href={`/configuracion/listas?objeto=${SHARED_PICKLISTS[object]!.from}`} className="link">{t(OBJECTS[SHARED_PICKLISTS[object]!.from].plural)}</Link>.
+        </p>
+      )}
       {(EDITABLE_PICKLISTS[object] ?? []).map((fieldName) => {
         const extra = EXTRA_PICKLISTS[fieldName];
         const field = def.fields.find((f) => f.name === fieldName) ?? (extra ? { label: t(extra.label) } : null);

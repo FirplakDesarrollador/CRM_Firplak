@@ -896,6 +896,44 @@ await check('al guardar, nombres, ciudades y correos quedan limpios; los demo no
   await q(`delete from leads where company = 'Grupo Urbano'`);
 });
 
+console.log('Prospectos alineados con cuentas');
+await check('el prospecto usa las listas de Cuentas y al convertir la cuenta nace como Prospecto con su Mercado, Canal y Segmento', async () => {
+  await as(admin, () => q(`
+    insert into picklist_values (object, field, value, sort_order, controlling_map) values
+      ('accounts', 'segment', 'Detallista Nacional', 10, '{"market":["Nacional"],"industry":["Canal Distribución"]}')`));
+  await as(admin, () => q(`insert into picklist_dependencies (object, field, controlling_field) values ('accounts', 'segment', 'market'), ('accounts', 'segment', 'industry')`));
+  const crear = (market, segment) => as(admin, () => q(
+    `insert into leads (last_name, company, market, industry, segment) values ('Prueba', 'Prospecto Alineado', $1, 'Canal Distribución', $2) returning id`,
+    [market, segment]));
+  await assert.rejects(crear('Internacional', 'Detallista Nacional'), /no corresponde/);
+  const [lead] = await crear('Nacional', 'Detallista Nacional');
+  const [{ r }] = await as(admin, () => q(`select convert_lead($1, null, null, false) r`, [lead.id]));
+  const [cuenta] = await q(`select account_type, market, industry, segment, tax_id from accounts where id = $1`, [r.account_id]);
+  assert.deepEqual(cuenta, { account_type: 'Prospecto', market: 'Nacional', industry: 'Canal Distribución', segment: 'Detallista Nacional', tax_id: null });
+
+  // Al fusionar, los tres van juntos: si el principal no tiene ninguno, se toman los del duplicado.
+  const [m] = await as(admin, () => q(`insert into leads (last_name, company) values ('Principal', 'Fusión Alineada') returning id`));
+  const [d] = await crear('Nacional', 'Detallista Nacional');
+  await as(admin, () => q(`select merge_records('leads', $1, $2)`, [m.id, d.id]));
+  assert.deepEqual((await q(`select market, industry, segment from leads where id = $1`, [m.id]))[0],
+    { market: 'Nacional', industry: 'Canal Distribución', segment: 'Detallista Nacional' });
+  const [m2] = await as(admin, () => q(`insert into leads (last_name, company, market) values ('Principal', 'Fusión Alineada', 'Internacional') returning id`));
+  const [d2] = await crear('Nacional', 'Detallista Nacional');
+  await as(admin, () => q(`select merge_records('leads', $1, $2)`, [m2.id, d2.id]));
+  assert.deepEqual((await q(`select market, industry, segment from leads where id = $1`, [m2.id]))[0],
+    { market: 'Internacional', industry: null, segment: null });
+
+  await q(`delete from leads where company in ('Prospecto Alineado', 'Fusión Alineada')`);
+  await q(`delete from contacts where account_id = $1`, [r.account_id]);
+  await q(`delete from accounts where id = $1`, [r.account_id]);
+  await q(`delete from picklist_dependencies`);
+  await q(`delete from picklist_values where object = 'accounts' and field = 'segment'`);
+});
+await check('«Cliente requiere NIT» no aplica a clientes del mercado Internacional', async () => {
+  const [regla] = await q(`select conditions from validation_rules where object = 'accounts' and name = 'Cliente requiere NIT'`);
+  assert.deepEqual(regla.conditions.find((c) => c.field === 'market'), { field: 'market', op: 'neq', value: 'Internacional' });
+});
+
 console.log('Permisos de las funciones');
 await check('sin sesión solo se ejecutan las funciones del servidor MCP y OAuth', async () => {
   const abiertas = (await q(`

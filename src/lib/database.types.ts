@@ -1553,11 +1553,13 @@ export type Database = {
           is_demo: boolean
           last_name: string
           lead_source: string | null
+          market: string | null
           mobile: string | null
           owner_id: string | null
           phone: string | null
           rating: string | null
           salutation: string | null
+          segment: string | null
           state: string | null
           status: string
           street: string | null
@@ -1589,11 +1591,13 @@ export type Database = {
           is_demo?: boolean
           last_name: string
           lead_source?: string | null
+          market?: string | null
           mobile?: string | null
           owner_id?: string | null
           phone?: string | null
           rating?: string | null
           salutation?: string | null
+          segment?: string | null
           state?: string | null
           status?: string
           street?: string | null
@@ -1625,11 +1629,13 @@ export type Database = {
           is_demo?: boolean
           last_name?: string
           lead_source?: string | null
+          market?: string | null
           mobile?: string | null
           owner_id?: string | null
           phone?: string | null
           rating?: string | null
           salutation?: string | null
+          segment?: string | null
           state?: string | null
           status?: string
           street?: string | null

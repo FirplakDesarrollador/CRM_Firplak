@@ -569,8 +569,8 @@ where not exists (select 1 from public.email_templates t where t.name = v.name a
 insert into public.validation_rules (object, name, description, conditions, error_message, error_field)
 select v.object, v.name, v.description, v.conditions::jsonb, v.message, v.field
 from (values
-  ('accounts', 'Cliente requiere NIT', 'Las cuentas de tipo Cliente deben tener NIT para facturar.',
-   '[{"field":"account_type","op":"eq","value":"Cliente"},{"field":"tax_id","op":"empty","value":""}]',
+  ('accounts', 'Cliente requiere NIT', 'Las cuentas de tipo Cliente deben tener NIT para facturar (salvo las del mercado Internacional).',
+   '[{"field":"account_type","op":"eq","value":"Cliente"},{"field":"tax_id","op":"empty","value":""},{"field":"market","op":"neq","value":"Internacional"}]',
    'Las cuentas de tipo Cliente requieren NIT.', 'tax_id'),
   ('opportunities', 'Motivo de pérdida obligatorio', 'Toda oportunidad perdida debe indicar el motivo.',
    '[{"field":"is_closed","op":"eq","value":"true"},{"field":"is_won","op":"eq","value":"false"},{"field":"loss_reason","op":"empty","value":""}]',

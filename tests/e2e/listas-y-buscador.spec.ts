@@ -89,6 +89,18 @@ test("Listas dependientes: Segmento solo ofrece lo que corresponde a Mercado y C
   await expect(seg).toHaveValue("");
   await expect(seg.locator("option")).toHaveText(["— Ninguno —", seg2]);
 
+  // El prospecto usa las mismas listas y dependencias de Cuentas, y la configuración lo indica.
+  await page.goto("/prospectos/nuevo");
+  const segProspecto = page.locator("#f-segment");
+  await expect(async () => {
+    await page.locator("#f-market").selectOption({ label: "Internacional" });
+    await page.locator("#f-industry").selectOption({ label: canal });
+    await expect(segProspecto.locator("option")).toHaveText(["— Ninguno —", seg2], { timeout: 1500 });
+  }).toPass();
+  await page.goto("/configuracion/listas?objeto=leads");
+  await expect(page.getByText("Mercado, Canal y Segmento usan las mismas listas de Cuentas")).toBeVisible();
+  await expect(page.locator("section#lista-industry")).toHaveCount(0);
+
   // Queda como estaba para las demás pruebas.
   await page.goto("/configuracion/listas?objeto=accounts&editar=segment");
   await page.locator("section#lista-segment").getByRole("button", { name: "Restablecer" }).click();

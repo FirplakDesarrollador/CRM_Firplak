@@ -35,6 +35,25 @@ test.describe("administrador", () => {
     await expect(page.getByText(/ya (existe|está|tiene)|repit|otra cuenta/i).first()).toBeVisible();
   });
 
+  test("un cliente del exterior se guarda sin NIT; uno nacional lo exige", async ({ page }) => {
+    for (const mercado of ["Internacional", "Nacional"]) {
+      await page.goto("/cuentas/nueva");
+      await page.getByLabel(/Nombre de la cuenta/).fill(unico(`Cliente ${mercado}`));
+      await expect(async () => {
+        await page.locator("#f-account_type").selectOption({ label: "Cliente" });
+        await page.locator("#f-market").selectOption({ label: mercado });
+        await expect(page.locator("#f-market")).toHaveValue(mercado, { timeout: 1000 });
+      }).toPass();
+      await guardar(page);
+      if (mercado === "Internacional") {
+        await expect(page).toHaveURL(/\/cuentas\/[0-9a-f-]{36}/);
+      } else {
+        await expect(page.getByText("Las cuentas de tipo Cliente requieren NIT.").first()).toBeVisible();
+        await expect(page).toHaveURL(/\/cuentas\/nueva/);
+      }
+    }
+  });
+
   test("crea una oportunidad en una cuenta y la ve en el pipeline", async ({ page }) => {
     const nombre = unico("Torre de prueba");
     await page.goto("/oportunidades/nueva");

@@ -1,4 +1,5 @@
 import { accounts } from "./accounts";
+import { SHARED_PICKLISTS } from "./picklist-config";
 import { activities } from "./activities";
 import { contacts } from "./contacts";
 import { opportunities } from "./opportunities";
@@ -58,12 +59,15 @@ export function withCustomFields(
 ): ObjectDef & { listCustom: string[] } {
   const active = rows.filter((r) => r.object === def.key && r.is_active).sort((a, b) => a.sort_order - b.sort_order);
   // Listas personalizadas desde Configuración → Listas de valores.
+  const shared = SHARED_PICKLISTS[def.key];
   const fields = def.fields.map((f) => {
-    const values = picklists.filter((p) => p.object === def.key && p.field === f.name && p.is_active).sort((a, b) => a.sort_order - b.sort_order);
+    // Una lista compartida se lee (con sus dependencias) del objeto que la define.
+    const source = shared?.fields.includes(f.name) ? shared.from : def.key;
+    const values = picklists.filter((p) => p.object === source && p.field === f.name && p.is_active).sort((a, b) => a.sort_order - b.sort_order);
     if (!values.length || f.type !== "select" || f.optionLabels) return f;
     const withValues = { ...f, options: values.map((v) => v.value) };
     // Lista dependiente: por cada lista que la controla, los valores que se pueden elegir con cada valor de esa lista.
-    const deps = dependencies.filter((d) => d.object === def.key && d.field === f.name).sort((a, b) => a.controlling_field.localeCompare(b.controlling_field));
+    const deps = dependencies.filter((d) => d.object === source && d.field === f.name && (source === def.key || shared!.fields.includes(d.controlling_field))).sort((a, b) => a.controlling_field.localeCompare(b.controlling_field));
     if (!deps.length) return withValues;
     const dependsOn = deps.map((d) => {
       const optionsByController: Record<string, string[]> = {};

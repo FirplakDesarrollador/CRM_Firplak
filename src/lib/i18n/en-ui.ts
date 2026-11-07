@@ -172,6 +172,7 @@ export const UI_EN: Record<string, string> = {
   "Volver al resumen": "Back to summary", inactivo: "inactive",
   "Depende de la lista": "Depends on the list", "Guardar relaciones con": "Save relationships with", "Elige primero": "First choose",
   "Lista que la controla": "Controlling list", "Agregar lista": "Add list", "Dependencia quitada": "Dependency removed", "Depende de las listas": "Depends on the lists",
+  "Mercado, Canal y Segmento usan las mismas listas de Cuentas, con sus dependencias: se editan en la pestaña": "Market, Channel and Segment use the same lists as Accounts, with their dependencies: edit them in the tab",
   "Si depende de varias listas, el formulario solo ofrece los valores que correspondan a lo elegido en todas.":
     "If it depends on several lists, the form only offers the values that match what's chosen in all of them.",
   "Marca con qué valores de": "Check which values of",
