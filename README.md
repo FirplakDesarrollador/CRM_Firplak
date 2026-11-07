@@ -161,8 +161,10 @@ En el modo demo ya está configurado: al arrancar se imprime un token de Luis pa
 - **Publicar en un proyecto existente:** `npm run db:pendientes -- --proyecto <ref>` y luego
   `npm run db:publicar -- --proyecto <ref>`. El destino siempre es explícito y debe coincidir con el proyecto
   enlazado (`npx supabase link --project-ref <ref>`); no se usa `.env.local`. Nunca aplica semillas.
-- **Producción hoy:** el historial de Supabase no coincide con los archivos (las migraciones se aplicaron con el
-  MCP). Hasta conciliarlo, `db:publicar` se detiene. Procedimiento: [docs/conciliacion-migraciones.md](docs/conciliacion-migraciones.md).
+- **Producción:** el historial se concilió el 2026-11-07 (las primeras 35 migraciones se habían aplicado con el
+  MCP). Ahora `db:pendientes` muestra 35 sincronizadas y 0 pendientes. Detalle en
+  [docs/conciliacion-migraciones.md](docs/conciliacion-migraciones.md). No apliques migraciones con el MCP: se
+  desincroniza otra vez.
 
 ## Estructura
 

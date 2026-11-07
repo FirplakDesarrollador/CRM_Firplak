@@ -1183,6 +1183,9 @@ await check('la revisión detecta pendientes y frena si el historial remoto no c
   const r = parseMigrationList(sinConciliar);
   assert.deepEqual(r.remoteOnly, ['20261107000748']);
   assert.deepEqual(r.pending, ['20261029000100']);
+  // Llamada desde un script, la CLI responde en JSON.
+  const json = `Initialising login role...\nConnecting to remote database...\n{"migrations":[{"local":"20261129000100","remote":"20261129000100","time":"x"},{"local":"20261130000100","remote":"","time":"x"},{"local":"","remote":"20261107173033","time":"x"}],"message":"Migrations listed"}`;
+  assert.deepEqual(parseMigrationList(json), { synced: ['20261129000100'], pending: ['20261130000100'], remoteOnly: ['20261107173033'] });
 });
 await check('publicar exige un proyecto de destino explícito y enlazado', async () => {
   const { spawnSync } = await import('node:child_process');

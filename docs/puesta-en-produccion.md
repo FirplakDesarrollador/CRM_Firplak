@@ -53,9 +53,9 @@ npm run db:publicar   -- --proyecto <ref>             # pide escribir el ref y a
 Después: asesor de seguridad de Supabase (Advisors → Security) y, si hubo dudas, la huella del esquema
 (`scripts/huella-esquema.sql` frente a `npm run db:huella`).
 
-> **Proyecto actual (`kltekrfpquakyffbpmiv`):** su historial no coincide con los archivos porque las migraciones
-> se aplicaron con el MCP de Supabase. Antes del primer `db:publicar` hay que conciliarlo:
-> [conciliacion-migraciones.md](conciliacion-migraciones.md). Mientras tanto `db:publicar` se detiene solo.
+> **Proyecto actual (`kltekrfpquakyffbpmiv`):** su historial se concilió el 2026-11-07 y está al día con el
+> repositorio (detalle en [conciliacion-migraciones.md](conciliacion-migraciones.md)). Las migraciones nuevas se
+> publican solo con `db:publicar`, nunca con el MCP de Supabase.
 
 ## 3. Publicar la aplicación (TI)
 

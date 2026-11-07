@@ -31,11 +31,10 @@ se borran (en Metas, dejando vacío el valor de la compañía de cada periodo).
   Si cambia la interfaz, también `npm run test:e2e` y una prueba del flujo en `tests/e2e/`.
 - **Nunca hacer push** sin que Luis lo pida. El repo es **público**: antes de cada push revisar que no salgan
   claves; nunca subir `.env*` (salvo `.env.example`), `rea/` ni `supabase/setup*.sql`.
-- **Aplicar migraciones en producción solo con el visto bueno de Luis.** Flujo definitivo, cuando el historial esté
-  conciliado: `npm run db:pendientes -- --proyecto <ref>` y `npm run db:publicar -- --proyecto <ref>` (sin semillas).
-  Hasta conciliarlo, `db:publicar` se detiene solo. Cada migración que se aplique antes con el MCP (una a la vez)
-  agrega otra versión distinta: hay que sumarla al procedimiento de `docs/conciliacion-migraciones.md`.
-  Después de aplicar: verificar y correr el asesor de seguridad.
+- **Aplicar migraciones en producción solo con el visto bueno de Luis**, con
+  `npm run db:pendientes -- --proyecto kltekrfpquakyffbpmiv` y luego `npm run db:publicar -- --proyecto kltekrfpquakyffbpmiv`
+  (sin semillas; la CLI ya está enlazada en este equipo). **Nunca con el MCP de Supabase** (`apply_migration`):
+  registra otra versión y desincroniza el historial. Después de aplicar: verificar y correr el asesor de seguridad.
 - **Semillas:** `supabase/seeds/01_configuracion.sql` solo para bases nuevas (se niega si ya hay configuración);
   `02_demo.sql` solo para demo y pruebas (se niega si hay usuarios o datos reales). Nunca semillas en producción.
 - Cada cambio de base va en una migración nueva de `supabase/migrations/` con su prueba en `scripts/test-db.mjs`;
@@ -83,9 +82,10 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
   que las guardó con **versiones distintas** a los nombres de archivo: un `supabase db push` intentaría correrlas
   todas de nuevo. **Verificado el 2026-11-07 (solo lectura):** las 35 corresponden una a una; 29 idénticas byte a
   byte, 5 iguales sin comentarios y `clean_places` con los municipios descargados del DANE (mismo contenido). La huella
-  del esquema coincide en los 10 tipos. **Pendiente (con visto bueno de Luis):** conciliar con
-  `supabase migration repair` según [docs/conciliacion-migraciones.md](docs/conciliacion-migraciones.md)
-  (respaldo, 35 `applied`, 35 `reverted`, verificación y recuperación). Aún no se ha ejecutado.
+  del esquema coincide en los 10 tipos. **Conciliado el 2026-11-07** con `supabase migration repair`, con visto
+  bueno de Luis: 35 sincronizadas, 0 pendientes, esquema y datos sin cambios
+  ([docs/conciliacion-migraciones.md](docs/conciliacion-migraciones.md)). El respaldo del historial anterior sigue en
+  `supabase_migrations.schema_migrations_respaldo_20261107`, hasta que Luis decida borrarlo.
 - Extensiones: `pg_cron` (alertas, automatizaciones programadas, instantánea del pronóstico, TRM `firplak-trm-diaria`)
   y `http` (TRM).
 - Ojo con los permisos: en Supabase toda función nueva queda ejecutable por `authenticated`. Las internas
@@ -118,7 +118,6 @@ qué necesitan con urgencia y si usan iPhone o Android.
 - Cambiar el mercado de una cuenta no actualiza la moneda de sus oportunidades abiertas.
 - Columna obsoleta `controlling_values` en dependencias de listas.
 - 184 filas huérfanas en `field_history`.
-- Historial de migraciones de Supabase ≠ repo: procedimiento listo, pendiente de ejecutar (sección 5).
 - `.env.local` apunta a producción: `npm run dev` trabaja con datos reales (usar `dev:demo` para probar).
 
 ### Por confirmar en un iPhone real
@@ -129,7 +128,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-07 | rama `codex/migraciones-seguras` | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Nada aplicado en producción (pendiente de aprobación) |
+| 2026-11-07 | rama `codex/migraciones-seguras` | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Historial conciliado en producción (35/35); el código aún no está en `main` |
 | 2026-11-07 | `079f13b` | Celular: «Guardar» de los formularios encima de la barra inferior; lint ignora `test-results/`. | Desplegado |
 | 2026-11-07 | `0d9f6d0` | Cotizaciones con descuento alto no se presentan sin aprobación. | Migración aplicada y probada |
 | 2026-11-07 | `7e62430` | iPhone instalado: más aire bajo la hora; sin zoom al enfocar campos. | Desplegado |

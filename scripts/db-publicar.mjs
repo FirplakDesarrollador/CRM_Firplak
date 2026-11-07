@@ -23,10 +23,19 @@ const fail = (msg) => {
   process.exit(1);
 };
 
-/** Lee la tabla de `supabase migration list` (texto) y devuelve versiones locales y remotas. */
+/**
+ * Lee `supabase migration list` y devuelve versiones locales y remotas. La CLI imprime una tabla en una
+ * terminal y JSON ({"migrations":[{local, remote, time}]}) cuando la llama un script o un asistente.
+ */
 export function parseMigrationList(text) {
   const rows = [];
-  for (const line of text.split('\n')) {
+  const json = text.indexOf('{"migrations"');
+  if (json >= 0) {
+    const end = text.indexOf('\n', json);
+    const { migrations } = JSON.parse(end < 0 ? text.slice(json) : text.slice(json, end));
+    for (const m of migrations) rows.push({ local: m.local || null, remote: m.remote || null });
+  }
+  for (const line of json >= 0 ? [] : text.split('\n')) {
     const cells = line.split(/[│|]/).map((c) => c.trim());
     if (cells.length < 2) continue;
     const [local, remote] = cells;

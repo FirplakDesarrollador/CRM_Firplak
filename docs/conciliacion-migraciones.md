@@ -1,8 +1,9 @@
 # Conciliación del historial de migraciones (producción)
 
-**Estado: pendiente en producción.** Este documento prepara el procedimiento; no se ha ejecutado nada sobre
-el proyecto. Verificación hecha el **2026-11-07**, en solo lectura, contra el proyecto **CRM**
-(`kltekrfpquakyffbpmiv`, Postgres 17.11) y el repositorio en `20261130000100_quote_approval_gate`.
+**Estado: ejecutado el 2026-11-07, con el visto bueno de Luis.** El historial de producción quedó conciliado:
+35 migraciones sincronizadas y 0 pendientes. La correspondencia se verificó antes en solo lectura contra el proyecto
+**CRM** (`kltekrfpquakyffbpmiv`, Postgres 17.11) y el repositorio en `20261130000100_quote_approval_gate`. El
+resultado está en la sección 5.
 
 ## 1. El problema
 
@@ -76,7 +77,7 @@ Cómo se verificó, sin asumir equivalencia por nombre ni por cantidad:
 - Los nombres de las filas 30–34 no llevan la versión del archivo. La CLI solo compara versiones; la
   conciliación los deja con el nombre del archivo.
 
-## 3. Procedimiento (requiere el visto bueno de Luis; aún no ejecutado)
+## 3. Procedimiento (ejecutado el 2026-11-07)
 
 Solo toca la tabla de historial `supabase_migrations.schema_migrations`: **no ejecuta ninguna migración ni
 cambia el esquema ni los datos del CRM**. `migration repair --status applied` inserta la fila de una versión
@@ -158,7 +159,24 @@ Renombrar los 35 archivos del repositorio a las versiones del MCP: el orden se c
 en la base. Se descarta porque cambia los nombres que usan la documentación, el historial de git y los demás
 entornos, y deja versiones que ya no corresponden a la fecha de cada fase.
 
-## 4. Después de conciliar: publicar cambios
+## 4. Resultado de la ejecución (2026-11-07)
+
+- **Paso 0:** Luis inició sesión y enlazó la CLI (`supabase/.temp/project-ref` = `kltekrfpquakyffbpmiv`). Antes:
+  35 solo locales y 35 solo remotas, como se esperaba.
+- **Paso 1:** respaldo `supabase_migrations.schema_migrations_respaldo_20261107` con 35 filas. Su huella es
+  `cff41031d35f559756fccb707d9d01e7`, igual a la del historial original.
+- **Pasos 2 y 3:** la CLI respondió «Migration history repaired» para las 35 `applied` y para las 35 `reverted`.
+- **Paso 4:**
+  - `migration list`: 35 filas, todas con LOCAL = REMOTE, ninguna solo local ni solo remota.
+  - `db push --dry-run`: «Remote database is up to date».
+  - `npm run db:pendientes`: «Sincronizadas: 35 · Pendientes: 0».
+  - SQL: 35 filas, de `20261029000100` a `20261130000100`, sin versiones del MCP.
+  - La huella del esquema coincide en los 10 tipos, igual que antes: el esquema no cambió.
+  - Los datos tampoco: 0 cuentas y 2 usuarios, como antes.
+- **El respaldo sigue en la base.** Se puede borrar cuando Luis lo decida con
+  `drop table supabase_migrations.schema_migrations_respaldo_20261107;`.
+
+## 5. Después de conciliar: publicar cambios
 
 Cada migración nueva se publica así, nunca con el MCP ni con semillas:
 
@@ -168,4 +186,5 @@ npm run db:publicar   -- --proyecto kltekrfpquakyffbpmiv   # pide escribir el re
 ```
 
 `db:publicar` se detiene si la CLI está enlazada a otro proyecto o si hay migraciones sin confirmar en git. También se
-detiene si el historial remoto tiene versiones que no están en el repositorio, como pasa hoy.
+detiene si el historial remoto tiene versiones que no están en el repositorio. **No vuelvas a aplicar migraciones
+con el MCP de Supabase** (`apply_migration`): las registra con otra versión y el historial se desincroniza de nuevo.
