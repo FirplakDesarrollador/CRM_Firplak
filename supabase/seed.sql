@@ -395,6 +395,10 @@ insert into public.price_books (name, description, is_standard) values
 ('Distribuidores 2026', 'Precios para distribuidores y ferreterías.', false)
 on conflict (name) do nothing;
 
+-- TRM de ejemplo (en producción se consulta cada día a la Superfinanciera).
+insert into public.exchange_rates (currency, valid_from, rate, source) values ('USD', current_date - 7, 4000, 'Ejemplo')
+on conflict do nothing;
+
 insert into public.list_views (object, name, owner_id, is_shared, definition)
 select v.object, v.name, null, true, v.definition::jsonb
 from (values

@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/session";
 import { canSystem, OBJECT_ACTIONS, PERMISSION_OBJECTS, SYSTEM_PERMISSIONS, type PermissionMap } from "@/lib/permissions";
 import { siteUrl } from "@/lib/env";
-import type { FormState } from "@/lib/records/form";
+import { parseAmount, type FormState } from "@/lib/records/form";
 import { VALUES_EN } from "@/lib/i18n/values-en";
 import { EDITABLE_PICKLISTS, EXTRA_PICKLISTS } from "@/lib/objects/picklist-config";
 
@@ -536,6 +536,26 @@ export async function runScheduledAutomationsNow(_prev?: FormState, _fd?: FormDa
   const { data, error } = await g.supabase.rpc("run_scheduled_automations");
   if (error) return fail(error);
   return done(data ? "Automatizaciones programadas ejecutadas" : "No había registros pendientes por automatizar");
+}
+
+export async function refreshExchangeRatesNow(_prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { data, error } = await g.supabase.rpc("refresh_exchange_rates");
+  if (error) return fail(error, "No se pudo consultar la TRM");
+  const rate = Number(data).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return done(`TRM actualizada: $${rate}`, "/configuracion/monedas");
+}
+
+export async function saveManualExchangeRate(_prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const rate = parseAmount(str(fd, "rate"));
+  if (!rate || rate <= 0) return { message: "Escribe una TRM válida, mayor que cero." };
+  const { error } = await g.supabase.rpc("set_exchange_rate", { p_rate: rate });
+  if (error) return fail(error);
+  revalidatePath("/", "layout");
+  return { ok: true, message: "TRM guardada. Las oportunidades abiertas en USD se recalcularon." };
 }
 
 export async function runAlertsNow(_prev?: FormState, _fd?: FormData): Promise<FormState> {

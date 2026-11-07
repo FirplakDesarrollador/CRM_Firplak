@@ -71,9 +71,9 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
                 <td className="py-2 pr-2 text-[var(--ink-500)]">{l.product?.product_code}</td>
                 <td className="py-2 pr-2">{l.description}</td>
                 <td className="py-2 pr-2 text-right tabular-nums">{formatNumber(l.quantity)} {l.product?.unit?.toLowerCase()}</td>
-                <td className="py-2 pr-2 text-right tabular-nums">{formatCurrency(l.unit_price)}</td>
+                <td className="py-2 pr-2 text-right tabular-nums">{formatCurrency(l.unit_price, q.currency)}</td>
                 <td className="py-2 pr-2 text-right tabular-nums">{Number(l.discount) ? `${formatNumber(l.discount)}%` : "—"}</td>
-                <td className="py-2 text-right tabular-nums">{formatCurrency(l.line_total)}</td>
+                <td className="py-2 text-right tabular-nums">{formatCurrency(l.line_total, q.currency)}</td>
               </tr>
             ))}
           </tbody>
@@ -88,11 +88,11 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
               [`IVA (${formatNumber(q.tax_rate)}%)`, q.tax],
               ["Flete", q.shipping],
             ].map(([label, value]) => (
-              <div key={String(label)} className="flex justify-between"><dt className="text-[var(--ink-700)]">{label}</dt><dd className="tabular-nums">{formatCurrency(Number(value))}</dd></div>
+              <div key={String(label)} className="flex justify-between"><dt className="text-[var(--ink-700)]">{label}</dt><dd className="tabular-nums">{formatCurrency(Number(value), q.currency)}</dd></div>
             ))}
             <div className="mt-2 flex items-baseline justify-between border-t border-[rgba(29,29,27,0.14)] pt-2">
               <dt className="font-medium">Total</dt>
-              <dd className="text-xl font-light tracking-tight text-[var(--navy-700)] tabular-nums">{formatCurrency(q.grand_total)} COP</dd>
+              <dd className="text-xl font-light tracking-tight text-[var(--navy-700)] tabular-nums">{formatCurrency(q.grand_total)} {q.currency ?? "COP"}</dd>
             </div>
           </dl>
         </section>

@@ -934,6 +934,52 @@ await check('«Cliente requiere NIT» no aplica a clientes del mercado Internaci
   assert.deepEqual(regla.conditions.find((c) => c.field === 'market'), { field: 'market', op: 'neq', value: 'Internacional' });
 });
 
+console.log('Mercado Internacional en USD');
+await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte con la TRM', async () => {
+  const [ext] = await as(admin, () => q(`insert into accounts (name, market) values ('Exterior USD', 'Internacional') returning id`));
+  const [nac] = await as(admin, () => q(`insert into accounts (name, market) values ('Nacional COP', 'Nacional') returning id`));
+  const [st] = await q(`select s.id, s.pipeline_id from pipeline_stages s where s.category = 'open' order by s.sort_order limit 1`);
+  const crear = (account, campos) => as(admin, () => q(
+    `insert into opportunities (name, account_id, pipeline_id, stage_id, amount, foreign_amount)
+     values ('Moneda ' || gen_random_uuid(), $1, $2, $3, $4, $5) returning id, currency, amount, foreign_amount, exchange_rate`,
+    [account, st.pipeline_id, st.id, campos.amount ?? 0, campos.usd ?? null]));
+  const [usd] = await crear(ext.id, { usd: 1000 });
+  assert.deepEqual([usd.currency, Number(usd.amount), Number(usd.exchange_rate)], ['USD', 4000000, 4000]);
+  const [cop] = await crear(nac.id, { amount: 5000000, usd: 99 });
+  assert.deepEqual([cop.currency, Number(cop.amount), cop.foreign_amount, cop.exchange_rate], ['COP', 5000000, null, null]);
+  await assert.rejects(crear(ext.id, { amount: 3000000 }), /valor en USD/);
+
+  // Una TRM nueva recalcula las abiertas; la cerrada conserva la suya. Solo el administrador la registra.
+  const [cerrada] = await crear(ext.id, { usd: 500 });
+  const [won] = await q(`select id from pipeline_stages where pipeline_id = $1 and category = 'won' limit 1`, [st.pipeline_id]);
+  await as(admin, () => q(`update opportunities set stage_id = $2 where id = $1`, [cerrada.id, won.id]));
+  await assert.rejects(as(rep, () => q(`select set_exchange_rate(4500)`)), /No autorizado/);
+  await assert.rejects(as(rep, () => q(`select refresh_exchange_rates()`)), /No autorizado/);
+  await as(admin, () => q(`select set_exchange_rate(4200)`));
+  const montos = async (id) => (await q(`select amount, exchange_rate from opportunities where id = $1`, [id]))[0];
+  assert.deepEqual(await montos(usd.id), { amount: '4200000.00', exchange_rate: '4200.0000' });
+  assert.deepEqual(await montos(cerrada.id), { amount: '2000000.00', exchange_rate: '4000.0000' });
+  assert.equal(Number((await q(`select to_cop(10, 'USD') v`))[0].v), 42000);
+
+  // Cotización en USD: lista de precios en dólares, IVA 0 % aunque se intente cambiar, y al sincronizar va al Valor en USD.
+  const [qt] = await as(admin, () => q(`insert into quotes (name, opportunity_id) values ('Cotización exterior', $1)
+    returning id, currency, tax_rate, (select currency from price_books where id = price_book_id) book`, [usd.id]));
+  assert.deepEqual([qt.currency, Number(qt.tax_rate), qt.book], ['USD', 0, 'USD']);
+  await as(admin, () => q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 2, 750)`, [qt.id]));
+  await as(admin, () => q(`update quotes set tax_rate = 19 where id = $1`, [qt.id]));
+  const [tot] = await q(`select tax_rate, tax, net_total, grand_total from quotes where id = $1`, [qt.id]);
+  assert.deepEqual([Number(tot.tax_rate), Number(tot.tax), Number(tot.net_total), Number(tot.grand_total)], [0, 0, 1500, 1500]);
+  await as(admin, () => q(`select sync_quote($1)`, [qt.id]));
+  assert.deepEqual(await montos(usd.id), { amount: '6300000.00', exchange_rate: '4200.0000' });
+  const [qcop] = await as(admin, () => q(`insert into quotes (name, opportunity_id) values ('Cotización nacional', $1) returning currency, tax_rate`, [cop.id]));
+  assert.deepEqual([qcop.currency, Number(qcop.tax_rate)], ['COP', 19]);
+
+  await q(`delete from quotes where opportunity_id in ($1, $2)`, [usd.id, cop.id]);
+  await q(`delete from opportunities where account_id in ($1, $2)`, [ext.id, nac.id]);
+  await q(`delete from accounts where id in ($1, $2)`, [ext.id, nac.id]);
+  await q(`delete from exchange_rates where source = 'Manual'`);
+});
+
 console.log('Permisos de las funciones');
 await check('sin sesión solo se ejecutan las funciones del servidor MCP y OAuth', async () => {
   const abiertas = (await q(`

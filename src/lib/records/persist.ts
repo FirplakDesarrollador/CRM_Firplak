@@ -62,6 +62,36 @@ export async function persistRecord(
   }
   if (!values.owner_id) delete values.owner_id;
 
+  // Moneda según el Mercado de la cuenta: en USD se pide el Valor en USD y el Valor en pesos lo calcula la
+  // base con la TRM del día; en pesos se pide el Valor. (La base aplica lo mismo en cualquier otra vía.)
+  let usdPreview: number | null = null;
+  if (objectKey === "opportunities") {
+    const accountChanged = !before || (values.account_id ?? null) !== (before.account_id ?? null);
+    let currency = String(before?.currency ?? "COP");
+    if (accountChanged) {
+      const { data: account } = values.account_id
+        ? await db.from("accounts").select("market").eq("id", String(values.account_id)).maybeSingle()
+        : { data: null };
+      currency = account?.market === "Internacional" ? "USD" : "COP";
+    }
+    if (currency === "COP") {
+      if (values.amount === null || values.amount === undefined) {
+        return { ok: false, state: { errors: { amount: "Campo obligatorio" }, values: echo, message: "Revisa los campos marcados." } };
+      }
+      values.foreign_amount = null;
+    } else {
+      if (values.foreign_amount === null || values.foreign_amount === undefined) {
+        return {
+          ok: false,
+          state: { errors: { foreign_amount: "Campo obligatorio" }, values: echo, message: "La cuenta es del mercado Internacional: indica el valor en USD." },
+        };
+      }
+      delete values.amount;
+      const { data: rate } = await db.rpc("exchange_rate_on", { p_currency: currency });
+      usdPreview = rate ? Math.round(Number(values.foreign_amount) * Number(rate) * 100) / 100 : null;
+    }
+  }
+
   // Posibles duplicados al crear cuentas, contactos o prospectos.
   if (!id && ["accounts", "contacts", "leads"].includes(objectKey) && !opts.ignoreDuplicates) {
     const supabase = await createClient();
@@ -89,6 +119,7 @@ export async function persistRecord(
   // Reglas de validación sobre el estado final del registro.
   let candidate: Record<string, unknown> = { ...(before ?? {}), owner_id: before?.owner_id ?? user.id, ...values };
   if (objectKey === "opportunities") candidate = await withStageEffects(candidate, !before || before.stage_id !== values.stage_id);
+  if (usdPreview !== null) candidate.amount = usdPreview;
   const invalid = await validateRecord(objectKey, candidate, user.id);
   if (invalid) {
     return {

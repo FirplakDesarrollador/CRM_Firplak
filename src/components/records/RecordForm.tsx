@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import type { FieldDef, ObjectDef } from "@/lib/objects";
 import type { FormState } from "@/lib/records/form";
 import { Alert } from "@/components/ui/Alert";
@@ -22,6 +22,19 @@ type Props = {
 export function RecordForm({ def, fields, record, ctx, action, cancelHref, returnTo }: Props) {
   const [state, formAction] = useActionState(action, {});
   const t = useT();
+  const formRef = useRef<HTMLFormElement>(null);
+  // Moneda del registro según el Mercado de la cuenta elegida: decide si se pide el valor en pesos o en USD.
+  const [currency, setCurrency] = useState(String(record?.currency ?? "COP"));
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form || !fields.some((f) => f.formCurrency)) return;
+    const onSelect = (e: Event) => {
+      const { name, item } = (e as CustomEvent<{ name: string; item: { market?: string | null } | null }>).detail;
+      if (name === "account_id") setCurrency(item?.market === "Internacional" ? "USD" : "COP");
+    };
+    form.addEventListener("lookup:select", onSelect);
+    return () => form.removeEventListener("lookup:select", onSelect);
+  }, [fields]);
   const custom = (record?.custom_fields ?? {}) as Record<string, unknown>;
   // Valor actual de un campo (el devuelto tras un error de validación manda sobre el guardado).
   const currentValue = (name: string) => {
@@ -40,7 +53,7 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
   };
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form ref={formRef} action={formAction} className="space-y-5" noValidate>
       {returnTo && <input type="hidden" name="_return" value={returnTo} />}
       {state.duplicates?.length ? (
         <Alert tone="warning">
@@ -52,7 +65,7 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
         </Alert>
       ) : state.message && <Alert tone="error">{t(state.message)}</Alert>}
       {def.sections.map((section) => {
-        const sectionFields = fields.filter((f) => (f.section ?? "info") === section.key);
+        const sectionFields = fields.filter((f) => (f.section ?? "info") === section.key && (!f.formCurrency || f.formCurrency === currency));
         if (!sectionFields.length) return null;
         return (
           <section key={section.key} className="card">

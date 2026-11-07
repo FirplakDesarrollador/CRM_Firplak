@@ -72,7 +72,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
         count: lines?.length ?? 0,
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
-            <QuoteLines quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit} />
+            <QuoteLines quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
             <QuoteTotals q={row} />
           </div>
         ),

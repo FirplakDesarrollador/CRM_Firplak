@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 
-type Option = { id: string; label: string; sub?: string };
+type Option = { id: string; label: string; sub?: string; market?: string | null };
 
 /** Campo de relación con búsqueda remota. Envía el id en un input oculto `name`. */
 export function LookupInput({
@@ -72,6 +72,8 @@ export function LookupInput({
     const value = opt ? { id: opt.id, label: opt.label } : null;
     setSelected(value);
     onChange?.(value);
+    // El formulario puede reaccionar a lo elegido (p. ej. la moneda según el Mercado de la cuenta).
+    boxRef.current?.closest("form")?.dispatchEvent(new CustomEvent("lookup:select", { detail: { name, item: opt } }));
     setOpen(false);
     setTerm("");
   };

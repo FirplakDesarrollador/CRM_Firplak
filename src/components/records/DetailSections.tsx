@@ -6,7 +6,8 @@ export function DetailSections({ def, row, hide = [] }: { def: ObjectDef; row: R
   return (
     <div className="space-y-4">
       {def.sections.map((section) => {
-        const fields = def.fields.filter((f) => (f.section ?? "info") === section.key && !hide.includes(f.name));
+        const fields = def.fields.filter((f) => (f.section ?? "info") === section.key && !hide.includes(f.name)
+          && !(f.hideEmpty && (row[f.name] === null || row[f.name] === undefined || row[f.name] === "")));
         if (!fields.length) return null;
         return (
           <section key={section.key} className="card">

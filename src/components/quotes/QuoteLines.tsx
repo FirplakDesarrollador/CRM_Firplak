@@ -27,7 +27,7 @@ const KINDS = {
 } as const;
 type Kind = keyof typeof KINDS;
 
-function LineRow({ line, canEdit, kind }: { line: QuoteLine; canEdit: boolean; kind: Kind }) {
+function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: boolean; kind: Kind; currency: string }) {
   const [state, action] = useActionState(KINDS[kind].update.bind(null, line.id), {} as FormState);
   const [delState, del] = useActionState(KINDS[kind].remove.bind(null, line.id), {} as FormState);
   return (
@@ -41,7 +41,7 @@ function LineRow({ line, canEdit, kind }: { line: QuoteLine; canEdit: boolean; k
           <input name="quantity" aria-label="Cantidad" defaultValue={line.quantity} inputMode="decimal" className="input num h-8 text-right" />
           <input name="unit_price" aria-label="Precio unitario" defaultValue={line.unit_price} inputMode="decimal" className="input num h-8 text-right" />
           <input name="discount" aria-label="Descuento %" defaultValue={line.discount} inputMode="decimal" className="input num h-8 text-right" />
-          <p className="num text-right font-medium">{formatCurrency(line.line_total)}</p>
+          <p className="num text-right font-medium">{formatCurrency(line.line_total, currency)}</p>
           <div className="flex items-center justify-end gap-1">
             <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
             <button type="submit" formAction={del} className="btn btn-sm btn-ghost text-danger" aria-label="Quitar línea"
@@ -53,9 +53,9 @@ function LineRow({ line, canEdit, kind }: { line: QuoteLine; canEdit: boolean; k
       ) : (
         <>
           <p className="num text-right">{formatNumber(line.quantity)}</p>
-          <p className="num text-right">{formatCurrency(line.unit_price)}</p>
+          <p className="num text-right">{formatCurrency(line.unit_price, currency)}</p>
           <p className="num text-right">{formatNumber(line.discount)}%</p>
-          <p className="num text-right font-medium">{formatCurrency(line.line_total)}</p>
+          <p className="num text-right font-medium">{formatCurrency(line.line_total, currency)}</p>
           <span />
         </>
       )}
@@ -64,7 +64,7 @@ function LineRow({ line, canEdit, kind }: { line: QuoteLine; canEdit: boolean; k
   );
 }
 
-export function QuoteLines({ quoteId, lines, canEdit, kind = "quote" }: { quoteId: string; lines: QuoteLine[]; canEdit: boolean; kind?: Kind }) {
+export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency = "COP" }: { quoteId: string; lines: QuoteLine[]; canEdit: boolean; kind?: Kind; currency?: string }) {
   const [state, action] = useActionState(KINDS[kind].add.bind(null, quoteId), {} as FormState);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -80,7 +80,7 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote" }: { quoteI
       </div>
       <ul className="divide-y divide-[var(--border)]">
         {lines.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted"><Tr>{KINDS[kind].empty}</Tr></li>}
-        {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} />)}
+        {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} currency={currency} />)}
       </ul>
       {canEdit && (
         <form ref={formRef} action={action} className="grid gap-3 border-t border-line bg-surface-2 p-4 md:grid-cols-[minmax(0,1fr)_7rem_9rem_6rem_auto] md:items-end">

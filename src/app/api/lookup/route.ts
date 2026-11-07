@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     cases: "case_number, status",
     campaigns: "campaign_type, status",
   };
-  let query = db.from(def.table).select(`id, ${def.nameField}, ${subtitle[object]}`).limit(10).order(def.nameField);
+  const extra = object === "accounts" ? ", market" : "";
+  let query = db.from(def.table).select(`id, ${def.nameField}, ${subtitle[object]}${extra}`).limit(10).order(def.nameField);
   // Por todas las columnas de búsqueda del objeto: p. ej. un producto por su referencia o una cuenta por su NIT.
   query = applySearch(query, def, term);
   if (object === "products") query = query.eq("is_active", true);
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
     id: String(r.id),
     label: String(r[def.nameField] ?? ""),
     sub: subtitle[object].split(", ").map((k) => r[k]).filter(Boolean).join(" · "),
+    ...(object === "accounts" ? { market: (r.market as string | null) ?? null } : {}),
   }));
   return NextResponse.json({ results });
 }

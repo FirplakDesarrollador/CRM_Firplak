@@ -50,7 +50,7 @@ export function FieldValue({ field, row, linkName }: { field: FieldDef; row: Rec
 
   switch (field.type) {
     case "currency":
-      return <span className="num">{formatCurrency(value as number)}</span>;
+      return <span className="num">{formatCurrency(value as number, field.currencyCode ?? (field.currencyField ? String(row[field.currencyField] ?? "COP") : "COP"))}</span>;
     case "number":
       return <span className="num">{formatNumber(value as number)}</span>;
     case "percent":

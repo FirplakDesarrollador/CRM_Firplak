@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { QUOTE_STATUSES } from "./picklists";
+import { INCOTERMS, QUOTE_STATUSES } from "./picklists";
 
 export const quotes: ObjectDef = {
   key: "quotes",
@@ -39,19 +39,21 @@ export const quotes: ObjectDef = {
     { name: "expiration_date", label: "Válida hasta", type: "date", section: "info" },
     { name: "is_synced", label: "Sincronizada con la oportunidad", type: "checkbox", readOnly: true, formHidden: true, section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
-    { name: "subtotal", label: "Subtotal", type: "currency", readOnly: true, formHidden: true, section: "totals" },
-    { name: "discount_total", label: "Descuentos", type: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "subtotal", label: "Subtotal", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "discount_total", label: "Descuentos", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "discount_percent", label: "Descuento (%)", type: "percent", readOnly: true, formHidden: true, section: "totals" },
-    { name: "net_total", label: "Total neto", type: "currency", readOnly: true, formHidden: true, section: "totals" },
-    { name: "tax_rate", label: "IVA (%)", type: "percent", section: "totals" },
-    { name: "tax", label: "IVA", type: "currency", readOnly: true, formHidden: true, section: "totals" },
-    { name: "shipping", label: "Flete", type: "currency", section: "totals" },
-    { name: "grand_total", label: "Total", type: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "net_total", label: "Total neto", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "tax_rate", label: "IVA (%)", type: "percent", section: "totals", help: "En dólares (mercado Internacional) siempre es 0 %." },
+    { name: "currency", label: "Moneda", type: "text", readOnly: true, formHidden: true, section: "totals" },
+    { name: "tax", label: "IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "shipping", label: "Flete", type: "currency", currencyField: "currency", section: "totals" },
+    { name: "grand_total", label: "Total", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "bill_to_name", label: "Facturar a", type: "text", section: "terms" },
     { name: "billing_address", label: "Dirección de facturación", type: "text", section: "terms" },
     { name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms" },
     { name: "payment_terms", label: "Condiciones de pago", type: "text", section: "terms" },
     { name: "delivery_terms", label: "Condiciones de entrega", type: "text", section: "terms" },
+    { name: "incoterm", label: "Incoterm", type: "select", options: INCOTERMS, section: "terms", help: "Para exportaciones (mercado Internacional)." },
     { name: "description", label: "Notas", type: "textarea", wide: true, section: "terms" },
     { name: "created_at", label: "Creada", type: "datetime", readOnly: true, formHidden: true, section: "system" },
     { name: "updated_at", label: "Última modificación", type: "datetime", readOnly: true, formHidden: true, section: "system" },

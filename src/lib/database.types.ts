@@ -1242,6 +1242,37 @@ export type Database = {
           },
         ]
       }
+      exchange_rates: {
+        Row: {
+          created_by: string | null
+          currency: string
+          fetched_at: string
+          rate: number
+          source: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          created_by?: string | null
+          currency: string
+          fetched_at?: string
+          rate: number
+          source?: string
+          valid_from: string
+          valid_to?: string | null
+        }
+        Update: {
+          created_by?: string | null
+          currency?: string
+          fetched_at?: string
+          rate?: number
+          source?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+        ]
+      }
       external_links: {
         Row: {
           etag: string | null
@@ -2161,8 +2192,10 @@ export type Database = {
           currency: string
           custom_fields: Json
           description: string | null
+          exchange_rate: number | null
           expected_revenue: number | null
           forecast_category: string
+          foreign_amount: number | null
           id: string
           is_closed: boolean
           is_demo: boolean
@@ -2192,8 +2225,10 @@ export type Database = {
           currency?: string
           custom_fields?: Json
           description?: string | null
+          exchange_rate?: number | null
           expected_revenue?: never
           forecast_category?: string
+          foreign_amount?: number | null
           id?: string
           is_closed?: boolean
           is_demo?: boolean
@@ -2223,8 +2258,10 @@ export type Database = {
           currency?: string
           custom_fields?: Json
           description?: string | null
+          exchange_rate?: number | null
           expected_revenue?: never
           forecast_category?: string
+          foreign_amount?: number | null
           id?: string
           is_closed?: boolean
           is_demo?: boolean
@@ -2574,6 +2611,7 @@ export type Database = {
           contact_id: string | null
           created_at: string
           created_by: string | null
+          currency: string
           custom_fields: Json
           customer_po: string | null
           delivered_at: string | null
@@ -2582,6 +2620,7 @@ export type Database = {
           discount_total: number
           grand_total: number
           id: string
+          incoterm: string | null
           is_demo: boolean
           name: string
           net_total: number
@@ -2613,6 +2652,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string
           custom_fields?: Json
           customer_po?: string | null
           delivered_at?: string | null
@@ -2621,6 +2661,7 @@ export type Database = {
           discount_total?: number
           grand_total?: number
           id?: string
+          incoterm?: string | null
           is_demo?: boolean
           name: string
           net_total?: number
@@ -2652,6 +2693,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string
           custom_fields?: Json
           customer_po?: string | null
           delivered_at?: string | null
@@ -2660,6 +2702,7 @@ export type Database = {
           discount_total?: number
           grand_total?: number
           id?: string
+          incoterm?: string | null
           is_demo?: boolean
           name?: string
           net_total?: number
@@ -3223,6 +3266,7 @@ export type Database = {
           contact_id: string | null
           created_at: string
           created_by: string | null
+          currency: string
           custom_fields: Json
           delivery_terms: string | null
           description: string | null
@@ -3231,6 +3275,7 @@ export type Database = {
           expiration_date: string | null
           grand_total: number
           id: string
+          incoterm: string | null
           is_demo: boolean
           is_synced: boolean
           name: string
@@ -3255,6 +3300,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string
           custom_fields?: Json
           delivery_terms?: string | null
           description?: string | null
@@ -3263,6 +3309,7 @@ export type Database = {
           expiration_date?: string | null
           grand_total?: number
           id?: string
+          incoterm?: string | null
           is_demo?: boolean
           is_synced?: boolean
           name: string
@@ -3287,6 +3334,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string
           custom_fields?: Json
           delivery_terms?: string | null
           description?: string | null
@@ -3295,6 +3343,7 @@ export type Database = {
           expiration_date?: string | null
           grand_total?: number
           id?: string
+          incoterm?: string | null
           is_demo?: boolean
           is_synced?: boolean
           name?: string
@@ -3788,6 +3837,13 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      exchange_rate_on: {
+        Args: {
+          p_currency: string
+          p_date?: string
+        }
+        Returns: number
+      }
       execute_automation_actions: {
         Args: {
           p_rule: string
@@ -4070,6 +4126,10 @@ export type Database = {
         }
         Returns: string
       }
+      recalc_foreign_opportunities: {
+        Args: never
+        Returns: number
+      }
       recalc_order: {
         Args: {
           p_order: string
@@ -4107,8 +4167,30 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_exchange_rates: {
+        Args: never
+        Returns: number
+      }
       run_scheduled_automations: {
         Args: never
+        Returns: number
+      }
+      save_exchange_rate: {
+        Args: {
+          p_currency: string
+          p_from: string
+          p_to: string
+          p_rate: number
+          p_source: string
+        }
+        Returns: undefined
+      }
+      set_exchange_rate: {
+        Args: {
+          p_rate: number
+          p_currency?: string
+          p_from?: string
+        }
         Returns: number
       }
       set_opportunity_splits: {
@@ -4148,6 +4230,13 @@ export type Database = {
           p_id: string
         }
         Returns: string
+      }
+      to_cop: {
+        Args: {
+          p_amount: number
+          p_currency: string
+        }
+        Returns: number
       }
       try_numeric: {
         Args: {

@@ -17,7 +17,7 @@ function display(field: FieldDef | undefined, raw: string | null, names: Map<str
   if (!field) return raw;
   if (["user", "lookup", "stage"].includes(field.type) || field.name === "pipeline_id") return names.get(raw) ?? "(registro eliminado o sin acceso)";
   switch (field.type) {
-    case "currency": return formatCurrency(Number(raw));
+    case "currency": return formatCurrency(Number(raw), field.currencyCode);
     case "number": return formatNumber(Number(raw));
     case "percent": return formatPercent(Number(raw));
     case "date": return formatDate(raw, locale);

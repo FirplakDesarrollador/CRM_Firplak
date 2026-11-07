@@ -22,8 +22,13 @@ export default async function NewOpportunityPage({ searchParams }: PageProps<"/o
   };
   const supabase = await createClient();
   if (accountId) {
-    const { data } = await supabase.from("accounts").select("id, name").eq("id", accountId).maybeSingle();
-    if (data) Object.assign(defaults, { account_id: data.id, account: data, name: `${data.name} · Nueva oportunidad` });
+    const { data } = await supabase.from("accounts").select("id, name, market").eq("id", accountId).maybeSingle();
+    if (data) {
+      Object.assign(defaults, {
+        account_id: data.id, account: { id: data.id, name: data.name }, name: `${data.name} · Nueva oportunidad`,
+        currency: data.market === "Internacional" ? "USD" : "COP",
+      });
+    }
   }
   if (contactId) {
     const { data } = await supabase.from("contacts").select("id, full_name").eq("id", contactId).maybeSingle();

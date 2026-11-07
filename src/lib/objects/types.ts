@@ -42,6 +42,13 @@ export type FieldDef = {
    * lista. Un valor se puede elegir si corresponde a lo elegido en todas.
    */
   dependsOn?: { field: string; optionsByController: Record<string, string[]> }[];
+  /** Moneda fija del valor (p. ej. «USD»), o columna del registro que la indica (`currencyField`). */
+  currencyCode?: string;
+  currencyField?: string;
+  /** En el formulario, solo aparece cuando la moneda del registro (según el Mercado de la cuenta) es esta. */
+  formCurrency?: "COP" | "USD";
+  /** En el detalle, no se muestra si está vacío. */
+  hideEmpty?: boolean;
 };
 
 export type ObjectDef = {

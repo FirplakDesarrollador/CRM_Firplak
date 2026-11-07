@@ -41,7 +41,15 @@ export const opportunities: ObjectDef = {
     { name: "next_step", label: "Siguiente paso", type: "text", section: "info" },
     { name: "loss_reason", label: "Motivo de pérdida", type: "select", options: LOSS_REASONS, section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
-    { name: "amount", label: "Valor", type: "currency", required: true, section: "forecast" },
+    // Nacional: el vendedor escribe el Valor en pesos. Internacional: escribe el Valor en USD y el Valor en
+    // pesos se calcula con la TRM del día (la base lo recalcula mientras está abierta).
+    { name: "amount", label: "Valor", type: "currency", formCurrency: "COP", section: "forecast" },
+    {
+      name: "foreign_amount", label: "Valor en USD", type: "currency", currencyCode: "USD", formCurrency: "USD", hideEmpty: true,
+      section: "forecast", help: "Cuenta del mercado Internacional: el Valor en pesos se calcula con la TRM oficial del día.",
+    },
+    { name: "currency", label: "Moneda", type: "text", readOnly: true, formHidden: true, section: "forecast" },
+    { name: "exchange_rate", label: "TRM", type: "number", readOnly: true, formHidden: true, hideEmpty: true, section: "forecast" },
     { name: "close_date", label: "Fecha de cierre", type: "date", required: true, section: "forecast" },
     { name: "probability", label: "Probabilidad", type: "percent", section: "forecast", help: "Se actualiza al cambiar de etapa." },
     { name: "expected_revenue", label: "Ingreso esperado", type: "currency", readOnly: true, formHidden: true, section: "forecast" },

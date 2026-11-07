@@ -3,6 +3,8 @@
 
 export const ACCOUNT_TYPES = ["Prospecto", "Cliente", "Distribuidor", "Partner", "Competidor", "Otro"];
 export const MARKETS = ["Nacional", "Internacional"];
+/** Incoterms 2020: condiciones de entrega en exportación. */
+export const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 export const INDUSTRIES = [
   "Construcción", "Inmobiliario", "Vivienda social", "Hotelería", "Salud", "Educación", "Retail", "Comercio",
   "Distribución de materiales", "Ferretería", "Arquitectura y diseño", "Gobierno", "Otro",
