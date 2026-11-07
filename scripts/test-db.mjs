@@ -1033,7 +1033,8 @@ await check('quien inicia sesión sigue usando las funciones de la aplicación',
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
   }
   for (const fn of ['copy_default_team(text,uuid,uuid)', 'recalc_quote(uuid)', 'apply_field_updates(text,uuid,jsonb)',
-    'save_exchange_rate(text,date,date,numeric,text)', 'recalc_foreign_opportunities()']) {
+    'save_exchange_rate(text,date,date,numeric,text)', 'recalc_foreign_opportunities()',
+    'conditions_without_status(jsonb)', 'enforce_quote_approval()']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, false, fn);
   }
   // Una función creada después no queda abierta a quien no tiene sesión.
@@ -1043,6 +1044,45 @@ await check('quien inicia sesión sigue usando las funciones de la aplicación',
   } finally {
     await db.exec(`drop function public.prueba_nueva()`);
   }
+});
+
+console.log('Aprobación obligatoria de cotizaciones');
+await check('una cotización con descuento alto no se presenta ni se marca aprobada sin el flujo de aprobación', async () => {
+  await db.exec(`update profiles set manager_id = '${mgr.id}' where id = '${rep.id}'`);
+  const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización con descuento', $1) returning id, status`, [repOpp.id]));
+  const [line] = await as(rep, () => q(`insert into quote_line_items (quote_id, description, quantity, unit_price, discount) values ($1, 'Mueble', 10, 1000000, 20) returning id`, [qt.id]));
+  for (const status of ['Presentada', 'Aceptada', 'Aprobada', 'En revisión']) {
+    await assert.rejects(as(rep, () => q(`update quotes set status = $1 where id = $2`, [status, qt.id])), /requiere aprobación/, status);
+  }
+  // El administrador tampoco se la salta.
+  await assert.rejects(as(admin, () => q(`update quotes set status = 'Presentada' where id = $1`, [qt.id])), /requiere aprobación/);
+
+  // Con 10 % no requiere aprobación: se presenta sin más; subir el descuento ya presentada se rechaza.
+  await as(rep, () => q(`update quote_line_items set discount = 10 where id = $1`, [line.id]));
+  await as(rep, () => q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]));
+  await assert.rejects(as(rep, () => q(`update quote_line_items set discount = 20 where id = $1`, [line.id])), /pásala a Borrador/);
+
+  // Por el flujo: Borrador, 20 %, enviar, aprobar; ahí sí se presenta.
+  await as(rep, () => q(`update quotes set status = 'Borrador' where id = $1`, [qt.id]));
+  await as(rep, () => q(`update quote_line_items set discount = 20 where id = $1`, [line.id]));
+  const [{ id: req }] = await as(rep, () => q(`select submit_approval(id, $1) as id from approval_processes where object = 'quotes' and name = 'Descuento superior al 15 %'`, [qt.id]));
+  await as(mgr, () => q(`select decide_approval($1, true, 'Ok')`, [req]));
+  assert.equal((await q(`select status from quotes where id = $1`, [qt.id]))[0].status, 'Aprobada');
+  await as(rep, () => q(`update quotes set status = 'Presentada', description = 'Enviada al cliente' where id = $1`, [qt.id]));
+
+  // Cambiar el descuento después de aprobada exige aprobar de nuevo.
+  await assert.rejects(as(rep, () => q(`update quote_line_items set discount = 22 where id = $1`, [line.id])), /pásala a Borrador/);
+  await as(rep, () => q(`update quote_line_items set quantity = 12 where id = $1`, [line.id]));
+  await as(rep, () => q(`update quotes set status = 'Borrador' where id = $1`, [qt.id]));
+  await as(rep, () => q(`update quote_line_items set discount = 22 where id = $1`, [line.id]));
+  await assert.rejects(as(rep, () => q(`update quotes set status = 'Presentada' where id = $1`, [qt.id])), /requiere aprobación/);
+  // Bajar el descuento al 15 % la deja presentar sin aprobación.
+  await as(rep, () => q(`update quote_line_items set discount = 15 where id = $1`, [line.id]));
+  await as(rep, () => q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]));
+
+  // Sin sesión (cargas, tareas del sistema) no se revisa.
+  await q(`update quote_line_items set discount = 30 where id = $1`, [line.id]);
+  await q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]);
 });
 
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

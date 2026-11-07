@@ -116,6 +116,32 @@ test.describe("administrador", () => {
 });
 
 test.describe("aprobaciones", () => {
+  test("una cotización con descuento alto no se puede presentar sin pasar por aprobación", async ({ browser }) => {
+    const asesora = await (await browser.newContext({ storageState: sesion("asesora") })).newPage();
+    await asesora.goto("/oportunidades");
+    await asesora.getByRole("link", { name: "Hogar y Acabados · Exhibición nueva tienda Chía" }).first().click();
+    await asesora.getByRole("link", { name: "Nueva cotización" }).click();
+    await expect(asesora).toHaveURL(/\/cotizaciones\/nueva/);
+    await asesora.waitForLoadState("networkidle");
+    await guardar(asesora);
+    await expect(asesora).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+
+    await expect(async () => {
+      await asesora.locator("#ql-product").fill("mueble");
+      await asesora.getByRole("option").first().click({ timeout: 2000 });
+    }).toPass();
+    await asesora.locator("#ql-disc").fill("20");
+    await asesora.getByRole("button", { name: "Agregar" }).click();
+    await expect(asesora.getByText("Requiere aprobación:")).toBeVisible();
+
+    // Saltar a «Presentada» desde la barra de estados se rechaza y la cotización sigue en Borrador.
+    await asesora.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Presentada", exact: true }).click();
+    await expect(asesora.getByText(/requiere aprobación .*antes de pasarla a «Presentada»/)).toBeVisible();
+    await asesora.reload();
+    await expect(asesora.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Borrador", exact: true })).toBeDisabled();
+    await expect(asesora.getByRole("button", { name: /enviar a aprobaci/i })).toBeVisible();
+  });
+
   test("un descuento alto va a aprobación, el jefe recibe el push y lo aprueba", async ({ browser }) => {
     const contextoGerente = await browser.newContext({ storageState: sesion("gerente") });
     const dispositivo = await usarPushSimulado(contextoGerente);

@@ -3296,6 +3296,7 @@ export type Database = {
       quotes: {
         Row: {
           account_id: string | null
+          approval_basis_at: string | null
           bill_to_name: string | null
           billing_address: string | null
           contact_id: string | null
@@ -3330,6 +3331,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          approval_basis_at?: string | null
           bill_to_name?: string | null
           billing_address?: string | null
           contact_id?: string | null
@@ -3364,6 +3366,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          approval_basis_at?: string | null
           bill_to_name?: string | null
           billing_address?: string | null
           contact_id?: string | null
@@ -3826,6 +3829,12 @@ export type Database = {
           p_conditions: Json
         }
         Returns: boolean
+      }
+      conditions_without_status: {
+        Args: {
+          p_conditions: Json
+        }
+        Returns: Json
       }
       convert_lead: {
         Args: {
