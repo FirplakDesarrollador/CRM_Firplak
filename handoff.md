@@ -80,14 +80,13 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 ## 5. Producción (Supabase)
 
-- **Pendiente de aplicar (espera el visto bueno de Luis):** `20261201000100_channels_pricing_billing` (canales, listas
-  por canal y de cliente, facturación de cotizaciones, embudos por canal). Además de las columnas y reglas, liga en
-  producción «Proyectos y constructoras» → Canal Constructores, «Distribución y retail» → Canal Distribución,
-  «Constructor Nacional» → Canal Constructores y «Distribucion Nacional» → Canal Distribución (solo si existen con
-  esos nombres). La cotización de prueba que ya existe conserva lo escrito en entrega y condiciones de pago (quedan
-  marcadas como manuales). Publicar con `npm run db:publicar -- --proyecto kltekrfpquakyffbpmiv` y luego desplegar
-  (push a `main`): el código nuevo necesita la migración.
-- 35 migraciones del repo aplicadas (la última, `20261130000100_quote_approval_gate`). Se aplicaron con el MCP,
+- **36 migraciones aplicadas**; la última, `20261201000100_channels_pricing_billing`, el 2026-11-07 con
+  `db:publicar` y visto bueno de Luis (historial 36/36, 0 pendientes). Ligó en producción «Proyectos y constructoras» y
+  «Constructor Nacional» → Canal Constructores, «Distribución y retail» y «Distribucion Nacional» → Canal Distribución;
+  «Lista exportación USD» quedó general. La cotización de prueba COT-1002 conservó su entrega y condiciones de pago
+  (marcadas como manuales). La oportunidad de prueba «Prueba» es anterior a la regla: quedó en «Proyectos y
+  constructoras» aunque su cuenta es Canal Distribución (se moverá si se cambia su cuenta o el canal de la cuenta).
+- Historia previa: las primeras 35 migraciones (hasta `20261130000100_quote_approval_gate`). Se aplicaron con el MCP,
   que las guardó con **versiones distintas** a los nombres de archivo: un `supabase db push` intentaría correrlas
   todas de nuevo. **Verificado el 2026-11-07 (solo lectura):** las 35 corresponden una a una; 29 idénticas byte a
   byte, 5 iguales sin comentarios y `clean_places` con los municipios descargados del DANE (mismo contenido). La huella
@@ -100,7 +99,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - Ojo con los permisos: en Supabase toda función nueva queda ejecutable por `authenticated`. Las internas
   (`security definer`) necesitan `revoke execute ... from public, anon, authenticated` explícito y entrar en la
   lista de `db:test`. PGlite no reproduce esto.
-- Asesor de seguridad (2026-11-07): sin hallazgos nuevos. Quedan los conocidos: funciones OAuth/MCP abiertas a
+- Asesor de seguridad (2026-11-07, tras la migración de canales): sin hallazgos nuevos. Quedan los conocidos: funciones OAuth/MCP abiertas a
   `anon` a propósito, ~60 funciones de la app ejecutables por usuarios (con sus propias validaciones),
   *Leaked password protection* desactivado (se activa en Supabase → Auth).
 
@@ -142,7 +141,8 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-07 | `1a61057` | Canales de venta: pipeline y lista de precios por canal, lista propia del cliente («No codificado»), «Facturar a» = cuenta de la oportunidad (o se crea la oportunidad), direcciones y condiciones de pago desde la cuenta con opción manual, Canal obligatorio, un embudo por canal en Indicadores. | Migración `20261201000100` **pendiente**; sin desplegar |
+| 2026-11-07 | `64d9d84` | `db:publicar` leía 0 pendientes con la tabla de la CLI en terminal (comillas invertidas); corregido con prueba. | Desplegado |
+| 2026-11-07 | `1a61057` | Canales de venta: pipeline y lista de precios por canal, lista propia del cliente («No codificado»), «Facturar a» = cuenta de la oportunidad (o se crea la oportunidad), direcciones y condiciones de pago desde la cuenta con opción manual, Canal obligatorio, un embudo por canal en Indicadores. | Migración `20261201000100` aplicada; desplegado (Vercel OK) |
 | 2026-11-07 | — | Borradas en producción las 5 metas de compañía de ejemplo (Luis cargará las reales). | Datos: 0 metas |
 | 2026-11-07 | `4fb30e2`, `e882886` (rama `codex/migraciones-seguras`, fusionada en `main`) | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Historial conciliado en producción (35/35); desplegado (sin cambios visibles en la app) |
 | 2026-11-07 | `079f13b` | Celular: «Guardar» de los formularios encima de la barra inferior; lint ignora `test-results/`. | Desplegado |
