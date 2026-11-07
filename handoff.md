@@ -13,7 +13,7 @@
 |---|---|
 | Producto | CRM comercial de Firplak (muebles de baño, duchas, accesorios): cuentas, prospectos, oportunidades, cotizaciones, pedidos, actividades, casos, campañas, metas, pronóstico, indicadores e informes. Interfaz en español (con inglés por usuario), responsive e instalable en el celular. |
 | Responsable | Luis Escobar (luis.escobar@firplak.com). TI de Firplak administra GitHub, Supabase y Vercel. |
-| Código | `firplak-crm/` · GitHub **público** `FirplakDesarrollador/CRM_Firplak`, rama `main` (subir a `main` despliega producción). Rama local en curso: `codex/migraciones-seguras` (sin subir). |
+| Código | `firplak-crm/` · GitHub **público** `FirplakDesarrollador/CRM_Firplak`, rama `main` (subir a `main` despliega producción). |
 | Producción | https://crm-firplak.vercel.app (Vercel, despliega solo al subir a `main`). |
 | Base de datos | Supabase, proyecto **CRM** (`kltekrfpquakyffbpmiv`, org Firplak SA, us-east-1, Postgres 17). |
 | ERP | SAP Business One (Service Layer). |
@@ -128,7 +128,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-07 | rama `codex/migraciones-seguras` | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Historial conciliado en producción (35/35); el código aún no está en `main` |
+| 2026-11-07 | `4fb30e2`, `e882886` (rama `codex/migraciones-seguras`, fusionada en `main`) | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Historial conciliado en producción (35/35); desplegado (sin cambios visibles en la app) |
 | 2026-11-07 | `079f13b` | Celular: «Guardar» de los formularios encima de la barra inferior; lint ignora `test-results/`. | Desplegado |
 | 2026-11-07 | `0d9f6d0` | Cotizaciones con descuento alto no se presentan sin aprobación. | Migración aplicada y probada |
 | 2026-11-07 | `7e62430` | iPhone instalado: más aire bajo la hora; sin zoom al enfocar campos. | Desplegado |
