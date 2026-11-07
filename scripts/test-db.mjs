@@ -285,7 +285,8 @@ await check('find_duplicates detecta cuentas con el mismo NIT o nombre normaliza
 await check('merge_records mueve los relacionados al principal y elimina el duplicado', async () => {
   await as(admin, async () => {
     const [m] = await q(`select id from accounts where name = 'Almacenes Casa Viva'`);
-    const [d] = await q(`select id from accounts where name = 'ALMACENES CASA VIVA S.A.S.'`);
+    // Los nombres se guardan limpios: el duplicado quedó como «Almacenes Casa Viva S.A.S.».
+    const [d] = await q(`select id from accounts where name = 'Almacenes Casa Viva S.A.S.'`);
     await q(`insert into contacts (last_name, account_id) values ('Duplicado', $1)`, [d.id]);
     await q(`select merge_records('accounts', $1, $2)`, [m.id, d.id]);
     assert.equal(await count(`select count(*) n from accounts where id = $1`, [d.id]), 0);
@@ -516,7 +517,7 @@ await check('las instantáneas del pronóstico guardan la tendencia y los cambio
   const changed = changes.find((c) => c.opportunity_id === opp.id);
   assert.ok(changed);
   assert.equal(Number(changed.amount_after) - Number(changed.amount_before), 50000000);
-  assert.ok(changes.some((c) => c.name === 'Oportunidad nueva de prueba' && c.is_new));
+  assert.ok(changes.some((c) => c.name === 'Oportunidad Nueva de Prueba' && c.is_new));
   // El asesor solo ve su propia línea de tendencia.
   const mine = await as(rep, () => q(`select count(distinct user_id) n from forecast_snapshots`));
   assert.ok(Number(mine[0].n) <= 1);
@@ -837,6 +838,62 @@ await check('Segmento depende de Mercado y Canal: la base rechaza combinaciones 
   await q(`delete from accounts where name like 'Dependencias %'`);
   await q(`delete from picklist_dependencies`);
   await q(`delete from picklist_values where object = 'accounts' and field = 'segment'`);
+});
+
+console.log('Nombres limpios');
+await check('normalize_name: mayúscula inicial, conectores, siglas y números romanos', async () => {
+  const casos = [
+    ['SODIMAC Colombia', 'Sodimac Colombia'],
+    ['luis escobar', 'Luis Escobar'],
+    ['altos de BELLALUNA', 'Altos de Bellaluna'],
+    ['  maría   de los ángeles  ', 'María de los Ángeles'],
+    ['HOTEL MIRADOR DE LA BAHÍA', 'Hotel Mirador de la Bahía'],
+    ['almacenes la 14', 'Almacenes La 14'],
+    ['cartagena de indias', 'Cartagena de Indias'],
+    ['constructora altos del valle sas', 'Constructora Altos del Valle S.A.S.'],
+    ['ferretería el constructor ltda', 'Ferretería El Constructor Ltda.'],
+    ['comercializadora andina c.i. s.a.', 'Comercializadora Andina C.I. S.A.'],
+    ['bogotá d.c.', 'Bogotá D.C.'],
+    ['torre iii fase 2 (etapa norte)', 'Torre III Fase 2 (Etapa Norte)'],
+    ['jean-pierre ÑÚÑEZ', 'Jean-Pierre Ñúñez'],
+    ['cocinas 4x4 y baños', 'Cocinas 4x4 y Baños'],
+    ['de la torre', 'De la Torre'],
+  ];
+  for (const [entrada, esperado] of casos) {
+    assert.equal((await q(`select normalize_name($1) n`, [entrada]))[0].n, esperado, entrada);
+  }
+});
+await check('al guardar, nombres, ciudades y correos quedan limpios; los demo no se tocan', async () => {
+  const [cuenta] = await as(admin, () => q(
+    `insert into accounts (name, billing_city, email) values ('SODIMAC colombia', 'MEDELLÍN', '  Compras@Sodimac.COM ') returning id, name, billing_city, email`));
+  assert.deepEqual([cuenta.name, cuenta.billing_city, cuenta.email], ['Sodimac Colombia', 'Medellín', 'compras@sodimac.com']);
+  const [contacto] = await as(admin, () => q(
+    `insert into contacts (first_name, last_name, account_id) values ('luis', 'escobar', $1) returning full_name`, [cuenta.id]));
+  assert.equal(contacto.full_name, 'Luis Escobar');
+  const [opp] = await as(admin, () => q(`
+    insert into opportunities (name, account_id, pipeline_id, stage_id)
+    select 'altos de BELLALUNA', $1, s.pipeline_id, s.id from pipeline_stages s order by s.sort_order limit 1 returning id, name`, [cuenta.id]));
+  assert.equal(opp.name, 'Altos de Bellaluna');
+  const [lead] = await as(admin, () => q(
+    `insert into leads (first_name, last_name, company, city) values ('ANA', 'pérez gómez', 'grupo URBANO', 'cali') returning full_name, company, city`));
+  assert.deepEqual([lead.full_name, lead.company, lead.city], ['Ana Pérez Gómez', 'Grupo Urbano', 'Cali']);
+  // Al editar otro campo, un nombre que ya estaba se respeta; al cambiarlo, se limpia.
+  await q(`update accounts set name = 'SODIMAC COLOMBIA' where id = $1`, [cuenta.id]);
+  await q(`alter table accounts disable trigger accounts_normalize_text`);
+  await q(`update accounts set name = 'SODIMAC COLOMBIA' where id = $1`, [cuenta.id]);
+  await q(`alter table accounts enable trigger accounts_normalize_text`);
+  await as(admin, () => q(`update accounts set phone = '6045550000' where id = $1`, [cuenta.id]));
+  assert.equal((await q(`select name from accounts where id = $1`, [cuenta.id]))[0].name, 'SODIMAC COLOMBIA');
+  await as(admin, () => q(`update accounts set name = 'sodimac colombia s.a.s' where id = $1`, [cuenta.id]));
+  assert.equal((await q(`select name from accounts where id = $1`, [cuenta.id]))[0].name, 'Sodimac Colombia S.A.S.');
+  // Los registros de demostración conservan su nombre tal cual.
+  const [demo] = await q(`insert into accounts (name, is_demo) values ('DEMO tal cual', true) returning name`);
+  assert.equal(demo.name, 'DEMO tal cual');
+
+  await q(`delete from opportunities where id = $1`, [opp.id]);
+  await q(`delete from contacts where account_id = $1`, [cuenta.id]);
+  await q(`delete from accounts where id = $1 or name = 'DEMO tal cual'`, [cuenta.id]);
+  await q(`delete from leads where company = 'Grupo Urbano'`);
 });
 
 console.log('Permisos de las funciones');

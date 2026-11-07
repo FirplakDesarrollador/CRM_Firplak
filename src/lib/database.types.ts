@@ -3927,6 +3927,12 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      normalize_name: {
+        Args: {
+          p_text: string
+        }
+        Returns: string
+      }
       normalize_text: {
         Args: {
           p: string
