@@ -53,13 +53,23 @@ export function customFieldToDef(row: CustomFieldRow): FieldDef {
 export function withCustomFields(
   def: ObjectDef,
   rows: CustomFieldRow[],
-  picklists: { object: string; field: string; value: string; sort_order: number; is_active: boolean }[] = [],
+  picklists: { object: string; field: string; value: string; sort_order: number; is_active: boolean; controlling_values?: string[] }[] = [],
+  dependencies: { object: string; field: string; controlling_field: string }[] = [],
 ): ObjectDef & { listCustom: string[] } {
   const active = rows.filter((r) => r.object === def.key && r.is_active).sort((a, b) => a.sort_order - b.sort_order);
   // Listas personalizadas desde Configuración → Listas de valores.
   const fields = def.fields.map((f) => {
     const values = picklists.filter((p) => p.object === def.key && p.field === f.name && p.is_active).sort((a, b) => a.sort_order - b.sort_order);
-    return values.length && f.type === "select" && !f.optionLabels ? { ...f, options: values.map((v) => v.value) } : f;
+    if (!values.length || f.type !== "select" || f.optionLabels) return f;
+    const withValues = { ...f, options: values.map((v) => v.value) };
+    // Lista dependiente: para cada valor del campo que la controla, los valores que se pueden elegir.
+    const dep = dependencies.find((d) => d.object === def.key && d.field === f.name);
+    if (!dep) return withValues;
+    const optionsByController: Record<string, string[]> = {};
+    for (const v of values) {
+      for (const c of v.controlling_values ?? []) (optionsByController[c] ??= []).push(v.value);
+    }
+    return { ...withValues, dependsOn: dep.controlling_field, optionsByController };
   });
   return {
     ...def,

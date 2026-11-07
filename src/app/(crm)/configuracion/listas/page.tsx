@@ -4,14 +4,16 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { ActionForm, ConfirmSubmit } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { getObjectDef, getPicklistRows } from "@/lib/records/data";
+import { getObjectDef, getPicklistDependencies, getPicklistRows } from "@/lib/records/data";
 import { OBJECTS, getObject, type ObjectKey } from "@/lib/objects";
 import { EDITABLE_PICKLISTS, EXTRA_PICKLISTS } from "@/lib/objects/picklist-config";
 import { getT } from "@/lib/i18n/server";
 import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { VALUES_EN } from "@/lib/i18n/values-en";
-import { addPicklistValue, customizePicklist, deletePicklistValue, resetPicklist, updatePicklistValue } from "../actions";
+import {
+  addPicklistValue, customizePicklist, deletePicklistValue, resetPicklist, savePicklistDependencyMap, setPicklistDependency, updatePicklistValue,
+} from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Listas de valores" };
@@ -22,7 +24,12 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
   const objects = Object.keys(EDITABLE_PICKLISTS) as ObjectKey[];
   const object = (objects.includes(sp.objeto as ObjectKey) ? sp.objeto : objects[0]) as ObjectKey;
   // Etiquetas de campo traducidas; las opciones estándar salen de la definición del código.
-  const [def, rows, t] = await Promise.all([getObjectDef(object), getPicklistRows().then((all) => all.filter((r) => r.object === object)), getT()]);
+  const [def, rows, dependencies, t] = await Promise.all([
+    getObjectDef(object),
+    getPicklistRows().then((all) => all.filter((r) => r.object === object)),
+    getPicklistDependencies().then((all) => all.filter((d) => d.object === object)),
+    getT(),
+  ]);
   const standard = getObject(object);
 
   return (
@@ -52,10 +59,19 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
         const editing = customized && sp.editar === fieldName;
         const summaryHref = `/configuracion/listas?objeto=${object}#lista-${fieldName}`;
         const editHref = `/configuracion/listas?objeto=${object}&editar=${fieldName}#lista-${fieldName}`;
+        // Lista dependiente: de qué lista depende y cuáles pueden controlarla (del mismo objeto, sin ciclos).
+        const dependency = dependencies.find((d) => d.field === fieldName);
+        const controllingField = dependency ? def.fields.find((f) => f.name === dependency.controlling_field) : undefined;
+        const controllerCandidates = extra ? [] : (EDITABLE_PICKLISTS[object] ?? []).filter((n) =>
+          n !== fieldName && !EXTRA_PICKLISTS[n] && def.fields.some((f) => f.name === n && f.type === "select")
+          && !dependencies.some((d) => d.field === n && d.controlling_field === fieldName));
         return (
           <section key={fieldName} id={`lista-${fieldName}`} className="card scroll-mt-28 overflow-hidden">
             <div className="card-header">
-              <h2 className="card-title">{field.label} {customized ? <span className="badge badge-brand"><Tr>Personalizada</Tr></span> : <span className="badge"><Tr>Estándar</Tr></span>}</h2>
+              <h2 className="card-title">
+                {field.label} {customized ? <span className="badge badge-brand"><Tr>Personalizada</Tr></span> : <span className="badge"><Tr>Estándar</Tr></span>}
+                {customized && controllingField && <span className="badge"><Tr>Depende de la lista</Tr> {controllingField.label}</span>}
+              </h2>
               {editing && (
                 <div className="flex flex-wrap items-center gap-2">
                   <Link href={summaryHref} className="btn btn-sm"><ArrowLeft size={14} /> <Tr>Volver al resumen</Tr></Link>
@@ -128,6 +144,58 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                   </div>
                   <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Agregar</Tr></SubmitButton>
                 </ActionForm>
+                {controllerCandidates.length > 0 && (
+                  <div className="space-y-3 border-t border-line p-4">
+                    <ActionForm key={dependency?.controlling_field ?? "ninguna"} action={setPicklistDependency.bind(null, object, fieldName)} className="flex flex-wrap items-end gap-2">
+                      <div className="min-w-48">
+                        <label className="label" htmlFor={`dep-${fieldName}`}><Tr>Depende de la lista</Tr></label>
+                        <select id={`dep-${fieldName}`} name="controlling_field" className="select" defaultValue={dependency?.controlling_field ?? ""}>
+                          <option value="">{t("Ninguna lista")}</option>
+                          {controllerCandidates.map((n) => (
+                            <option key={n} value={n}>{def.fields.find((f) => f.name === n)?.label ?? n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <SubmitButton className="btn" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
+                      <p className="help basis-full">
+                        <Tr>Con una lista que la controla, el formulario solo ofrece los valores que marques para el valor elegido en esa lista.</Tr>
+                      </p>
+                    </ActionForm>
+                    {controllingField && (
+                      <ActionForm action={savePicklistDependencyMap.bind(null, object, fieldName)} className="space-y-3">
+                        <p className="text-sm text-muted">
+                          <Tr>Marca con qué valores de</Tr> «{controllingField.label}» <Tr>se puede elegir cada valor. Un valor sin marcas no aparece en el formulario.</Tr>
+                        </p>
+                        <div className="overflow-x-auto rounded-lg border border-line">
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th scope="col" className="sticky left-0 z-[1] bg-surface">{field.label}</th>
+                                {(controllingField.options ?? []).map((c) => (
+                                  <th key={c} scope="col" className="text-center">{controllingField.optionLabels?.[c] ?? c}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {values.map((v) => (
+                                <tr key={v.id}>
+                                  <th scope="row" className={`sticky left-0 z-[1] bg-surface font-medium ${v.is_active ? "" : "text-muted line-through"}`}>{v.value}</th>
+                                  {(controllingField.options ?? []).map((c) => (
+                                    <td key={c} className="text-center">
+                                      <input type="checkbox" name={`map:${v.id}`} value={c} defaultChecked={(v.controlling_values ?? []).includes(c)}
+                                        aria-label={`${v.value} · ${controllingField.optionLabels?.[c] ?? c}`} className="h-4 w-4 accent-[var(--brand)]" />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Guardar relaciones</Tr></SubmitButton>
+                      </ActionForm>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </section>

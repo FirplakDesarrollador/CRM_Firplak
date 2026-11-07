@@ -22,4 +22,11 @@ export const EXTRA_PICKLISTS: Record<string, { label: string; options: string[] 
   team_role: { label: "Rol en el equipo (cuentas y oportunidades)", options: TEAM_ROLES },
 };
 
-export type PicklistRow = { id: string; object: string; field: string; value: string; sort_order: number; is_active: boolean; label_en: string | null };
+export type PicklistRow = {
+  id: string; object: string; field: string; value: string; sort_order: number; is_active: boolean; label_en: string | null;
+  /** Valores de la lista que controla con los que este valor se puede elegir (si la lista es dependiente). */
+  controlling_values: string[];
+};
+
+/** Lista dependiente: `field` solo ofrece los valores ligados al valor elegido en `controlling_field`. */
+export type PicklistDependency = { object: string; field: string; controlling_field: string };

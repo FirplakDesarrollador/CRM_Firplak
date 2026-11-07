@@ -170,6 +170,15 @@ export const UI_EN: Record<string, string> = {
   "reuniones esta semana": "meetings this week", respondieron: "responded", "Costo:": "Cost:", "Sin costo registrado": "No cost recorded",
   "Millones COP": "Million COP",
   "Volver al resumen": "Back to summary", inactivo: "inactive",
+  "Depende de la lista": "Depends on the list", "Ninguna lista": "No list", "Guardar relaciones": "Save relationships", "Elige primero": "First choose",
+  "Con una lista que la controla, el formulario solo ofrece los valores que marques para el valor elegido en esa lista.":
+    "With a controlling list, the form only offers the values you check for the value chosen in that list.",
+  "Marca con qué valores de": "Check which values of",
+  "se puede elegir cada valor. Un valor sin marcas no aparece en el formulario.": "allow each value. A value with no checks does not appear in the form.",
+  "La lista ya no depende de otra": "The list no longer depends on another one", "Sin cambios": "No changes",
+  "Ahora marca qué valores van con cada uno": "Now check which values go with each one", "Relaciones guardadas": "Relationships saved",
+  "Esta lista no puede depender de otra.": "This list can't depend on another one.", "Elige una lista del mismo objeto.": "Choose a list from the same object.",
+  "Esa lista ya depende de esta; no pueden depender una de la otra.": "That list already depends on this one; they can't depend on each other.",
   "Efecto de vidrio": "Glass effect", Transparente: "Clear", Medio: "Medium", "Sólido": "Solid", "Cifra de ejemplo": "Sample figure",
   "Deja ver más el logo detrás de las tarjetas de información. Tablas, gráficos y formularios no cambian.":
     "Shows more of the logo behind information cards. Tables, charts and forms don't change.",

@@ -9,6 +9,7 @@ import { canSystem, OBJECT_ACTIONS, PERMISSION_OBJECTS, SYSTEM_PERMISSIONS, type
 import { siteUrl } from "@/lib/env";
 import type { FormState } from "@/lib/records/form";
 import { VALUES_EN } from "@/lib/i18n/values-en";
+import { EDITABLE_PICKLISTS, EXTRA_PICKLISTS } from "@/lib/objects/picklist-config";
 
 type Perm = "manage_users" | "customize";
 
@@ -324,8 +325,51 @@ export async function deletePicklistValue(id: string, _prev?: FormState, _fd?: F
 export async function resetPicklist(object: string, field: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
   const g = await guard("customize");
   if ("denied" in g) return g.denied!;
+  // Sin valores propios la lista ya no puede depender de otra (las relaciones se guardan en sus valores).
+  await g.supabase.from("picklist_dependencies").delete().eq("object", object).eq("field", field);
   const { error } = await g.supabase.from("picklist_values").delete().eq("object", object).eq("field", field);
   return error ? fail(error) : done("Lista restablecida a los valores estándar");
+}
+
+// Lista dependiente: elige la lista que controla a esta (vacío = ninguna).
+export async function setPicklistDependency(object: string, field: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const controlling = str(fd, "controlling_field");
+  const fields = (EDITABLE_PICKLISTS[object as keyof typeof EDITABLE_PICKLISTS] ?? []).filter((n) => !EXTRA_PICKLISTS[n]);
+  if (!fields.includes(field)) return { message: "Esta lista no puede depender de otra." };
+  const { data: current } = await g.supabase.from("picklist_dependencies").select("controlling_field").eq("object", object).eq("field", field).maybeSingle();
+  if (!controlling) {
+    const { error } = await g.supabase.from("picklist_dependencies").delete().eq("object", object).eq("field", field);
+    if (error) return fail(error);
+    await g.supabase.from("picklist_values").update({ controlling_values: [] }).eq("object", object).eq("field", field);
+    return done("La lista ya no depende de otra");
+  }
+  if (controlling === field || !fields.includes(controlling)) return { message: "Elige una lista del mismo objeto." };
+  const { data: inverse } = await g.supabase.from("picklist_dependencies").select("field")
+    .eq("object", object).eq("field", controlling).eq("controlling_field", field).maybeSingle();
+  if (inverse) return { message: "Esa lista ya depende de esta; no pueden depender una de la otra." };
+  if (current?.controlling_field === controlling) return done("Sin cambios");
+  const { error } = await g.supabase.from("picklist_dependencies")
+    .upsert({ object, field, controlling_field: controlling }, { onConflict: "object,field" });
+  if (error) return fail(error);
+  // Las relaciones anteriores eran con otra lista: se empieza de cero.
+  await g.supabase.from("picklist_values").update({ controlling_values: [] }).eq("object", object).eq("field", field);
+  return done("Ahora marca qué valores van con cada uno");
+}
+
+// Guarda qué valores de la lista que controla permiten cada valor de esta.
+export async function savePicklistDependencyMap(object: string, field: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { data: rows, error } = await g.supabase.from("picklist_values").select("id").eq("object", object).eq("field", field);
+  if (error) return fail(error);
+  for (const row of rows ?? []) {
+    const values = [...new Set(fd.getAll(`map:${row.id}`).map(String).filter(Boolean))];
+    const { error: e } = await g.supabase.from("picklist_values").update({ controlling_values: values }).eq("id", row.id);
+    if (e) return fail(e);
+  }
+  return done("Relaciones guardadas");
 }
 
 // ---------------------------------------------------------------- Reglas de validación

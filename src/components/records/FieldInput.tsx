@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { FieldDef } from "@/lib/objects";
 import type { PipelineWithStages, UserOption } from "@/lib/records/data";
 import { LookupInput } from "./LookupInput";
@@ -19,6 +20,57 @@ function toDateTimeLocal(value: unknown) {
   return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16);
 }
 
+/**
+ * Lista que depende de otra del mismo formulario (p. ej. Segmento según Sector): solo ofrece los
+ * valores ligados al valor elegido arriba y se vacía si el elegido deja de corresponder.
+ */
+function DependentSelect({
+  common,
+  field,
+  initialValue,
+  controller: initialController,
+  controllerLabel,
+}: {
+  common: { id: string; name: string; "aria-invalid": boolean; required?: boolean };
+  field: FieldDef;
+  initialValue: string;
+  controller: string;
+  controllerLabel: string;
+}) {
+  const t = useT();
+  const ref = useRef<HTMLSelectElement>(null);
+  const [controller, setController] = useState(initialController);
+  const [value, setValue] = useState(initialValue);
+  const allowed = controller ? field.optionsByController?.[controller] ?? [] : [];
+
+  useEffect(() => {
+    const form = ref.current?.form;
+    if (!form || !field.dependsOn) return;
+    const onChange = (e: Event) => {
+      const target = e.target as HTMLSelectElement;
+      if (target.name !== field.dependsOn) return;
+      setController(target.value);
+      setValue((v) => ((field.optionsByController?.[target.value] ?? []).includes(v) ? v : ""));
+    };
+    form.addEventListener("change", onChange);
+    return () => form.removeEventListener("change", onChange);
+  }, [field.dependsOn, field.optionsByController]);
+
+  return (
+    <>
+      <select {...common} ref={ref} className="select" value={value} onChange={(e) => setValue(e.target.value)}>
+        <option value="">{t("— Ninguno —")}</option>
+        {allowed.map((o) => (
+          <option key={o} value={o}>{field.optionLabels?.[o] ?? o}</option>
+        ))}
+        {/* Un registro antiguo con una combinación que ya no corresponde conserva su valor hasta que se cambie. */}
+        {value && !allowed.includes(value) && <option value={value}>{field.optionLabels?.[value] ?? value}</option>}
+      </select>
+      {!controller && <p className="help">{t("Elige primero")} «{controllerLabel}».</p>}
+    </>
+  );
+}
+
 export function FieldInput({
   field,
   value,
@@ -26,6 +78,7 @@ export function FieldInput({
   error,
   ctx,
   echo,
+  dependency,
 }: {
   field: FieldDef;
   value: unknown;
@@ -34,6 +87,8 @@ export function FieldInput({
   ctx: FieldInputContext;
   /** Valor devuelto por el servidor tras un error de validación. */
   echo?: string;
+  /** Lista dependiente: valor inicial y nombre del campo que la controla. */
+  dependency?: { controller: string; controllerLabel: string };
 }) {
   const t = useT();
   const id = `f-${field.name.replace(".", "-")}`;
@@ -47,6 +102,10 @@ export function FieldInput({
       control = <textarea {...common} className="textarea" defaultValue={str} rows={4} />;
       break;
     case "select":
+      if (field.dependsOn && dependency) {
+        control = <DependentSelect common={common} field={field} initialValue={str} {...dependency} />;
+        break;
+      }
       control = (
         <select {...common} className="select" defaultValue={str}>
           <option value="">{t("— Ninguno —")}</option>

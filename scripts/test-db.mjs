@@ -803,6 +803,37 @@ await check('las notificaciones se reclaman para push una sola vez y sin envíos
   await q(`update profiles set is_active = true where id = $1`, [rep.id]);
 });
 
+console.log('Listas dependientes');
+await check('Segmento depende de Sector: la base rechaza combinaciones que no corresponden', async () => {
+  await as(admin, () => q(`
+    insert into picklist_values (object, field, value, sort_order, controlling_values) values
+      ('accounts', 'segment', 'Mayorista', 10, '{"Canal Distribución"}'),
+      ('accounts', 'segment', 'Obra nueva', 20, '{"Canal Constructores","Canal Distribución"}')`));
+  await as(admin, () => q(`insert into picklist_dependencies (object, field, controlling_field) values ('accounts', 'segment', 'industry')`));
+  // El asesor no puede configurar dependencias.
+  await assert.rejects(as(rep, () => q(`insert into picklist_dependencies (object, field, controlling_field) values ('cases', 'origin', 'case_type')`)));
+
+  const crear = (industry, segment) => as(admin, () => q(
+    `insert into accounts (name, industry, segment) values ('Dependencias ' || gen_random_uuid(), $1, $2) returning id`, [industry, segment]));
+  const [ok] = await crear('Canal Distribución', 'Mayorista');
+  await crear('Canal Constructores', 'Obra nueva');
+  await crear('Canal Constructores', null);
+  await assert.rejects(crear('Canal Constructores', 'Mayorista'), /no corresponde/);
+  await assert.rejects(crear(null, 'Mayorista'), /Elige primero/);
+  await assert.rejects(as(admin, () => q(`update accounts set industry = 'Canal Constructores' where id = $1`, [ok.id])), /no corresponde/);
+
+  // Una combinación que ya existía se conserva si no se tocan esos campos.
+  await q(`alter table accounts disable trigger accounts_picklist_dependencies`);
+  const [viejo] = await q(`insert into accounts (name, industry, segment) values ('Dependencias legado', 'Canal Constructores', 'Mayorista') returning id`);
+  await q(`alter table accounts enable trigger accounts_picklist_dependencies`);
+  await as(admin, () => q(`update accounts set phone = '6045550000' where id = $1`, [viejo.id]));
+  await assert.rejects(as(admin, () => q(`update accounts set segment = 'Mayorista', industry = 'Canal B2C' where id = $1`, [viejo.id])), /no corresponde/);
+
+  await q(`delete from accounts where name like 'Dependencias %'`);
+  await q(`delete from picklist_dependencies`);
+  await q(`delete from picklist_values where object = 'accounts' and field = 'segment'`);
+});
+
 console.log('Permisos de las funciones');
 await check('sin sesión solo se ejecutan las funciones del servidor MCP y OAuth', async () => {
   const abiertas = (await q(`

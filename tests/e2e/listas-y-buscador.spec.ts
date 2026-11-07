@@ -37,6 +37,52 @@ test("Listas de valores: de Personalizar se puede volver al resumen y entrar de 
   await expect(lista.getByRole("button", { name: "Personalizar" })).toBeVisible();
 });
 
+test("Listas dependientes: Segmento solo ofrece lo que corresponde al Sector elegido", async ({ page }) => {
+  page.on("dialog", (d) => d.accept());
+  await page.goto("/configuracion/listas?objeto=accounts");
+  const lista = page.locator("section#lista-segment");
+  await expect(lista.getByRole("button", { name: "Personalizar" }).or(lista.getByRole("link", { name: "Editar" }))).toBeVisible();
+  if (await lista.getByRole("button", { name: "Personalizar" }).count()) {
+    await expect(async () => {
+      await lista.getByRole("button", { name: "Personalizar" }).click();
+      await expect(page).toHaveURL(/editar=segment/, { timeout: 3000 });
+    }).toPass();
+  } else {
+    await lista.getByRole("link", { name: "Editar" }).click();
+  }
+
+  // Segmento pasa a depender de Sector.
+  await lista.getByLabel("Depende de la lista").selectOption({ label: "Sector" });
+  await lista.locator("form").filter({ has: page.getByLabel("Depende de la lista") }).getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(lista.getByText("Depende de la lista Sector")).toBeVisible();
+  const columnas = await lista.locator("table thead th").allInnerTexts();
+  const [sectorA, sectorB] = [columnas[1], columnas[2]];
+  const segmento = (await lista.locator("table tbody th").first().innerText()).trim();
+  await lista.getByRole("checkbox", { name: `${segmento} · ${sectorA}` }).check();
+  await lista.getByRole("button", { name: "Guardar relaciones" }).click();
+  await expect(lista.getByText("Relaciones guardadas")).toBeVisible();
+
+  // En el formulario, Segmento depende de lo elegido en Sector.
+  await page.goto("/cuentas/nueva");
+  const sector = page.getByLabel("Sector", { exact: true });
+  const seg = page.getByLabel("Segmento", { exact: true });
+  await expect(page.getByText("Elige primero «Sector».")).toBeVisible();
+  await expect(seg.locator("option")).toHaveText(["— Ninguno —"]);
+  await expect(async () => {
+    await sector.selectOption({ label: sectorA });
+    await expect(seg.locator("option")).toHaveText(["— Ninguno —", segmento], { timeout: 1500 });
+  }).toPass();
+  await seg.selectOption({ label: segmento });
+  await sector.selectOption({ label: sectorB });
+  await expect(seg).toHaveValue("");
+  await expect(seg.locator("option")).toHaveText(["— Ninguno —"]);
+
+  // Queda como estaba para las demás pruebas.
+  await page.goto("/configuracion/listas?objeto=accounts&editar=segment");
+  await page.locator("section#lista-segment").getByRole("button", { name: "Restablecer" }).click();
+  await expect(page.locator("section#lista-segment").getByRole("button", { name: "Personalizar" })).toBeVisible();
+});
+
 async function compruebaLista(page: Page) {
   const buscador = page.getByLabel("Cuenta principal");
   await buscador.scrollIntoViewIfNeeded();

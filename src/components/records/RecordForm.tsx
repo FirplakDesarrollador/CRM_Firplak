@@ -23,6 +23,16 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
   const [state, formAction] = useActionState(action, {});
   const t = useT();
   const custom = (record?.custom_fields ?? {}) as Record<string, unknown>;
+  // Valor actual de un campo (el devuelto tras un error de validación manda sobre el guardado).
+  const currentValue = (name: string) => {
+    const v = state.values?.[name] ?? (name.startsWith("cf.") ? custom[name.slice(3)] : record?.[name]);
+    return v === null || v === undefined ? "" : String(v);
+  };
+  const dependencyOf = (field: FieldDef) => {
+    if (!field.dependsOn) return undefined;
+    const controlling = fields.find((f) => f.name === field.dependsOn);
+    return controlling ? { controller: currentValue(field.dependsOn), controllerLabel: controlling.label } : undefined;
+  };
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
@@ -52,6 +62,7 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
                     relation={field.relation ? (record?.[field.relation] as never) : null}
                     error={state.errors?.[field.name]}
                     echo={state.values?.[field.name]}
+                    dependency={dependencyOf(field)}
                   />
                 </div>
               ))}

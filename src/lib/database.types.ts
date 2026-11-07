@@ -2760,8 +2760,31 @@ export type Database = {
         Relationships: [
         ]
       }
+      picklist_dependencies: {
+        Row: {
+          controlling_field: string
+          created_at: string
+          field: string
+          object: string
+        }
+        Insert: {
+          controlling_field: string
+          created_at?: string
+          field: string
+          object: string
+        }
+        Update: {
+          controlling_field?: string
+          created_at?: string
+          field?: string
+          object?: string
+        }
+        Relationships: [
+        ]
+      }
       picklist_values: {
         Row: {
+          controlling_values: string[]
           created_at: string
           field: string
           id: string
@@ -2772,6 +2795,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          controlling_values?: string[]
           created_at?: string
           field: string
           id?: string
@@ -2782,6 +2806,7 @@ export type Database = {
           value: string
         }
         Update: {
+          controlling_values?: string[]
           created_at?: string
           field?: string
           id?: string
@@ -4044,6 +4069,13 @@ export type Database = {
           p_request: string
         }
         Returns: undefined
+      }
+      record_field_text: {
+        Args: {
+          p_row: Json
+          p_field: string
+        }
+        Returns: string
       }
       record_label: {
         Args: {

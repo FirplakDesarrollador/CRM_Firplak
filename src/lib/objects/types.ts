@@ -37,6 +37,9 @@ export type FieldDef = {
   helpEn?: string;
   /** Se puede ordenar la lista por este campo. */
   sortable?: boolean;
+  /** Lista dependiente: campo que la controla y valores permitidos para cada valor de ese campo. */
+  dependsOn?: string;
+  optionsByController?: Record<string, string[]>;
 };
 
 export type ObjectDef = {

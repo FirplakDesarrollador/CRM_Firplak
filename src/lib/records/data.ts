@@ -12,7 +12,7 @@ import {
   type ObjectKey,
 } from "@/lib/objects";
 import { applyFilter, applySearch, type ListParams } from "./filters";
-import type { PicklistRow } from "@/lib/objects/picklist-config";
+import type { PicklistDependency, PicklistRow } from "@/lib/objects/picklist-config";
 import { translateObjectDef } from "@/lib/i18n";
 import { getDataLabels, getLocale } from "@/lib/i18n/server";
 
@@ -44,9 +44,17 @@ export const getPicklistRows = cache(async (): Promise<PicklistRow[]> => {
   return (data ?? []) as PicklistRow[];
 });
 
+export const getPicklistDependencies = cache(async (): Promise<PicklistDependency[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("picklist_dependencies").select("object, field, controlling_field");
+  return (data ?? []) as PicklistDependency[];
+});
+
 export const getObjectDef = cache(async (key: ObjectKey) => {
-  const [custom, picklists, locale, labels] = await Promise.all([getCustomFieldRows(), getPicklistRows(), getLocale(), getDataLabels()]);
-  return translateObjectDef(withCustomFields(getObject(key), custom, picklists), locale, labels);
+  const [custom, picklists, dependencies, locale, labels] = await Promise.all([
+    getCustomFieldRows(), getPicklistRows(), getPicklistDependencies(), getLocale(), getDataLabels(),
+  ]);
+  return translateObjectDef(withCustomFields(getObject(key), custom, picklists, dependencies), locale, labels);
 });
 
 export const getUsers = cache(async (): Promise<UserOption[]> => {
