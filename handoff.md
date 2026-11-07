@@ -13,15 +13,17 @@
 |---|---|
 | Producto | CRM comercial de Firplak (muebles de baño, duchas, accesorios): cuentas, prospectos, oportunidades, cotizaciones, pedidos, actividades, casos, campañas, metas, pronóstico, indicadores e informes. Interfaz en español (con inglés por usuario), responsive e instalable en el celular. |
 | Responsable | Luis Escobar (luis.escobar@firplak.com). TI de Firplak administra GitHub, Supabase y Vercel. |
-| Código | `firplak-crm/` · GitHub **público** `FirplakDesarrollador/CRM_Firplak`, rama `main`. |
+| Código | `firplak-crm/` · GitHub **público** `FirplakDesarrollador/CRM_Firplak`, rama `main` (subir a `main` despliega producción). Rama local en curso: `codex/migraciones-seguras` (sin subir). |
 | Producción | https://crm-firplak.vercel.app (Vercel, despliega solo al subir a `main`). |
 | Base de datos | Supabase, proyecto **CRM** (`kltekrfpquakyffbpmiv`, org Firplak SA, us-east-1, Postgres 17). |
 | ERP | SAP Business One (Service Layer). |
 | Stack | Next.js 16.4 (App Router, TypeScript), React 19.3, Tailwind 4, Supabase (Postgres + Auth + RLS), pg_cron, web-push, servidor MCP. Pruebas: PGlite (`db:test`) y Playwright (`test:e2e`). |
 
-**Datos en producción hoy:** 2 usuarios, 0 cuentas, 0 oportunidades, 0 cotizaciones, **0 productos y 0 precios**.
-Listas de precios creadas: «Lista estándar COP» (estándar), «Distribuidores 2026» (COP) y «Lista exportación USD».
-Proceso de aprobación activo: «Descuento superior al 15 %».
+**Datos en producción hoy:** 2 usuarios, 0 cuentas, 0 oportunidades, 0 cotizaciones, **0 productos y 0 precios**,
+0 registros demo. Listas de precios: «Lista estándar COP» (estándar), «Distribuidores 2026» (COP) y «Lista
+exportación USD». Proceso de aprobación activo: «Descuento superior al 15 %». Quedan **5 metas de compañía de
+ejemplo** de la semilla antigua (p. ej. 1.500 M en noviembre), que se ven en Inicio: pendiente que Luis decida si
+se borran (en Metas, dejando vacío el valor de la compañía de cada periodo).
 
 ## 2. Reglas de trabajo (fijas)
 
@@ -29,8 +31,13 @@ Proceso de aprobación activo: «Descuento superior al 15 %».
   Si cambia la interfaz, también `npm run test:e2e` y una prueba del flujo en `tests/e2e/`.
 - **Nunca hacer push** sin que Luis lo pida. El repo es **público**: antes de cada push revisar que no salgan
   claves; nunca subir `.env*` (salvo `.env.example`), `rea/` ni `supabase/setup*.sql`.
-- **Aplicar migraciones en producción solo con el visto bueno de Luis.** Por el MCP de Supabase, una a la vez
-  (dos `apply_migration` en paralelo chocan en la versión). Después: verificar y correr el asesor de seguridad.
+- **Aplicar migraciones en producción solo con el visto bueno de Luis.** Flujo definitivo, cuando el historial esté
+  conciliado: `npm run db:pendientes -- --proyecto <ref>` y `npm run db:publicar -- --proyecto <ref>` (sin semillas).
+  Hasta conciliarlo, `db:publicar` se detiene solo. Cada migración que se aplique antes con el MCP (una a la vez)
+  agrega otra versión distinta: hay que sumarla al procedimiento de `docs/conciliacion-migraciones.md`.
+  Después de aplicar: verificar y correr el asesor de seguridad.
+- **Semillas:** `supabase/seeds/01_configuracion.sql` solo para bases nuevas (se niega si ya hay configuración);
+  `02_demo.sql` solo para demo y pruebas (se niega si hay usuarios o datos reales). Nunca semillas en producción.
 - Cada cambio de base va en una migración nueva de `supabase/migrations/` con su prueba en `scripts/test-db.mjs`;
   luego `npm run db:types:local`.
 - Las claves solo en `.env.local` o en Vercel. `service_role`, `MS365_*`, `SAP_*`, `CRON_SECRET`,
@@ -44,7 +51,8 @@ Proceso de aprobación activo: «Descuento superior al 15 %».
 ```bash
 npm install
 npm run dev:demo      # base en memoria con datos de ejemplo, Microsoft 365 y SAP simulados → http://localhost:3000
-npm run db:test       # pruebas de la base (PGlite): 112 comprobaciones
+npm run db:test       # pruebas de la base (PGlite): 121 comprobaciones
+npm run db:huella     # huella del esquema de las migraciones, para comparar con producción
 npm run test:e2e      # pruebas de interfaz (Playwright, Chrome instalado): 48 pruebas
 npm run lint && npm run build
 ```
@@ -73,7 +81,11 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 - 35 migraciones del repo aplicadas (la última, `20261130000100_quote_approval_gate`). Se aplicaron con el MCP,
   que las guardó con **versiones distintas** a los nombres de archivo: un `supabase db push` intentaría correrlas
-  todas de nuevo. Antes de usar la CLI hay que reparar el historial (`supabase migration repair`).
+  todas de nuevo. **Verificado el 2026-11-07 (solo lectura):** las 35 corresponden una a una; 29 idénticas byte a
+  byte, 5 iguales sin comentarios y `clean_places` con los municipios descargados del DANE (mismo contenido). La huella
+  del esquema coincide en los 10 tipos. **Pendiente (con visto bueno de Luis):** conciliar con
+  `supabase migration repair` según [docs/conciliacion-migraciones.md](docs/conciliacion-migraciones.md)
+  (respaldo, 35 `applied`, 35 `reverted`, verificación y recuperación). Aún no se ha ejecutado.
 - Extensiones: `pg_cron` (alertas, automatizaciones programadas, instantánea del pronóstico, TRM `firplak-trm-diaria`)
   y `http` (TRM).
 - Ojo con los permisos: en Supabase toda función nueva queda ejecutable por `authenticated`. Las internas
@@ -106,7 +118,8 @@ qué necesitan con urgencia y si usan iPhone o Android.
 - Cambiar el mercado de una cuenta no actualiza la moneda de sus oportunidades abiertas.
 - Columna obsoleta `controlling_values` en dependencias de listas.
 - 184 filas huérfanas en `field_history`.
-- Historial de migraciones de Supabase ≠ repo (ver sección 5).
+- Historial de migraciones de Supabase ≠ repo: procedimiento listo, pendiente de ejecutar (sección 5).
+- `.env.local` apunta a producción: `npm run dev` trabaja con datos reales (usar `dev:demo` para probar).
 
 ### Por confirmar en un iPhone real
 Cabecera con más aire bajo la hora, campos sin zoom y botón «Guardar» sobre la barra inferior (probado en
@@ -116,6 +129,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-07 | rama `codex/migraciones-seguras` | Semillas separadas (configuración / demo) con salvaguardas; `db:publicar` y `db:pendientes` con destino explícito y sin semillas; huella del esquema; correspondencia de las 35 migraciones y procedimiento de conciliación. | Nada aplicado en producción (pendiente de aprobación) |
 | 2026-11-07 | `079f13b` | Celular: «Guardar» de los formularios encima de la barra inferior; lint ignora `test-results/`. | Desplegado |
 | 2026-11-07 | `0d9f6d0` | Cotizaciones con descuento alto no se presentan sin aprobación. | Migración aplicada y probada |
 | 2026-11-07 | `7e62430` | iPhone instalado: más aire bajo la hora; sin zoom al enfocar campos. | Desplegado |

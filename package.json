@@ -15,7 +15,9 @@
     "db:test": "node scripts/test-db.mjs",
     "db:bundle": "node scripts/bundle-sql.mjs",
     "db:bundle:produccion": "node scripts/bundle-sql.mjs --produccion",
-    "db:push": "supabase db push --include-seed"
+    "db:pendientes": "node scripts/db-publicar.mjs --solo-revisar",
+    "db:publicar": "node scripts/db-publicar.mjs",
+    "db:huella": "node scripts/huella-local.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",

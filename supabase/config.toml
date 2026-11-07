@@ -69,7 +69,10 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+# Firplak: solo para la base LOCAL de la CLI (`supabase db reset`). La configuración inicial y luego el demo.
+# Producción nunca usa semillas: `npm run db:publicar` no pasa --include-seed y 02_demo.sql se niega a
+# correr en una base con usuarios.
+sql_paths = ["./seeds/01_configuracion.sql", "./seeds/02_demo.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

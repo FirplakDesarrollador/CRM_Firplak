@@ -1,6 +1,6 @@
 // Modo demo local: `npm run dev:demo`.
 // Levanta, solo en este equipo y en memoria, un sustituto de Supabase (Postgres embebido con
-// PGlite + PostgREST + un inicio de sesión simulado) con las migraciones, la semilla y usuarios
+// PGlite + PostgREST + un inicio de sesión simulado) con las migraciones, las semillas y usuarios
 // de prueba, y arranca la app apuntando a él. No usa .env.local ni se conecta a Supabase: al
 // cerrarlo (Ctrl+C) todo se borra y la próxima vez empieza de cero.
 //
@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
+import { SEED_CONFIG, SEED_DEMO } from './lib/base-local.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DB_PORT = 54329, PGRST_PORT = 54330, API_PORT = 54321, MS_PORT = 54350, SAP_PORT = 54360, PUSH_PORT = 54370, APP_PORT = 3000;
@@ -80,7 +81,9 @@ for (const f of readdirSync(join(root, 'supabase/migrations')).filter((f) => f.e
 await db.exec(`grant usage on schema public to anon, authenticated, service_role;
   grant all on all tables in schema public to authenticated, service_role;
   grant all on all sequences in schema public to authenticated, service_role;`);
-await db.exec(readFileSync(join(root, 'supabase/seed.sql'), 'utf8'));
+// Configuración inicial y datos de demostración (en ese orden; ver scripts/lib/base-local.mjs).
+await db.exec(readFileSync(SEED_CONFIG, 'utf8'));
+await db.exec(readFileSync(SEED_DEMO, 'utf8'));
 
 // El primer usuario (Luis) queda como administrador y recibe los registros de demostración.
 for (const u of USERS) {

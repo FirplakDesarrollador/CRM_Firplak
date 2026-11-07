@@ -30,12 +30,32 @@ npm run db:bundle:produccion
 ```
 
 Abre `supabase/setup-produccion.sql`, pégalo en **Supabase → SQL Editor** y ejecútalo **una sola vez**.
-Crea todas las tablas, la seguridad y la configuración base (perfiles, roles, pipelines y etapas,
-campos personalizados, listas, reglas, procesos de aprobación, informes y plantillas) **sin** las
-empresas ni personas de ejemplo.
+Crea todas las tablas, la seguridad y la configuración inicial (perfiles, roles, pipelines y etapas,
+campos personalizados, listas, reglas, procesos de aprobación, informes y plantillas) **sin ningún
+registro ficticio**: ni empresas, personas o productos de ejemplo, ni metas ni TRM de ejemplo. Corre en una
+sola transacción y se detiene sin cambiar nada si la base ya tiene el CRM.
 
 > ¿Ya instalaste con `npm run db:bundle` (con datos de ejemplo)? No hay que reinstalar: el primer
-> administrador entra a **Configuración → Resumen → Borrar datos de ejemplo**.
+> administrador entra a **Configuración → Resumen → Borrar datos de ejemplo**. Las metas de compañía de
+> ejemplo no se borran con ese botón: en **Metas**, para cada periodo (mes, trimestre y año), deja vacío el
+> valor de la compañía y guarda.
+
+### Cambios posteriores (base ya instalada)
+
+Nunca se vuelve a ejecutar el archivo de instalación ni se aplican semillas. Cada cambio llega como migración:
+
+```bash
+npx supabase link --project-ref <ref>                 # una vez; pide la contraseña de la base
+npm run db:pendientes -- --proyecto <ref>             # revisa el historial y lo pendiente (no cambia nada)
+npm run db:publicar   -- --proyecto <ref>             # pide escribir el ref y aplica solo lo pendiente
+```
+
+Después: asesor de seguridad de Supabase (Advisors → Security) y, si hubo dudas, la huella del esquema
+(`scripts/huella-esquema.sql` frente a `npm run db:huella`).
+
+> **Proyecto actual (`kltekrfpquakyffbpmiv`):** su historial no coincide con los archivos porque las migraciones
+> se aplicaron con el MCP de Supabase. Antes del primer `db:publicar` hay que conciliarlo:
+> [conciliacion-migraciones.md](conciliacion-migraciones.md). Mientras tanto `db:publicar` se detiene solo.
 
 ## 3. Publicar la aplicación (TI)
 

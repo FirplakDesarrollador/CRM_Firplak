@@ -1,10 +1,12 @@
-// Prueba las migraciones, la semilla y las reglas RLS en un Postgres embebido (PGlite),
+// Prueba las migraciones, las semillas y las reglas RLS en un Postgres embebido (PGlite),
 // con un esquema `auth` simulado. Uso: npm run db:test
 import { PGlite } from '@electric-sql/pglite';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SEED_CONFIG, SEED_DEMO, applyMigrations, prepareSupabaseLike } from './lib/base-local.mjs';
+import { buildSetupSql } from './bundle-sql.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const db = new PGlite();
@@ -39,10 +41,18 @@ for (const file of readdirSync(migDir).filter((f) => f.endsWith('.sql')).sort())
 await db.exec(`grant usage on schema public to authenticated, anon;
   grant all on all tables in schema public to authenticated;
   grant all on all sequences in schema public to authenticated;`);
-const seed = readFileSync(join(root, 'supabase/seed.sql'), 'utf8');
-await check('seed.sql', () => db.exec(seed));
-await check('seed.sql es idempotente', async () => {
-  await db.exec(seed);
+const seedConfig = readFileSync(SEED_CONFIG, 'utf8');
+const seedDemo = readFileSync(SEED_DEMO, 'utf8');
+await check('seeds/01_configuracion.sql', () => db.exec(seedConfig));
+await check('seeds/02_demo.sql', () => db.exec(seedDemo));
+await check('la configuración inicial no se reaplica sobre una base configurada', async () => {
+  await db.exec(`update pipelines set name = 'Obras (renombrado)' where name = 'Proyectos y constructoras'`);
+  await assert.rejects(db.exec(seedConfig), /ya tiene configuración inicial/);
+  assert.equal((await q(`select count(*)::int n from pipelines where name = 'Proyectos y constructoras'`))[0].n, 0);
+  await db.exec(`update pipelines set name = 'Proyectos y constructoras' where name = 'Obras (renombrado)'`);
+});
+await check('los datos demo son idempotentes en una base de demostración sin usuarios', async () => {
+  await db.exec(seedDemo);
   const [{ n }] = await q(`select count(*)::int n from accounts`);
   assert.equal(n, 12);
 });
@@ -1083,6 +1093,106 @@ await check('una cotización con descuento alto no se presenta ni se marca aprob
   // Sin sesión (cargas, tareas del sistema) no se revisa.
   await q(`update quote_line_items set discount = 30 where id = $1`, [line.id]);
   await q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]);
+});
+
+console.log('Semillas: configuración inicial separada de los datos de demostración');
+// Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
+const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];
+const freshDb = async () => {
+  const fresh = new PGlite();
+  await prepareSupabaseLike(fresh);
+  return fresh;
+};
+const demoRows = async (fresh) => {
+  let total = 0;
+  for (const t of DEMO_TABLES) total += Number((await fresh.query(`select count(*)::int n from public.${t} where is_demo`)).rows[0].n);
+  return total;
+};
+const configSummary = async (fresh) => (await fresh.query(`select
+    (select count(*)::int from public.permission_profiles) perfiles, (select count(*)::int from public.roles) roles,
+    (select count(*)::int from public.pipelines) pipelines, (select count(*)::int from public.pipeline_stages) etapas,
+    (select count(*)::int from public.price_books) listas_precios, (select count(*)::int from public.approval_processes) procesos,
+    (select count(*)::int from public.approval_steps) pasos, (select count(*)::int from public.validation_rules) reglas,
+    (select count(*)::int from public.automation_rules) automatizaciones, (select count(*)::int from public.reports) informes,
+    (select count(*)::int from public.email_templates) plantillas, (select count(*)::int from public.custom_field_definitions) campos,
+    (select count(*)::int from public.sales_goals) metas, (select count(*)::int from public.exchange_rates where source = 'Ejemplo') trm_ejemplo,
+    (select count(*)::int from public.countries) paises, (select count(*)::int from public.co_municipalities) municipios`)).rows[0];
+const CONFIG_ESPERADA = { perfiles: 5, roles: 12, pipelines: 2, etapas: 13, listas_precios: 3, procesos: 1, pasos: 2, reglas: 4,
+  automatizaciones: 5, informes: 6, plantillas: 3, campos: 9, metas: 0, trm_ejemplo: 0, paises: 249, municipios: 1122 };
+
+await check('una base nueva con migraciones y configuración inicial queda configurada y sin ningún registro ficticio', async () => {
+  const fresh = await freshDb();
+  try {
+    await applyMigrations(fresh);
+    await fresh.exec(seedConfig);
+    assert.deepEqual(await configSummary(fresh), CONFIG_ESPERADA);
+    assert.equal(await demoRows(fresh), 0);
+  } finally { await fresh.close(); }
+});
+await check('setup-produccion.sql instala una base nueva sin datos demo y se niega a correr sobre una base existente', async () => {
+  const fresh = await freshDb();
+  try {
+    const setup = buildSetupSql({ withDemo: false });
+    assert.ok(!setup.includes('02_demo.sql =====') && !setup.includes('purge_demo_data();'));
+    await fresh.exec(setup);
+    assert.deepEqual(await configSummary(fresh), CONFIG_ESPERADA);
+    assert.equal(await demoRows(fresh), 0);
+    // Una personalización del administrador no se pierde si alguien vuelve a ejecutar el archivo.
+    await fresh.exec(`update public.pipelines set name = 'Obras' where name = 'Proyectos y constructoras'`);
+    await assert.rejects(fresh.exec(setup), /solo para una base nueva/);
+    assert.equal(Number((await fresh.query(`select count(*)::int n from public.pipelines where name = 'Obras'`)).rows[0].n), 1);
+  } finally { await fresh.close(); }
+});
+await check('setup.sql (proyecto de demostración) sí trae los datos demo', async () => {
+  const fresh = await freshDb();
+  try {
+    await fresh.exec(buildSetupSql({ withDemo: true }));
+    assert.ok(await demoRows(fresh) > 50);
+    assert.equal(Number((await fresh.query(`select count(*)::int n from public.sales_goals`)).rows[0].n), 5);
+  } finally { await fresh.close(); }
+});
+await check('los datos demo se niegan a cargar en una base con usuarios o sin configuración', async () => {
+  const fresh = await freshDb();
+  try {
+    await applyMigrations(fresh);
+    await assert.rejects(fresh.exec(seedDemo), /Falta la configuración inicial/);
+    await fresh.exec(seedConfig);
+    await fresh.exec(`insert into auth.users (email) values ('persona.real@firplak.com')`);
+    await assert.rejects(fresh.exec(seedDemo), /usuarios o datos reales/);
+    assert.equal(await demoRows(fresh), 0);
+    assert.equal(Number((await fresh.query(`select count(*)::int n from public.sales_goals`)).rows[0].n), 0);
+  } finally { await fresh.close(); }
+});
+await check('la configuración inicial no contiene registros ficticios (sin is_demo, metas, TRM de ejemplo ni correos .example)', async () => {
+  assert.doesNotMatch(seedConfig, /is_demo|sales_goals|exchange_rates|\.example|claim_demo_records/);
+});
+
+console.log('Publicación de migraciones');
+await check('la revisión detecta pendientes y frena si el historial remoto no coincide con el repositorio', async () => {
+  const { parseMigrationList } = await import('./db-publicar.mjs');
+  const sincronizado = `
+        LOCAL      │     REMOTE     │     TIME (UTC)
+  ─────────────────┼────────────────┼─────────────────────
+    20261129000100 │ 20261129000100 │ 2026-11-29 00:01:00
+    20261130000100 │                │ 2026-11-30 00:01:00`;
+  assert.deepEqual(parseMigrationList(sincronizado), { synced: ['20261129000100'], pending: ['20261130000100'], remoteOnly: [] });
+  // Como está producción hoy: versiones del MCP solo en remoto y las del repositorio solo en local.
+  const sinConciliar = `
+    20261029000100 │                │ 2026-10-29 00:01:00
+                   │ 20261107000748 │ 2026-11-07 00:07:48`;
+  const r = parseMigrationList(sinConciliar);
+  assert.deepEqual(r.remoteOnly, ['20261107000748']);
+  assert.deepEqual(r.pending, ['20261029000100']);
+});
+await check('publicar exige un proyecto de destino explícito y enlazado', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const run = (...args) => spawnSync(process.execPath, [join(root, 'scripts/db-publicar.mjs'), ...args], { cwd: root, encoding: 'utf8' });
+  const sinDestino = run('--solo-revisar');
+  assert.notEqual(sinDestino.status, 0);
+  assert.match(sinDestino.stderr, /Indica el proyecto de destino/);
+  const otro = run('--proyecto', 'abcdefghijabcdefghij', '--solo-revisar');
+  assert.notEqual(otro.status, 0);
+  assert.match(otro.stderr, /no a «abcdefghijabcdefghij»/);
 });
 
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);

@@ -79,7 +79,7 @@ Abre http://localhost:3000 y entra con cualquiera de estos usuarios (contraseña
 | `asesora.centro@firplak.com` | Asesora comercial (en el equipo de la cuenta Almacenes Casa Viva) |
 
 - Requiere **PostgREST** (macOS: `brew install postgrest`).
-- La base de datos vive **en memoria**: se crea con las migraciones y la semilla al arrancar y se borra al cerrar con Ctrl+C. Nada se guarda ni se envía a Supabase.
+- La base de datos vive **en memoria**: se crea con las migraciones, la configuración inicial y los datos de demostración al arrancar y se borra al cerrar con Ctrl+C. Nada se guarda ni se envía a Supabase.
 - Ignora `.env.local`: aunque tengas tus claves reales, el modo demo usa su propia base local, sin la clave `service_role` ni el envío de correos. En el modo demo no hay registro de usuarios nuevos ni recuperación de contraseña.
 - Para la base real, usa `npm run dev` con los pasos de la sección siguiente; no hay que cambiar código.
 
@@ -105,18 +105,16 @@ En el modo demo ya está configurado: al arrancar se imprime un token de Luis pa
    Opcional: `RESEND_API_KEY` y `EMAIL_FROM` para enviar correos desde el CRM (dominio verificado en Resend).
    Para las alertas diarias automáticas, activa la extensión **pg_cron** en Supabase (Database → Extensions) antes de aplicar las migraciones.
 
-2. **Base de datos.** Opción A, SQL Editor (sin instalar nada):
+2. **Base de datos (proyecto NUEVO).** Desde el SQL Editor, sin instalar nada:
    ```bash
-   npm run db:bundle
+   npm run db:bundle:produccion   # migraciones + configuración inicial, sin datos ficticios
+   npm run db:bundle              # o, para un proyecto de prueba, además los datos de demostración
    ```
-   Abre `supabase/setup.sql`, pégalo en Supabase → SQL Editor y ejecútalo **una vez**.
+   Pega `supabase/setup-produccion.sql` (o `setup.sql`) en Supabase → SQL Editor y ejecútalo **una vez**. Ambos se
+   detienen sin cambiar nada si la base ya tiene el CRM.
 
-   Opción B, CLI de Supabase (incluida como dependencia de desarrollo):
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref TU_PROJECT_REF
-   npm run db:push
-   ```
+   **Proyecto existente:** solo se publican migraciones nuevas, nunca semillas, con la CLI enlazada a propósito
+   (ver «Base de datos: migraciones y semillas»).
 
 3. **Auth → URL Configuration** en Supabase: *Site URL* `http://localhost:3000` y en *Redirect URLs*
    `http://localhost:3000/auth/callback` (agrega también la URL de producción cuando la tengas).
@@ -127,8 +125,11 @@ En el modo demo ya está configurado: al arrancar se imprime un token de Luis pa
    npm install
    npm run dev
    ```
-   Abre http://localhost:3000, regístrate: **el primer usuario queda como administrador** y recibe los datos de
-   demostración (empresas y personas ficticias).
+   Abre http://localhost:3000, regístrate: **el primer usuario queda como administrador** (y, si instalaste
+   `setup.sql`, recibe los datos de demostración).
+
+   > `.env.local` apunta a la base que configures (hoy, producción): `npm run dev` trabaja sobre esos datos reales.
+   > Para probar sin tocar nada, usa `npm run dev:demo`.
 
 ## Scripts
 
@@ -138,18 +139,36 @@ En el modo demo ya está configurado: al arrancar se imprime un token de Luis pa
 | `npm run dev:demo` | App con una base de demostración en memoria (sin Supabase); ver «Probar sin Supabase». |
 | `npm run lint` / `typecheck` | Calidad de código. |
 | `npm run test:e2e` | Pruebas de interfaz con Playwright sobre el modo demo (lo arranca solo; no debe estar corriendo otro): acceso y permisos, idioma, cuentas, oportunidades, tareas, aprobaciones, SAP, push y celular. Usa el Chrome instalado (`PW_CHANNEL=chromium` para otro). Informe en `test-results/informe`. |
-| `npm run db:test` | Aplica migraciones + semilla en un Postgres embebido (PGlite) y prueba RLS, triggers e indicadores. |
+| `npm run db:test` | Aplica migraciones y semillas en un Postgres embebido (PGlite) y prueba RLS, triggers, indicadores, la separación de semillas y las salvaguardas de publicación. |
 | `npm run db:types:local` | Regenera `src/lib/database.types.ts` desde las migraciones (sin Docker). |
 | `npm run db:types` | Regenera los tipos desde el proyecto enlazado con la CLI de Supabase. |
-| `npm run db:bundle` | Genera `supabase/setup.sql` (migraciones + semilla) para el SQL Editor. |
-| `npm run db:bundle:produccion` | Genera `supabase/setup-produccion.sql`: lo mismo, sin los datos de ejemplo (instalación limpia). |
-| `npm run db:push` | Aplica migraciones y semilla al proyecto enlazado. |
+| `npm run db:bundle:produccion` | Genera `supabase/setup-produccion.sql` para una base **nueva**: migraciones + configuración inicial, sin datos ficticios. |
+| `npm run db:bundle` | Genera `supabase/setup.sql` para un proyecto **de prueba**: además los datos de demostración. |
+| `npm run db:pendientes -- --proyecto <ref>` | Solo revisa: historial remoto y migraciones pendientes (`migration list` y `db push --dry-run`). |
+| `npm run db:publicar -- --proyecto <ref>` | Aplica solo las migraciones pendientes, sin semillas, tras confirmar escribiendo el ref. |
+| `npm run db:huella` | Huella del esquema de una base limpia con las migraciones, para compararla con producción. |
+
+## Base de datos: migraciones y semillas
+
+- **Migraciones** (`supabase/migrations/`): todo cambio de esquema o de configuración posterior a la instalación.
+  Una migración nueva por cambio, con su prueba en `scripts/test-db.mjs`.
+- **Configuración inicial** (`supabase/seeds/01_configuracion.sql`): perfiles, roles, pipelines, listas,
+  reglas, plantillas… Solo para una base **nueva**: se detiene si la base ya está configurada, así nunca
+  pisa lo que el administrador haya personalizado.
+- **Datos de demostración** (`supabase/seeds/02_demo.sql`): empresas, personas, productos, cotizaciones,
+  metas y TRM ficticias. Solo en `dev:demo`, las pruebas y `setup.sql`; se niega a correr en una base con usuarios
+  o con datos reales.
+- **Publicar en un proyecto existente:** `npm run db:pendientes -- --proyecto <ref>` y luego
+  `npm run db:publicar -- --proyecto <ref>`. El destino siempre es explícito y debe coincidir con el proyecto
+  enlazado (`npx supabase link --project-ref <ref>`); no se usa `.env.local`. Nunca aplica semillas.
+- **Producción hoy:** el historial de Supabase no coincide con los archivos (las migraciones se aplicaron con el
+  MCP). Hasta conciliarlo, `db:publicar` se detiene. Procedimiento: [docs/conciliacion-migraciones.md](docs/conciliacion-migraciones.md).
 
 ## Estructura
 
 ```
 supabase/migrations/   esquema, RLS, triggers e indicadores (SQL)
-supabase/seed.sql      perfiles, roles, pipelines, campos y datos demo
+supabase/seeds/        01_configuracion.sql (base nueva) y 02_demo.sql (solo demo y pruebas)
 src/lib/objects/       metadatos de objetos (campos, secciones, relaciones)
 src/lib/records/       consultas, filtros, formularios y Server Actions genéricas
 src/app/(auth)/        ingreso, registro, recuperación
