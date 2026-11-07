@@ -114,9 +114,33 @@ test("instalada en el iPhone, la cabecera baja bajo la hora y la isla dinámica;
   // En el navegador no hay franja superior: la cabecera sigue pegada arriba, sin relleno.
   expect(await medir()).toEqual({ relleno: "0px", arriba: 0 });
 
-  // Como app instalada, iOS reporta un área segura de 59 px (hora, señal, batería e isla dinámica).
+  // Como app instalada, iOS reporta un área segura de 59 px (hora, señal, batería e isla dinámica); la cabecera
+  // baja eso más 12 px de aire.
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setSafeAreaInsetsOverride" as never, { insets: { top: 59, topMax: 59 } } as never);
-  await expect.poll(medir).toEqual({ relleno: "59px", arriba: 59 });
+  await expect.poll(medir).toEqual({ relleno: "71px", arriba: 71 });
   await expect(page.getByRole("link", { name: "Inicio" }).first()).toBeInViewport();
+});
+
+test("instalada en el celular, los campos usan 16 px para que iOS no amplíe al enfocarlos; el zoom manual sigue", async ({ page }) => {
+  await page.goto("/cuentas/nueva");
+  const campo = page.getByLabel(/Nombre de la cuenta/);
+  const letra = () => campo.evaluate((el) => getComputedStyle(el).fontSize);
+  // En el navegador el campo conserva su tamaño de siempre.
+  expect(await letra()).toBe("14px");
+  const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
+  expect(viewport).not.toMatch(/maximum-scale|user-scalable/);
+
+  // Chrome no emula display-mode: standalone; se activa la misma regla de la hoja de estilos con la condición que sí
+  // cumple este celular emulado (pointer: coarse). Comprueba que le gana al tamaño de .input y .select.
+  const activada = await page.evaluate(() => {
+    const regla = [...document.styleSheets].flatMap((h) => { try { return [...h.cssRules]; } catch { return []; } })
+      .find((r): r is CSSMediaRule => r instanceof CSSMediaRule && r.conditionText.includes("display-mode: standalone"));
+    if (!regla) return false;
+    regla.media.mediaText = "(pointer: coarse)";
+    return true;
+  });
+  expect(activada).toBe(true);
+  await expect.poll(letra).toBe("16px");
+  await expect.poll(() => page.locator("#f-market").evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
 });

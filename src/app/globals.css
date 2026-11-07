@@ -1179,3 +1179,21 @@ dialog::backdrop {
     letter-spacing: -0.015em;
   }
 }
+
+/* App instalada en iPhone (pantalla de inicio): la app ocupa también la franja de la hora y la isla dinámica.
+   --safe-top es el área segura que reporta iOS más 0.75rem de aire, para que los controles de la cabecera no
+   queden pegados a esa franja. min() vale 0 cuando no hay área segura, así que en Safari y Chrome no cambia nada. */
+:root {
+  --safe-top: calc(env(safe-area-inset-top, 0px) + min(env(safe-area-inset-top, 0px), 0.75rem));
+}
+
+/* iOS amplía la página al enfocar un campo con letra menor de 16 px. En la app instalada en un celular los campos
+   usan 16 px y el zoom manual con los dedos se conserva (no se toca el viewport). Fuera de las capas, para ganarle
+   a los tamaños de .input, .select y las utilidades. En Safari, Chrome y el computador no cambia nada. */
+@media (display-mode: standalone) and (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
