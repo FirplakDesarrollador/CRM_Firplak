@@ -803,4 +803,36 @@ await check('las notificaciones se reclaman para push una sola vez y sin envíos
   await q(`update profiles set is_active = true where id = $1`, [rep.id]);
 });
 
+console.log('Permisos de las funciones');
+await check('sin sesión solo se ejecutan las funciones del servidor MCP y OAuth', async () => {
+  const abiertas = (await q(`
+    select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('anon', p.oid, 'EXECUTE')
+    order by 1`)).map((r) => r.proname);
+  assert.deepEqual(abiertas, ['mcp_resolve_token', 'oauth_exchange_code', 'oauth_refresh', 'oauth_register_client']);
+  await db.exec(`set role anon`);
+  try {
+    await assert.rejects(q(`select purge_demo_data()`), /permission denied/);
+    await assert.rejects(q(`select generate_alerts()`), /permission denied/);
+    await assert.rejects(q(`select copy_default_team('accounts', gen_random_uuid(), gen_random_uuid())`), /permission denied/);
+  } finally {
+    await db.exec(`reset role`);
+  }
+});
+await check('quien inicia sesión sigue usando las funciones de la aplicación', async () => {
+  for (const fn of ['has_perm(text,text)', 'global_search(text,integer)', 'normalize_text(text)', 'crm_dashboard(date,date,uuid,uuid)']) {
+    assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
+  }
+  for (const fn of ['copy_default_team(text,uuid,uuid)', 'recalc_quote(uuid)', 'apply_field_updates(text,uuid,jsonb)']) {
+    assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, false, fn);
+  }
+  // Una función creada después no queda abierta a quien no tiene sesión.
+  await db.exec(`create function public.prueba_nueva() returns int language sql as 'select 1'`);
+  try {
+    assert.equal((await q(`select has_function_privilege('anon', 'public.prueba_nueva()'::regprocedure, 'EXECUTE') ok`))[0].ok, false);
+  } finally {
+    await db.exec(`drop function public.prueba_nueva()`);
+  }
+});
+
 console.log(`\n${passed} comprobaciones superadas${process.exitCode ? ' (con fallos)' : ''}`);
