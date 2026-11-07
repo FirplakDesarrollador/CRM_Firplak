@@ -12,6 +12,8 @@
 - Antes de cada commit revisa que no entren claves ni archivos `.env*` (salvo `.env.example`),
   `rea/` ni `supabase/setup*.sql`. Cierra los mensajes de commit con la línea de coautoría indicada
   por el entorno.
+- **Mantén `handoff.md` al día con cada cambio**, en el mismo commit: estado, pendientes, qué está aplicado
+  en producción y una fila en el registro de cambios (con su commit). Léelo al empezar a trabajar.
 
 ## Reglas del proyecto
 

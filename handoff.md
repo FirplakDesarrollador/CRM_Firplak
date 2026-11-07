@@ -1,0 +1,132 @@
+# Firplak CRM · Handoff
+
+> Estado del proyecto para quien lo retome (persona o asistente de IA). **Se actualiza con cada cambio**, en el
+> mismo commit. Última actualización: **2026-11-07**.
+> El detalle de cada módulo está en [README.md](README.md); la salida en vivo, en
+> [docs/puesta-en-produccion.md](docs/puesta-en-produccion.md); el sistema visual, en [DESIGN.md](DESIGN.md).
+
+---
+
+## 1. Qué es y dónde vive
+
+| | |
+|---|---|
+| Producto | CRM comercial de Firplak (muebles de baño, duchas, accesorios): cuentas, prospectos, oportunidades, cotizaciones, pedidos, actividades, casos, campañas, metas, pronóstico, indicadores e informes. Interfaz en español (con inglés por usuario), responsive e instalable en el celular. |
+| Responsable | Luis Escobar (luis.escobar@firplak.com). TI de Firplak administra GitHub, Supabase y Vercel. |
+| Código | `firplak-crm/` · GitHub **público** `FirplakDesarrollador/CRM_Firplak`, rama `main`. |
+| Producción | https://crm-firplak.vercel.app (Vercel, despliega solo al subir a `main`). |
+| Base de datos | Supabase, proyecto **CRM** (`kltekrfpquakyffbpmiv`, org Firplak SA, us-east-1, Postgres 17). |
+| ERP | SAP Business One (Service Layer). |
+| Stack | Next.js 16.4 (App Router, TypeScript), React 19.3, Tailwind 4, Supabase (Postgres + Auth + RLS), pg_cron, web-push, servidor MCP. Pruebas: PGlite (`db:test`) y Playwright (`test:e2e`). |
+
+**Datos en producción hoy:** 2 usuarios, 0 cuentas, 0 oportunidades, 0 cotizaciones, **0 productos y 0 precios**.
+Listas de precios creadas: «Lista estándar COP» (estándar), «Distribuidores 2026» (COP) y «Lista exportación USD».
+Proceso de aprobación activo: «Descuento superior al 15 %».
+
+## 2. Reglas de trabajo (fijas)
+
+- Al terminar una fase con `npm run db:test`, `npm run lint` y `npm run build` en verde → **commit local sin preguntar**.
+  Si cambia la interfaz, también `npm run test:e2e` y una prueba del flujo en `tests/e2e/`.
+- **Nunca hacer push** sin que Luis lo pida. El repo es **público**: antes de cada push revisar que no salgan
+  claves; nunca subir `.env*` (salvo `.env.example`), `rea/` ni `supabase/setup*.sql`.
+- **Aplicar migraciones en producción solo con el visto bueno de Luis.** Por el MCP de Supabase, una a la vez
+  (dos `apply_migration` en paralelo chocan en la versión). Después: verificar y correr el asesor de seguridad.
+- Cada cambio de base va en una migración nueva de `supabase/migrations/` con su prueba en `scripts/test-db.mjs`;
+  luego `npm run db:types:local`.
+- Las claves solo en `.env.local` o en Vercel. `service_role`, `MS365_*`, `SAP_*`, `CRON_SECRET`,
+  `SUPABASE_JWT_SECRET`, `RESEND_API_KEY` son solo de servidor.
+- No modificar `rea/`; nunca aplicar REA ni copiar de Salesforce.
+- SAP: nunca escribir órdenes de venta ni socios de negocio sin volver a preguntar.
+- **Mantener este `handoff.md` al día con cada cambio.**
+
+## 3. Cómo correrlo
+
+```bash
+npm install
+npm run dev:demo      # base en memoria con datos de ejemplo, Microsoft 365 y SAP simulados → http://localhost:3000
+npm run db:test       # pruebas de la base (PGlite): 112 comprobaciones
+npm run test:e2e      # pruebas de interfaz (Playwright, Chrome instalado): 48 pruebas
+npm run lint && npm run build
+```
+
+Usuarios del demo (clave `demo1234`): `luis.demo@firplak.com` (admin), `gerente.centro@firplak.com` (gerente,
+jefe de Camila), `asesora.centro@firplak.com` (asesora). `test:e2e` levanta su propio demo: no debe haber otro
+servidor en el puerto 3000.
+
+## 4. Qué está construido
+
+Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre:
+
+| Área | Estado |
+|---|---|
+| Objetos comerciales | Cuentas, contactos, prospectos (conversión a cuenta *Prospecto* + contacto + oportunidad), oportunidades con pipeline Kanban, productos y listas de precios, cotizaciones, pedidos, casos, campañas, actividades y calendario. |
+| Personalización | Listas de valores, **listas dependientes** (p. ej. Segmento según Sector y Mercado), campos personalizados, reglas de validación, automatizaciones (al guardar y programadas), procesos de aprobación en varios pasos, auditoría por campo. |
+| Análisis | Indicadores, metas, pronóstico con historial semanal, informes con constructor. |
+| Seguridad | RLS en todas las tablas, perfiles y permisos por objeto, jerarquía de roles, equipos de cuenta y de oportunidad, reparto de ingresos. Funciones de la base cerradas a quien no tiene sesión; las internas, también a los usuarios. |
+| Datos limpios | Nombres con mayúscula inicial; **País / Departamento / Ciudad** de listas oficiales (249 países ISO, 1.122 municipios DANE); NIT obligatorio solo para clientes **nacionales**; prospectos con Mercado, Sector y Segmento iguales a cuentas. |
+| Mercado Internacional | Oportunidades, cotizaciones y pedidos en **USD sin IVA**, convertidos a pesos con la **TRM oficial del día** (datos.gov.co, pg_cron 6:00 a. m. y 12:00 m. Colombia; también manual en Configuración → Monedas). Moneda automática según el mercado de la cuenta. Incoterms en cotizaciones y pedidos. |
+| Cotizaciones | Desde la oportunidad («Nueva cotización»): líneas desde la lista de precios según moneda, descuento por línea, IVA y flete, PDF, sincronizar con la oportunidad, «Crear pedido» al quedar *Aceptada*. **Aprobación obligatoria:** con más de 15 % de descuento no pasa a *En revisión*, *Aprobada*, *Presentada* ni *Aceptada* por fuera del flujo; cambiar el descuento tras aprobar exige aprobar de nuevo (migración `20261130000100`). |
+| Integraciones | Microsoft 365 (Outlook, Teams, Planner, SharePoint), SAP B1 (lectura de cartera e inventario; pedido activado → **oferta de venta**; importación de productos a demanda), servidor MCP con OAuth 2.1 para Claude/ChatGPT, correo con Resend. |
+| Celular (PWA) | Instalable; barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin modo sin conexión** (solo aviso y página propia). |
+
+## 5. Producción (Supabase)
+
+- 35 migraciones del repo aplicadas (la última, `20261130000100_quote_approval_gate`). Se aplicaron con el MCP,
+  que las guardó con **versiones distintas** a los nombres de archivo: un `supabase db push` intentaría correrlas
+  todas de nuevo. Antes de usar la CLI hay que reparar el historial (`supabase migration repair`).
+- Extensiones: `pg_cron` (alertas, automatizaciones programadas, instantánea del pronóstico, TRM `firplak-trm-diaria`)
+  y `http` (TRM).
+- Ojo con los permisos: en Supabase toda función nueva queda ejecutable por `authenticated`. Las internas
+  (`security definer`) necesitan `revoke execute ... from public, anon, authenticated` explícito y entrar en la
+  lista de `db:test`. PGlite no reproduce esto.
+- Asesor de seguridad (2026-11-07): sin hallazgos nuevos. Quedan los conocidos: funciones OAuth/MCP abiertas a
+  `anon` a propósito, ~60 funciones de la app ejecutables por usuarios (con sus propias validaciones),
+  *Leaked password protection* desactivado (se activa en Supabase → Auth).
+
+## 6. Pendientes
+
+### Decisiones de negocio (Luis está usando la app para encontrarlas)
+- **Cargar productos y precios** (desde SAP o CSV): sin ellos no se pueden cotizar líneas en producción.
+- Crear los usuarios reales (hoy hay 2) con su jefe directo: lo usan las aprobaciones y la jerarquía.
+- Zona comercial derivada del departamento.
+- Pipeline por Canal (el de B2C no está definido).
+- Campos de oportunidad solo para Constructores.
+- Revisar listas genéricas: Tipo de oportunidad, Origen, Motivo de pérdida, Familias.
+- B2C: personas naturales con cédula.
+- Mapeo de Segmentos por Mercado y Canal (falta la tabla de Luis).
+
+### Modo sin conexión (opción B «visitas»), solo cuando Luis apruebe datos y procesos
+Fases: borradores locales → bandeja de salida (actividades, notas, contactos, prospectos) → «Descargar mi cartera»
+de solo lectura → (opcional) editar oportunidades con aviso de conflicto. Luis dirá dónde se quedan sin señal,
+qué necesitan con urgencia y si usan iPhone o Android.
+
+### Técnicos conocidos
+- Informes de cotizaciones/pedidos suman monedas mezcladas (COP + USD) sin convertir.
+- Al convertir un prospecto internacional, el valor del formulario da error salvo que sea 0.
+- Cambiar el mercado de una cuenta no actualiza la moneda de sus oportunidades abiertas.
+- Columna obsoleta `controlling_values` en dependencias de listas.
+- 184 filas huérfanas en `field_history`.
+- Historial de migraciones de Supabase ≠ repo (ver sección 5).
+
+### Por confirmar en un iPhone real
+Cabecera con más aire bajo la hora, campos sin zoom y botón «Guardar» sobre la barra inferior (probado en
+Chrome con área segura simulada, no en el dispositivo).
+
+## 7. Registro de cambios recientes
+
+| Fecha | Commit | Cambio | Producción |
+|---|---|---|---|
+| 2026-11-07 | `079f13b` | Celular: «Guardar» de los formularios encima de la barra inferior; lint ignora `test-results/`. | Desplegado |
+| 2026-11-07 | `0d9f6d0` | Cotizaciones con descuento alto no se presentan sin aprobación. | Migración aplicada y probada |
+| 2026-11-07 | `7e62430` | iPhone instalado: más aire bajo la hora; sin zoom al enfocar campos. | Desplegado |
+| 2026-11-07 | `5a40baa` | iPhone instalado: cabecera bajo la hora y la isla dinámica. | Desplegado |
+| 2026-11-07 | `08e3711` | Funciones internas de la TRM cerradas a los usuarios. | Migración aplicada |
+| 2026-11-06 | `c9103df` | País, departamento y ciudad de listas oficiales. | Migración aplicada (municipios del DANE) |
+| 2026-11-06 | `38ad02b` | Mercado Internacional en USD sin IVA con TRM oficial. | Migración aplicada |
+| 2026-11-06 | `c0dceb9` | Prospectos alineados con cuentas; NIT solo nacionales. | Migración aplicada |
+| 2026-11-06 | `7ba8ea4` | Nombres limpios (mayúscula inicial). | Migración aplicada |
+| 2026-11-06 | `26d0b7c`, `ca85a56` | Mercado en cuentas y listas dependientes. | Migraciones aplicadas |
+| 2026-11-06 | `97524a3` | Funciones de la base cerradas a quien no tiene sesión. | Migración aplicada |
+| 2026-11-06 | — | Instalación de producción en Supabase (26 migraciones + configuración base, sin datos de ejemplo). | — |
+| 2026-11-03 | `b7de910` … `19c4db8` | Rediseño visual (vidrio, navy, oliva y negro), analítica en celular y ajustes de menús. | — |
+| Oct–nov 2026 | `9a02f98` … `ac0aa77` | Fases 1 a 26 (ver README). | — |
