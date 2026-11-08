@@ -67,7 +67,7 @@ export const quotes: ObjectDef = {
     },
     { name: "delivery_terms", label: "Condiciones de entrega", type: "text", section: "terms" },
     { name: "incoterm", label: "Incoterm", type: "select", options: INCOTERMS, section: "terms", help: "Para exportaciones (mercado Internacional)." },
-    { name: "description", label: "Notas", type: "textarea", wide: true, section: "terms" },
+    { name: "description", label: "Observaciones", type: "textarea", wide: true, section: "terms", help: "Comentarios para el cliente: se imprimen en la cotización (PDF)." },
     { name: "created_at", label: "Creada", type: "datetime", readOnly: true, formHidden: true, section: "system" },
     { name: "updated_at", label: "Última modificación", type: "datetime", readOnly: true, formHidden: true, section: "system" },
   ],

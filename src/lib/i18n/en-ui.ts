@@ -821,6 +821,7 @@ export const UI_EN: Record<string, string> = {
   "Pipeline del": "Pipeline for", "Se toma de la cuenta": "Taken from the account", "— Sin canal —": "— No channel —",
   "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
   "No codificado": "Not listed",
+  Observaciones: "Remarks", "Comentarios para el cliente: se imprimen en la cotización (PDF).": "Comments for the customer: printed on the quote (PDF).",
   "Define el pipeline de sus oportunidades y la lista de precios de sus cotizaciones.": "Sets the pipeline of its opportunities and the price book of its quotes.",
   "Solo para clientes con productos codificados y precios propios, y del mismo mercado de la cuenta. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».":
     "Only for customers with their own listed products and prices, in the account's market. Anything not in it is quoted from the channel price book and marked “Not listed”.",

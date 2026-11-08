@@ -116,8 +116,10 @@ test.describe("administrador", () => {
     await expect(page.locator("#f-shipping_address")).toBeEnabled();
     await expect(page.locator("#f-shipping_address")).toHaveValue(/Av\. Boyacá/);
     await page.locator("#f-shipping_address").fill("Bodega del cliente final, Funza");
+    await page.getByLabel("Observaciones").fill("Precios sujetos a disponibilidad.\nIncluye instalación en obra.");
     await guardar(page);
     await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+    const cotizacion = page.url().split("?")[0];
     await expect(page.getByText("Sincronizada").first()).toBeVisible();
 
     // Un producto codificado del cliente toma su precio; uno no codificado, el de la lista del canal, marcado.
@@ -179,6 +181,15 @@ test.describe("administrador", () => {
     await expect(page).toHaveURL(/\/oportunidades\/[0-9a-f-]{36}/);
     await expect(page.getByText("Distribución y retail").first()).toBeVisible();
     await expect(page.getByText("$6,208,000").first()).toBeVisible();
+
+    // El PDF distingue la dirección de facturación de la de entrega y lleva las observaciones con su título.
+    await page.goto(cotizacion.replace("/cotizaciones/", "/imprimir/cotizacion/"));
+    const bloque = (titulo: string) => page.locator("section > div, section").filter({ has: page.getByText(titulo, { exact: true }) }).last();
+    await expect(bloque("Dirección de facturación")).toContainText("Av. Boyacá");
+    await expect(bloque("Dirección de entrega")).toContainText("Bodega del cliente final, Funza");
+    await expect(bloque("Observaciones")).toContainText("Precios sujetos a disponibilidad.");
+    await expect(bloque("Observaciones")).toContainText("Incluye instalación en obra.");
+    await expect(page.getByText("Condiciones de pago: 60 días")).toBeVisible();
   });
 
   test("el precio por lista agrupa miles al escribir, usa punto decimal y conserva el valor guardado", async ({ page }) => {

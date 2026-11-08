@@ -27,10 +27,16 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
       .order("sort_order"),
   ]);
   if (!q) notFound();
+  // La dirección de facturación viene de la cuenta; la de entrega, si no se escribió otra, es la misma.
+  const billing = q.billing_address ?? ([q.account?.billing_street, q.account?.billing_city].filter(Boolean).join(", ") || null);
+  const shipping = q.shipping_address ?? billing;
+  const label = "text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--sage-700)]";
 
   return (
     <div className="min-h-dvh bg-[var(--cream-200)] py-8 print:bg-white print:py-0">
-      <style>{`@page { size: letter; margin: 14mm; } @media print { body { background: #fff !important; } }`}</style>
+      <style>{`@page { size: letter; margin: 14mm; } @media print { body { background: #fff !important; } }
+        /* Al imprimir, ningún bloque (filas, totales, condiciones, observaciones, firma) queda partido entre dos páginas. */
+        .print-keep, .print-rows tr { break-inside: avoid; }`}</style>
       <div className="mx-auto mb-4 flex max-w-[52rem] justify-end print:hidden"><PrintButton /></div>
       <article className="mx-auto max-w-[52rem] rounded-[22px] bg-white p-10 text-[13px] text-[var(--ink-900)] shadow-[var(--shadow-lg)] print:max-w-none print:rounded-none print:p-0 print:shadow-none">
         <header className="flex items-start justify-between gap-6 border-b border-[rgba(29,29,27,0.14)] pb-6">
@@ -42,23 +48,29 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
           </div>
         </header>
 
-        <section className="grid grid-cols-2 gap-8 py-6">
+        <section className="grid grid-cols-2 gap-x-8 gap-y-4 py-5">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--sage-700)]">Cliente</p>
+            <p className={label}>Cliente</p>
             <p className="mt-2 text-base font-medium text-[var(--navy-700)]">{q.bill_to_name ?? q.account?.name}</p>
             {q.account?.tax_id && <p>NIT {q.account.tax_id}</p>}
-            {(q.billing_address || q.account?.billing_street) && <p>{q.billing_address ?? q.account?.billing_street}{q.account?.billing_city ? `, ${q.account.billing_city}` : ""}</p>}
-            {q.contact && <p className="mt-2">Atención: {q.contact.full_name}{q.contact.email ? ` · ${q.contact.email}` : ""}</p>}
+            {q.contact && <p className="mt-1">Atención: {q.contact.full_name}{q.contact.email ? ` · ${q.contact.email}` : ""}</p>}
           </div>
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--sage-700)]">Proyecto</p>
+            <p className={label}>Proyecto</p>
             <p className="mt-2 text-base font-medium text-[var(--navy-700)]">{q.name}</p>
             {q.opportunity && <p className="text-[var(--ink-500)]">{q.opportunity.name}</p>}
-            {q.shipping_address && <p className="mt-2">Entrega: {q.shipping_address}</p>}
+          </div>
+          <div>
+            <p className={label}>Dirección de facturación</p>
+            <p className="mt-1">{billing ?? "—"}</p>
+          </div>
+          <div>
+            <p className={label}>Dirección de entrega</p>
+            <p className="mt-1">{shipping ?? "—"}</p>
           </div>
         </section>
 
-        <table className="w-full border-collapse">
+        <table className="print-rows w-full border-collapse">
           <thead>
             <tr className="border-y border-[rgba(29,29,27,0.14)] text-left text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--ink-500)]">
               <th className="py-2 pr-2">Ref.</th><th className="py-2 pr-2">Descripción</th><th className="py-2 pr-2 text-right">Cant.</th>
@@ -79,7 +91,7 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
           </tbody>
         </table>
 
-        <section className="mt-6 flex justify-end">
+        <section className="print-keep mt-6 flex justify-end">
           <dl className="w-72 space-y-1">
             {[
               ["Subtotal", q.subtotal],
@@ -97,16 +109,23 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
           </dl>
         </section>
 
-        {(q.payment_terms || q.delivery_terms || q.description) && (
-          <section className="mt-8 space-y-1 border-t border-[rgba(29,29,27,0.14)] pt-4">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--sage-700)]">Condiciones</p>
-            {q.payment_terms && <p>Pago: {q.payment_terms}</p>}
-            {q.delivery_terms && <p>Entrega: {q.delivery_terms}</p>}
-            {q.description && <p className="whitespace-pre-line">{q.description}</p>}
+        {(q.payment_terms || q.delivery_terms || q.incoterm) && (
+          <section className="print-keep mt-6 space-y-1 border-t border-[rgba(29,29,27,0.14)] pt-4">
+            <p className={label}>Condiciones</p>
+            {q.payment_terms && <p>Condiciones de pago: {q.payment_terms}</p>}
+            {q.delivery_terms && <p>Condiciones de entrega: {q.delivery_terms}</p>}
+            {q.incoterm && <p>Incoterm: {q.incoterm}</p>}
           </section>
         )}
 
-        <footer className="mt-10 flex items-end justify-between border-t border-[rgba(29,29,27,0.14)] pt-4 text-[var(--ink-500)]">
+        {q.description && (
+          <section className="print-keep mt-6 space-y-1 border-t border-[rgba(29,29,27,0.14)] pt-4">
+            <p className={label}>Observaciones</p>
+            <p className="whitespace-pre-line">{q.description}</p>
+          </section>
+        )}
+
+        <footer className="print-keep mt-8 flex items-end justify-between border-t border-[rgba(29,29,27,0.14)] pt-4 text-[var(--ink-500)]">
           <div>
             <p className="font-medium text-[var(--ink-900)]">{q.owner?.full_name}</p>
             <p>{[q.owner?.title, q.owner?.email, q.owner?.phone].filter(Boolean).join(" · ")}</p>
