@@ -141,7 +141,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-07 | `HASH_ALINEACION` | Cotizaciones y pedidos: los títulos de la tabla de productos (Cantidad, Precio unit., Desc. %, Total) quedan sobre su columna, también en el formulario de agregar; una sola plantilla de columnas fija. `.claude/launch.json` suma `firplak-crm-demo` (`dev:demo`) para revisar sin tocar producción. | Sin push: falta desplegar |
+| 2026-11-07 | `3fea9e2` | Cotizaciones y pedidos: los títulos de la tabla de productos (Cantidad, Precio unit., Desc. %, Total) quedan sobre su columna, también en el formulario de agregar; una sola plantilla de columnas fija. `.claude/launch.json` suma `firplak-crm-demo` (`dev:demo`) para revisar sin tocar producción. | Sin push: falta desplegar |
 | 2026-11-07 | — | Oportunidad de prueba «Prueba» movida al pipeline de su canal (Distribución y retail · Contacto inicial). | Datos |
 | 2026-11-07 | `64d9d84` | `db:publicar` leía 0 pendientes con la tabla de la CLI en terminal (comillas invertidas); corregido con prueba. | Desplegado |
 | 2026-11-07 | `1a61057` | Canales de venta: pipeline y lista de precios por canal, lista propia del cliente («No codificado»), «Facturar a» = cuenta de la oportunidad (o se crea la oportunidad), direcciones y condiciones de pago desde la cuenta con opción manual, Canal obligatorio, un embudo por canal en Indicadores. | Migración `20261201000100` aplicada; desplegado (Vercel OK) |
