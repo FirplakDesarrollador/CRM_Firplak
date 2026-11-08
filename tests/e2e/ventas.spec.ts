@@ -151,6 +151,11 @@ test.describe("administrador", () => {
       expect(await borde(page.locator(alAgregar))).toBe(derecho);
     }
 
+    // Cantidad, precio opcional y descuento son cifras cortas: título y dato centrados.
+    for (const id of ["#ql-qty", "#ql-price", "#ql-disc"]) await expect(page.locator(id)).toHaveCSS("text-align", "center");
+    await expect(fila("DEMO-MB-060").getByLabel("Cantidad")).toHaveCSS("text-align", "center");
+    await expect(fila("DEMO-MB-060").getByLabel("Descuento %")).toHaveCSS("text-align", "center");
+
     // Cantidad y descuento también agrupan y usan punto decimal al escribir (sin guardar: los totales no cambian).
     const cantidad = fila("DEMO-MB-060").getByLabel("Cantidad");
     await cantidad.fill("");
@@ -208,10 +213,14 @@ test.describe("administrador", () => {
         const b = getComputedStyle(td).textAlign.replace("start", "left").replace("end", "right");
         const h = caja(th), d = caja(td);
         const px = a === "right" ? h.right - d.right : a === "center" ? (h.left + h.right - d.left - d.right) / 2 : h.left - d.left;
+        // Tras una columna de cifras (a la derecha), la siguiente no queda pegada: al menos 40 px entre textos.
+        const previo = tds[i - 1];
+        const aire = previo && getComputedStyle(previo).textAlign === "right" && b !== "right" ? d.left - caja(previo).right : Infinity;
+        if (aire < 40) return [`${th.textContent.trim()}: pegada a la cifra anterior (${Math.round(aire)}px)`];
         return a !== b || Math.abs(px) > 1 ? [`${th.textContent.trim()}: ${a}/${b} ${Math.round(px)}px`] : [];
       });
     });
-    for (const url of ["/oportunidades", "/cotizaciones", "/pedidos"]) {
+    for (const url of ["/inicio", "/oportunidades", "/cotizaciones", "/pedidos"]) {
       await page.goto(url);
       await expect(page.locator("tbody tr").first()).toBeVisible();
       expect(await desfases(), url).toEqual([]);

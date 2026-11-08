@@ -848,6 +848,12 @@ svg.lucide {
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
   }
+  /* Una columna de cifras (a la derecha) seguida de otra alineada distinto quedaba pegada a ella:
+     la siguiente toma más aire a la izquierda, en el título y en el dato por igual. */
+  .table th.text-right + th:not(.text-right),
+  .table td.text-right + td:not(.text-right) {
+    padding-left: 2.25rem;
+  }
   .table tbody tr {
     transition: background 0.2s var(--ease);
   }
