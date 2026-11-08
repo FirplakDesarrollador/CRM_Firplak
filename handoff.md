@@ -82,8 +82,9 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 ## 5. Producción (Supabase)
 
-- **38 migraciones aplicadas**; la última, `20261203000100_pipelines_market`, el 2026-11-07 con `db:publicar` y visto bueno
-  de Luis (38/38, 0 pendientes): «Proyectos y constructoras» y «Distribución y retail» quedaron Nacionales; «Prueba» sigue
+- **39 migraciones aplicadas**; la última, `20261204000100_quote_parts_opportunity`, el 2026-11-07 con `db:publicar` y visto
+  bueno de Luis (39/39, 0 pendientes): sin marcas de etapa (los pipelines de producción tienen nombres propios); «Prueba»
+  sigue Ganada por $16,165,796.21 con COT-1003 Aceptada. Antes, `20261203000100_pipelines_market` (38/38): «Proyectos y constructoras» y «Distribución y retail» quedaron Nacionales; «Prueba» sigue
   en «Distribución y retail». Antes, `20261202000100_price_books_market` (37/37): listas con mercado («Constructor Nacional» y «Distribucion Nacional» →
   Nacional · COP; «Lista exportación USD» → Internacional · general, sin uso hasta asignarle canal); COT-1003 y «Prueba»
   sin cambios. Antes, `20261201000100_channels_pricing_billing`, también con `db:publicar`. Ligó en producción «Proyectos y constructoras» y
@@ -104,7 +105,8 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - Ojo con los permisos: en Supabase toda función nueva queda ejecutable por `authenticated`. Las internas
   (`security definer`) necesitan `revoke execute ... from public, anon, authenticated` explícito y entrar en la
   lista de `db:test`. PGlite no reproduce esto.
-- Asesor de seguridad (2026-11-07, tras la migración de pipelines por mercado): sin hallazgos nuevos. Quedan los conocidos: funciones OAuth/MCP abiertas a
+- Asesor de seguridad (2026-11-07, tras la migración de cotizaciones como partes): único nuevo, `sync_quote` como función
+  del sistema (a propósito: comprueba que quien llama puede editar la oportunidad y solo recalcula su valor). Quedan los conocidos: funciones OAuth/MCP abiertas a
   `anon` a propósito, ~60 funciones de la app ejecutables por usuarios (con sus propias validaciones),
   *Leaked password protection* desactivado (se activa en Supabase → Auth).
 
@@ -114,7 +116,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - **Cargar productos y precios** (desde SAP o CSV): sin ellos no se pueden cotizar líneas en producción.
 - Crear los usuarios reales (hoy hay 2) con su jefe directo: lo usan las aprobaciones y la jerarquía.
 - Zona comercial derivada del departamento.
-- **Al publicar `20261204000100` (cotizaciones como partes):** marcar en cada pipeline de producción, en «Avanza con
+- **Cotizaciones como partes (ya en producción):** marcar en cada pipeline de producción, en «Avanza con
   cotización», la etapa de «Propuesta presentada» y la de «Negociación» (los de producción tienen nombres propios, p. ej.
   «Presentación de Propuesta» y «Negociación Final», y la migración no los adivina). En «Canal B2C», la etapa «Ganada»
   está como tipo Abierta: cambiarla a Ganada (sin etapa ganada, aceptar la última parte solo avisa).
@@ -156,7 +158,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-07 | `127ede9` | **Cotizaciones como partes del negocio** y cómo mueven la oportunidad (decisiones de Luis): valor = suma de partes abiertas (sin «Sincronizar»); parte aceptada con otras abiertas se separa en su propia oportunidad ganada (con reparto y pedidos; «Partes ganadas» en la original); la última abierta aceptada gana la original; etapas «Propuesta presentada» y «Negociación» por pipeline («Avanza con cotización», solo hacia adelante); aviso al asesor y su jefe si se rechazan todas las pendientes; estado «Reemplazada»; marcar Perdida rechaza lo abierto (no con partes aceptadas o pedidos activos); oportunidad cerrada no admite cotizaciones; pedido cancelado avisa. 139 comprobaciones de base y e2e del flujo. | **Sin publicar ni subir:** migración `20261204000100` pendiente de `db:publicar` con visto bueno de Luis |
+| 2026-11-07 | `127ede9` | **Cotizaciones como partes del negocio** y cómo mueven la oportunidad (decisiones de Luis): valor = suma de partes abiertas (sin «Sincronizar»); parte aceptada con otras abiertas se separa en su propia oportunidad ganada (con reparto y pedidos; «Partes ganadas» en la original); la última abierta aceptada gana la original; etapas «Propuesta presentada» y «Negociación» por pipeline («Avanza con cotización», solo hacia adelante); aviso al asesor y su jefe si se rechazan todas las pendientes; estado «Reemplazada»; marcar Perdida rechaza lo abierto (no con partes aceptadas o pedidos activos); oportunidad cerrada no admite cotizaciones; pedido cancelado avisa. 139 comprobaciones de base y e2e del flujo. | Migración `20261204000100` aplicada con `db:publicar` y visto bueno de Luis (39/39); desplegado |
 | 2026-11-07 | `b8299a2` | **Pipelines por mercado** además del canal (decisiones de Luis): cada pipeline es Nacional o Internacional (los actuales quedan Nacionales); la oportunidad va al del mercado y canal de su cuenta y, si falta, se bloquea con un mensaje; si cambia el mercado o el canal de la cuenta, sus oportunidades abiertas pasan al pipeline nuevo (sin él, el cambio se rechaza). «Duplicar» copia un pipeline con sus etapas a otro mercado. Etapa de la oportunidad, oportunidad nueva, conversión de prospecto, filtro del Kanban e Indicadores (un embudo por mercado y canal) usan el mercado. Demo con pipelines internacionales copiados. 136 comprobaciones de base y e2e. | Migración `20261203000100` aplicada con `db:publicar` y visto bueno de Luis (38/38); desplegado |
 | 2026-11-07 | `50fd8b2` | Cotización: el campo «Notas» pasa a **«Observaciones»** (comentarios para el cliente, se imprimen). PDF: «Dirección de facturación» y «Dirección de entrega» con su título (la de entrega es la de facturación si no se escribió otra), condiciones con su nombre completo e Incoterm, bloque propio de «Observaciones», y ningún bloque ni la firma quedan partidos entre páginas. e2e del PDF. | Sin push: falta desplegar |
 | 2026-11-07 | `6c5578a` | Listas de precios por **mercado** además del canal (decisiones de Luis): mercado obligatorio en cada lista (la moneda sale de él), selección dentro del mercado de la cuenta sin cruces de mercado, canal ni moneda, bloqueo con mensaje si falta la lista (Internacional sin lista general; Nacional admite general nacional), validaciones en la base, cambio de mercado de una cuenta (borradores sin productos pasan solos, con productos se avisan; presentadas y pedidos no cambian). Pantallas: Mercado en Listas de precios (se quita «Estándar»), mercado en la ficha del producto y en la lista propia de la cuenta, avisos en cuenta y cotización. 134 comprobaciones de base y e2e del flujo. | Migración `20261202000100` aplicada con `db:publicar` y visto bueno de Luis (37/37); desplegado |
