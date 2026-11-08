@@ -875,7 +875,7 @@ await check('normalize_name: mayúscula inicial, conectores, siglas y números r
 });
 await check('al guardar, nombres, ciudades y correos quedan limpios; los demo no se tocan', async () => {
   const [cuenta] = await as(admin, () => q(
-    `insert into accounts (name, billing_city, email) values ('SODIMAC colombia', 'MEDELLÍN', '  Compras@Sodimac.COM ') returning id, name, billing_city, email`));
+    `insert into accounts (name, billing_city, email, industry) values ('SODIMAC colombia', 'MEDELLÍN', '  Compras@Sodimac.COM ', 'Canal Constructores') returning id, name, billing_city, email`));
   assert.deepEqual([cuenta.name, cuenta.billing_city, cuenta.email], ['Sodimac Colombia', 'Medellín', 'compras@sodimac.com']);
   const [contacto] = await as(admin, () => q(
     `insert into contacts (first_name, last_name, account_id) values ('luis', 'escobar', $1) returning full_name`, [cuenta.id]));
@@ -962,7 +962,7 @@ await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte 
 
   // Una TRM nueva recalcula las abiertas; la cerrada conserva la suya. Solo el administrador la registra.
   const [cerrada] = await crear(ext.id, { usd: 500 });
-  const [won] = await q(`select id from pipeline_stages where pipeline_id = $1 and category = 'won' limit 1`, [st.pipeline_id]);
+  const [won] = await q(`select id from pipeline_stages where pipeline_id = (select pipeline_id from opportunities where id = $1) and category = 'won' limit 1`, [cerrada.id]);
   await as(admin, () => q(`update opportunities set stage_id = $2 where id = $1`, [cerrada.id, won.id]));
   await assert.rejects(as(rep, () => q(`select set_exchange_rate(4500)`)), /No autorizado/);
   await assert.rejects(as(rep, () => q(`select refresh_exchange_rates()`)), /No autorizado/);
@@ -1115,12 +1115,20 @@ await check('una oportunidad va al pipeline del canal de su cuenta, con la etapa
   // Una etapa de otro pipeline no se puede elegir.
   const [other] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.name = 'Proyectos y constructoras' and s.name = 'Negociación'`);
   await assert.rejects(as(rep, () => q(`update opportunities set stage_id = $1 where id = $2`, [other.id, distOpp.id])), /pipeline «Distribución y retail»/);
-  // Sin canal (o un canal sin pipeline) sigue en el pipeline elegido.
+  // Sin canal (o un canal sin pipeline en su mercado): no se crea la oportunidad hasta que exista el pipeline.
   const [noChannelAcc] = await as(rep, () => q(`insert into accounts (name) values ('Cuenta sin canal') returning id`));
-  const [noChannel] = await as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount)
+  await assert.rejects(as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount)
     select 'Opp sin canal', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
-    where p.is_default and s.name = 'Negociación' returning id`, [noChannelAcc.id]));
-  assert.deepEqual(await pipelineOf(noChannel.id), { pipeline: 'Proyectos y constructoras', stage: 'Negociación' });
+    where p.is_default and s.name = 'Negociación'`, [noChannelAcc.id])),
+    /No hay un pipeline activo para el mercado Nacional y el canal de la cuenta \(sin definir\)/);
+  // Un distribuidor del exterior va al pipeline Internacional de su canal, no al nacional.
+  const [extAcc] = await as(rep, () => q(`insert into accounts (name, market, industry) values ('Distribuidor del Norte', 'Internacional', 'Canal Distribución') returning id`));
+  const [ext] = await as(admin, () => q(`insert into opportunities (name, account_id, stage_id, amount)
+    select 'Opp exterior', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where p.is_default and s.name = 'Calificación' returning id`, [extAcc.id]));
+  assert.deepEqual(await pipelineOf(ext.id), { pipeline: 'Distribución internacional', stage: 'Contacto inicial' });
+  await q(`delete from opportunities where id = $1`, [ext.id]);
+  await q(`delete from accounts where id = $1`, [extAcc.id]);
 });
 await check('si cambia el canal de la cuenta, sus oportunidades abiertas pasan al pipeline del nuevo canal', async () => {
   const [st] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.name = 'Distribución y retail' and s.name = 'Pedido en negociación'`);
@@ -1129,6 +1137,32 @@ await check('si cambia el canal de la cuenta, sus oportunidades abiertas pasan a
   assert.deepEqual(await pipelineOf(distOpp.id), { pipeline: 'Proyectos y constructoras', stage: 'Negociación' });
   await as(rep, () => q(`update accounts set industry = 'Canal Distribución' where id = $1`, [distOpp.account_id]));
   assert.deepEqual(await pipelineOf(distOpp.id), { pipeline: 'Distribución y retail', stage: 'Pedido en negociación' });
+});
+await check('pipeline por mercado: se duplica a otro mercado; si cambia el mercado de la cuenta, sus oportunidades pasan al del nuevo', async () => {
+  // Duplicar copia todas las etapas; no puede haber dos pipelines activos del mismo mercado y canal. Solo quien configura.
+  const etapas = async (name) => (await q(`select array_agg(s.name || ':' || s.probability order by s.sort_order) e
+    from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.name = $1`, [name]))[0].e;
+  assert.deepEqual(await etapas('Distribución internacional'), await etapas('Distribución y retail'));
+  await assert.rejects(as(admin, () => q(`select duplicate_pipeline((select id from pipelines where name = 'Distribución y retail'), 'Otra distribución', 'Nacional')`)),
+    /pipelines_one_per_market_channel/);
+  await assert.rejects(as(rep, () => q(`select duplicate_pipeline((select id from pipelines where name = 'Distribución y retail'), 'Copia del asesor', 'Internacional')`)));
+  await as(admin, async () => {
+    const [acc] = await q(`insert into accounts (name, market, industry) values ('Distribuidora que Exporta', 'Nacional', 'Canal Distribución') returning id`);
+    const [o] = await q(`insert into opportunities (name, account_id, stage_id, amount)
+      select 'Opp que cambia de mercado', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.name = 'Distribución y retail' and s.name = 'Propuesta comercial' returning id`, [acc.id]);
+    await q(`select set_exchange_rate(4000)`);
+    await q(`update accounts set market = 'Internacional' where id = $1`, [acc.id]);
+    assert.deepEqual(await pipelineOf(o.id), { pipeline: 'Distribución internacional', stage: 'Propuesta comercial' });
+    // Sin el pipeline del mercado nuevo, el cambio se rechaza mientras haya oportunidades abiertas.
+    await q(`update pipelines set is_active = false where name = 'Distribución y retail'`);
+    await assert.rejects(q(`update accounts set market = 'Nacional' where id = $1`, [acc.id]),
+      /No hay un pipeline activo para el mercado Nacional y el Canal Distribución.*oportunidades abiertas/);
+    await q(`update pipelines set is_active = true where name = 'Distribución y retail'`);
+    await q(`delete from opportunities where id = $1`, [o.id]);
+    await q(`delete from accounts where id = $1`, [acc.id]);
+    await q(`delete from exchange_rates where source = 'Manual'`);
+  });
 });
 await check('la cotización usa la lista de precios del canal de la cuenta', async () => {
   const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización canal', $1)
@@ -1141,9 +1175,6 @@ await check('la cotización usa la lista de precios del canal de la cuenta', asy
   const [cons] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización constructora', $1)
     returning (select name from price_books b where b.id = price_book_id) book`, [consOpp.id]));
   assert.equal(cons.book, 'Lista estándar COP');
-  // Sin canal ni lista general nacional: se bloquea (la «estándar» ya no decide; no se usa la de otro canal).
-  await assert.rejects(as(rep, () => q(`insert into quotes (name, opportunity_id) select 'Cotización sin canal', id from opportunities where name ilike 'Opp sin canal'`)),
-    /No hay una lista de precios activa para el mercado Nacional y el canal de la cuenta \(sin definir\) \(o una lista general nacional\)/);
 });
 await check('«Facturar a» es la cuenta de la oportunidad; direcciones y condiciones de pago vienen de la cuenta', async () => {
   const [qt] = await as(rep, () => q(`select * from quotes where name = 'Cotización canal'`));
@@ -1210,14 +1241,16 @@ await check('lista propia del cliente: sus productos con su precio; los no codif
 });
 await check('indicadores: un embudo por pipeline, cada uno con sus etapas (sin las perdidas)', async () => {
   const funnels = await as(admin, async () => (await q(`select crm_funnels(current_date - 365, current_date) f`))[0].f);
-  assert.deepEqual(funnels.map((f) => [f.name, f.channel]), [['Proyectos y constructoras', 'Canal Constructores'], ['Distribución y retail', 'Canal Distribución']]);
+  assert.deepEqual(funnels.map((f) => [f.name, f.market, f.channel]), [
+    ['Proyectos y constructoras', 'Nacional', 'Canal Constructores'], ['Distribución y retail', 'Nacional', 'Canal Distribución'],
+    ['Proyectos internacionales', 'Internacional', 'Canal Constructores'], ['Distribución internacional', 'Internacional', 'Canal Distribución']]);
   assert.deepEqual(funnels[1].stages.map((s) => s.name), ['Contacto inicial', 'Muestras y catálogo', 'Propuesta comercial', 'Pedido en negociación', 'Ganada']);
   assert.ok(funnels.every((f) => f.stages.every((s) => s.category !== 'lost')));
   const dashboard = await as(admin, async () => (await q(`select crm_dashboard(current_date - 365, current_date, null, (select id from pipelines where name = 'Distribución y retail')) d`))[0].d);
   assert.deepEqual(funnels[1].stages.map((s) => Number(s.amount)), dashboard.funnel.map((s) => Number(s.amount)));
 });
 await check('un canal tiene un solo pipeline y una sola lista por mercado; una lista de cliente no tiene canal', async () => {
-  await assert.rejects(q(`update pipelines set channel = 'Canal Distribución' where name = 'Proyectos y constructoras'`), /pipelines_one_per_channel/);
+  await assert.rejects(q(`update pipelines set channel = 'Canal Distribución' where name = 'Proyectos y constructoras'`), /pipelines_one_per_market_channel/);
   await assert.rejects(q(`insert into price_books (name, channel) values ('Otra de distribución', 'Canal Distribución')`), /price_books_one_per_market_channel/);
   await assert.rejects(q(`insert into price_books (name, channel, is_client_list) values ('Cliente con canal', 'Canal B2C', true)`), /price_books_client_without_channel/);
 });
@@ -1229,6 +1262,13 @@ await check('la lista depende del mercado y el canal de la cuenta; nunca cruza d
     assert.equal(intl.currency, 'USD');
     await assert.rejects(q(`insert into price_books (name, market, channel) values ('Otra internacional', 'Internacional', 'Canal Distribución')`), /price_books_one_per_market_channel/);
     await q(`select set_exchange_rate(4000)`);
+    // Pipelines del Canal B2C en ambos mercados (las oportunidades necesitan el de su mercado y canal).
+    for (const [name, market] of [['Hogar nacional', 'Nacional'], ['Hogar internacional', 'Internacional']]) {
+      const [p] = await q(`insert into pipelines (name, channel, market) values ($1, 'Canal B2C', $2) returning id`, [name, market]);
+      await q(`insert into pipeline_stages (pipeline_id, name, sort_order, probability, category, forecast_category, color)
+        select $1, s.name, s.sort_order, s.probability, s.category, s.forecast_category, s.color
+        from pipeline_stages s join pipelines x on x.id = s.pipeline_id where x.name = 'Proyectos y constructoras'`, [p.id]);
+    }
   });
   const cuenta = (name, market, industry) => as(admin, async () =>
     (await q(`insert into accounts (name, market, industry) values ($1, $2, $3) returning id`, [name, market, industry]))[0].id);
@@ -1339,12 +1379,14 @@ await check('al cambiar el mercado: borradores sin productos cambian; con produc
     await q(`delete from opportunities where account_id in (${cuentas})`);
     await q(`delete from accounts where id in (${cuentas})`);
     await q(`delete from price_books where name in ('Distribución Internacional', 'General Nacional')`);
+    await q(`delete from pipelines where name in ('Hogar nacional', 'Hogar internacional')`);
     await q(`delete from exchange_rates where source = 'Manual'`);
   });
 });
 await check('permisos de las funciones nuevas', async () => {
   for (const fn of ['quote_line_price(uuid,uuid)', 'crm_funnels(date,date,uuid)', 'default_price_book(uuid,text)', 'channel_price_book(uuid,text)', 'channel_pipeline(uuid)',
-    'market_of(text)', 'market_currency(text)', 'price_book_problem(uuid,uuid)', 'missing_price_book_message(uuid)']) {
+    'market_of(text)', 'market_currency(text)', 'price_book_problem(uuid,uuid)', 'missing_price_book_message(uuid)',
+    'missing_pipeline_message(uuid)', 'duplicate_pipeline(uuid,text,text)']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
   }
   for (const fn of ['equivalent_stage(uuid,uuid)', 'opportunity_channel_pipeline()', 'account_channel_moves_opportunities()', 'quote_line_listed()',

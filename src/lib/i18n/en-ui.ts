@@ -817,7 +817,7 @@ export const UI_EN: Record<string, string> = {
   "Abierta": "Open",
   "Embudo de ventas": "Sales funnel",
   // Canales de venta, listas de precios y facturación
-  "Embudos de ventas por canal": "Sales funnels by channel", Embudo: "Funnel", "Sin pipelines activos.": "No active pipelines.",
+  Embudo: "Funnel", "Sin pipelines activos.": "No active pipelines.",
   "Pipeline del": "Pipeline for", "Se toma de la cuenta": "Taken from the account", "— Sin canal —": "— No channel —",
   "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
   "No codificado": "Not listed",
@@ -831,8 +831,12 @@ export const UI_EN: Record<string, string> = {
   "De la cuenta. Marca «Entregar en otra dirección» para escribirla (cliente final, otra bodega).":
     "From the account. Check “Ship to another address” to type it (end customer, another warehouse).",
   "De la cuenta. Marca «Cambiar condiciones de pago» para escribirlas a mano.": "From the account. Check “Change payment terms” to type them.",
-  "Cada canal de venta tiene su pipeline: las oportunidades de una cuenta van al pipeline de su Canal, y en Indicadores cada canal tiene su embudo. Un canal sin pipeline usa el pipeline por defecto.":
-    "Each sales channel has its pipeline: an account's opportunities go to its channel's pipeline, and each channel has its own funnel in Dashboards. A channel without a pipeline uses the default one.",
+  "Cada pipeline es de un mercado (Nacional o Internacional) y de un canal de venta: las oportunidades de una cuenta van al pipeline de su Mercado y su Canal, y en Indicadores cada uno tiene su embudo. Si falta el pipeline de un mercado y canal, sus oportunidades no se pueden crear hasta crearlo; «Duplicar» copia un pipeline con sus etapas a otro mercado.":
+    "Each pipeline belongs to a market (Domestic or International) and a sales channel: an account's opportunities go to the pipeline of its Market and Channel, and each one has its own funnel in Dashboards. If a market and channel has no pipeline, its opportunities cannot be created until it exists; “Duplicate” copies a pipeline with its stages to another market.",
+  "No hay pipeline para el mercado {mercado} y el {canal}: pide a administración crearlo en Configuración → Pipelines.":
+    "There is no pipeline for the {mercado} market and {canal}: ask an administrator to create it in Settings → Pipelines.",
+  "Duplicar con sus etapas": "Duplicate with its stages", "Nombre del pipeline nuevo": "New pipeline name", Duplicar: "Duplicate",
+  "Embudos de ventas por mercado y canal": "Sales funnels by market and channel",
   "Cada lista es de un mercado (Nacional en COP, Internacional en USD) y de un canal. Una cotización usa la lista propia de la cuenta, si es de su mercado; si no, la de su canal en su mercado; en el mercado Nacional, si no hay, la lista general nacional. Nunca usa la de otro mercado ni de otro canal: si falta la lista, la cotización no se puede crear hasta crearla. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.":
     "Each price book belongs to a market (Domestic in COP, International in USD) and a channel. A quote uses the account's own price book, if it is in its market; otherwise the one for its channel in its market; in the Domestic market, if there is none, the general domestic price book. It never uses one from another market or channel: if the price book is missing, the quote cannot be created until it exists. A customer price book holds only that customer's listed products: anything else is quoted from the channel price book and marked “Not listed”. Customer price books are assigned on the account record. Product prices are edited on the product record.",
   "Sin uso: en el mercado Internacional cada canal necesita su propia lista. Asígnale un canal para usarla.":

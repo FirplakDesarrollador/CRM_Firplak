@@ -5,6 +5,7 @@ import type { FieldDef } from "@/lib/objects";
 import type { PipelineWithStages, UserOption } from "@/lib/records/data";
 import { LookupInput, type LookupOption } from "./LookupInput";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { marketOf, pipelineFor } from "@/lib/records/pipelines";
 import { useT } from "@/lib/i18n/client";
 
 import { Opt } from "@/components/ui/Opt";
@@ -24,8 +25,9 @@ export type FieldLinks = {
   source?: string;
   /** Casilla `manualFlag` marcada. */
   manual?: boolean;
-  /** Canal de la cuenta (etapa de oportunidades). */
+  /** Canal y mercado de la cuenta (etapa de oportunidades). */
   channel?: string | null;
+  market?: string | null;
 };
 
 type LookupSelect = CustomEvent<{ name: string; item: LookupOption | null }>;
@@ -53,21 +55,23 @@ function equivalentStage(stage: PipelineWithStages["stages"][number] | undefined
 }
 
 /**
- * Etapa de una oportunidad: solo las del pipeline del canal de la cuenta (si el canal tiene pipeline). Al cambiar
- * la cuenta, pasa a la etapa equivalente del pipeline del nuevo canal.
+ * Etapa de una oportunidad: solo las del pipeline del mercado y el canal de la cuenta. Al cambiar la cuenta, pasa a
+ * la etapa equivalente del pipeline nuevo. Si ese pipeline no existe, lo avisa (la base no deja guardar).
  */
-function StageSelect({ common, initialValue, pipelines, initialChannel }: {
+function StageSelect({ common, initialValue, pipelines, initialChannel, initialMarket }: {
   common: { id: string; name: string; "aria-invalid": boolean; required?: boolean };
   initialValue: string;
   pipelines: PipelineWithStages[];
   initialChannel: string | null;
+  initialMarket: string | null;
 }) {
   const t = useT();
   const ref = useRef<HTMLSelectElement>(null);
-  const [channel, setChannel] = useState(initialChannel);
+  const [link, setLink] = useState({ channel: initialChannel, market: marketOf(initialMarket) });
+  const { channel, market } = link;
   const [value, setValue] = useState(initialValue);
   const allStages = pipelines.flatMap((p) => p.stages);
-  const channelPipeline = channel ? pipelines.find((p) => p.channel === channel && p.is_active) : undefined;
+  const channelPipeline = pipelineFor(pipelines, market, channel);
   const current = pipelines.find((p) => p.stages.some((s) => s.id === value));
   const visible = channelPipeline
     ? [channelPipeline, ...(current && current.id !== channelPipeline.id ? [current] : [])]
@@ -75,9 +79,9 @@ function StageSelect({ common, initialValue, pipelines, initialChannel }: {
 
   useLookupSelect(ref, (name, item) => {
     if (name !== "account_id") return;
-    const next = item?.channel ?? null;
-    setChannel(next);
-    const target = next ? pipelines.find((p) => p.channel === next && p.is_active) : undefined;
+    const next = { channel: item?.channel ?? null, market: marketOf(item?.market) };
+    setLink(next);
+    const target = pipelineFor(pipelines, next.market, next.channel);
     if (target && !target.stages.some((s) => s.id === value)) setValue(equivalentStage(allStages.find((s) => s.id === value), target)?.id ?? "");
   });
 
@@ -93,7 +97,13 @@ function StageSelect({ common, initialValue, pipelines, initialChannel }: {
           </optgroup>
         ))}
       </select>
-      {channelPipeline && <p className="help">{t("Pipeline del")} {channel}: {t(channelPipeline.name)}.</p>}
+      {channelPipeline && <p className="help">{t("Pipeline del")} {channel} · {t(market)}: {t(channelPipeline.name)}.</p>}
+      {channel && !channelPipeline && (
+        <p className="help text-warning">
+          {t("No hay pipeline para el mercado {mercado} y el {canal}: pide a administración crearlo en Configuración → Pipelines.")
+            .replace("{mercado}", t(market)).replace("{canal}", channel)}
+        </p>
+      )}
     </>
   );
 }
@@ -464,7 +474,7 @@ export function FieldInput({
       );
       break;
     case "stage":
-      control = <StageSelect common={common} initialValue={str} pipelines={ctx.pipelines} initialChannel={links?.channel ?? null} />;
+      control = <StageSelect common={common} initialValue={str} pipelines={ctx.pipelines} initialChannel={links?.channel ?? null} initialMarket={links?.market ?? null} />;
       break;
     case "lookup":
       if (field.lookupFilter || field.fillFrom) {

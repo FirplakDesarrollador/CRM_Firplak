@@ -28,7 +28,9 @@ Se usa durante la jornada comercial, en oficina y entre visitas, y se instala en
 
 Estructura comercial (confirmada por Luis, 7 nov 2026):
 
-- **Canales de venta:** Canal Constructores, Canal Distribución y Canal B2C. El canal es obligatorio en cuentas y prospectos. Define el pipeline de las oportunidades (cada canal tiene sus etapas) y la lista de precios de las cotizaciones.
+- **Canales de venta:** Canal Constructores, Canal Distribución y Canal B2C. El canal es obligatorio en cuentas y prospectos. Junto con el mercado, define el pipeline de las oportunidades y la lista de precios de las cotizaciones.
+- **Pipelines por mercado y canal** (decisión de Luis, 7 nov 2026): el negocio constructor o de distribución en Colombia no es el mismo que en el exterior (p. ej. Estados Unidos), así que cada mercado y canal tiene su pipeline y sus etapas, y su propio embudo. Si falta el pipeline, la oportunidad no se crea hasta que exista.
+- **Varias cotizaciones en una oportunidad** son partes del negocio (alcances distintos que pueden aceptarse a la vez y sumar al valor), no alternativas (respuesta de Luis, 7 nov 2026). Las reglas de etapas según las cotizaciones están por definir.
 - **Listas de cliente:** un cliente puede tener su propia lista con sus productos codificados. Lo que no está en ella se cotiza con la lista del canal y queda marcado «No codificado».
 - **Mercados:** Nacional, en pesos (COP), e Internacional, en dólares (USD), convertidos con la TRM.
 - **Listas por mercado y canal** (decisión de Luis, 7 nov 2026): la lista de precios depende del mercado de la cuenta además de su canal, y la moneda sale del mercado. Nunca se cruza de mercado, canal ni moneda; si falta la lista compatible, se bloquea hasta crearla. En el mercado Internacional cada canal necesita su lista; en el Nacional puede usarse una lista general nacional. Al cambiar el mercado de una cuenta, los borradores sin productos pasan solos; los que tienen productos se avisan para revisión; las cotizaciones presentadas y los pedidos no cambian.

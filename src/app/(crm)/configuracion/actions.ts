@@ -155,13 +155,14 @@ export async function savePipeline(id: string | null, _prev: FormState, fd: Form
   if (!name) return { message: "Escribe el nombre del pipeline" };
   const payload = {
     name, name_en: nullable(fd, "name_en"), description: nullable(fd, "description"), is_active: id ? fd.get("is_active") === "on" : true,
-    // Canal de venta cuyas oportunidades van a este pipeline (uno por canal).
+    // Mercado y canal de venta cuyas oportunidades van a este pipeline (uno por mercado y canal).
     channel: nullable(fd, "channel"),
+    market: str(fd, "market") === "Internacional" ? "Internacional" : "Nacional",
   };
   const result = id
     ? await supabase.from("pipelines").update(payload).eq("id", id).select("id").single()
     : await supabase.from("pipelines").insert({ ...payload, sort_order: 99 }).select("id").single();
-  if (result.error?.message.includes("pipelines_one_per_channel")) return { message: `${payload.channel} ya tiene un pipeline activo.` };
+  if (result.error?.message.includes("pipelines_one_per_market_channel")) return { message: `${payload.channel} ya tiene un pipeline activo en el mercado ${payload.market}.` };
   if (result.error) return fail(result.error);
   if (!id) {
     // Todo pipeline nuevo nace con una etapa inicial y las de cierre.
@@ -176,6 +177,21 @@ export async function savePipeline(id: string | null, _prev: FormState, fd: Form
     await supabase.from("pipelines").update({ is_default: true, is_active: true }).eq("id", result.data.id);
   }
   return done(id ? "Pipeline actualizado" : "Pipeline creado");
+}
+
+/** Copia un pipeline con sus etapas a otro mercado (mismo canal), p. ej. para crear el internacional. */
+export async function duplicatePipeline(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const { supabase } = g;
+  const name = str(fd, "name");
+  if (!name) return { message: "Escribe el nombre del pipeline nuevo" };
+  const market = str(fd, "market") === "Internacional" ? "Internacional" : "Nacional";
+  const { error } = await supabase.rpc("duplicate_pipeline", { p_pipeline: id, p_name: name, p_market: market });
+  if (error?.message.includes("pipelines_one_per_market_channel")) return { message: `Ese canal ya tiene un pipeline activo en el mercado ${market}.` };
+  if (error?.message.includes("pipelines_name_key")) return { message: `Ya existe un pipeline llamado «${name}».` };
+  if (error) return fail(error);
+  return done("Pipeline duplicado");
 }
 
 export async function deletePipeline(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {

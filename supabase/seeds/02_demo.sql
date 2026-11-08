@@ -21,6 +21,23 @@ end
 $$;
 
 -- ---------------------------------------------------------------------------
+-- Pipelines del mercado Internacional: copias de los nacionales, para que la demo y las pruebas tengan
+-- dónde poner las oportunidades de cuentas del exterior (en producción los crea administración).
+-- ---------------------------------------------------------------------------
+do $$
+begin
+  if not exists (select 1 from public.pipelines where market = 'Internacional' and channel = 'Canal Constructores') then
+    perform public.duplicate_pipeline((select id from public.pipelines where market = 'Nacional' and channel = 'Canal Constructores'),
+      'Proyectos internacionales', 'Internacional');
+  end if;
+  if not exists (select 1 from public.pipelines where market = 'Internacional' and channel = 'Canal Distribución') then
+    perform public.duplicate_pipeline((select id from public.pipelines where market = 'Nacional' and channel = 'Canal Distribución'),
+      'Distribución internacional', 'Internacional');
+  end if;
+end
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Datos de demostración (empresas y personas ficticias)
 -- ---------------------------------------------------------------------------
 do $$

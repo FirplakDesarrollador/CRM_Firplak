@@ -58,7 +58,10 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
       return { source: currentValue(field.derived.from), manual: field.manualFlag ? ["true", "on"].includes(currentValue(field.manualFlag)) : false };
     }
     if (field.lookupFilter) return { source: currentValue(field.lookupFilter) };
-    if (field.type === "stage") return { channel: (record?.account as { industry?: string | null } | null | undefined)?.industry ?? null };
+    if (field.type === "stage") {
+      const account = record?.account as { industry?: string | null; market?: string | null } | null | undefined;
+      return { channel: account?.industry ?? null, market: account?.market ?? null };
+    }
     return undefined;
   };
 

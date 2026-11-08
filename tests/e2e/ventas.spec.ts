@@ -68,7 +68,7 @@ test.describe("administrador", () => {
     await page.getByLabel(/Nombre de la oportunidad/).fill(nombre);
     await buscarYElegir(page, /^Cuenta/, "Casa Viva");
     // Casa Viva es del Canal Distribución: solo se ofrecen las etapas de su pipeline.
-    await expect(page.getByText("Pipeline del Canal Distribución: Distribución y retail.")).toBeVisible();
+    await expect(page.getByText("Pipeline del Canal Distribución · Nacional: Distribución y retail.")).toBeVisible();
     await expect(page.getByLabel(/Etapa/).locator("option", { hasText: "Prospección" })).toHaveCount(0);
     await page.getByLabel(/Etapa/).selectOption({ label: "Contacto inicial (10%)" });
     // El valor agrupa miles mientras se escribe; el punto es el decimal y la coma del teclado del iPhone también.
@@ -96,7 +96,7 @@ test.describe("administrador", () => {
     await expect(page.getByRole("link", { name: "Almacenes Casa Viva" }).first()).toBeVisible();
 
     await page.goto("/oportunidades/pipeline");
-    await page.getByLabel("Pipeline", { exact: true }).selectOption({ label: "Canal Distribución · Distribución y retail" });
+    await page.getByLabel("Pipeline", { exact: true }).selectOption({ label: "Canal Distribución · Nacional · Distribución y retail" });
     await expect(page.getByText(nombre).first()).toBeVisible();
   });
 
@@ -281,6 +281,41 @@ test.describe("administrador", () => {
     await expect(page).toHaveURL(/\/cotizaciones\/nueva/);
   });
 
+  test("la oportunidad va al pipeline del mercado y el canal de su cuenta; sin ese pipeline, se avisa y no se crea", async ({ page }) => {
+    const nuevaCuenta = async (nombre: string, mercado: string, canal: string) => {
+      await page.goto("/cuentas/nueva");
+      await page.getByLabel(/Nombre de la cuenta/).fill(nombre);
+      await page.locator("#f-market").selectOption(mercado);
+      await page.locator("#f-industry").selectOption({ label: canal });
+      await guardar(page);
+      await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
+    };
+    // Distribuidor del exterior: el pipeline internacional de Distribución, no el nacional.
+    const exterior = unico("Distribuidora Pacífico");
+    await nuevaCuenta(exterior, "Internacional", "Canal Distribución");
+    await page.goto("/oportunidades/nueva");
+    await page.waitForLoadState("networkidle");
+    await buscarYElegir(page, /^Cuenta/, exterior);
+    await expect(page.getByText("Pipeline del Canal Distribución · Internacional: Distribución internacional.")).toBeVisible();
+    // B2C nacional sin pipeline: se avisa y la base no deja crear la oportunidad.
+    const hogar = unico("Hogar Feliz");
+    await nuevaCuenta(hogar, "Nacional", "Canal B2C");
+    await page.goto("/oportunidades/nueva");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel(/Nombre de la oportunidad/).fill(unico("Remodelación Baño"));
+    await buscarYElegir(page, /^Cuenta/, hogar);
+    await expect(page.getByText("No hay pipeline para el mercado Nacional y el Canal B2C").first()).toBeVisible();
+    await page.getByLabel(/Etapa/).selectOption({ index: 1 });
+    await page.getByLabel(/Valor/).fill("1000000");
+    await guardar(page);
+    await expect(page.getByText("No hay un pipeline activo para el mercado Nacional y el Canal B2C").first()).toBeVisible();
+    // Duplicar a un mercado que ya tiene el pipeline de ese canal se rechaza con un mensaje claro.
+    await page.goto("/configuracion/pipelines");
+    const seccion = page.locator("section").filter({ has: page.locator('input[value="Distribución y retail"]') });
+    await seccion.getByRole("button", { name: "Duplicar" }).click();
+    await expect(seccion.getByText("Ese canal ya tiene un pipeline activo en el mercado Internacional.")).toBeVisible();
+  });
+
   test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {
     await page.goto("/cotizaciones/nueva");
     await page.waitForLoadState("networkidle");
@@ -295,11 +330,13 @@ test.describe("administrador", () => {
     await expect(page).toHaveURL(/\/cotizaciones\/nueva/);
   });
 
-  test("Indicadores muestra un embudo por canal", async ({ page }) => {
+  test("Indicadores muestra un embudo por mercado y canal", async ({ page }) => {
     await page.goto("/indicadores");
-    await expect(page.getByRole("heading", { name: "Embudos de ventas por canal" })).toBeVisible();
-    const constructores = page.getByRole("region", { name: "Embudo Canal Constructores" });
-    const distribucion = page.getByRole("region", { name: "Embudo Canal Distribución" });
+    await expect(page.getByRole("heading", { name: "Embudos de ventas por mercado y canal" })).toBeVisible();
+    const constructores = page.getByRole("region", { name: "Embudo Canal Constructores · Nacional" });
+    const distribucion = page.getByRole("region", { name: "Embudo Canal Distribución · Nacional" });
+    await expect(page.getByRole("region", { name: "Embudo Canal Distribución · Internacional" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Embudo Canal Constructores · Internacional" })).toBeVisible();
     await expect(constructores.getByText("Especificación técnica", { exact: true })).toBeVisible();
     await expect(constructores.getByText("Muestras y catálogo", { exact: true })).toHaveCount(0);
     await expect(distribucion.getByText("Muestras y catálogo", { exact: true })).toBeVisible();

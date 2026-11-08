@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { getPipelines } from "@/lib/records/data";
 import { addDaysISO, todayISO } from "@/lib/format";
+import { pipelineFor } from "@/lib/records/pipelines";
 
 export const metadata: Metadata = { title: "Nueva oportunidad" };
 
@@ -24,11 +25,11 @@ export default async function NewOpportunityPage({ searchParams }: PageProps<"/o
   if (accountId) {
     const { data } = await supabase.from("accounts").select("id, name, market, industry").eq("id", accountId).maybeSingle();
     if (data) {
-      // La etapa inicial es la primera del pipeline del canal de la cuenta.
-      const channelPipeline = pipelines.find((p) => p.channel === data.industry && p.is_active);
+      // La etapa inicial es la primera del pipeline del mercado y el canal de la cuenta.
+      const channelPipeline = pipelineFor(pipelines, data.market, data.industry);
       const channelStage = channelPipeline?.stages.find((s) => s.category === "open");
       Object.assign(defaults, {
-        account_id: data.id, account: { id: data.id, name: data.name, industry: data.industry }, name: `${data.name} · Nueva oportunidad`,
+        account_id: data.id, account: { id: data.id, name: data.name, industry: data.industry, market: data.market }, name: `${data.name} · Nueva oportunidad`,
         ...(channelStage ? { stage_id: channelStage.id } : {}),
         currency: data.market === "Internacional" ? "USD" : "COP",
       });

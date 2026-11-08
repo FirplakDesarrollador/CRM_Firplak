@@ -2980,6 +2980,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          market: string
           name: string
           name_en: string | null
           sort_order: number
@@ -2992,6 +2993,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          market?: string
           name: string
           name_en?: string | null
           sort_order?: number
@@ -3004,6 +3006,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          market?: string
           name?: string
           name_en?: string | null
           sort_order?: number
@@ -3955,6 +3958,14 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      duplicate_pipeline: {
+        Args: {
+          p_pipeline: string
+          p_name: string
+          p_market: string
+        }
+        Returns: string
+      }
       equivalent_stage: {
         Args: {
           p_stage: string
@@ -4128,6 +4139,12 @@ export type Database = {
           p_object: string
           p_master: string
           p_duplicate: string
+        }
+        Returns: string
+      }
+      missing_pipeline_message: {
+        Args: {
+          p_account: string
         }
         Returns: string
       }

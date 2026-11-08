@@ -8,7 +8,7 @@ import { canSystem } from "@/lib/permissions";
 import { FORECAST_CATEGORIES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
 import { VALUES_EN } from "@/lib/i18n/values-en";
-import { deletePipeline, deleteStage, savePipeline, saveStage } from "../actions";
+import { deletePipeline, deleteStage, duplicatePipeline, savePipeline, saveStage } from "../actions";
 
 import { Tr } from "@/components/ui/Tr";
 import { Opt } from "@/components/ui/Opt";
@@ -23,6 +23,16 @@ function ChannelSelect({ id, value, channels }: { id: string; value: string | nu
       <Opt value="">— Sin canal —</Opt>
       {channels.map((c) => <option key={c} value={c}>{c}</option>)}
       {value && !channels.includes(value) && <option value={value}>{value}</option>}
+    </select>
+  );
+}
+
+/** Mercado del pipeline: sus oportunidades son de cuentas de ese mercado y su canal. */
+function MarketSelect({ id, value }: { id: string; value: string }) {
+  return (
+    <select id={id} name="market" className="select" defaultValue={value}>
+      <Opt value="Nacional">Nacional</Opt>
+      <Opt value="Internacional">Internacional</Opt>
     </select>
   );
 }
@@ -78,7 +88,7 @@ export default async function PipelinesPage() {
       <div>
         <h1 className="text-xl font-medium"><Tr>Pipelines y etapas</Tr></h1>
         <p className="text-sm text-muted"><Tr>Cada pipeline necesita al menos una etapa abierta, una ganada y una perdida. La probabilidad y el pronóstico se aplican al mover una oportunidad.</Tr></p>
-        <p className="text-sm text-muted"><Tr>Cada canal de venta tiene su pipeline: las oportunidades de una cuenta van al pipeline de su Canal, y en Indicadores cada canal tiene su embudo. Un canal sin pipeline usa el pipeline por defecto.</Tr></p>
+        <p className="text-sm text-muted"><Tr>Cada pipeline es de un mercado (Nacional o Internacional) y de un canal de venta: las oportunidades de una cuenta van al pipeline de su Mercado y su Canal, y en Indicadores cada uno tiene su embudo. Si falta el pipeline de un mercado y canal, sus oportunidades no se pueden crear hasta crearlo; «Duplicar» copia un pipeline con sus etapas a otro mercado.</Tr></p>
       </div>
       <section className="card">
         <div className="card-header"><h2 className="card-title"><Tr>Nuevo pipeline</Tr></h2></div>
@@ -87,6 +97,7 @@ export default async function PipelinesPage() {
           <div className="min-w-40 flex-1"><label className="label" htmlFor="np-en"><Tr>En inglés (opcional)</Tr></label><input id="np-en" name="name_en" className="input" placeholder="English name" /></div>
           <div className="min-w-48 flex-1"><label className="label" htmlFor="np-desc"><Tr>Descripción</Tr></label><input id="np-desc" name="description" className="input" /></div>
           <div className="w-48"><label className="label" htmlFor="np-channel"><Tr>Canal de venta</Tr></label><ChannelSelect id="np-channel" value={null} channels={channels} /></div>
+          <div className="w-40"><label className="label" htmlFor="np-market"><Tr>Mercado</Tr></label><MarketSelect id="np-market" value="Nacional" /></div>
           <SubmitButton pendingText="Creando…"><Tr>Crear pipeline</Tr></SubmitButton>
         </ActionForm>
       </section>
@@ -111,6 +122,10 @@ export default async function PipelinesPage() {
               <div className="w-48">
                 <label className="label" htmlFor={`pc-${p.id}`}><Tr>Canal de venta</Tr></label>
                 <ChannelSelect id={`pc-${p.id}`} value={p.channel} channels={channels} />
+              </div>
+              <div className="w-40">
+                <label className="label" htmlFor={`pm-${p.id}`}><Tr>Mercado</Tr></label>
+                <MarketSelect id={`pm-${p.id}`} value={p.market} />
               </div>
               <label className="flex items-center gap-1.5 pb-2 text-sm font-semibold">
                 <input type="checkbox" name="is_default" defaultChecked={p.is_default} className="accent-[var(--brand)]" /> <Tr>Por defecto</Tr>
@@ -142,6 +157,19 @@ export default async function PipelinesPage() {
               </ActionForm>
             </li>
           </ul>
+          <ActionForm action={duplicatePipeline.bind(null, p.id)} resetOnSuccess className="flex flex-wrap items-end gap-2 border-t border-line px-4 py-3">
+            <p className="w-full text-xs font-semibold uppercase tracking-wide text-muted"><Tr>Duplicar con sus etapas</Tr></p>
+            <div className="min-w-48 flex-1">
+              <label className="label" htmlFor={`dn-${p.id}`}><Tr>Nombre del pipeline nuevo</Tr></label>
+              <input id={`dn-${p.id}`} name="name" className="input" required
+                defaultValue={`${p.name} ${p.market === "Internacional" ? "nacional" : "internacional"}`} />
+            </div>
+            <div className="w-40">
+              <label className="label" htmlFor={`dm-${p.id}`}><Tr>Mercado</Tr></label>
+              <MarketSelect id={`dm-${p.id}`} value={p.market === "Internacional" ? "Nacional" : "Internacional"} />
+            </div>
+            <SubmitButton className="btn btn-sm mb-1" pendingText="…"><Tr>Duplicar</Tr></SubmitButton>
+          </ActionForm>
           {!p.is_default && (
             <ActionForm action={deletePipeline.bind(null, p.id)} className="flex flex-col items-end gap-1 border-t border-line px-4 py-3">
               <ConfirmSubmit message={`¿Eliminar el pipeline “${p.name}” y sus etapas?`}><Trash2 size={14} /> <Tr>Eliminar pipeline</Tr></ConfirmSubmit>

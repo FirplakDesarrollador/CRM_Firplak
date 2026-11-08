@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Indicadores" };
 
 type FunnelStage = Dashboard["funnel"][number];
 /** Un embudo por pipeline: cada canal de venta el suyo (crm_funnels). */
-type PipelineFunnel = { id: string; name: string; channel: string | null; is_default: boolean; stages: FunnelStage[] };
+type PipelineFunnel = { id: string; name: string; channel: string | null; market: string; is_default: boolean; stages: FunnelStage[] };
 
 type Dashboard = {
   kpis: Record<string, number | null>;
@@ -123,15 +123,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
 
       <section aria-labelledby="embudos" className="space-y-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="embudos" className="text-base font-medium"><Tr>Embudos de ventas por canal</Tr></h2>
+          <h2 id="embudos" className="text-base font-medium"><Tr>Embudos de ventas por mercado y canal</Tr></h2>
           <p className="text-xs text-muted"><Tr>Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</Tr></p>
         </div>
-        <div className={`grid gap-4 ${funnels.length > 1 ? "lg:grid-cols-2" : ""} ${funnels.length > 2 ? "2xl:grid-cols-3" : ""}`}>
+        <div className={`grid gap-4 ${funnels.length > 1 ? "lg:grid-cols-2" : ""} ${funnels.length > 2 && funnels.length % 2 ? "2xl:grid-cols-3" : ""}`}>
           {funnels.length === 0 && <p className="glass p-6 text-center text-sm text-muted"><Tr>Sin pipelines activos.</Tr></p>}
           {funnels.map((f) => (
-            <section key={f.id} className="glass" aria-label={`${t("Embudo")} ${f.channel ?? f.name}`}>
+            <section key={f.id} className="glass" aria-label={`${t("Embudo")} ${f.channel ? `${f.channel} · ${t(f.market)}` : f.name}`}>
               <div className="card-header">
-                <h3 className="card-title"><Val>{f.channel ?? f.name}</Val></h3>
+                <h3 className="card-title">{f.channel ? <><Val>{f.channel}</Val> · <Val>{f.market}</Val></> : <Val>{f.name}</Val>}</h3>
                 {f.channel && <span className="text-xs text-muted"><Val>{f.name}</Val></span>}
               </div>
               <div className="p-4"><Funnel stages={f.stages} /></div>

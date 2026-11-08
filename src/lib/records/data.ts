@@ -26,6 +26,8 @@ export type PipelineWithStages = {
   id: string; name: string; name_en?: string | null; description: string | null; is_default: boolean; is_active: boolean; sort_order: number;
   /** Canal de venta cuyas oportunidades van a este pipeline. */
   channel: string | null;
+  /** Mercado del pipeline (Nacional o Internacional): uno por mercado y canal. */
+  market: string;
   stages: StageRow[];
 };
 
