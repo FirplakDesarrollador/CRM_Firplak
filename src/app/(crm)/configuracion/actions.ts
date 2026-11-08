@@ -230,7 +230,7 @@ export async function saveStage(pipelineId: string, id: string | null, _prev: Fo
     ? await supabase.from("pipeline_stages").update(payload).eq("id", id)
     : await supabase.from("pipeline_stages").insert(payload);
   if (error?.message.includes("pipeline_stages_one_role")) {
-    return { message: `Otra etapa de este pipeline ya es la de ${payload.stage_role === "propuesta" ? "propuesta presentada" : "negociación"}: quítale esa marca primero.` };
+    return { message: `Otra etapa de este pipeline ya tiene la marca «${payload.stage_role === "propuesta" ? "Al presentar la primera cotización" : "Al aceptarse una parte (quedan otras abiertas)"}»: quítasela primero.` };
   }
   return error ? fail(error) : done(id ? "Etapa actualizada" : "Etapa creada");
 }

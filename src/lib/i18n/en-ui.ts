@@ -821,9 +821,10 @@ export const UI_EN: Record<string, string> = {
   "Pipeline del": "Pipeline for", "Se toma de la cuenta": "Taken from the account", "— Sin canal —": "— No channel —",
   "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
   "No codificado": "Not listed",
-  "Avanza con cotización": "Advances with quote", "Propuesta presentada": "Proposal presented", Negociación: "Negotiation",
-  "«Avanza con cotización»: la oportunidad pasa sola a la etapa marcada como «Propuesta presentada» cuando presentas su primera cotización, y a la de «Negociación» cuando el cliente acepta una parte y quedan otras abiertas (solo hacia adelante). Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.":
-    "“Advances with quote”: the opportunity moves on its own to the stage marked “Proposal presented” when you present its first quote, and to the “Negotiation” one when the customer accepts a part while others remain open (forward only). When no parts remain open and one was accepted, it moves to the won stage.",
+  "Avanza con cotización": "Advances with quote",
+  "«Avanza con cotización» marca a qué etapa pasa sola la oportunidad (solo hacia adelante): «Al presentar la primera cotización», cuando una cotización queda Presentada; «Al aceptarse una parte (quedan otras abiertas)», cuando el cliente acepta una cotización y la oportunidad tiene otras abiertas. Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.":
+    "“Advances with quote” marks the stage the opportunity moves to on its own (forward only): “When the first quote is presented”, when a quote becomes Presented; “When a part is accepted (others remain open)”, when the customer accepts a quote and the opportunity has other open ones. When no parts remain open and one was accepted, it moves to the won stage.",
+  "Al presentar la primera cotización": "When the first quote is presented", "Al aceptarse una parte (quedan otras abiertas)": "When a part is accepted (others remain open)",
   "La oportunidad está ganada y estas cotizaciones siguen abiertas:": "The opportunity is won and these quotes are still open:",
   "Acéptalas, recházalas o márcalas como reemplazadas.": "Accept, reject or mark them as superseded.",
   "Cada cotización es una parte del negocio: el valor de la oportunidad es la suma de las partes abiertas. Al aceptarse una parte mientras otras siguen abiertas, se separa en su propia oportunidad ganada.":
