@@ -114,6 +114,10 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - **Cargar productos y precios** (desde SAP o CSV): sin ellos no se pueden cotizar líneas en producción.
 - Crear los usuarios reales (hoy hay 2) con su jefe directo: lo usan las aprobaciones y la jerarquía.
 - Zona comercial derivada del departamento.
+- **Al publicar `20261204000100` (cotizaciones como partes):** marcar en cada pipeline de producción, en «Avanza con
+  cotización», la etapa de «Propuesta presentada» y la de «Negociación» (los de producción tienen nombres propios, p. ej.
+  «Presentación de Propuesta» y «Negociación Final», y la migración no los adivina). En «Canal B2C», la etapa «Ganada»
+  está como tipo Abierta: cambiarla a Ganada (sin etapa ganada, aceptar la última parte solo avisa).
 - **Pipelines por mercado (ya en producción):** los dos actuales son Nacionales. Crear con «Duplicar» los
   Internacionales de Constructores y Distribución (y ajustar sus etapas), y el del Canal B2C nacional. Mientras falten, las
   oportunidades de esas cuentas se bloquean (decisión de Luis).

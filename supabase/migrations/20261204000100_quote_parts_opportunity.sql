@@ -236,6 +236,12 @@ begin
                              and public.quote_is_open_part(x.status) and not (x.status = 'Borrador' and x.net_total = 0));
   if v_q.status = 'Presentada' then
     perform public.opportunity_advance_to_role(v_o.id, 'propuesta');
+  elsif v_q.status = 'Aceptada' and public.won_stage_of(v_o.pipeline_id) is null then
+    -- Pipeline mal configurado (sin etapa de tipo Ganada): la cotización se acepta, la oportunidad no se mueve y se avisa.
+    perform public.notify_owner_and_manager(v_o.owner_id,
+      format('Pipeline sin etapa ganada: %s', (select p.name from public.pipelines p where p.id = v_o.pipeline_id)),
+      format('Se aceptó la cotización %s, pero el pipeline de «%s» no tiene una etapa de tipo Ganada: corrígelo en Configuración → Pipelines y mueve la oportunidad.', v_q.quote_number, v_o.name),
+      '/oportunidades/' || v_o.id);
   elsif v_q.status = 'Aceptada' then
     if v_open_others then
       perform public.opportunity_split_part(v_o.id, v_q.id);

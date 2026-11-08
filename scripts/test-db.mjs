@@ -1468,6 +1468,20 @@ await check('partes: la última abierta aceptada gana la original; un pedido act
       /No se puede marcar Perdida: el cliente ya aceptó una parte o hay un pedido activo/);
     await q(`update orders set status = 'Cancelado' where id = $1`, [pedido.id]);
     assert.equal(Number((await q(`select count(*) n from notifications where title like 'Pedido cancelado:%' and link = '/pedidos/' || $1`, [pedido.id]))[0].n), 1);
+    // Un pipeline sin etapa de tipo Ganada: la parte se acepta, la oportunidad no se mueve y se avisa.
+    const [sinGanada] = await q(`insert into pipelines (name, channel, market) values ('Sin ganada', 'Canal B2C', 'Nacional') returning id`);
+    await q(`insert into pipeline_stages (pipeline_id, name, sort_order, probability, category) values ($1, 'Abierta', 1, 10, 'open'), ($1, 'Ganada mal puesta', 2, 100, 'open'), ($1, 'Perdida', 3, 0, 'lost')`, [sinGanada.id]);
+    await q(`insert into price_books (name, market) values ('General nacional de prueba', 'Nacional')`);
+    const [hogar] = await q(`insert into accounts (name, industry) values ('Hogar Sin Ganada', 'Canal B2C') returning id`);
+    const [oh] = await q(`insert into opportunities (name, account_id, stage_id, amount) select 'Opp sin ganada', $1, id, 0 from pipeline_stages where pipeline_id = $2 and name = 'Abierta' returning id`, [hogar.id, sinGanada.id]);
+    const unica = await parte(oh.id, 'Única', 100);
+    await q(`update quotes set status = 'Aceptada' where id = $1`, [unica]);
+    assert.deepEqual(await q(`select o.is_closed, s.name from opportunities o join pipeline_stages s on s.id = o.stage_id where o.id = $1`, [oh.id]), [{ is_closed: false, name: 'Abierta' }]);
+    assert.equal(Number((await q(`select count(*) n from notifications where title = 'Pipeline sin etapa ganada: Sin ganada'`))[0].n), 1);
+    await q(`delete from quotes where opportunity_id = $1`, [oh.id]);
+    await q(`delete from opportunities where id = $1`, [oh.id]);
+    await q(`delete from pipelines where id = $1`, [sinGanada.id]);
+    await q(`delete from price_books where name = 'General nacional de prueba'`);
     // Marcas de etapa: una por rol en cada pipeline, y se copian al duplicar.
     await assert.rejects(q(`update pipeline_stages set stage_role = 'propuesta' where name = 'Calificación' and pipeline_id = (select id from pipelines where is_default)`),
       /pipeline_stages_one_role/);
