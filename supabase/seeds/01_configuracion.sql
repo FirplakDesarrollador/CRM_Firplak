@@ -129,6 +129,12 @@ on conflict (pipeline_id, name) do nothing;
 -- pipeline por defecto hasta que se cree en Configuración → Pipelines.
 update public.pipelines set channel = 'Canal Constructores' where name = 'Proyectos y constructoras' and channel is null;
 update public.pipelines set channel = 'Canal Distribución' where name = 'Distribución y retail' and channel is null;
+-- Etapas a las que avanza la oportunidad según sus cotizaciones (se cambian en Configuración → Pipelines).
+update public.pipeline_stages s set stage_role = v.role
+from public.pipelines p, (values ('Proyectos y constructoras', 'Cotización enviada', 'propuesta'), ('Proyectos y constructoras', 'Negociación', 'negociacion'),
+  ('Distribución y retail', 'Propuesta comercial', 'propuesta'), ('Distribución y retail', 'Pedido en negociación', 'negociacion')) as v(pipeline, stage, role)
+where p.id = s.pipeline_id and p.name = v.pipeline and s.name = v.stage and s.stage_role is null
+  and not exists (select 1 from public.pipeline_stages x where x.pipeline_id = s.pipeline_id and x.stage_role = v.role);
 
 -- ---------------------------------------------------------------------------
 -- Campos personalizados (definidos en JSON, valores en custom_fields jsonb)

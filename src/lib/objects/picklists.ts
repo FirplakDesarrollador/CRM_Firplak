@@ -62,7 +62,7 @@ export const PRODUCT_FAMILIES = [
 ];
 export const PRODUCT_UNITS = ["Unidad", "Juego", "Metro lineal", "m²"];
 export const ORDER_STATUSES = ["Borrador", "Activado", "En producción", "Despachado", "Entregado", "Cancelado"];
-export const QUOTE_STATUSES = ["Borrador", "En revisión", "Aprobada", "Presentada", "Aceptada", "Rechazada"];
+export const QUOTE_STATUSES = ["Borrador", "En revisión", "Aprobada", "Presentada", "Aceptada", "Rechazada", "Reemplazada"];
 export const CASE_STATUSES = ["Nuevo", "En proceso", "En espera", "Escalado", "Cerrado"];
 export const CASE_PRIORITIES = ["Alta", "Media", "Baja"];
 export const CASE_ORIGINS = ["Teléfono", "Correo", "WhatsApp", "Web", "Visita", "Distribuidor"];

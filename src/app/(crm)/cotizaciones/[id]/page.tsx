@@ -11,7 +11,6 @@ import { StatusPath } from "@/components/records/StatusPath";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { QuoteLines, type QuoteLine } from "@/components/quotes/QuoteLines";
 import { QuoteTotals } from "@/components/quotes/QuoteTotals";
-import { SyncButton } from "@/components/quotes/SyncButton";
 import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { QUOTE_STATUSES } from "@/lib/objects/picklists";
@@ -57,7 +56,6 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
       badges={
         <>
-          {row.is_synced ? <span className="badge badge-success"><Tr>Sincronizada</Tr></span> : null}
           {order && <Link href={`/pedidos/${order.id}`} className="badge badge-info no-underline"><Tr>Pedido</Tr> {order.order_number}</Link>}
         </>
       }
@@ -69,13 +67,12 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
             </ActionForm>
           )}
           <Link href={`/imprimir/cotizacion/${id}`} target="_blank" className="btn"><Printer size={15} /> <Tr>Imprimir / PDF</Tr></Link>
-          {access.canEdit && <SyncButton quoteId={id} synced={Boolean(row.is_synced)} />}
           {access.canEdit && <Link href={`/cotizaciones/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="quotes" id={id} label={`la cotización ${row.quote_number}`} />}
         </>
       }
       headerExtra={
-        <StatusPath object="quotes" id={id} options={QUOTE_STATUSES} current={String(row.status)} canEdit={access.canEdit} negative={["Rechazada"]} />
+        <StatusPath object="quotes" id={id} options={QUOTE_STATUSES} current={String(row.status)} canEdit={access.canEdit} negative={["Rechazada", "Reemplazada"]} />
       }
       tabs={[{
         key: "lineas",

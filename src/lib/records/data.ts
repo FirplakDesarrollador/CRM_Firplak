@@ -21,6 +21,8 @@ export type UserOption = { id: string; full_name: string; email: string; is_acti
 export type StageRow = {
   id: string; pipeline_id: string; name: string; sort_order: number; probability: number;
   category: "open" | "won" | "lost"; forecast_category: string; color: string; name_en?: string | null;
+  /** Etapa a la que avanza la oportunidad según sus cotizaciones: propuesta o negociacion. */
+  stage_role?: string | null;
 };
 export type PipelineWithStages = {
   id: string; name: string; name_en?: string | null; description: string | null; is_default: boolean; is_active: boolean; sort_order: number;

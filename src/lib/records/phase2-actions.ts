@@ -205,14 +205,6 @@ export async function removeQuoteLine(lineId: string, _prev?: FormState, _fd?: F
   return { ok: true };
 }
 
-export async function syncQuote(quoteId: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("sync_quote", { p_quote: quoteId });
-  if (error) return { message: friendly(error.message) };
-  revalidatePath("/", "layout");
-  return { ok: true, message: "Valor de la oportunidad actualizado con esta cotización" };
-}
-
 // ---------------------------------------------------------------------------
 // Miembros de campaña
 // ---------------------------------------------------------------------------

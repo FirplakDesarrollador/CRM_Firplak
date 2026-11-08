@@ -13,6 +13,7 @@ export const opportunities: ObjectDef = {
     "*",
     "owner:profiles!opportunities_owner_id_fkey(id, full_name, email)",
     "account:accounts!opportunities_account_id_fkey(id, name, industry, market)",
+    "parent:parent_opportunity_id(id, name)",
     "contact:contacts!opportunities_contact_id_fkey(id, full_name)",
     "stage:pipeline_stages!opportunities_stage_id_fkey(id, name, color, category, sort_order, pipeline_id)",
     "pipeline:pipelines!opportunities_pipeline_id_fkey(id, name)",
@@ -41,9 +42,13 @@ export const opportunities: ObjectDef = {
     { name: "next_step", label: "Siguiente paso", type: "text", section: "info" },
     { name: "loss_reason", label: "Motivo de pérdida", type: "select", options: LOSS_REASONS, section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
+    {
+      name: "parent_opportunity_id", label: "Parte ganada de", type: "lookup", lookup: "opportunities", relation: "parent", readOnly: true, formHidden: true,
+      hideEmpty: true, section: "info", help: "Oportunidad original del proyecto: esta parte se separó al aceptarse su cotización.",
+    },
     // Nacional: el vendedor escribe el Valor en pesos. Internacional: escribe el Valor en USD y el Valor en
     // pesos se calcula con la TRM del día (la base lo recalcula mientras está abierta).
-    { name: "amount", label: "Valor", type: "currency", formCurrency: "COP", section: "forecast" },
+    { name: "amount", label: "Valor", type: "currency", formCurrency: "COP", section: "forecast", help: "Con cotizaciones, es la suma de sus partes abiertas y se actualiza solo." },
     {
       name: "foreign_amount", label: "Valor en USD", type: "currency", currencyCode: "USD", formCurrency: "USD", hideEmpty: true,
       section: "forecast", help: "Cuenta del mercado Internacional: el Valor en pesos se calcula con la TRM oficial del día.",

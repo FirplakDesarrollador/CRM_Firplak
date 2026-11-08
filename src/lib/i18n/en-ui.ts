@@ -821,6 +821,16 @@ export const UI_EN: Record<string, string> = {
   "Pipeline del": "Pipeline for", "Se toma de la cuenta": "Taken from the account", "— Sin canal —": "— No channel —",
   "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
   "No codificado": "Not listed",
+  "Avanza con cotización": "Advances with quote", "Propuesta presentada": "Proposal presented", Negociación: "Negotiation",
+  "«Avanza con cotización»: la oportunidad pasa sola a la etapa marcada como «Propuesta presentada» cuando presentas su primera cotización, y a la de «Negociación» cuando el cliente acepta una parte y quedan otras abiertas (solo hacia adelante). Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.":
+    "“Advances with quote”: the opportunity moves on its own to the stage marked “Proposal presented” when you present its first quote, and to the “Negotiation” one when the customer accepts a part while others remain open (forward only). When no parts remain open and one was accepted, it moves to the won stage.",
+  "La oportunidad está ganada y estas cotizaciones siguen abiertas:": "The opportunity is won and these quotes are still open:",
+  "Acéptalas, recházalas o márcalas como reemplazadas.": "Accept, reject or mark them as superseded.",
+  "Cada cotización es una parte del negocio: el valor de la oportunidad es la suma de las partes abiertas. Al aceptarse una parte mientras otras siguen abiertas, se separa en su propia oportunidad ganada.":
+    "Each quote is a part of the deal: the opportunity amount is the sum of the open parts. When a part is accepted while others remain open, it is split into its own won opportunity.",
+  "Partes ganadas": "Won parts", "Parte ganada de": "Won part of",
+  "Oportunidad original del proyecto: esta parte se separó al aceptarse su cotización.": "Original project opportunity: this part was split off when its quote was accepted.",
+  "Con cotizaciones, es la suma de sus partes abiertas y se actualiza solo.": "With quotes, it is the sum of its open parts and updates on its own.",
   Observaciones: "Remarks", "Comentarios para el cliente: se imprimen en la cotización (PDF).": "Comments for the customer: printed on the quote (PDF).",
   "Define el pipeline de sus oportunidades y la lista de precios de sus cotizaciones.": "Sets the pipeline of its opportunities and the price book of its quotes.",
   "Solo para clientes con productos codificados y precios propios, y del mismo mercado de la cuenta. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».":

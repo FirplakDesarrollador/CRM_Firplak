@@ -25,6 +25,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { makeT } from "@/lib/i18n";
 
 import { Tr } from "@/components/ui/Tr";
+import { Alert } from "@/components/ui/Alert";
 import { Fmt } from "@/components/ui/Fmt";
 export async function generateMetadata({ params }: PageProps<"/oportunidades/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -40,7 +41,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
 
   const supabase = await createClient();
   const db = await untypedClient();
-  const [access, users, pipelines, activities, history, quotesRes, ordersRes, splits] = await Promise.all([
+  const [access, users, pipelines, activities, history, quotesRes, ordersRes, splits, partsRes] = await Promise.all([
     getRecordAccess("opportunities", row.owner_id as string | null, row.id),
     getUsers(),
     getPipelines(),
@@ -53,9 +54,14 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
     db.from("quotes").select(quotesDef.select).eq("opportunity_id", id).order("created_at", { ascending: false }),
     db.from("orders").select(ordersDef.select).eq("opportunity_id", id).order("order_date", { ascending: false }),
     getSplits(id),
+    // Partes ganadas que se separaron de esta oportunidad al aceptarse su cotización.
+    db.from("opportunities").select(def.select).eq("parent_opportunity_id", id).order("close_date", { ascending: false }),
   ]);
+  const partRows = (partsRes.data ?? []) as unknown as Row[];
   const orderRows = (ordersRes.data ?? []) as unknown as Row[];
   const quoteRows = (quotesRes.data ?? []) as unknown as Row[];
+  // Ganada a mano con partes todavía abiertas: se avisa cuáles.
+  const openParts = row.is_won ? quoteRows.filter((q) => !["Aceptada", "Rechazada", "Reemplazada"].includes(String(q.status))) : [];
   const stages = pipelines.find((p) => p.id === row.pipeline_id)?.stages ?? [];
   const tab = (["historial", "cotizaciones", "pedidos", "equipo", "documentos", "cambios"] as const).find((k) => k === sp.tab) ?? "detalles";
   const owner = row.owner as { full_name?: string; email?: string } | null;
@@ -85,7 +91,7 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
         actions={
           <>
             {row.contact_id ? <Link href={`/correo/nuevo?oportunidad=${id}`} className="btn"><Mail size={15} /> <Tr>Enviar correo</Tr></Link> : null}
-            {can(user.access, "quotes", "create") && (
+            {!row.is_closed && can(user.access, "quotes", "create") && (
               <Link href={`/cotizaciones/nueva?opportunity=${id}`} className="btn"><FileText size={15} /> <Tr>Nueva cotización</Tr></Link>
             )}
             {access.canEdit && <Link href={`${path}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
@@ -123,9 +129,24 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
                 ownerName={owner?.full_name || owner?.email || null} />
             </>
           ) : tab === "cotizaciones" ? (
-            <RelatedList def={quotesDef} title="Cotizaciones" rows={quoteRows}
-              columns={["quote_number", "name", "status", "net_total", "grand_total", "is_synced", "expiration_date"]}
-              newHref={can(user.access, "quotes", "create") ? `/cotizaciones/nueva?opportunity=${id}` : undefined} />
+            <div className="space-y-4">
+              {openParts.length > 0 && (
+                <Alert tone="warning">
+                  {t("La oportunidad está ganada y estas cotizaciones siguen abiertas:")}{" "}
+                  {openParts.map((q) => String(q.quote_number)).join(", ")}.{" "}
+                  {t("Acéptalas, recházalas o márcalas como reemplazadas.")}
+                </Alert>
+              )}
+              <p className="px-1 text-sm text-muted">
+                {t("Cada cotización es una parte del negocio: el valor de la oportunidad es la suma de las partes abiertas. Al aceptarse una parte mientras otras siguen abiertas, se separa en su propia oportunidad ganada.")}
+              </p>
+              <RelatedList def={quotesDef} title="Cotizaciones" rows={quoteRows}
+                columns={["quote_number", "name", "status", "net_total", "grand_total", "expiration_date"]}
+                newHref={!row.is_closed && can(user.access, "quotes", "create") ? `/cotizaciones/nueva?opportunity=${id}` : undefined} />
+              {partRows.length > 0 && (
+                <RelatedList def={def} title="Partes ganadas" rows={partRows} columns={["name", "stage_id", "amount", "close_date"]} />
+              )}
+            </div>
           ) : tab === "pedidos" ? (
             <RelatedList def={ordersDef} title="Pedidos" rows={orderRows}
               columns={["order_number", "name", "status", "order_date", "requested_delivery_date", "net_total"]}

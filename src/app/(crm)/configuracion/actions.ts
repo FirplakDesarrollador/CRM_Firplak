@@ -223,10 +223,15 @@ export async function saveStage(pipelineId: string, id: string | null, _prev: Fo
     forecast_category: forecast,
     color: /^#[0-9a-f]{6}$/i.test(str(fd, "color")) ? str(fd, "color") : "#4a7693",
     sort_order: Number(str(fd, "sort_order")) || 0,
+    // Etapa a la que avanza la oportunidad según sus cotizaciones (solo etapas abiertas).
+    stage_role: category === "open" && ["propuesta", "negociacion"].includes(str(fd, "stage_role")) ? str(fd, "stage_role") : null,
   };
   const { error } = id
     ? await supabase.from("pipeline_stages").update(payload).eq("id", id)
     : await supabase.from("pipeline_stages").insert(payload);
+  if (error?.message.includes("pipeline_stages_one_role")) {
+    return { message: `Otra etapa de este pipeline ya es la de ${payload.stage_role === "propuesta" ? "propuesta presentada" : "negociación"}: quítale esa marca primero.` };
+  }
   return error ? fail(error) : done(id ? "Etapa actualizada" : "Etapa creada");
 }
 

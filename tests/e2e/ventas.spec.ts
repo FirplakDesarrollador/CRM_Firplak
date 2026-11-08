@@ -120,7 +120,6 @@ test.describe("administrador", () => {
     await guardar(page);
     await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
     const cotizacion = page.url().split("?")[0];
-    await expect(page.getByText("Sincronizada").first()).toBeVisible();
 
     // Un producto codificado del cliente toma su precio; uno no codificado, el de la lista del canal, marcado.
     for (const ref of ["DEMO-MB-060", "DEMO-CO-240"]) {
@@ -314,6 +313,57 @@ test.describe("administrador", () => {
     const seccion = page.locator("section").filter({ has: page.locator('input[value="Distribución y retail"]') });
     await seccion.getByRole("button", { name: "Duplicar" }).click();
     await expect(seccion.getByText("Ese canal ya tiene un pipeline activo en el mercado Internacional.")).toBeVisible();
+  });
+
+  test("las cotizaciones son partes: el valor suma las abiertas y una parte aceptada se separa como ganada", async ({ page }) => {
+    // Cuenta del Canal Constructores y su oportunidad.
+    const cuenta = unico("Promotora Andes");
+    await page.goto("/cuentas/nueva");
+    await page.getByLabel(/Nombre de la cuenta/).fill(cuenta);
+    await page.locator("#f-industry").selectOption({ label: "Canal Constructores" });
+    await guardar(page);
+    await expect(page.getByRole("heading", { level: 1, name: cuenta })).toBeVisible();
+    const proyecto = unico("Proyecto Andes");
+    await page.goto("/oportunidades/nueva");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel(/Nombre de la oportunidad/).fill(proyecto);
+    await buscarYElegir(page, /^Cuenta/, cuenta);
+    await page.getByLabel(/Valor/).fill("100");
+    await guardar(page);
+    await expect(page.getByRole("heading", { level: 1, name: proyecto })).toBeVisible();
+    const oportunidad = page.url().split("?")[0];
+
+    // Dos partes: Torre 1 (1 mueble) y Torre 2 (2 muebles) con el precio de la lista del canal.
+    const parte = async (nombre: string, cantidad: string) => {
+      await page.goto(oportunidad);
+      await page.getByRole("link", { name: "Nueva cotización" }).first().click();
+      await page.waitForLoadState("networkidle");
+      await page.getByLabel(/Nombre de la cotización/).fill(nombre);
+      await guardar(page);
+      await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+      await expect(async () => {
+        await page.locator("#ql-product").fill("DEMO-MB-060");
+        await page.getByRole("option", { name: /DEMO-MB-060/ }).first().click({ timeout: 2000 });
+      }).toPass();
+      await page.locator("#ql-qty").fill(cantidad);
+      await page.getByRole("button", { name: "Agregar" }).click();
+      await expect(page.getByText("DEMO-MB-060").first()).toBeVisible();
+      return page.url().split("?")[0];
+    };
+    const torre1 = await parte("Torre 1", "1");
+    await parte("Torre 2", "2");
+    const valor = () => page.locator("main").getByText(/^\$[\d,]+$/).first();
+    await page.goto(oportunidad);
+    await expect(valor()).toHaveText("$3,750,000");
+
+    // El cliente acepta la Torre 1: se separa en su propia oportunidad ganada y la original queda con la Torre 2.
+    await page.goto(torre1);
+    await page.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Aceptada" }).click();
+    await expect(page.getByRole("link", { name: new RegExp(`${proyecto} · Torre 1`, "i") }).first()).toBeVisible();
+    await page.goto(`${oportunidad}?tab=cotizaciones`);
+    await expect(page.getByRole("heading", { name: /Partes ganadas/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(`${proyecto} · Torre 1`, "i") })).toBeVisible();
+    await expect(valor()).toHaveText("$2,500,000");
   });
 
   test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {

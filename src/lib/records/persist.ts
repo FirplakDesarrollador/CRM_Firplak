@@ -177,7 +177,7 @@ export async function persistRecord(
   }
 
   if (createdOpportunity) {
-    await db.rpc("sync_quote", { p_quote: result.data.id });
+    // Su valor es la suma de sus partes (cotizaciones): lo calcula la base al cambiar las líneas.
     await runAutomations("opportunities", "create", createdOpportunity, null, user.id);
   }
   await runAutomations(objectKey, id ? "update" : "create", result.data.id, before, user.id);

@@ -18,7 +18,7 @@ const check = async (name, fn) => {
     passed += 1;
     console.log(`  ✓ ${name}`);
   } catch (error) {
-    console.error(`  ✗ ${name}\n    ${error.message}`);
+    console.error(`  ✗ ${name}\n    ${error.message}${process.env.DB_TEST_STACK ? `\n${error.stack}` : ""}`);
     process.exitCode = 1;
   }
 };
@@ -184,7 +184,7 @@ await check('totales de cotización: subtotal, descuento, IVA 19% y total', asyn
   assert.equal(Number(qt.tax), Math.round(Number(net) * 0.19 * 100) / 100);
   assert.equal(Number(qt.grand_total), Number(qt.net_total) + Number(qt.tax) + Number(qt.shipping));
 });
-await check('sincronizar una cotización actualiza el valor de la oportunidad', async () => {
+await check('el valor de la oportunidad es la suma de sus partes abiertas y sigue a sus líneas', async () => {
   await as(admin, async () => {
     const [qt] = await q(`select id, opportunity_id, net_total from quotes where name like 'Torre 3%'`);
     await q(`select sync_quote($1)`, [qt.id]);
@@ -1062,7 +1062,11 @@ await check('quien inicia sesión sigue usando las funciones de la aplicación',
 console.log('Aprobación obligatoria de cotizaciones');
 await check('una cotización con descuento alto no se presenta ni se marca aprobada sin el flujo de aprobación', async () => {
   await db.exec(`update profiles set manager_id = '${mgr.id}' where id = '${rep.id}'`);
-  const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización con descuento', $1) returning id, status`, [repOpp.id]));
+  // Sobre una oportunidad abierta del asesor (la de las primeras pruebas ya se cerró ganada).
+  const [abierta] = await as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount)
+    select 'Opp con descuento', o.account_id, s.id, 0 from opportunities o, pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where o.id = $1 and p.is_default and s.name = 'Calificación' returning id`, [repOpp.id]));
+  const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización con descuento', $1) returning id, status`, [abierta.id]));
   const [line] = await as(rep, () => q(`insert into quote_line_items (quote_id, description, quantity, unit_price, discount) values ($1, 'Mueble', 10, 1000000, 20) returning id`, [qt.id]));
   for (const status of ['Presentada', 'Aceptada', 'Aprobada', 'En revisión']) {
     await assert.rejects(as(rep, () => q(`update quotes set status = $1 where id = $2`, [status, qt.id])), /requiere aprobación/, status);
@@ -1347,7 +1351,8 @@ await check('al cambiar el mercado: borradores sin productos cambian; con produc
     assert.deepEqual(await cot(conProductos), ['COP', 19, 'Distribuidores 2026']);
     assert.deepEqual(await cot(presentada), ['COP', 19, 'Distribuidores 2026']);
     assert.equal((await q(`select currency from orders where id = $1`, [pedido.id]))[0].currency, 'COP');
-    assert.deepEqual(await op(ocupada), ['COP', 2000000, null]);
+    // Su valor es la suma de sus partes abiertas (2 cotizaciones de 1.000), no el escrito a mano.
+    assert.deepEqual(await op(ocupada), ['COP', 2000, null]);
     // El borrador con productos no admite productos nuevos ni se cotiza de nuevo sobre la oportunidad en pesos.
     await assert.rejects(q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Otro', 1, 10)`, [conProductos]),
       /La cuenta «Cambia de mercado» ahora es del mercado Internacional \(USD\) y la cotización COT-\d+ está en COP: quita sus productos/i);
@@ -1383,14 +1388,104 @@ await check('al cambiar el mercado: borradores sin productos cambian; con produc
     await q(`delete from exchange_rates where source = 'Manual'`);
   });
 });
+console.log('Cotizaciones como partes del negocio');
+await check('partes: el valor suma lo abierto, la oportunidad avanza solo hacia adelante y una parte aceptada se separa ganada', async () => {
+  await as(admin, async () => {
+    const [acc] = await q(`insert into accounts (name, industry) values ('Promotora Torres del Parque', 'Canal Constructores') returning id`);
+    const [opp] = await q(`insert into opportunities (name, account_id, stage_id, amount)
+      select 'Proyecto Torres', $1, s.id, 123 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.is_default and s.name = 'Calificación' returning id`, [acc.id]);
+    const parte = async (name, valor, oppId = opp.id) => {
+      const [qt] = await q(`insert into quotes (name, opportunity_id) values ($1, $2) returning id`, [name, oppId]);
+      if (valor) await q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 1, $2)`, [qt.id, valor]);
+      return qt.id;
+    };
+    const estado = (id, status) => q(`update quotes set status = $2 where id = $1`, [id, status]);
+    const op = async (id) => (await q(`select o.amount, o.is_closed, o.is_won, s.name stage from opportunities o join pipeline_stages s on s.id = o.stage_id where o.id = $1`, [id]))[0];
+    // Un borrador vacío no borra el valor escrito a mano; con contenido, el valor es la suma de las partes abiertas.
+    const vacia = await parte('Borrador sin productos', 0);
+    assert.equal(Number((await op(opp.id)).amount), 123);
+    const t1 = await parte('Torre 1', 500), t2 = await parte('Torre 2', 700), t3 = await parte('Torre 3', 300);
+    assert.equal(Number((await op(opp.id)).amount), 1500);
+    // Presentada → etapa de propuesta; nunca retrocede.
+    await estado(t1, 'Presentada');
+    assert.equal((await op(opp.id)).stage, 'Cotización enviada');
+    await q(`update opportunities set stage_id = (select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Negociación') where id = $1`, [opp.id]);
+    await estado(t2, 'Presentada');
+    assert.equal((await op(opp.id)).stage, 'Negociación');
+    // Reparto 60/40 en la original: la parte ganada lo hereda.
+    await q(`select set_opportunity_splits($1, $2::jsonb)`, [opp.id, JSON.stringify([{ user_id: admin.id, percent: 60 }, { user_id: rep.id, percent: 40 }])]);
+    // Torre 1 aceptada con otras abiertas: se separa ganada por 500; la original queda con 1.000.
+    await estado(t1, 'Aceptada');
+    const [hija] = await q(`select o.id, o.name, o.amount, o.is_won, o.parent_opportunity_id, o.close_date = (now() at time zone 'America/Bogota')::date hoy
+      from opportunities o join quotes q on q.opportunity_id = o.id where q.id = $1`, [t1]);
+    assert.notEqual(hija.id, opp.id);
+    assert.match(hija.name, /^Proyecto Torres · Torre 1$/i);
+    assert.deepEqual([Number(hija.amount), hija.is_won, hija.parent_opportunity_id, hija.hoy], [500, true, opp.id, true]);
+    assert.deepEqual((await q(`select user_id, percent::int p from opportunity_splits where opportunity_id = $1 order by percent desc`, [hija.id])).map((r) => r.p), [60, 40]);
+    assert.deepEqual([Number((await op(opp.id)).amount), (await op(opp.id)).is_closed], [1000, false]);
+    // Reemplazada no suma; su nueva versión sí.
+    await estado(t2, 'Reemplazada');
+    const t2b = await parte('Torre 2 versión 2', 650);
+    assert.equal(Number((await op(opp.id)).amount), 950);
+    // Rechazar con otras abiertas no avisa; la última abierta rechazada avisa (sin cerrar la oportunidad).
+    const avisos = async () => Number((await q(`select count(*) n from notifications where title = 'Partes rechazadas: ' || (select name from opportunities where id = $1)`, [opp.id]))[0].n);
+    await estado(t2b, 'Rechazada');
+    assert.equal(await avisos(), 0);
+    await estado(t3, 'Rechazada');
+    assert.equal(await avisos(), 1);
+    assert.match((await q(`select body from notifications where title like 'Partes rechazadas:%' order by created_at desc limit 1`))[0].body, /las ganadas siguen en sus oportunidades/);
+    assert.deepEqual([Number((await op(opp.id)).amount), (await op(opp.id)).is_closed], [0, false]);
+    // Marcarla Perdida rechaza lo que quedaba abierto; cerrada, no admite cotizaciones nuevas.
+    await q(`update opportunities set stage_id = (select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.category = 'lost') where id = $1`, [opp.id]);
+    assert.equal((await q(`select status from quotes where id = $1`, [vacia]))[0].status, 'Rechazada');
+    await assert.rejects(parte('Torre 4', 100), /La oportunidad «Proyecto Torres» está cerrada/i);
+  });
+});
+await check('partes: la última abierta aceptada gana la original; un pedido activo impide perderla y su cancelación avisa', async () => {
+  await as(admin, async () => {
+    const [acc] = await q(`select id from accounts where name ilike 'Promotora Torres del Parque'`);
+    const nueva = async (name) => (await q(`insert into opportunities (name, account_id, stage_id, amount)
+      select $2, $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación' returning id`, [acc.id, name]))[0].id;
+    const parte = async (oppId, name, valor) => {
+      const [qt] = await q(`insert into quotes (name, opportunity_id) values ($1, $2) returning id`, [name, oppId]);
+      await q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 1, $2)`, [qt.id, valor]);
+      return qt.id;
+    };
+    const b = await nueva('Proyecto Dos Etapas');
+    const p1 = await parte(b, 'Etapa 1', 400), p2 = await parte(b, 'Etapa 2', 600);
+    await q(`update quotes set status = 'Rechazada' where id = $1`, [p1]);
+    await q(`update quotes set status = 'Aceptada' where id = $1`, [p2]);
+    const [won] = await q(`select amount, is_won, (select count(*)::int from opportunities c where c.parent_opportunity_id = o.id) hijas from opportunities o where id = $1`, [b]);
+    assert.deepEqual([Number(won.amount), won.is_won, won.hijas], [600, true, 0]);
+    // Con un pedido activo no se puede marcar Perdida; al cancelarlo, avisa.
+    const c = await nueva('Proyecto Con Pedido');
+    await parte(c, 'Suministro', 900);
+    const [pedido] = await q(`insert into orders (name, account_id, opportunity_id) values ('Pedido directo', $1, $2) returning id`, [acc.id, c]);
+    await q(`insert into order_items (order_id, description, quantity, unit_price) values ($1, 'Mueble', 1, 900)`, [pedido.id]);
+    await q(`update orders set status = 'Activado' where id = $1`, [pedido.id]);
+    await assert.rejects(q(`update opportunities set stage_id = (select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.category = 'lost') where id = $1`, [c]),
+      /No se puede marcar Perdida: el cliente ya aceptó una parte o hay un pedido activo/);
+    await q(`update orders set status = 'Cancelado' where id = $1`, [pedido.id]);
+    assert.equal(Number((await q(`select count(*) n from notifications where title like 'Pedido cancelado:%' and link = '/pedidos/' || $1`, [pedido.id]))[0].n), 1);
+    // Marcas de etapa: una por rol en cada pipeline, y se copian al duplicar.
+    await assert.rejects(q(`update pipeline_stages set stage_role = 'propuesta' where name = 'Calificación' and pipeline_id = (select id from pipelines where is_default)`),
+      /pipeline_stages_one_role/);
+    assert.deepEqual((await q(`select s.name, s.stage_role from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.name = 'Distribución internacional' and s.stage_role is not null order by s.sort_order`)).map((r) => [r.name, r.stage_role]),
+      [['Propuesta comercial', 'propuesta'], ['Pedido en negociación', 'negociacion']]);
+  });
+});
 await check('permisos de las funciones nuevas', async () => {
   for (const fn of ['quote_line_price(uuid,uuid)', 'crm_funnels(date,date,uuid)', 'default_price_book(uuid,text)', 'channel_price_book(uuid,text)', 'channel_pipeline(uuid)',
     'market_of(text)', 'market_currency(text)', 'price_book_problem(uuid,uuid)', 'missing_price_book_message(uuid)',
-    'missing_pipeline_message(uuid)', 'duplicate_pipeline(uuid,text,text)']) {
+    'missing_pipeline_message(uuid)', 'duplicate_pipeline(uuid,text,text)', 'quote_is_open_part(text)', 'won_stage_of(uuid)', 'sync_quote(uuid)']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
   }
   for (const fn of ['equivalent_stage(uuid,uuid)', 'opportunity_channel_pipeline()', 'account_channel_moves_opportunities()', 'quote_line_listed()',
-    'opportunity_follow_market(uuid)', 'price_book_market()', 'quote_line_market_check()', 'account_price_book_market()', 'account_market_moves_documents()']) {
+    'opportunity_follow_market(uuid)', 'price_book_market()', 'quote_line_market_check()', 'account_price_book_market()', 'account_market_moves_documents()',
+    'notify_owner_and_manager(uuid,text,text,text)', 'opportunity_parts_value(uuid)', 'opportunity_advance_to_role(uuid,text)', 'opportunity_split_part(uuid,uuid)',
+    'quote_status_moves_opportunity(uuid)', 'quote_parts_changed()', 'quote_needs_open_opportunity()', 'opportunity_lost_rejects_parts()', 'order_cancelled_notifies()']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, false, fn);
   }
 });

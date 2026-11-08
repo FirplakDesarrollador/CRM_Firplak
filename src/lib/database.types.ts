@@ -2254,6 +2254,7 @@ export type Database = {
           next_step: string | null
           opportunity_type: string | null
           owner_id: string | null
+          parent_opportunity_id: string | null
           pipeline_id: string
           price_book_id: string | null
           probability: number
@@ -2287,6 +2288,7 @@ export type Database = {
           next_step?: string | null
           opportunity_type?: string | null
           owner_id?: string | null
+          parent_opportunity_id?: string | null
           pipeline_id: string
           price_book_id?: string | null
           probability?: number
@@ -2320,6 +2322,7 @@ export type Database = {
           next_step?: string | null
           opportunity_type?: string | null
           owner_id?: string | null
+          parent_opportunity_id?: string | null
           pipeline_id?: string
           price_book_id?: string | null
           probability?: number
@@ -2361,6 +2364,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_parent_opportunity_id_fkey"
+            columns: ["parent_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
             referencedColumns: ["id"]
           },
           {
@@ -2934,6 +2944,7 @@ export type Database = {
           pipeline_id: string
           probability: number
           sort_order: number
+          stage_role: string | null
           updated_at: string
         }
         Insert: {
@@ -2947,6 +2958,7 @@ export type Database = {
           pipeline_id: string
           probability?: number
           sort_order?: number
+          stage_role?: string | null
           updated_at?: string
         }
         Update: {
@@ -2960,6 +2972,7 @@ export type Database = {
           pipeline_id?: string
           probability?: number
           sort_order?: number
+          stage_role?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4170,6 +4183,15 @@ export type Database = {
         }
         Returns: string
       }
+      notify_owner_and_manager: {
+        Args: {
+          p_owner: string
+          p_title: string
+          p_body: string
+          p_link: string
+        }
+        Returns: undefined
+      }
       notify_user: {
         Args: {
           p_user: string
@@ -4234,11 +4256,31 @@ export type Database = {
         }
         Returns: string
       }
+      opportunity_advance_to_role: {
+        Args: {
+          p_opp: string
+          p_role: string
+        }
+        Returns: undefined
+      }
       opportunity_follow_market: {
         Args: {
           p_opp: string
         }
         Returns: undefined
+      }
+      opportunity_parts_value: {
+        Args: {
+          p_opp: string
+        }
+        Returns: undefined
+      }
+      opportunity_split_part: {
+        Args: {
+          p_opp: string
+          p_quote: string
+        }
+        Returns: string
       }
       pipeline_changes: {
         Args: {
@@ -4308,12 +4350,24 @@ export type Database = {
         }
         Returns: string
       }
+      quote_is_open_part: {
+        Args: {
+          p_status: string
+        }
+        Returns: boolean
+      }
       quote_line_price: {
         Args: {
           p_quote: string
           p_product: string
         }
         Returns: Json
+      }
+      quote_status_moves_opportunity: {
+        Args: {
+          p_quote: string
+        }
+        Returns: undefined
       }
       recalc_foreign_opportunities: {
         Args: never
@@ -4439,6 +4493,12 @@ export type Database = {
           p_action: string
         }
         Returns: boolean
+      }
+      won_stage_of: {
+        Args: {
+          p_pipeline: string
+        }
+        Returns: string
       }
     }
     Enums: {

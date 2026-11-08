@@ -35,7 +35,7 @@ export const VALUES_EN: Record<string, string> = {
   Hidromasajes: "Whirlpool tubs", Cocinas: "Kitchens", Clósets: "Closets", Accesorios: "Accessories",
   Unidad: "Unit", Juego: "Set", "Metro lineal": "Linear meter", "m²": "m²",
   // Cotizaciones y pedidos
-  Borrador: "Draft", "En revisión": "In review", Aprobada: "Approved", Presentada: "Presented", Aceptada: "Accepted", Rechazada: "Rejected",
+  Borrador: "Draft", "En revisión": "In review", Aprobada: "Approved", Presentada: "Presented", Aceptada: "Accepted", Rechazada: "Rejected", Reemplazada: "Superseded",
   Activado: "Activated", "En producción": "In production", Despachado: "Shipped", Entregado: "Delivered", Cancelado: "Cancelled",
   // Casos
   "En proceso": "In progress", "En espera": "On hold", Escalado: "Escalated", Cerrado: "Closed",

@@ -37,7 +37,9 @@ function MarketSelect({ id, value }: { id: string; value: string }) {
   );
 }
 
-function StageFields({ stage }: { stage?: { id: string; name: string; name_en?: string | null; probability: number; category: string; forecast_category: string; color: string; sort_order: number } }) {
+const ROLES = { "": "—", propuesta: "Propuesta presentada", negociacion: "Negociación" };
+
+function StageFields({ stage }: { stage?: { id: string; name: string; name_en?: string | null; probability: number; category: string; forecast_category: string; color: string; sort_order: number; stage_role?: string | null } }) {
   const id = stage?.id ?? "new";
   return (
     <>
@@ -70,6 +72,12 @@ function StageFields({ stage }: { stage?: { id: string; name: string; name_en?: 
           {Object.entries(FORECAST_CATEGORIES).map(([k, v]) => <Opt key={k} value={k}>{v}</Opt>)}
         </select>
       </div>
+      <div className="w-44">
+        <label className="label" htmlFor={`sr-${id}`}><Tr>Avanza con cotización</Tr></label>
+        <select id={`sr-${id}`} name="stage_role" className="select" defaultValue={stage?.stage_role ?? ""}>
+          {Object.entries(ROLES).map(([k, v]) => <Opt key={k} value={k}>{v}</Opt>)}
+        </select>
+      </div>
       <div className="w-16">
         <label className="label" htmlFor={`sk-${id}`}><Tr>Color</Tr></label>
         <input id={`sk-${id}`} name="color" type="color" className="input p-1" defaultValue={stage?.color ?? "#4a7693"} />
@@ -88,6 +96,7 @@ export default async function PipelinesPage() {
       <div>
         <h1 className="text-xl font-medium"><Tr>Pipelines y etapas</Tr></h1>
         <p className="text-sm text-muted"><Tr>Cada pipeline necesita al menos una etapa abierta, una ganada y una perdida. La probabilidad y el pronóstico se aplican al mover una oportunidad.</Tr></p>
+        <p className="text-sm text-muted"><Tr>«Avanza con cotización»: la oportunidad pasa sola a la etapa marcada como «Propuesta presentada» cuando presentas su primera cotización, y a la de «Negociación» cuando el cliente acepta una parte y quedan otras abiertas (solo hacia adelante). Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.</Tr></p>
         <p className="text-sm text-muted"><Tr>Cada pipeline es de un mercado (Nacional o Internacional) y de un canal de venta: las oportunidades de una cuenta van al pipeline de su Mercado y su Canal, y en Indicadores cada uno tiene su embudo. Si falta el pipeline de un mercado y canal, sus oportunidades no se pueden crear hasta crearlo; «Duplicar» copia un pipeline con sus etapas a otro mercado.</Tr></p>
       </div>
       <section className="card">
