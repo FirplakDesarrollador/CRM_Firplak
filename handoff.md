@@ -81,8 +81,10 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 ## 5. Producción (Supabase)
 
-- **36 migraciones aplicadas**; la última, `20261201000100_channels_pricing_billing`, el 2026-11-07 con
-  `db:publicar` y visto bueno de Luis (historial 36/36, 0 pendientes). Ligó en producción «Proyectos y constructoras» y
+- **37 migraciones aplicadas**; la última, `20261202000100_price_books_market`, el 2026-11-07 con `db:publicar` y visto
+  bueno de Luis (historial 37/37, 0 pendientes): listas con mercado («Constructor Nacional» y «Distribucion Nacional» →
+  Nacional · COP; «Lista exportación USD» → Internacional · general, sin uso hasta asignarle canal); COT-1003 y «Prueba»
+  sin cambios. Antes, `20261201000100_channels_pricing_billing`, también con `db:publicar`. Ligó en producción «Proyectos y constructoras» y
   «Constructor Nacional» → Canal Constructores, «Distribución y retail» y «Distribucion Nacional» → Canal Distribución;
   «Lista exportación USD» quedó general. La cotización de prueba COT-1002 conservó su entrega y condiciones de pago
   (marcadas como manuales). La oportunidad de prueba «Prueba» (anterior a la regla) se movió a mano, con visto
@@ -100,7 +102,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - Ojo con los permisos: en Supabase toda función nueva queda ejecutable por `authenticated`. Las internas
   (`security definer`) necesitan `revoke execute ... from public, anon, authenticated` explícito y entrar en la
   lista de `db:test`. PGlite no reproduce esto.
-- Asesor de seguridad (2026-11-07, tras la migración de canales): sin hallazgos nuevos. Quedan los conocidos: funciones OAuth/MCP abiertas a
+- Asesor de seguridad (2026-11-07, tras la migración de listas por mercado): sin hallazgos nuevos. Quedan los conocidos: funciones OAuth/MCP abiertas a
   `anon` a propósito, ~60 funciones de la app ejecutables por usuarios (con sus propias validaciones),
   *Leaked password protection* desactivado (se activa en Supabase → Auth).
 
@@ -113,7 +115,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - Pipeline del Canal B2C: crearlo en Configuración → Pipelines y elegir «Canal B2C» (mientras tanto usa el por defecto).
 - Asignar el canal a las listas de precios que falten y crear las listas de cliente que se necesiten (Productos →
   Listas de precios) y elegirlas en la ficha de cada cuenta grande.
-- **Al publicar `20261202000100` (listas por mercado), crear en producción:** una lista Internacional por cada canal que
+- **Listas por mercado (ya en producción), falta crear:** una lista Internacional por cada canal que
   venda al exterior (p. ej. «Distribución Internacional»; o asignarle un canal a «Lista exportación USD», hoy general y sin
   uso) y, para el Canal B2C nacional, su lista o una lista general nacional. Mientras falten, esas cotizaciones se bloquean.
 - Campos de oportunidad solo para Constructores.
@@ -132,7 +134,7 @@ qué necesitan con urgencia y si usan iPhone o Android.
 - Importar cuentas o prospectos ahora exige la columna Canal (es obligatorio).
 - Informes de cotizaciones/pedidos suman monedas mezcladas (COP + USD) sin convertir.
 - Al convertir un prospecto internacional, el valor del formulario da error salvo que sea 0.
-- Cambio de mercado de una cuenta (resuelto en `20261202000100`, pendiente de publicar): una oportunidad abierta con
+- Cambio de mercado de una cuenta (resuelto en `20261202000100`): una oportunidad abierta con
   cotizaciones presentadas, con productos o con pedidos se queda en la moneda anterior; se ve en el aviso de la cuenta.
 - Columna obsoleta `controlling_values` en dependencias de listas.
 - 184 filas huérfanas en `field_history`.
@@ -146,7 +148,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-07 | `6c5578a` | Listas de precios por **mercado** además del canal (decisiones de Luis): mercado obligatorio en cada lista (la moneda sale de él), selección dentro del mercado de la cuenta sin cruces de mercado, canal ni moneda, bloqueo con mensaje si falta la lista (Internacional sin lista general; Nacional admite general nacional), validaciones en la base, cambio de mercado de una cuenta (borradores sin productos pasan solos, con productos se avisan; presentadas y pedidos no cambian). Pantallas: Mercado en Listas de precios (se quita «Estándar»), mercado en la ficha del producto y en la lista propia de la cuenta, avisos en cuenta y cotización. 134 comprobaciones de base y e2e del flujo. | **Sin publicar ni subir:** migración `20261202000100` pendiente de `db:publicar` con visto bueno de Luis |
+| 2026-11-07 | `6c5578a` | Listas de precios por **mercado** además del canal (decisiones de Luis): mercado obligatorio en cada lista (la moneda sale de él), selección dentro del mercado de la cuenta sin cruces de mercado, canal ni moneda, bloqueo con mensaje si falta la lista (Internacional sin lista general; Nacional admite general nacional), validaciones en la base, cambio de mercado de una cuenta (borradores sin productos pasan solos, con productos se avisan; presentadas y pedidos no cambian). Pantallas: Mercado en Listas de precios (se quita «Estándar»), mercado en la ficha del producto y en la lista propia de la cuenta, avisos en cuenta y cotización. 134 comprobaciones de base y e2e del flujo. | Migración `20261202000100` aplicada con `db:publicar` y visto bueno de Luis (37/37); desplegado |
 | 2026-11-07 | `ff7fca2` | Tablas: la columna que sigue a una de cifras toma más aire a la izquierda (título y dato), para que no quede pegada al monto (Valor → Cierre en Inicio y Oportunidades, Total neto → Válida hasta / Propietario en Cotizaciones y Pedidos). Productos de cotización y pedido: Cantidad y Desc. % centrados (título y dato), y en el formulario de agregar, Cantidad, Precio (opcional) y Desc. % centrados (pedido de Luis). | Sin push: falta desplegar |
 | 2026-11-07 | `8163618` | Tablas: el título de cada columna toma la misma alineación que su dato (montos, números y porcentajes a la derecha; Sí/No al centro), en las listas de los módulos y en las pestañas de registros relacionados (p. ej. «Valor» en Oportunidades, «Total neto» en Cotizaciones y Pedidos, «Total» y «Sincronizada» en la pestaña Cotizaciones de una oportunidad). Revisada toda la app: Inicio y las demás tablas ya estaban alineadas. Prueba e2e de alineación. | Sin push: falta desplegar |
 | 2026-11-07 | `6fcbab9` | Regla de números en toda la app: cantidades y descuentos de cotizaciones y pedidos, campos numéricos y de porcentaje (Empleados, Probabilidad, IVA %, campos personalizados), metas de conteo y duración de actividades también agrupan miles y usan punto decimal al escribir; el servidor los lee con `parseAmount`. | Sin push: falta desplegar |
