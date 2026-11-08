@@ -111,6 +111,22 @@ test.describe("administrador", () => {
     await expect(fila("DEMO-CO-240").getByLabel("Precio unitario")).toHaveValue("5248000");
     await expect(fila("DEMO-CO-240").getByText("No codificado")).toBeVisible();
 
+    // Cada título queda sobre su columna, tanto en las líneas como en el formulario de agregar.
+    const borde = async (l: ReturnType<Page["locator"]>) => {
+      const caja = await l.boundingBox();
+      return caja ? Math.round(caja.x + caja.width) : NaN;
+    };
+    const titulos = page.locator("section", { hasText: "Productos cotizados" }).locator(":scope > div.hidden > span");
+    for (const [titulo, enLinea, alAgregar] of [
+      ["Cantidad", "Cantidad", "#ql-qty"],
+      ["Precio unit.", "Precio unitario", "#ql-price"],
+      ["Desc. %", "Descuento %", "#ql-disc"],
+    ] as const) {
+      const derecho = await borde(titulos.filter({ hasText: titulo }));
+      expect(await borde(fila("DEMO-MB-060").getByLabel(enLinea))).toBe(derecho);
+      expect(await borde(page.locator(alAgregar))).toBe(derecho);
+    }
+
     await page.getByRole("tab", { name: "Detalles" }).click();
     await expect(page.getByText("Casa Viva 2026").first()).toBeVisible();
     await expect(page.getByText("Bodega del cliente final, Funza").first()).toBeVisible();

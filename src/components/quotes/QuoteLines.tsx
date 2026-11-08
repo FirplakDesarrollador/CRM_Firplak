@@ -29,11 +29,18 @@ const KINDS = {
 } as const;
 type Kind = keyof typeof KINDS;
 
+/**
+ * Una sola plantilla de columnas para títulos, líneas y el formulario de agregar: cada fila es su propia
+ * cuadrícula, así que una columna `auto` mediría distinto en cada una y los títulos quedarían corridos.
+ * Columnas: producto · cantidad · precio unit. · desc. % · total · acciones (Guardar y quitar).
+ */
+const COLS = "md:grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_7.5rem]";
+
 function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: boolean; kind: Kind; currency: string }) {
   const [state, action] = useActionState(KINDS[kind].update.bind(null, line.id), {} as FormState);
   const [delState, del] = useActionState(KINDS[kind].remove.bind(null, line.id), {} as FormState);
   return (
-    <li className="grid gap-2 px-4 py-3 md:grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_auto] md:items-center">
+    <li className={`grid gap-2 px-4 py-3 md:items-center ${COLS}`}>
       <div className="min-w-0">
         <p className="truncate font-medium">{line.description ?? line.product?.name}</p>
         <p className="text-xs text-muted">
@@ -79,7 +86,7 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
   return (
     <section className="card overflow-hidden">
       <div className="card-header"><h2 className="card-title"><Tr>{KINDS[kind].title}</Tr> <span className="badge">{lines.length}</span></h2></div>
-      <div className="hidden grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_auto] gap-2 border-b border-line bg-surface-2 px-4 py-2 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted md:grid">
+      <div className={`hidden ${COLS} gap-2 border-b border-line bg-surface-2 px-4 py-2 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted md:grid`}>
         <span><Tr>Producto</Tr></span><span className="text-right"><Tr>Cantidad</Tr></span><span className="text-right"><Tr>Precio unit.</Tr></span>
         <span className="text-right"><Tr>Desc. %</Tr></span><span className="text-right"><Tr>Total</Tr></span><span />
       </div>
@@ -88,7 +95,7 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
         {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} currency={currency} />)}
       </ul>
       {canEdit && (
-        <form ref={formRef} action={action} className="grid gap-3 border-t border-line bg-surface-2 p-4 md:grid-cols-[minmax(0,1fr)_7rem_9rem_6rem_auto] md:items-end">
+        <form ref={formRef} action={action} className={`grid gap-2 border-t border-line bg-surface-2 px-4 py-4 md:items-end ${COLS}`}>
           <div>
             <label className="label" htmlFor="ql-product"><Tr>Producto</Tr></label>
             <LookupInput key={state.values?.nonce ?? "add"} id="ql-product" name="product_id" object="products" placeholder="Buscar producto o referencia…"
@@ -106,9 +113,12 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
             <label className="label" htmlFor="ql-disc"><Tr>Desc. %</Tr></label>
             <input id="ql-disc" name="discount" defaultValue="0" inputMode="decimal" className="input num text-right" />
           </div>
-          <SubmitButton pendingText="Agregando…"><Plus size={15} /> <Tr>Agregar</Tr></SubmitButton>
+          {/* Ocupa las columnas de total y acciones, para que los campos queden bajo sus títulos. */}
+          <div className="flex md:col-span-2 md:justify-end">
+            <SubmitButton className="btn btn-primary w-full md:w-auto" pendingText="Agregando…"><Plus size={15} /> <Tr>Agregar</Tr></SubmitButton>
+          </div>
           {!state.ok && (state.message || state.errors) && (
-            <p className="error-text md:col-span-5">{state.message ?? Object.values(state.errors ?? {})[0]}</p>
+            <p className="error-text md:col-span-6">{state.message ?? Object.values(state.errors ?? {})[0]}</p>
           )}
         </form>
       )}
