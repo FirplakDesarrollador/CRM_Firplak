@@ -30,7 +30,7 @@ export async function addOrderLine(orderId: string, _prev: FormState, fd: FormDa
   if (!isUuid(productId)) return { errors: { product_id: "Elige un producto" } };
   const quantity = parseAmount(str(fd, "quantity")) ?? 1;
   if (quantity <= 0) return { errors: { quantity: "Cantidad no válida" } };
-  const discount = Math.min(100, Math.max(0, Number(str(fd, "discount").replace(",", ".")) || 0));
+  const discount = Math.min(100, Math.max(0, parseAmount(str(fd, "discount")) ?? 0));
 
   const supabase = await createClient();
   const { data: order } = await supabase.from("orders").select("price_book_id").eq("id", orderId).maybeSingle();
@@ -62,7 +62,7 @@ export async function addOrderLine(orderId: string, _prev: FormState, fd: FormDa
 export async function updateOrderLine(lineId: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const quantity = parseAmount(str(fd, "quantity"));
   const unitPrice = parseAmount(str(fd, "unit_price"));
-  const discount = Number(str(fd, "discount").replace(",", "."));
+  const discount = parseAmount(str(fd, "discount")) ?? 0;
   if (!quantity || quantity <= 0 || unitPrice === null || unitPrice < 0 || !(discount >= 0 && discount <= 100)) {
     return { message: "Revisa cantidad, precio y descuento" };
   }

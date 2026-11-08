@@ -10,6 +10,7 @@ import type { UserOption } from "@/lib/records/data";
 import { useT, useValueLabel } from "@/lib/i18n/client";
 
 import { Tr } from "@/components/ui/Tr";
+import { AmountInput } from "@/components/ui/AmountInput";
 const TABS = [
   { key: "task", label: "Tarea" },
   { key: "call", label: "Llamada" },
@@ -93,7 +94,7 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
             </div>
             <div>
               <label className="label" htmlFor="act-mins"><Tr>Duración (min)</Tr></label>
-              <input id="act-mins" name="duration_minutes" type="number" min={0} className="input" />
+              <AmountInput id="act-mins" name="duration_minutes" decimals={0} className="input num" />
             </div>
           </div>
         )}

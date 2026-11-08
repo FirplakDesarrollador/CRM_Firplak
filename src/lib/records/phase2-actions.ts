@@ -152,7 +152,7 @@ export async function addQuoteLine(quoteId: string, _prev: FormState, fd: FormDa
   if (!isUuid(productId)) return { errors: { product_id: "Elige un producto" } };
   const quantity = parseAmount(str(fd, "quantity")) ?? 1;
   if (quantity <= 0) return { errors: { quantity: "Cantidad no válida" } };
-  const discount = Math.min(100, Math.max(0, Number(str(fd, "discount").replace(",", ".")) || 0));
+  const discount = Math.min(100, Math.max(0, parseAmount(str(fd, "discount")) ?? 0));
 
   const supabase = await createClient();
   // Precio de la lista de la cotización; con la lista propia del cliente, un producto no codificado toma el de la
@@ -186,7 +186,7 @@ export async function addQuoteLine(quoteId: string, _prev: FormState, fd: FormDa
 export async function updateQuoteLine(lineId: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const quantity = parseAmount(str(fd, "quantity"));
   const unitPrice = parseAmount(str(fd, "unit_price"));
-  const discount = Number(str(fd, "discount").replace(",", "."));
+  const discount = parseAmount(str(fd, "discount")) ?? 0;
   if (!quantity || quantity <= 0 || unitPrice === null || unitPrice < 0 || !(discount >= 0 && discount <= 100)) {
     return { message: "Revisa cantidad, precio y descuento" };
   }

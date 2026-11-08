@@ -86,7 +86,7 @@ function convert(field: FieldDef, raw: string[], errors: Record<string, string>)
     case "number":
     case "percent": {
       if (!first) return null;
-      const n = Number(first.replace(",", "."));
+      const n = parseAmount(first) ?? NaN;
       if (!Number.isFinite(n)) errors[field.name] = "Número no válido";
       if (field.type === "percent" && (n < 0 || n > 100)) errors[field.name] = "Debe estar entre 0 y 100";
       return Number.isFinite(n) ? (field.custom ? n : Math.round(n)) : null;

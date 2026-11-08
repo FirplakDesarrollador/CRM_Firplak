@@ -51,9 +51,9 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
       </div>
       {canEdit ? (
         <form action={action} className="contents">
-          <input name="quantity" aria-label="Cantidad" defaultValue={line.quantity} inputMode="decimal" className="input num h-8 text-right" />
+          <AmountInput name="quantity" aria-label="Cantidad" defaultValue={line.quantity} className="input num h-8 text-right" />
           <AmountInput name="unit_price" aria-label="Precio unitario" defaultValue={line.unit_price} className="input num h-8 text-right" />
-          <input name="discount" aria-label="Descuento %" defaultValue={line.discount} inputMode="decimal" className="input num h-8 text-right" />
+          <AmountInput name="discount" aria-label="Descuento %" defaultValue={line.discount} className="input num h-8 text-right" />
           <p className="num text-right font-medium">{formatCurrency(line.line_total, currency)}</p>
           <div className="flex items-center justify-end gap-1">
             <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
@@ -104,7 +104,7 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
           </div>
           <div>
             <label className="label" htmlFor="ql-qty"><Tr>Cantidad</Tr></label>
-            <input id="ql-qty" name="quantity" defaultValue="1" inputMode="decimal" className="input num text-right" />
+            <AmountInput id="ql-qty" name="quantity" defaultValue={1} className="input num text-right" />
           </div>
           <div>
             <label className="label" htmlFor="ql-price"><Tr>Precio (opcional)</Tr></label>
@@ -112,7 +112,7 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
           </div>
           <div>
             <label className="label" htmlFor="ql-disc"><Tr>Desc. %</Tr></label>
-            <input id="ql-disc" name="discount" defaultValue="0" inputMode="decimal" className="input num text-right" />
+            <AmountInput id="ql-disc" name="discount" defaultValue={0} className="input num text-right" />
           </div>
           {/* Ocupa las columnas de total y acciones, para que los campos queden bajo sus títulos. */}
           <div className="flex md:col-span-2 md:justify-end">

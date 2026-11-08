@@ -20,10 +20,15 @@ test.describe("administrador", () => {
     await page.getByLabel(/Nombre de la cuenta/).fill(nombre);
     await page.getByLabel(/Código SAP/).fill(codigo.toLowerCase());
     await page.locator("#f-industry").selectOption({ label: "Canal Constructores" });
+    // Los números (no solo el dinero) agrupan miles al escribir y se guardan bien.
+    await page.locator("#f-employees").click();
+    await page.keyboard.type("2500");
+    await expect(page.locator("#f-employees")).toHaveValue("2,500");
     await guardar(page);
     await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
     await page.getByRole("tab", { name: "Detalles" }).click();
     await expect(page.getByText(codigo, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("2,500", { exact: true }).first()).toBeVisible();
 
     await page.goto(`/cuentas?q=${encodeURIComponent(nombre)}`);
     await expect(page.getByRole("link", { name: nombre })).toBeVisible();
@@ -145,6 +150,18 @@ test.describe("administrador", () => {
       expect(await borde(fila("DEMO-MB-060").getByLabel(enLinea))).toBe(derecho);
       expect(await borde(page.locator(alAgregar))).toBe(derecho);
     }
+
+    // Cantidad y descuento también agrupan y usan punto decimal al escribir (sin guardar: los totales no cambian).
+    const cantidad = fila("DEMO-MB-060").getByLabel("Cantidad");
+    await cantidad.fill("");
+    await cantidad.click();
+    await page.keyboard.type("1500");
+    await expect(cantidad).toHaveValue("1,500");
+    const descuento = fila("DEMO-MB-060").getByLabel("Descuento %");
+    await descuento.fill("");
+    await descuento.click();
+    await page.keyboard.type("12,5");
+    await expect(descuento).toHaveValue("12.5");
 
     await page.getByRole("tab", { name: "Detalles" }).click();
     await expect(page.getByText("Casa Viva 2026").first()).toBeVisible();

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { getObject, isObjectKey, type ListDefinition, type ObjectKey } from "@/lib/objects";
 import { getObjectDef, untypedClient } from "./data";
-import type { FormState } from "./form";
+import { parseAmount, type FormState } from "./form";
 import { friendlyError, persistRecord } from "./persist";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
@@ -68,7 +68,7 @@ export async function createActivity(_prev: FormState, formData: FormData): Prom
     return v || null;
   };
   const start = get("start_at");
-  const duration = Number(get("duration_minutes") ?? "") || null;
+  const duration = parseAmount(String(get("duration_minutes") ?? "")) || null;
   const startIso = start ? `${start}:00-05:00` : null;
   const endIso = startIso && duration && type === "meeting"
     ? new Date(Date.parse(startIso) + duration * 60000).toISOString()

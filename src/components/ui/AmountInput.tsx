@@ -44,8 +44,9 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "defaultValue" | 
 };
 
 /**
- * Campo de dinero: pone las comas de miles mientras se escribe y usa punto para los decimales
- * («1,250,000.50»). Al guardar, `parseAmount` lo interpreta en el servidor.
+ * Campo numérico de la app (montos, cantidades y porcentajes): pone las comas de miles mientras se escribe
+ * y usa punto para los decimales («1,250,000.50»), la regla de PRODUCT.md. Al guardar, `parseAmount` lo
+ * interpreta en el servidor. `decimals={0}` para enteros.
  */
 export function AmountInput({ defaultValue, placeholder, decimals = 2, ...rest }: Props) {
   const initial = formatAmountValue(defaultValue);

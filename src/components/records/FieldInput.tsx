@@ -429,8 +429,9 @@ export function FieldInput({
       break;
     case "number":
     case "percent":
-      control = <input {...common} type="number" step="any" inputMode="decimal" className="input" defaultValue={str}
-        min={field.type === "percent" ? 0 : undefined} max={field.type === "percent" ? 100 : undefined} />;
+      // Mismo formato que los montos (coma de miles, punto decimal); los números estándar son enteros.
+      control = <AmountInput {...common} className="input num" defaultValue={str}
+        decimals={field.type === "percent" || field.custom ? 2 : 0} />;
       break;
     case "currency":
       control = (
