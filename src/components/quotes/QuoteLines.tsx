@@ -6,6 +6,7 @@ import { addQuoteLine, removeQuoteLine, updateQuoteLine } from "@/lib/records/ph
 import { addOrderLine, removeOrderLine, updateOrderLine } from "@/lib/orders/actions";
 import { LookupInput } from "@/components/records/LookupInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import type { FormState } from "@/lib/records/form";
 
@@ -51,7 +52,7 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
       {canEdit ? (
         <form action={action} className="contents">
           <input name="quantity" aria-label="Cantidad" defaultValue={line.quantity} inputMode="decimal" className="input num h-8 text-right" />
-          <input name="unit_price" aria-label="Precio unitario" defaultValue={line.unit_price} inputMode="decimal" className="input num h-8 text-right" />
+          <AmountInput name="unit_price" aria-label="Precio unitario" defaultValue={line.unit_price} className="input num h-8 text-right" />
           <input name="discount" aria-label="Descuento %" defaultValue={line.discount} inputMode="decimal" className="input num h-8 text-right" />
           <p className="num text-right font-medium">{formatCurrency(line.line_total, currency)}</p>
           <div className="flex items-center justify-end gap-1">
@@ -107,7 +108,7 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
           </div>
           <div>
             <label className="label" htmlFor="ql-price"><Tr>Precio (opcional)</Tr></label>
-            <input id="ql-price" name="unit_price" inputMode="decimal" className="input num text-right" placeholder="De la lista" />
+            <AmountInput id="ql-price" name="unit_price" className="input num text-right" placeholder="De la lista" />
           </div>
           <div>
             <label className="label" htmlFor="ql-disc"><Tr>Desc. %</Tr></label>

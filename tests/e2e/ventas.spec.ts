@@ -66,7 +66,26 @@ test.describe("administrador", () => {
     await expect(page.getByText("Pipeline del Canal Distribución: Distribución y retail.")).toBeVisible();
     await expect(page.getByLabel(/Etapa/).locator("option", { hasText: "Prospección" })).toHaveCount(0);
     await page.getByLabel(/Etapa/).selectOption({ label: "Contacto inicial (10%)" });
-    await page.getByLabel(/Valor/).fill("150000000");
+    // El valor agrupa miles mientras se escribe; el punto es el decimal y la coma del teclado del iPhone también.
+    const valor = page.getByLabel(/Valor/);
+    await valor.click();
+    await page.keyboard.type("1500,75");
+    await expect(valor).toHaveValue("1,500.75");
+    await valor.fill("");
+    await page.keyboard.type("150000000");
+    await expect(valor).toHaveValue("150,000,000");
+    // Al borrar una cifra el formato se rehace; borrar justo tras una coma de miles borra la cifra anterior.
+    await page.keyboard.press("Backspace");
+    await expect(valor).toHaveValue("15,000,000");
+    await page.keyboard.type("0");
+    await expect(valor).toHaveValue("150,000,000");
+    await page.keyboard.press("ArrowLeft", { delay: 20 });
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("Backspace");
+    await expect(valor).toHaveValue("15,000,000");
+    await page.keyboard.type("0");
+    await expect(valor).toHaveValue("150,000,000");
     await guardar(page);
     await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
     await expect(page.getByRole("link", { name: "Almacenes Casa Viva" }).first()).toBeVisible();
@@ -106,9 +125,9 @@ test.describe("administrador", () => {
       await expect(page.getByText(ref).first()).toBeVisible();
     }
     const fila = (ref: string) => page.getByRole("listitem").filter({ hasText: ref });
-    await expect(fila("DEMO-MB-060").getByLabel("Precio unitario")).toHaveValue("960000");
+    await expect(fila("DEMO-MB-060").getByLabel("Precio unitario")).toHaveValue("960,000");
     await expect(fila("DEMO-MB-060").getByText("No codificado")).toHaveCount(0);
-    await expect(fila("DEMO-CO-240").getByLabel("Precio unitario")).toHaveValue("5248000");
+    await expect(fila("DEMO-CO-240").getByLabel("Precio unitario")).toHaveValue("5,248,000");
     await expect(fila("DEMO-CO-240").getByText("No codificado")).toBeVisible();
 
     // Cada título queda sobre su columna, tanto en las líneas como en el formulario de agregar.
@@ -138,6 +157,25 @@ test.describe("administrador", () => {
     await expect(page).toHaveURL(/\/oportunidades\/[0-9a-f-]{36}/);
     await expect(page.getByText("Distribución y retail").first()).toBeVisible();
     await expect(page.getByText("$6,208,000").first()).toBeVisible();
+  });
+
+  test("el precio por lista agrupa miles al escribir, usa punto decimal y conserva el valor guardado", async ({ page }) => {
+    await page.goto("/productos?q=DEMO-AC-ESP");
+    await page.getByRole("link", { name: /DEMO-AC-ESP|Accesorio|espejo/i }).first().click();
+    await expect(page).toHaveURL(/\/productos\/[0-9a-f-]{36}/);
+    await page.waitForLoadState("networkidle");
+    const precio = page.getByLabel("Precio en Lista estándar COP");
+    await precio.fill("");
+    await expect(precio).toHaveValue("");
+    await precio.click();
+    await page.keyboard.type("1234567,5");
+    await expect(precio).toHaveValue("1,234,567.5");
+    const fila = page.getByRole("listitem").filter({ has: precio });
+    await fila.getByRole("button", { name: /^(Guardar|Agregar)$/ }).click();
+    await expect(fila.getByText("Precio guardado")).toBeVisible();
+    await expect(fila.getByText("$1,234,568")).toBeVisible();
+    // Tras guardar, el campo muestra el precio nuevo (no vuelve al anterior).
+    await expect(precio).toHaveValue("1,234,567.5");
   });
 
   test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {

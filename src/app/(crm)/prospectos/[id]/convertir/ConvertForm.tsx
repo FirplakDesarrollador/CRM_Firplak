@@ -10,6 +10,7 @@ import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
 import { useValueLabel } from "@/lib/i18n/client";
+import { AmountInput } from "@/components/ui/AmountInput";
 type Props = {
   leadId: string;
   company: string;
@@ -80,7 +81,7 @@ export function ConvertForm(props: Props) {
             </div>
             <div>
               <label className="label" htmlFor="amount"><Tr>Valor estimado (COP)</Tr></label>
-              <input id="amount" name="amount" inputMode="decimal" className="input num" placeholder="0" />
+              <AmountInput id="amount" name="amount" className="input num" placeholder="0" />
             </div>
             <div>
               <label className="label" htmlFor="close_date"><Tr>Fecha de cierre</Tr></label>

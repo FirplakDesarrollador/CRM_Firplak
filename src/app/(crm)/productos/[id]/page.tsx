@@ -17,6 +17,7 @@ import { SapProductCard } from "@/components/sap/SapCards";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
+import { AmountInput } from "@/components/ui/AmountInput";
 export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
@@ -69,8 +70,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                         <>
                           <ActionForm action={saveProductPrice.bind(null, id, b.id)} className="flex flex-wrap items-center gap-2">
                             <label className="sr-only" htmlFor={`price-${b.id}`}>Precio en {b.name}</label>
-                            <input id={`price-${b.id}`} name="unit_price" inputMode="decimal" className="input num w-40"
-                              defaultValue={entry ? String(entry.unit_price) : ""} placeholder="Precio COP" />
+                            <AmountInput id={`price-${b.id}`} name="unit_price" className="input num w-40 text-right"
+                              defaultValue={entry ? entry.unit_price : null} placeholder="Precio COP" />
                             <label className="flex items-center gap-1.5 text-xs font-medium">
                               <input type="checkbox" name="is_active" defaultChecked={entry?.is_active ?? true} className="accent-[var(--brand)]" /> <Tr>Activo</Tr>
                             </label>

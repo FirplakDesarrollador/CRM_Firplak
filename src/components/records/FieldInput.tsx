@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FieldDef } from "@/lib/objects";
 import type { PipelineWithStages, UserOption } from "@/lib/records/data";
 import { LookupInput, type LookupOption } from "./LookupInput";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { useT } from "@/lib/i18n/client";
 
 import { Opt } from "@/components/ui/Opt";
@@ -435,7 +436,7 @@ export function FieldInput({
       control = (
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>
-          <input {...common} inputMode="decimal" className={`input num pl-6 ${field.currencyCode ? "pr-12" : ""}`} defaultValue={str} placeholder="0" />
+          <AmountInput {...common} className={`input num pl-6 ${field.currencyCode ? "pr-12" : ""}`} defaultValue={str} placeholder="0" />
           {field.currencyCode && (
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted">{field.currencyCode}</span>
           )}

@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/session";
 import { getLocale } from "@/lib/i18n/server";
 import { refreshExchangeRatesNow, saveManualExchangeRate } from "../actions";
 import { Tr } from "@/components/ui/Tr";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 export const metadata: Metadata = { title: "Monedas" };
 
@@ -49,7 +50,7 @@ export default async function CurrenciesPage() {
         <ActionForm action={saveManualExchangeRate} className="mt-3 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="label"><Tr>TRM (pesos por dólar)</Tr></span>
-            <input name="rate" inputMode="decimal" className="input num w-40" placeholder="4,000.00" required />
+            <AmountInput name="rate" className="input num w-40" placeholder="4,000.00" required />
           </label>
           <SubmitButton pendingText="Guardando…"><Tr>Guardar TRM</Tr></SubmitButton>
         </ActionForm>

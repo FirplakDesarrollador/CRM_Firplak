@@ -15,6 +15,7 @@ import { GOAL_METRICS, elapsedFraction, periodLabel, periodStart, shiftPeriod, t
 import { saveGoals } from "@/lib/goals/actions";
 import { getLocale } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/session";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 export const metadata: Metadata = { title: "Metas" };
 
@@ -155,9 +156,15 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
                       <td className="font-medium">{u.id === "company" ? <Tr>Compañía (total)</Tr> : u.full_name}</td>
                       {GOAL_METRICS.map((m) => (
                         <td key={m.key}>
-                          <input name={`g:${u.id}:${m.key}`} inputMode="decimal" className="input num h-8 min-w-28 text-right"
-                            aria-label={`${u.full_name} · ${m.label}`}
-                            defaultValue={targetOf(u.id === "company" ? null : u.id, m.key) ?? ""} />
+                          {m.money ? (
+                            <AmountInput name={`g:${u.id}:${m.key}`} className="input num h-8 min-w-28 text-right"
+                              aria-label={`${u.full_name} · ${m.label}`}
+                              defaultValue={targetOf(u.id === "company" ? null : u.id, m.key) ?? null} />
+                          ) : (
+                            <input name={`g:${u.id}:${m.key}`} inputMode="decimal" className="input num h-8 min-w-28 text-right"
+                              aria-label={`${u.full_name} · ${m.label}`}
+                              defaultValue={targetOf(u.id === "company" ? null : u.id, m.key) ?? ""} />
+                          )}
                         </td>
                       ))}
                     </tr>
