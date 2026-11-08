@@ -195,6 +195,36 @@ test.describe("administrador", () => {
     await expect(precio).toHaveValue("1,234,567.5");
   });
 
+  test("en listas y pestañas, cada título de columna queda alineado con su dato", async ({ page }) => {
+    /** Desfase en píxeles entre el texto de cada título y el de su dato en la primera fila, según la alineación. */
+    const desfases = () => page.evaluate(() => {
+      const caja = (el: Element) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+      const tabla = [...document.querySelectorAll("table")].find((t) => (t as HTMLElement).offsetParent && t.querySelector("tbody tr td + td"))!;
+      const tds = [...tabla.querySelector("tbody tr")!.children];
+      return [...tabla.querySelectorAll("thead th")].flatMap((th, i) => {
+        const td = tds[i];
+        if (!td?.textContent?.trim() || !th.textContent?.trim()) return [];
+        const a = getComputedStyle(th).textAlign.replace("start", "left").replace("end", "right");
+        const b = getComputedStyle(td).textAlign.replace("start", "left").replace("end", "right");
+        const h = caja(th), d = caja(td);
+        const px = a === "right" ? h.right - d.right : a === "center" ? (h.left + h.right - d.left - d.right) / 2 : h.left - d.left;
+        return a !== b || Math.abs(px) > 1 ? [`${th.textContent.trim()}: ${a}/${b} ${Math.round(px)}px`] : [];
+      });
+    });
+    for (const url of ["/oportunidades", "/cotizaciones", "/pedidos"]) {
+      await page.goto(url);
+      await expect(page.locator("tbody tr").first()).toBeVisible();
+      expect(await desfases(), url).toEqual([]);
+    }
+    // Pestaña Cotizaciones dentro de una oportunidad (montos a la derecha, Sí/No al centro).
+    await page.goto("/cotizaciones");
+    await page.getByRole("link", { name: "COT-1002" }).click();
+    await page.locator("main a[href^='/oportunidades/']").first().click();
+    await page.getByRole("tab", { name: /Cotizaciones/ }).click();
+    await expect(page.getByRole("columnheader", { name: "Total neto" })).toBeVisible();
+    expect(await desfases()).toEqual([]);
+  });
+
   test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {
     await page.goto("/cotizaciones/nueva");
     await page.waitForLoadState("networkidle");

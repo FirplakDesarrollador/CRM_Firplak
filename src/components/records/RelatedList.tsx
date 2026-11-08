@@ -5,6 +5,7 @@ import type { Row } from "@/lib/records/data";
 import { FieldValue } from "./FieldValue";
 
 import { Tr } from "@/components/ui/Tr";
+import { columnAlign } from "./column-align";
 export function RelatedList({
   def,
   title,
@@ -38,13 +39,13 @@ export function RelatedList({
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
-              <tr>{fields.map((f) => <th key={f.name}>{f.label}</th>)}</tr>
+              <tr>{fields.map((f) => <th key={f.name} className={columnAlign(f.type)}>{f.label}</th>)}</tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
                   {fields.map((f, i) => (
-                    <td key={f.name} className={["currency", "number", "percent"].includes(f.type) ? "text-right" : undefined}>
+                    <td key={f.name} className={columnAlign(f.type)}>
                       <FieldValue field={f} row={row} linkName={i === 0 ? `${def.path}/${row.id}` : undefined} />
                     </td>
                   ))}

@@ -5,6 +5,7 @@ import type { ListParams } from "@/lib/records/filters";
 import type { Row } from "@/lib/records/data";
 import { FieldValue } from "./FieldValue";
 import type { T } from "@/lib/i18n";
+import { columnAlign } from "./column-align";
 
 export function hrefWith(path: string, current: Record<string, string>, patch: Record<string, string | null>) {
   const qs = new URLSearchParams(current);
@@ -55,10 +56,11 @@ export function ListTable({
                 const active = params.sort.field === col.name;
                 const nextDir = active && params.sort.dir === "asc" ? "desc" : "asc";
                 return (
-                  <th key={col.name} aria-sort={active ? (params.sort.dir === "asc" ? "ascending" : "descending") : undefined}>
+                  <th key={col.name} className={columnAlign(col.type)} aria-sort={active ? (params.sort.dir === "asc" ? "ascending" : "descending") : undefined}>
                     {sortable ? (
+                      // En columnas a la derecha la flecha va antes del título, para que el título quede al ras de las cifras.
                       <Link href={hrefWith(basePath, current, { sort: col.name, dir: nextDir, page: null })}
-                        className="inline-flex items-center gap-1 no-underline hover:text-ink">
+                        className={`inline-flex items-center gap-1 no-underline hover:text-ink ${columnAlign(col.type) === "text-right" ? "flex-row-reverse" : ""}`}>
                         {col.label}
                         {active && (params.sort.dir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
                       </Link>
@@ -81,7 +83,7 @@ export function ListTable({
             {rows.map((row) => (
               <tr key={row.id}>
                 {columns.map((col, i) => (
-                  <td key={col.name} className={["currency", "number", "percent"].includes(col.type) ? "text-right" : undefined}>
+                  <td key={col.name} className={columnAlign(col.type)}>
                     <FieldValue field={col} row={row} linkName={i === 0 ? `${def.path}/${row.id}` : undefined} />
                   </td>
                 ))}
