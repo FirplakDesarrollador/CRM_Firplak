@@ -234,6 +234,42 @@ test.describe("administrador", () => {
     expect(await desfases()).toEqual([]);
   });
 
+  test("la lista de precios depende del mercado y el canal: un distribuidor del exterior no recibe la nacional en pesos", async ({ page }) => {
+    // Lista del mercado Internacional para el Canal Distribución: la moneda la fija el mercado.
+    const lista = unico("Distribución Internacional");
+    await page.goto("/productos/listas");
+    await expect(page.getByText("Sin uso: en el mercado Internacional cada canal necesita su propia lista.").first()).toBeVisible();
+    await page.locator("#pb-name").fill(lista);
+    await page.locator("#pb-kind").selectOption({ label: "Canal Distribución" });
+    await page.locator("#pb-market").selectOption("Internacional");
+    await page.getByRole("button", { name: "Crear lista" }).click();
+    await expect(page.locator(`input[value="${lista}"]`)).toBeVisible();
+
+    const cotizar = async (cuenta: string, canal: string) => {
+      await page.goto("/cuentas/nueva");
+      await page.getByLabel(/Nombre de la cuenta/).fill(cuenta);
+      await page.locator("#f-market").selectOption("Internacional");
+      await page.locator("#f-industry").selectOption({ label: canal });
+      await guardar(page);
+      await expect(page.getByRole("heading", { level: 1, name: cuenta })).toBeVisible();
+      await page.goto("/cotizaciones/nueva");
+      await page.waitForLoadState("networkidle");
+      await page.getByLabel(/Nombre de la cotización/).fill(`Cotización ${cuenta}`);
+      await buscarYElegir(page, /^Facturar a/, cuenta);
+      await guardar(page);
+    };
+    // Distribuidor del exterior: su lista de mercado y canal, en dólares.
+    await cotizar(unico("Distribuidora Andina"), "Canal Distribución");
+    await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+    await page.getByRole("tab", { name: "Detalles" }).click();
+    await expect(page.getByText(lista).first()).toBeVisible();
+    await expect(page.getByText("USD", { exact: true }).first()).toBeVisible();
+    // Constructor del exterior sin lista de su canal: no se crea (ni usa la general en USD ni la nacional).
+    await cotizar(unico("Constructora Andina"), "Canal Constructores");
+    await expect(page.getByText("No hay una lista de precios activa para el mercado Internacional y el Canal Constructores").first()).toBeVisible();
+    await expect(page).toHaveURL(/\/cotizaciones\/nueva/);
+  });
+
   test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {
     await page.goto("/cotizaciones/nueva");
     await page.waitForLoadState("networkidle");

@@ -31,6 +31,7 @@ Estructura comercial (confirmada por Luis, 7 nov 2026):
 - **Canales de venta:** Canal Constructores, Canal Distribución y Canal B2C. El canal es obligatorio en cuentas y prospectos. Define el pipeline de las oportunidades (cada canal tiene sus etapas) y la lista de precios de las cotizaciones.
 - **Listas de cliente:** un cliente puede tener su propia lista con sus productos codificados. Lo que no está en ella se cotiza con la lista del canal y queda marcado «No codificado».
 - **Mercados:** Nacional, en pesos (COP), e Internacional, en dólares (USD), convertidos con la TRM.
+- **Listas por mercado y canal** (decisión de Luis, 7 nov 2026): la lista de precios depende del mercado de la cuenta además de su canal, y la moneda sale del mercado. Nunca se cruza de mercado, canal ni moneda; si falta la lista compatible, se bloquea hasta crearla. En el mercado Internacional cada canal necesita su lista; en el Nacional puede usarse una lista general nacional. Al cambiar el mercado de una cuenta, los borradores sin productos pasan solos; los que tienen productos se avisan para revisión; las cotizaciones presentadas y los pedidos no cambian.
 - **Cotización:** «Facturar a» es la cuenta de la oportunidad. Las direcciones y las condiciones de pago vienen de la cuenta y se pueden escribir a mano cuando hace falta.
 
 ## Capabilities and Constraints

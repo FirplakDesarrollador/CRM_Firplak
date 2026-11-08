@@ -822,8 +822,8 @@ export const UI_EN: Record<string, string> = {
   "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
   "No codificado": "Not listed",
   "Define el pipeline de sus oportunidades y la lista de precios de sus cotizaciones.": "Sets the pipeline of its opportunities and the price book of its quotes.",
-  "Solo para clientes con productos codificados y precios propios. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».":
-    "Only for customers with their own listed products and prices. Anything not in it is quoted from the channel price book and marked “Not listed”.",
+  "Solo para clientes con productos codificados y precios propios, y del mismo mercado de la cuenta. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».":
+    "Only for customers with their own listed products and prices, in the account's market. Anything not in it is quoted from the channel price book and marked “Not listed”.",
   "Si la dejas vacía, se crea una oportunidad con el nombre de la cotización.": "If left empty, an opportunity is created with the quote name.",
   "Cliente o prospecto. Debe ser la misma cuenta de la oportunidad.": "Customer or prospect. Must be the opportunity's account.",
   "De la cuenta.": "From the account.",
@@ -832,8 +832,16 @@ export const UI_EN: Record<string, string> = {
   "De la cuenta. Marca «Cambiar condiciones de pago» para escribirlas a mano.": "From the account. Check “Change payment terms” to type them.",
   "Cada canal de venta tiene su pipeline: las oportunidades de una cuenta van al pipeline de su Canal, y en Indicadores cada canal tiene su embudo. Un canal sin pipeline usa el pipeline por defecto.":
     "Each sales channel has its pipeline: an account's opportunities go to its channel's pipeline, and each channel has its own funnel in Dashboards. A channel without a pipeline uses the default one.",
-  "Cada canal tiene su lista (una por moneda). Una cotización usa la lista propia de la cuenta, si la tiene; si no, la de su canal; si no, la estándar. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.":
-    "Each channel has its price book (one per currency). A quote uses the account's own price book if it has one; otherwise its channel's; otherwise the standard one. A customer price book holds only its listed products: anything else is quoted from the channel price book and marked “Not listed”. Assign it on the account record. Product prices are edited on the product record.",
+  "Cada lista es de un mercado (Nacional en COP, Internacional en USD) y de un canal. Una cotización usa la lista propia de la cuenta, si es de su mercado; si no, la de su canal en su mercado; en el mercado Nacional, si no hay, la lista general nacional. Nunca usa la de otro mercado ni de otro canal: si falta la lista, la cotización no se puede crear hasta crearla. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.":
+    "Each price book belongs to a market (Domestic in COP, International in USD) and a channel. A quote uses the account's own price book, if it is in its market; otherwise the one for its channel in its market; in the Domestic market, if there is none, the general domestic price book. It never uses one from another market or channel: if the price book is missing, the quote cannot be created until it exists. A customer price book holds only that customer's listed products: anything else is quoted from the channel price book and marked “Not listed”. Customer price books are assigned on the account record. Product prices are edited on the product record.",
+  "Sin uso: en el mercado Internacional cada canal necesita su propia lista. Asígnale un canal para usarla.":
+    "Not used: in the International market each channel needs its own price book. Assign it a channel to use it.",
+  "La cuenta «{cuenta}» ahora es del mercado {mercado} ({moneda}) y esta cotización sigue en {moneda_cotizacion} con la lista «{lista}». Quita sus productos para pasarla a la lista nueva, o crea otra cotización.":
+    "The account “{cuenta}” is now in the {mercado} market ({moneda}) and this quote is still in {moneda_cotizacion} with the price book “{lista}”. Remove its products to move it to the new price book, or create another quote.",
+  "Esta cuenta es del mercado {mercado} ({moneda}). Revisa lo que quedó en la moneda anterior:": "This account is in the {mercado} market ({moneda}). Review what stayed in the previous currency:",
+  "A los borradores con productos quítales los productos para pasarlos a la lista nueva, o crea otra cotización; las presentadas y los pedidos no cambian.":
+    "Remove the products from drafts that have them to move them to the new price book, or create another quote; presented quotes and orders do not change.",
+  Mercado: "Market", Nacional: "Domestic", Internacional: "International", "Lista de cliente": "Customer price book",
   "ponderado": "weighted",
   "por": "by",
   "y": "and",

@@ -20,6 +20,8 @@ import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type
 import { can } from "@/lib/permissions";
 import { formatCompactCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { getT } from "@/lib/i18n/server";
+import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
 import { Val } from "@/components/ui/Val";
@@ -51,6 +53,11 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
     db.from("orders").select(ordersDef.select).eq("account_id", id).order("order_date", { ascending: false }).limit(50),
   ]);
   const oppRows = (opps.data ?? []) as unknown as Row[];
+  // Tras un cambio de mercado: borradores con productos y oportunidades abiertas que quedaron en la moneda anterior.
+  const t = await getT();
+  const marketCurrency = row.market === "Internacional" ? "USD" : "COP";
+  const staleQuotes = ((quotes.data ?? []) as unknown as Row[]).filter((q) => q.status === "Borrador" && q.currency !== marketCurrency);
+  const staleOpps = oppRows.filter((o) => !o.is_closed && o.currency !== marketCurrency);
   const openAmount = oppRows.filter((o) => !o.is_closed).reduce((s, o) => s + Number(o.amount), 0);
   const wonAmount = oppRows.filter((o) => o.is_won).reduce((s, o) => s + Number(o.amount), 0);
   // SAP: solo con el permiso «Ver información de SAP» y el Service Layer configurado.
@@ -86,6 +93,22 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
         </div>
         <ApprovalStrip def={def} row={row} basePath={path} />
       </RecordHeader>
+
+      {(staleQuotes.length > 0 || staleOpps.length > 0) && (
+        <Alert tone="warning">
+          <p>
+            {t("Esta cuenta es del mercado {mercado} ({moneda}). Revisa lo que quedó en la moneda anterior:")
+              .replace("{mercado}", t(row.market === "Internacional" ? "Internacional" : "Nacional")).replace("{moneda}", marketCurrency)}{" "}
+            {[
+              ...staleQuotes.map((q) => <Link key={String(q.id)} href={`/cotizaciones/${q.id}`} className="link">{String(q.quote_number)}</Link>),
+              ...staleOpps.map((o) => <Link key={String(o.id)} href={`/oportunidades/${o.id}`} className="link">{String(o.name)}</Link>),
+            ].flatMap((el, i) => (i ? [", ", el] : [el]))}
+          </p>
+          <p className="mt-1 font-normal">
+            {t("A los borradores con productos quítales los productos para pasarlos a la lista nueva, o crea otra cotización; las presentadas y los pedidos no cambian.")}
+          </p>
+        </Alert>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-4">

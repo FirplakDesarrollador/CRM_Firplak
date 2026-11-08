@@ -3067,6 +3067,7 @@ export type Database = {
           is_active: boolean
           is_client_list: boolean
           is_standard: boolean
+          market: string
           name: string
           updated_at: string
         }
@@ -3079,6 +3080,7 @@ export type Database = {
           is_active?: boolean
           is_client_list?: boolean
           is_standard?: boolean
+          market: string
           name: string
           updated_at?: string
         }
@@ -3091,6 +3093,7 @@ export type Database = {
           is_active?: boolean
           is_client_list?: boolean
           is_standard?: boolean
+          market?: string
           name?: string
           updated_at?: string
         }
@@ -4097,6 +4100,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      market_currency: {
+        Args: {
+          p_market: string
+        }
+        Returns: string
+      }
+      market_of: {
+        Args: {
+          p_market: string
+        }
+        Returns: string
+      }
       mcp_resolve_token: {
         Args: {
           p_hash: string
@@ -4113,6 +4128,12 @@ export type Database = {
           p_object: string
           p_master: string
           p_duplicate: string
+        }
+        Returns: string
+      }
+      missing_price_book_message: {
+        Args: {
+          p_account: string
         }
         Returns: string
       }
@@ -4196,6 +4217,12 @@ export type Database = {
         }
         Returns: string
       }
+      opportunity_follow_market: {
+        Args: {
+          p_opp: string
+        }
+        Returns: undefined
+      }
       pipeline_changes: {
         Args: {
           p_since: string
@@ -4231,6 +4258,13 @@ export type Database = {
           id: string
           label: string
         }[]
+      }
+      price_book_problem: {
+        Args: {
+          p_book: string
+          p_account: string
+        }
+        Returns: string
       }
       purge_demo_data: {
         Args: never

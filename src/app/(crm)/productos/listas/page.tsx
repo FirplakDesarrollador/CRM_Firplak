@@ -24,11 +24,12 @@ function KindSelect({ id, value, channels, disabled }: { id: string; value: stri
   );
 }
 
-function CurrencySelect({ id, value, disabled }: { id: string; value: string; disabled: boolean }) {
+/** Mercado de la lista: la moneda sale de él (Nacional en COP, Internacional en USD). */
+function MarketSelect({ id, value, disabled }: { id: string; value: string; disabled: boolean }) {
   return (
-    <select id={id} name="currency" className="select" defaultValue={value} disabled={disabled}>
-      <option value="COP">COP</option>
-      <option value="USD">USD</option>
+    <select id={id} name="market" className="select" defaultValue={value} disabled={disabled}>
+      <option value="Nacional">Nacional · COP</option>
+      <option value="Internacional">Internacional · USD</option>
     </select>
   );
 }
@@ -38,7 +39,7 @@ export default async function PriceBooksPage() {
   const canEdit = can(user.access, "products", "edit");
   const supabase = await createClient();
   const [{ data: books }, { data: entries }, { data: accounts }, channels] = await Promise.all([
-    supabase.from("price_books").select("*").order("is_standard", { ascending: false }).order("name"),
+    supabase.from("price_books").select("*").order("market").order("name"),
     supabase.from("price_book_entries").select("price_book_id"),
     supabase.from("accounts").select("price_book_id").not("price_book_id", "is", null),
     getChannels(),
@@ -46,6 +47,9 @@ export default async function PriceBooksPage() {
   const count = (id: string) => (entries ?? []).filter((e) => e.price_book_id === id).length;
   const accountsOf = (id: string) => (accounts ?? []).filter((a) => a.price_book_id === id).length;
   const kindOf = (b: { channel: string | null; is_client_list: boolean }) => (b.is_client_list ? "cliente" : b.channel ? `canal:${b.channel}` : "general");
+  // Una lista general del mercado Internacional no se usa: allí cada canal necesita su propia lista.
+  const unused = (b: { market: string; channel: string | null; is_client_list: boolean; is_active: boolean }) =>
+    b.is_active && b.market === "Internacional" && !b.channel && !b.is_client_list;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -56,7 +60,7 @@ export default async function PriceBooksPage() {
           <h1 className="text-xl font-medium"><Tr>Listas de precios</Tr></h1>
         </div>
       </div>
-      <p className="text-sm text-muted"><Tr>Cada canal tiene su lista (una por moneda). Una cotización usa la lista propia de la cuenta, si la tiene; si no, la de su canal; si no, la estándar. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.</Tr></p>
+      <p className="text-sm text-muted"><Tr>Cada lista es de un mercado (Nacional en COP, Internacional en USD) y de un canal. Una cotización usa la lista propia de la cuenta, si es de su mercado; si no, la de su canal en su mercado; en el mercado Nacional, si no hay, la lista general nacional. Nunca usa la de otro mercado ni de otro canal: si falta la lista, la cotización no se puede crear hasta crearla. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.</Tr></p>
       {canEdit && (
         <section className="glass">
           <div className="card-header"><h2 className="card-title"><Tr>Nueva lista</Tr></h2></div>
@@ -64,7 +68,7 @@ export default async function PriceBooksPage() {
             <div className="min-w-48 flex-1"><label className="label" htmlFor="pb-name"><Tr>Nombre</Tr></label><input id="pb-name" name="name" className="input" required /></div>
             <div className="min-w-48 flex-1"><label className="label" htmlFor="pb-desc"><Tr>Descripción</Tr></label><input id="pb-desc" name="description" className="input" /></div>
             <div className="w-48"><label className="label" htmlFor="pb-kind"><Tr>Canal o tipo</Tr></label><KindSelect id="pb-kind" value={channels[0] ? `canal:${channels[0]}` : "general"} channels={channels} disabled={!canEdit} /></div>
-            <div className="w-24"><label className="label" htmlFor="pb-cur"><Tr>Moneda</Tr></label><CurrencySelect id="pb-cur" value="COP" disabled={!canEdit} /></div>
+            <div className="w-48"><label className="label" htmlFor="pb-market"><Tr>Mercado</Tr></label><MarketSelect id="pb-market" value="Nacional" disabled={!canEdit} /></div>
             <SubmitButton pendingText="Creando…"><Tr>Crear lista</Tr></SubmitButton>
           </ActionForm>
         </section>
@@ -86,18 +90,20 @@ export default async function PriceBooksPage() {
                   <label className="label" htmlFor={`k-${b.id}`}><Tr>Canal o tipo</Tr></label>
                   <KindSelect id={`k-${b.id}`} value={kindOf(b)} channels={channels} disabled={!canEdit} />
                 </div>
-                <div className="w-24">
-                  <label className="label" htmlFor={`c-${b.id}`}><Tr>Moneda</Tr></label>
-                  <CurrencySelect id={`c-${b.id}`} value={b.currency} disabled={!canEdit} />
+                <div className="w-48">
+                  <label className="label" htmlFor={`m-${b.id}`}><Tr>Mercado</Tr></label>
+                  <MarketSelect id={`m-${b.id}`} value={b.market} disabled={!canEdit} />
                 </div>
-                <label className="flex items-center gap-1.5 pb-2 text-sm font-medium">
-                  <input type="checkbox" name="is_standard" defaultChecked={b.is_standard} disabled={!canEdit} className="accent-[var(--brand)]" /> <Tr>Estándar</Tr>
-                </label>
                 <label className="flex items-center gap-1.5 pb-2 text-sm font-medium">
                   <input type="checkbox" name="is_active" defaultChecked={b.is_active} disabled={!canEdit} className="accent-[var(--brand)]" /> <Tr>Activa</Tr>
                 </label>
                 {canEdit && <SubmitButton className="btn btn-sm mb-1" pendingText="…"><Tr>Guardar</Tr></SubmitButton>}
               </ActionForm>
+              {unused(b) && (
+                <p className="mt-2 text-xs font-medium text-warning">
+                  <Tr>Sin uso: en el mercado Internacional cada canal necesita su propia lista. Asígnale un canal para usarla.</Tr>
+                </p>
+              )}
             </li>
           ))}
         </ul>

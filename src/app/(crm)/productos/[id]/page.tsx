@@ -16,6 +16,7 @@ import { sapConfigured } from "@/lib/sap/client";
 import { SapProductCard } from "@/components/sap/SapCards";
 
 import { Tr } from "@/components/ui/Tr";
+import { Val } from "@/components/ui/Val";
 import { Fmt } from "@/components/ui/Fmt";
 import { AmountInput } from "@/components/ui/AmountInput";
 export const metadata: Metadata = { title: "Producto" };
@@ -28,7 +29,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   const supabase = await createClient();
   const [access, { data: books }, { data: entries }, { data: cases }] = await Promise.all([
     getRecordAccess("products", null, row.id),
-    supabase.from("price_books").select("id, name, is_standard, is_active").order("is_standard", { ascending: false }).order("name"),
+    supabase.from("price_books").select("id, name, market, currency, channel, is_client_list, is_active").order("market").order("name"),
     supabase.from("price_book_entries").select("id, price_book_id, unit_price, is_active").eq("product_id", id),
     supabase.from("cases").select("id, case_number, subject, status, created_at").eq("product_id", id).order("created_at", { ascending: false }).limit(20),
   ]);
@@ -62,8 +63,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                       <div className="min-w-48 flex-1">
                         <p className="font-medium">{b.name}</p>
                         <p className="text-xs text-muted">
-                          <Tr>{b.is_standard ? "Lista estándar" : "Lista personalizada"}</Tr>{b.is_active ? "" : <> · <Tr>inactiva</Tr></>}
-                          {entry ? ` · ${formatCurrency(entry.unit_price)}` : " · sin precio"}
+                          <Val>{b.market}</Val> · {b.is_client_list ? <Tr>Lista de cliente</Tr> : b.channel ? <Val>{b.channel}</Val> : <Tr>General</Tr>}
+                          {b.is_active ? "" : <> · <Tr>inactiva</Tr></>}
+                          {entry ? ` · ${formatCurrency(entry.unit_price, b.currency)}` : " · sin precio"}
                         </p>
                       </div>
                       {access.canEdit ? (
@@ -71,7 +73,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                           <ActionForm action={saveProductPrice.bind(null, id, b.id)} className="flex flex-wrap items-center gap-2">
                             <label className="sr-only" htmlFor={`price-${b.id}`}>Precio en {b.name}</label>
                             <AmountInput id={`price-${b.id}`} name="unit_price" className="input num w-40 text-right"
-                              defaultValue={entry ? entry.unit_price : null} placeholder="Precio COP" />
+                              defaultValue={entry ? entry.unit_price : null} placeholder={`Precio ${b.currency}`} />
                             <label className="flex items-center gap-1.5 text-xs font-medium">
                               <input type="checkbox" name="is_active" defaultChecked={entry?.is_active ?? true} className="accent-[var(--brand)]" /> <Tr>Activo</Tr>
                             </label>

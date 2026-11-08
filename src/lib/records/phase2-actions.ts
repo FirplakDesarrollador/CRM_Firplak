@@ -119,26 +119,23 @@ export async function removeProductPrice(entryId: string, _prev?: FormState, _fd
 export async function savePriceBook(id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
   const name = str(fd, "name");
   if (!name) return { message: "Escribe el nombre de la lista" };
-  // Tipo: lista de un canal, lista de cliente (se asigna a cuentas) o general.
+  // Tipo: lista de un canal, lista de cliente (se asigna a cuentas) o general. El mercado fija la moneda.
   const kind = str(fd, "kind");
   const isClient = kind === "cliente";
   const channel = !isClient && kind.startsWith("canal:") ? kind.slice(6) : null;
-  const currency = ["COP", "USD"].includes(str(fd, "currency")) ? str(fd, "currency") : "COP";
+  const market = str(fd, "market") === "Internacional" ? "Internacional" : "Nacional";
   const supabase = await createClient();
   const payload = {
     name, description: str(fd, "description") || null, is_active: id ? fd.get("is_active") === "on" : true,
-    channel, is_client_list: isClient, currency,
+    channel, is_client_list: isClient, market,
   };
   const result = id
     ? await supabase.from("price_books").update(payload).eq("id", id).select("id").single()
     : await supabase.from("price_books").insert(payload).select("id").single();
   if (result.error) {
-    if (result.error.message.includes("price_books_one_per_channel")) return { message: `${channel} ya tiene una lista activa en ${currency}.` };
+    if (result.error.message.includes("price_books_one_per_market_channel")) return { message: `${channel} ya tiene una lista activa en el mercado ${market}.` };
+    if (result.error.message.includes("price_books_one_general_per_market")) return { message: `El mercado ${market} ya tiene una lista general activa.` };
     return { message: friendly(result.error.message) };
-  }
-  if (fd.get("is_standard") === "on" && !isClient) {
-    await supabase.from("price_books").update({ is_standard: false }).neq("id", result.data.id).eq("is_standard", true);
-    await supabase.from("price_books").update({ is_standard: true, is_active: true }).eq("id", result.data.id);
   }
   revalidatePath("/", "layout");
   return { ok: true, message: id ? "Lista actualizada" : "Lista creada" };

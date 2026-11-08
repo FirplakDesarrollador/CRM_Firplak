@@ -98,11 +98,12 @@ export const getChannels = cache(async (): Promise<string[]> => {
   return def.fields.find((f) => f.name === "industry")?.options ?? [];
 });
 
-/** Listas de precios de cliente activas (para asignarlas a una cuenta). */
+/** Listas de precios de cliente activas (para asignarlas a una cuenta), con su mercado: solo sirve una del mercado de la cuenta. */
 export const getClientPriceBooks = cache(async (): Promise<{ id: string; name: string }[]> => {
   const supabase = await createClient();
-  const { data } = await supabase.from("price_books").select("id, name").eq("is_client_list", true).eq("is_active", true).order("name");
-  return data ?? [];
+  const { data } = await supabase.from("price_books").select("id, name, market, currency").eq("is_client_list", true).eq("is_active", true)
+    .order("market").order("name");
+  return (data ?? []).map((b) => ({ id: b.id, name: `${b.name} · ${b.market} (${b.currency})` }));
 });
 
 export async function getListViews(object: ObjectKey) {

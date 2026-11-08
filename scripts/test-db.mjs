@@ -118,7 +118,7 @@ let repOpp;
 console.log('Oportunidades');
 await check('crear oportunidad: propietario, pipeline y probabilidad automáticos', async () => {
   repOpp = await as(rep, async () => {
-    const [acc] = await q(`insert into accounts (name) values ('Cuenta del asesor') returning id, owner_id, account_number`);
+    const [acc] = await q(`insert into accounts (name, industry) values ('Cuenta del asesor', 'Canal Constructores') returning id, owner_id, account_number`);
     assert.equal(acc.owner_id, rep.id);
     assert.match(acc.account_number, /^CU-\d+$/);
     const [st] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación'`);
@@ -771,7 +771,7 @@ await check('carpetas de SharePoint: las ve quien ve el registro; los ajustes lo
 
 console.log('Fase 23');
 await check('un pedido activado guarda su oferta de venta de SAP una sola vez', async () => {
-  const [acc] = await q(`select id from accounts order by created_at limit 1`);
+  const [acc] = await as(admin, () => q(`insert into accounts (name, industry) values ('Cliente con pedido SAP', 'Canal Constructores') returning id`));
   const [o] = await as(admin, () => q(`insert into orders (name, account_id) values ('Pedido SAP 1', $1) returning id`, [acc.id]));
   const [other] = await as(admin, () => q(`insert into orders (name, account_id) values ('Pedido SAP 2', $1) returning id`, [acc.id]));
   await as(admin, () => q(`update orders set sap_quotation_entry = 501, sap_quotation_num = 2001, sap_sent_at = now(), sap_error = null where id = $1`, [o.id]));
@@ -946,9 +946,10 @@ await check('«Cliente requiere NIT» no aplica a clientes del mercado Internaci
 
 console.log('Mercado Internacional en USD');
 await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte con la TRM', async () => {
-  const [ext] = await as(admin, () => q(`insert into accounts (name, market) values ('Exterior USD', 'Internacional') returning id`));
-  const [nac] = await as(admin, () => q(`insert into accounts (name, market) values ('Nacional COP', 'Nacional') returning id`));
-  const [st] = await q(`select s.id, s.pipeline_id from pipeline_stages s where s.category = 'open' order by s.sort_order limit 1`);
+  const [ext] = await as(admin, () => q(`insert into accounts (name, market, industry) values ('Exterior USD', 'Internacional', 'Canal Constructores') returning id`));
+  const [nac] = await as(admin, () => q(`insert into accounts (name, market, industry) values ('Nacional COP', 'Nacional', 'Canal Constructores') returning id`));
+  const [st] = await q(`select s.id, s.pipeline_id from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where p.is_default and s.category = 'open' order by s.sort_order limit 1`);
   const crear = (account, campos) => as(admin, () => q(
     `insert into opportunities (name, account_id, pipeline_id, stage_id, amount, foreign_amount)
      values ('Moneda ' || gen_random_uuid(), $1, $2, $3, $4, $5) returning id, currency, amount, foreign_amount, exchange_rate`,
@@ -971,10 +972,11 @@ await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte 
   assert.deepEqual(await montos(cerrada.id), { amount: '2000000.00', exchange_rate: '4000.0000' });
   assert.equal(Number((await q(`select to_cop(10, 'USD') v`))[0].v), 42000);
 
-  // Cotización en USD: lista de precios en dólares, IVA 0 % aunque se intente cambiar, y al sincronizar va al Valor en USD.
+  // Cotización en USD: lista de su mercado y canal en dólares, IVA 0 % aunque se intente cambiar, y al sincronizar va al Valor en USD.
+  await q(`insert into price_books (name, market, channel) values ('Exterior Constructores USD', 'Internacional', 'Canal Constructores')`);
   const [qt] = await as(admin, () => q(`insert into quotes (name, opportunity_id) values ('Cotización exterior', $1)
-    returning id, currency, tax_rate, (select currency from price_books where id = price_book_id) book`, [usd.id]));
-  assert.deepEqual([qt.currency, Number(qt.tax_rate), qt.book], ['USD', 0, 'USD']);
+    returning id, currency, tax_rate, (select currency || ' ' || name from price_books where id = price_book_id) book`, [usd.id]));
+  assert.deepEqual([qt.currency, Number(qt.tax_rate), qt.book], ['USD', 0, 'USD Exterior Constructores USD']);
   await as(admin, () => q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 2, 750)`, [qt.id]));
   await as(admin, () => q(`update quotes set tax_rate = 19 where id = $1`, [qt.id]));
   const [tot] = await q(`select tax_rate, tax, net_total, grand_total from quotes where id = $1`, [qt.id]);
@@ -987,6 +989,7 @@ await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte 
   await q(`delete from quotes where opportunity_id in ($1, $2)`, [usd.id, cop.id]);
   await q(`delete from opportunities where account_id in ($1, $2)`, [ext.id, nac.id]);
   await q(`delete from accounts where id in ($1, $2)`, [ext.id, nac.id]);
+  await q(`delete from price_books where name = 'Exterior Constructores USD'`);
   await q(`delete from exchange_rates where source = 'Manual'`);
 });
 
@@ -1138,10 +1141,9 @@ await check('la cotización usa la lista de precios del canal de la cuenta', asy
   const [cons] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización constructora', $1)
     returning (select name from price_books b where b.id = price_book_id) book`, [consOpp.id]));
   assert.equal(cons.book, 'Lista estándar COP');
-  // Sin canal: la estándar.
-  const [plain] = await as(rep, () => q(`insert into quotes (name, opportunity_id) select 'Cotización sin canal', id from opportunities where name ilike 'Opp sin canal'
-    returning (select name from price_books b where b.id = price_book_id) book`));
-  assert.equal(plain.book, 'Lista estándar COP');
+  // Sin canal ni lista general nacional: se bloquea (la «estándar» ya no decide; no se usa la de otro canal).
+  await assert.rejects(as(rep, () => q(`insert into quotes (name, opportunity_id) select 'Cotización sin canal', id from opportunities where name ilike 'Opp sin canal'`)),
+    /No hay una lista de precios activa para el mercado Nacional y el canal de la cuenta \(sin definir\) \(o una lista general nacional\)/);
 });
 await check('«Facturar a» es la cuenta de la oportunidad; direcciones y condiciones de pago vienen de la cuenta', async () => {
   const [qt] = await as(rep, () => q(`select * from quotes where name = 'Cotización canal'`));
@@ -1214,16 +1216,139 @@ await check('indicadores: un embudo por pipeline, cada uno con sus etapas (sin l
   const dashboard = await as(admin, async () => (await q(`select crm_dashboard(current_date - 365, current_date, null, (select id from pipelines where name = 'Distribución y retail')) d`))[0].d);
   assert.deepEqual(funnels[1].stages.map((s) => Number(s.amount)), dashboard.funnel.map((s) => Number(s.amount)));
 });
-await check('un canal tiene un solo pipeline y una sola lista por moneda; una lista de cliente no tiene canal', async () => {
+await check('un canal tiene un solo pipeline y una sola lista por mercado; una lista de cliente no tiene canal', async () => {
   await assert.rejects(q(`update pipelines set channel = 'Canal Distribución' where name = 'Proyectos y constructoras'`), /pipelines_one_per_channel/);
-  await assert.rejects(q(`insert into price_books (name, channel) values ('Otra de distribución', 'Canal Distribución')`), /price_books_one_per_channel/);
+  await assert.rejects(q(`insert into price_books (name, channel) values ('Otra de distribución', 'Canal Distribución')`), /price_books_one_per_market_channel/);
   await assert.rejects(q(`insert into price_books (name, channel, is_client_list) values ('Cliente con canal', 'Canal B2C', true)`), /price_books_client_without_channel/);
 });
+console.log('Listas por mercado y canal');
+await check('la lista depende del mercado y el canal de la cuenta; nunca cruza de mercado, canal ni moneda', async () => {
+  await as(admin, async () => {
+    // La moneda sale del mercado, aunque se pida otra.
+    const [intl] = await q(`insert into price_books (name, market, channel, currency) values ('Distribución Internacional', 'Internacional', 'Canal Distribución', 'COP') returning currency`);
+    assert.equal(intl.currency, 'USD');
+    await assert.rejects(q(`insert into price_books (name, market, channel) values ('Otra internacional', 'Internacional', 'Canal Distribución')`), /price_books_one_per_market_channel/);
+    await q(`select set_exchange_rate(4000)`);
+  });
+  const cuenta = (name, market, industry) => as(admin, async () =>
+    (await q(`insert into accounts (name, market, industry) values ($1, $2, $3) returning id`, [name, market, industry]))[0].id);
+  const opp = (account) => as(admin, async () => (await q(`insert into opportunities (name, account_id, stage_id, amount)
+    select 'Opp mercado ' || gen_random_uuid(), $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where p.is_default and s.name = 'Prospección' returning id`, [account]))[0].id);
+  const lista = (oppId) => as(admin, async () => (await q(`insert into quotes (name, opportunity_id) values ('Cotización mercado', $1)
+    returning currency, (select name from price_books b where b.id = price_book_id) book`, [oppId]))[0]);
+
+  // Distribuidor internacional: la lista de su mercado y canal en USD; nunca «Distribuidores 2026» (Nacional, COP).
+  const intDist = await cuenta('Distribuidor del exterior', 'Internacional', 'Canal Distribución');
+  assert.deepEqual(await lista(await opp(intDist)), { currency: 'USD', book: 'Distribución Internacional' });
+  // Constructor internacional sin lista de su canal: se bloquea, aunque exista la general «Lista exportación USD».
+  const intCons = await cuenta('Constructor del exterior', 'Internacional', 'Canal Constructores');
+  await assert.rejects(lista(await opp(intCons)), /No hay una lista de precios activa para el mercado Internacional y el Canal Constructores\. Pide/);
+  // B2C nacional sin lista: se bloquea (no usa la de Constructores); con una lista general nacional, la usa.
+  const b2c = await cuenta('Hogar B2C', 'Nacional', 'Canal B2C');
+  const b2cOpp = await opp(b2c);
+  await assert.rejects(lista(b2cOpp), /mercado Nacional y el Canal B2C \(o una lista general nacional\)/);
+  await as(admin, () => q(`insert into price_books (name, market) values ('General Nacional', 'Nacional')`));
+  assert.deepEqual(await lista(b2cOpp), { currency: 'COP', book: 'General Nacional' });
+  await assert.rejects(as(admin, () => q(`insert into price_books (name, market) values ('Otra general', 'Nacional')`)), /price_books_one_general_per_market/);
+  // La general nacional no reemplaza la lista del canal.
+  assert.equal((await lista(await opp(await cuenta('Distribuidor nacional', 'Nacional', 'Canal Distribución')))).book, 'Distribuidores 2026');
+  // Sin su lista activa, el distribuidor internacional se bloquea.
+  await as(admin, () => q(`update price_books set is_active = false where name = 'Distribución Internacional'`));
+  await assert.rejects(lista(await opp(intDist)), /mercado Internacional y el Canal Distribución/);
+  await as(admin, () => q(`update price_books set is_active = true where name = 'Distribución Internacional'`));
+
+  // Lista propia: de lista de cliente y del mismo mercado de la cuenta.
+  await assert.rejects(as(admin, () => q(`update accounts set price_book_id = (select id from price_books where name = 'Gran Cliente 2026') where id = $1`, [intDist])),
+    /La lista propia «Gran Cliente 2026» es del mercado Nacional y la cuenta es del mercado Internacional: elige una lista del mismo mercado/);
+  await assert.rejects(as(admin, () => q(`update accounts set price_book_id = (select id from price_books where name = 'Distribuidores 2026') where id = $1`, [b2c])),
+    /no es una lista de cliente/);
+  // La lista de una cotización no se cambia por una de otro mercado o de otro canal.
+  const [qInt] = await q(`select id from quotes where account_id = $1 limit 1`, [intDist]);
+  await assert.rejects(as(admin, () => q(`update quotes set price_book_id = (select id from price_books where name = 'Distribuidores 2026') where id = $1`, [qInt.id])),
+    /es del mercado Nacional y la cuenta «Distribuidor del exterior» es del mercado Internacional/i);
+  await assert.rejects(as(admin, () => q(`update quotes set price_book_id = (select id from price_books where name = 'Lista exportación USD') where id = $1`, [qInt.id])),
+    /no tiene canal: en el mercado Internacional cada canal necesita su propia lista/);
+  const [qB2c] = await q(`select id from quotes where account_id = $1 limit 1`, [b2c]);
+  await assert.rejects(as(admin, () => q(`update quotes set price_book_id = (select id from price_books where name = 'Lista estándar COP') where id = $1`, [qB2c.id])),
+    /es del Canal Constructores y la cuenta «Hogar B2C» es del Canal B2C/i);
+  // Una lista asignada a cuentas no cambia de mercado.
+  await assert.rejects(as(admin, () => q(`update price_books set market = 'Internacional' where name = 'Gran Cliente 2026'`)), /está asignada a cuentas del mercado Nacional/);
+});
+await check('al cambiar el mercado: borradores sin productos cambian; con productos quedan para revisión; presentadas y pedidos no cambian', async () => {
+  await as(admin, async () => {
+    const [acc] = await q(`insert into accounts (name, market, industry) values ('Cambia de mercado', 'Nacional', 'Canal Distribución') returning id`);
+    const nuevaOpp = async (name, amount) => (await q(`insert into opportunities (name, account_id, stage_id, amount)
+      select $2, $1, s.id, $3 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Prospección' returning id`,
+      [acc.id, name, amount]))[0].id;
+    const libre = await nuevaOpp('Opp libre', 8000000);
+    const ocupada = await nuevaOpp('Opp ocupada', 2000000);
+    const cotizar = async (oppId, name) => (await q(`insert into quotes (name, opportunity_id) values ($2, $1) returning id`, [oppId, name]))[0].id;
+    const vacia = await cotizar(libre, 'Borrador vacío');
+    const conProductos = await cotizar(ocupada, 'Borrador con productos');
+    const presentada = await cotizar(ocupada, 'Cotización presentada');
+    for (const id of [conProductos, presentada]) await q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 1, 1000)`, [id]);
+    await q(`update quotes set status = 'Presentada' where id = $1`, [presentada]);
+    const [pedido] = await q(`insert into orders (name, account_id, opportunity_id) values ('Pedido directo', $1, $2) returning id`, [acc.id, ocupada]);
+
+    await q(`update accounts set market = 'Internacional' where id = $1`, [acc.id]);
+    const cot = async (id) => {
+      const [r] = await q(`select currency, tax_rate, (select name from price_books b where b.id = price_book_id) book from quotes where id = $1`, [id]);
+      return [r.currency, Number(r.tax_rate), r.book];
+    };
+    const op = async (id) => {
+      const [r] = await q(`select currency, amount, foreign_amount from opportunities where id = $1`, [id]);
+      return [r.currency, Number(r.amount), r.foreign_amount === null ? null : Number(r.foreign_amount)];
+    };
+    // Borrador sin productos: moneda, lista e IVA del mercado nuevo; su oportunidad lo sigue (8.000.000 / 4.000 = 2.000 USD).
+    assert.deepEqual(await cot(vacia), ['USD', 0, 'Distribución Internacional']);
+    assert.deepEqual(await op(libre), ['USD', 8000000, 2000]);
+    // Con productos, presentada y pedido: no cambian; la oportunidad con documentos tampoco.
+    assert.deepEqual(await cot(conProductos), ['COP', 19, 'Distribuidores 2026']);
+    assert.deepEqual(await cot(presentada), ['COP', 19, 'Distribuidores 2026']);
+    assert.equal((await q(`select currency from orders where id = $1`, [pedido.id]))[0].currency, 'COP');
+    assert.deepEqual(await op(ocupada), ['COP', 2000000, null]);
+    // El borrador con productos no admite productos nuevos ni se cotiza de nuevo sobre la oportunidad en pesos.
+    await assert.rejects(q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Otro', 1, 10)`, [conProductos]),
+      /La cuenta «Cambia de mercado» ahora es del mercado Internacional \(USD\) y la cotización COT-\d+ está en COP: quita sus productos/i);
+    await assert.rejects(cotizar(ocupada, 'Otra'), /La oportunidad está en COP y la cuenta es del mercado Internacional \(USD\)/);
+    // Al quitarle los productos pasa a la lista nueva; sincronizarla con la oportunidad en pesos no se permite.
+    await q(`delete from quote_line_items where quote_id = $1`, [conProductos]);
+    assert.deepEqual(await cot(conProductos), ['USD', 0, 'Distribución Internacional']);
+    await assert.rejects(q(`select sync_quote($1)`, [conProductos]), /La cotización está en USD y la oportunidad en COP/);
+
+    // Con lista propia de otro mercado, primero hay que quitarla.
+    const [cli] = await q(`insert into accounts (name, market, industry, price_book_id) values ('Cliente con lista', 'Nacional', 'Canal Distribución',
+      (select id from price_books where name = 'Gran Cliente 2026')) returning id`);
+    await assert.rejects(q(`update accounts set market = 'Internacional' where id = $1`, [cli.id]), /quítala o asigna una del mercado nuevo antes de cambiar el mercado/);
+
+    // Sin lista compatible en el mercado nuevo, el borrador queda como estaba y se bloquea hasta crearla.
+    const [hogar] = await q(`insert into accounts (name, market, industry) values ('Hogar que exporta', 'Nacional', 'Canal B2C') returning id`);
+    const [oh] = await q(`insert into opportunities (name, account_id, stage_id, amount)
+      select 'Opp hogar', $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Prospección' returning id`, [hogar.id]);
+    const qh = await cotizar(oh.id, 'Borrador hogar');
+    await q(`update accounts set market = 'Internacional' where id = $1`, [hogar.id]);
+    assert.deepEqual(await cot(qh), ['COP', 19, 'General Nacional']);
+    await assert.rejects(q(`update quotes set description = 'Revisada' where id = $1`, [qh]), /mercado Internacional y el Canal B2C\. Pide a administración crearla/);
+
+    // Limpieza.
+    const cuentas = `select id from accounts where lower(name) in ('cambia de mercado', 'cliente con lista', 'hogar que exporta', 'distribuidor del exterior',
+      'constructor del exterior', 'hogar b2c', 'distribuidor nacional')`;
+    await q(`delete from orders where account_id in (${cuentas})`);
+    await q(`delete from quotes where account_id in (${cuentas})`);
+    await q(`delete from opportunities where account_id in (${cuentas})`);
+    await q(`delete from accounts where id in (${cuentas})`);
+    await q(`delete from price_books where name in ('Distribución Internacional', 'General Nacional')`);
+    await q(`delete from exchange_rates where source = 'Manual'`);
+  });
+});
 await check('permisos de las funciones nuevas', async () => {
-  for (const fn of ['quote_line_price(uuid,uuid)', 'crm_funnels(date,date,uuid)', 'default_price_book(uuid,text)', 'channel_price_book(uuid,text)', 'channel_pipeline(uuid)']) {
+  for (const fn of ['quote_line_price(uuid,uuid)', 'crm_funnels(date,date,uuid)', 'default_price_book(uuid,text)', 'channel_price_book(uuid,text)', 'channel_pipeline(uuid)',
+    'market_of(text)', 'market_currency(text)', 'price_book_problem(uuid,uuid)', 'missing_price_book_message(uuid)']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, true, fn);
   }
-  for (const fn of ['equivalent_stage(uuid,uuid)', 'opportunity_channel_pipeline()', 'account_channel_moves_opportunities()', 'quote_line_listed()']) {
+  for (const fn of ['equivalent_stage(uuid,uuid)', 'opportunity_channel_pipeline()', 'account_channel_moves_opportunities()', 'quote_line_listed()',
+    'opportunity_follow_market(uuid)', 'price_book_market()', 'quote_line_market_check()', 'account_price_book_market()', 'account_market_moves_documents()']) {
     assert.equal((await q(`select has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') ok`, [fn]))[0].ok, false, fn);
   }
 });

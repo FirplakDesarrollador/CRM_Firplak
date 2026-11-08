@@ -47,7 +47,7 @@ export const accounts: ObjectDef = {
     {
       name: "price_book_id", label: "Lista de precios propia", type: "text", relation: "price_book", choices: "clientPriceBooks",
       section: "info", sortable: false, hideEmpty: true,
-      help: "Solo para clientes con productos codificados y precios propios. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».",
+      help: "Solo para clientes con productos codificados y precios propios, y del mismo mercado de la cuenta. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».",
     },
     { name: "parent_account_id", label: "Cuenta principal", type: "lookup", lookup: "accounts", relation: "parent", section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },

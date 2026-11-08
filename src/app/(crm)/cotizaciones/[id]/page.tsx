@@ -16,6 +16,8 @@ import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { QUOTE_STATUSES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
+import { getT } from "@/lib/i18n/server";
+import { Alert } from "@/components/ui/Alert";
 
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Cotización" };
@@ -26,7 +28,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
   const row = await getRecord(def, id);
   if (!row) notFound();
   const supabase = await createClient();
-  const [access, { data: lines }, { data: order }] = await Promise.all([
+  const [access, { data: lines }, { data: order }, { data: account }, t] = await Promise.all([
     getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
@@ -34,7 +36,16 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       .eq("quote_id", id)
       .order("sort_order"),
     supabase.from("orders").select("id, order_number").eq("quote_id", id).maybeSingle(),
+    supabase.from("accounts").select("name, market").eq("id", String(row.account_id ?? "")).maybeSingle(),
+    getT(),
   ]);
+  // La cuenta cambió de mercado y este borrador quedó en la moneda y la lista anteriores (tiene productos).
+  const market = account?.market === "Internacional" ? "Internacional" : "Nacional";
+  const marketCurrency = market === "Internacional" ? "USD" : "COP";
+  const stale = row.status === "Borrador" && account && row.currency !== marketCurrency;
+  const staleText = t("La cuenta «{cuenta}» ahora es del mercado {mercado} ({moneda}) y esta cotización sigue en {moneda_cotizacion} con la lista «{lista}». Quita sus productos para pasarla a la lista nueva, o crea otra cotización.")
+    .replace("{cuenta}", String(account?.name ?? "")).replace("{mercado}", t(market)).replace("{moneda}", marketCurrency)
+    .replace("{moneda_cotizacion}", String(row.currency)).replace("{lista}", String((row.price_book as { name?: string } | null)?.name ?? "—"));
   const canOrder = !order && row.status === "Aceptada" && can(user.access, "orders", "create");
 
   return (
@@ -72,6 +83,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
         count: lines?.length ?? 0,
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+            {stale && <div className="2xl:col-span-2"><Alert tone="warning">{staleText}</Alert></div>}
             <QuoteLines quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
             <QuoteTotals q={row} />
           </div>
