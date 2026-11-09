@@ -832,6 +832,7 @@ export const UI_EN: Record<string, string> = {
   "Seguimiento comercial": "Sales follow-up", "Prospectos, cotizaciones, pedidos y casos": "Leads, quotes, orders and cases",
   "Sin oportunidades abiertas ni ganadas en el periodo": "No open or won opportunities in the period", "Definir metas por asesor": "Set goals by rep",
   "Saltar al contenido": "Skip to content",
+  "Esta línea tiene cambios sin guardar": "This line has unsaved changes",
   de: "of", Faltan: "Short by", "Superada por": "Exceeded by", Cumplida: "Met", "Total con IVA": "Total incl. VAT", "Registrar actividad": "Log activity", "Esta acción no se puede deshacer.": "This cannot be undone.",
   "¿El cliente aceptó esta cotización?": "Did the customer accept this quote?",
   "Si la oportunidad tiene otras cotizaciones abiertas, esta parte se separa en su propia oportunidad ganada; si es la última abierta, la oportunidad queda ganada.":

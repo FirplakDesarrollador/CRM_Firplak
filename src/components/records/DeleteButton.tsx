@@ -15,7 +15,7 @@ export function DeleteButton({ object, id, label }: { object: ObjectKey; id: str
     <span className="inline-flex flex-col items-end">
       <button
         type="button"
-        className="btn btn-danger"
+        className="btn btn-ghost text-danger"
         disabled={pending}
         aria-label={`Eliminar ${label}`}
         onClick={async () => {
@@ -26,7 +26,7 @@ export function DeleteButton({ object, id, label }: { object: ObjectKey; id: str
           });
         }}
       >
-        {/* En el celular solo el ícono: no compite en tamaño con «Editar». */}
+        {/* Botón discreto (texto en rojo, sin borde) y en el celular solo el ícono: no compite con «Editar». */}
         <Trash2 size={15} /> <span className="hidden sm:inline"><Tr>{pending ? "Eliminando…" : "Eliminar"}</Tr></span>
       </button>
       {dialog}

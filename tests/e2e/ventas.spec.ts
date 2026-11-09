@@ -179,6 +179,9 @@ test.describe("administrador", () => {
     await descuento.click();
     await page.keyboard.type("12,5");
     await expect(descuento).toHaveValue("12.5");
+    // Con cambios sin guardar, el «Guardar» de esa línea se resalta; el de las demás sigue discreto.
+    await expect(fila("DEMO-MB-060").getByRole("button", { name: "Guardar" })).toHaveClass(/btn-primary/);
+    await expect(fila("DEMO-CO-240").getByRole("button", { name: "Guardar" })).not.toHaveClass(/btn-primary/);
 
     await page.getByRole("tab", { name: "Detalles" }).click();
     await expect(page.getByText("Casa Viva 2026").first()).toBeVisible();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { addQuoteLine, removeQuoteLine, updateQuoteLine } from "@/lib/records/phase2-actions";
 import { addOrderLine, removeOrderLine, updateOrderLine } from "@/lib/orders/actions";
@@ -11,6 +11,7 @@ import { formatCurrency, formatNumber } from "@/lib/format";
 import type { FormState } from "@/lib/records/form";
 
 import { Tr } from "@/components/ui/Tr";
+import { useT } from "@/lib/i18n/client";
 import { ConfirmSubmit } from "@/components/ui/ActionForm";
 export type QuoteLine = {
   id: string;
@@ -41,6 +42,14 @@ const COLS = "md:grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_7.5rem]";
 function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: boolean; kind: Kind; currency: string }) {
   const [state, action] = useActionState(KINDS[kind].update.bind(null, line.id), {} as FormState);
   const [delState, del] = useActionState(KINDS[kind].remove.bind(null, line.id), {} as FormState);
+  const t = useT();
+  // «Guardar» se resalta solo cuando la línea tiene cambios sin guardar; vuelve a discreto al guardarse bien.
+  const [dirty, setDirty] = useState(false);
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (!state.message) setDirty(false);
+  }
   return (
     <li className={`grid gap-2 px-4 py-3 md:items-center ${COLS}`}>
       <div className="min-w-0">
@@ -53,7 +62,7 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
       {/* En el celular: cantidad, precio y descuento en una fila con su etiqueta, y el total junto a sus acciones.
           Desde md, «contents» los vuelve celdas de la tabla (los títulos están en la cabecera). */}
       {canEdit ? (
-        <form action={action} className="grid grid-cols-3 gap-2 md:contents">
+        <form action={action} onInput={() => setDirty(true)} className="grid grid-cols-3 gap-2 md:contents">
           <label className="block md:contents">
             <span className="label md:hidden"><Tr>Cantidad</Tr></span>
             <AmountInput name="quantity" aria-label="Cantidad" defaultValue={line.quantity} className="input num h-8 text-center" />
@@ -72,7 +81,7 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
               {formatCurrency(line.line_total, currency)}
             </p>
             <div className="flex items-center justify-end gap-1">
-              <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
+              <SubmitButton className={`btn btn-sm ${dirty ? "btn-primary" : ""}`} pendingText="…" title={dirty ? t("Esta línea tiene cambios sin guardar") : undefined}><Tr>Guardar</Tr></SubmitButton>
               <ConfirmSubmit formAction={del} className="btn btn-sm btn-ghost text-danger" aria-label="Quitar línea"
                 message="¿Quitar esta línea?" confirmLabel="Quitar">
                 <Trash2 size={14} />

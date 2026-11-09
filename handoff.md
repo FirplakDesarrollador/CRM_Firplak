@@ -141,6 +141,15 @@ Fases: borradores locales → bandeja de salida (actividades, notas, contactos, 
 de solo lectura → (opcional) editar oportunidades con aviso de conflicto. Luis dirá dónde se quedan sin señal,
 qué necesitan con urgencia y si usan iPhone o Android.
 
+### Diseño: lo que quedó de la crítica (2026-11-09, 25/40)
+Los 6 pasos del plan están hechos (celular, confirmaciones, claridad, Indicadores, teclado, pulido). Quedan:
+- Ctrl K sin sugerencias al abrirlo (recientes o accesos rápidos).
+- Lista de oportunidades: abre con cerradas viejas arriba (orden por fecha de cierre ascendente).
+- Pipeline: Ganada/Perdida fuera de vista a la derecha sin pista de desplazamiento.
+- Estado como insignia en unos módulos y como texto en otros.
+- Decisión de Luis: ¿Mercado obligatorio en Nueva cuenta? (define moneda, lista y pipeline).
+- Volver a correr `/impeccable critique` para medir el cambio.
+
 ### Técnicos conocidos
 - Si se cambia la cuenta de una oportunidad, sus cotizaciones conservan la cuenta anterior (la validación «Facturar a =
   cuenta de la oportunidad» corre al crear o cambiar la cotización).
@@ -161,6 +170,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-08 | `HASH_P6` | Paso 6 del plan de la crítica, pulido: «Eliminar» de las fichas pasa a botón discreto (texto rojo sin borde) y no compite con «Editar»; en las líneas de cotización y pedido, «Guardar» se resalta solo cuando esa línea tiene cambios sin guardar. Lista de lo que queda de la crítica en Pendientes. e2e. | Sin push |
 | 2026-11-08 | `1eec313` | Paso 5 del plan de la crítica, accesibilidad: «Saltar al contenido» como primer Tab (lleva al `main`, y el siguiente Tab sigue dentro); anillo de foco sólido de más de 3:1 en claro (navy) y en oscuro (oliva), con borde del color de la superficie (antes ~1.7:1); ejes de los gráficos, títulos del menú de Configuración, «Informe de…» y notificaciones de 10.9 px a 11.5 px (escala Caption); en el celular el gráfico mensual rotula un mes sí y uno no; párrafos de ayuda de Pipelines, Listas y Listas de precios en 75 caracteres por línea. Pendiente: sugerencias en Ctrl K. e2e. | Sin push |
 | 2026-11-08 | `b7e4591` | Paso 4 del plan de la crítica, simplificar y ordenar: Indicadores con protagonista (4 cifras de ventas en tarjetas, 2 por fila en el celular; las otras 9 en dos paneles con título, «Seguimiento comercial» y «Prospectos, cotizaciones, pedidos y casos», con cifra secundaria de 1.7rem en DESIGN.md), embudos sin oportunidades en una línea, la lista de cierres en 30 días ya no se estira. Ficha de oportunidad: Detalles no repite Valor, Cierre y Probabilidad (están en la cabecera) ni Cerrada/Ganada; «Motivo de pérdida» solo si tiene valor y no se pide al crear (nuevo `createHidden`). Informes con columnas alineadas entre carpetas. Metas vacías con botón para definirlas. e2e. | Sin push |
 | 2026-11-08 | `0a70713` | Paso 3 del plan de la crítica, claridad: una unidad por contexto (tarjeta «Millones COP», resúmenes «$X M», registros en pesos completos; regla en DESIGN.md): metas y resumen de meta «$780 M de $1,500 M · Faltan $720 M» (sin «Brecha» en pesos completos), campañas en «$X M». Sustantivos que concuerdan con la cifra en Indicadores e Inicio («1 pedido»), unidades en el PDF («1 unidad», «400 unidades»), fechas legibles en Buscar. «Tareas vencidas» en Inicio dice «Requieren seguimiento / Al día». «Total» de cotizaciones y pedidos pasa a «Total con IVA» (el neto es el que suma a la oportunidad). Sin jerga («pg_cron», «JSON») en Pronóstico y Configuración. Página de error con código para soporte. «Caliente» ya no usa el color de peligro. El campo de ejemplo «canal» queda inactivo en la semilla (era un segundo «Canal»). La demo genera los avisos del día al arrancar. Migración `20261205000100_alerts_plural` (pendiente de publicar). e2e y db:test. | Sin push; migración sin aplicar |

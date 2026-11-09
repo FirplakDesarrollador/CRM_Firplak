@@ -149,6 +149,8 @@ test("Indicadores tiene protagonista, los embudos vacíos ocupan una línea y la
   await expect(page.getByRole("heading", { name: "Pronóstico" })).toBeVisible();
   await expect(page.getByText("Probabilidad", { exact: true })).toHaveCount(1);
   await expect(page.getByText("Fecha de cierre", { exact: true })).toHaveCount(1);
+  // «Eliminar» es discreto (texto rojo sin borde): no pesa lo mismo que «Editar».
+  await expect(page.getByRole("button", { name: /^Eliminar / })).toHaveClass(/btn-ghost/);
 
   // Informes: las columnas quedan alineadas de una carpeta a otra.
   await page.goto("/informes");
