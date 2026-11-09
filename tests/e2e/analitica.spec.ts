@@ -5,7 +5,7 @@ test.use({ storageState: sesion("admin") });
 
 async function definirMetaDeCompania(page: import("@playwright/test").Page, ruta: string, valor: string) {
   await page.goto(ruta);
-  await page.getByText("Definir metas del periodo").click();
+  await page.locator("summary", { hasText: "Definir metas del periodo" }).click();
   await page.getByRole("textbox", { name: "Compañía (total) · Ventas ganadas" }).fill(valor);
   await page.getByRole("button", { name: "Guardar metas" }).click();
   await expect(page.getByRole("status").filter({ hasText: "guardada" })).toBeVisible();
@@ -127,4 +127,41 @@ test("cifras y textos claros: totales en «$X M», sustantivos que concuerdan, f
   await page.getByRole("button", { name: "Notificaciones" }).click();
   await expect(page.getByText(/^Tienes (1 tarea vencida|\d+ tareas vencidas)$/).first()).toBeVisible();
   await expect(page.getByText(/tarea\(s\)/)).toHaveCount(0);
+});
+
+test("Indicadores tiene protagonista, los embudos vacíos ocupan una línea y la ficha no repite datos", async ({ page }) => {
+  await page.goto("/indicadores");
+  // Cuatro cifras de ventas arriba; las demás, agrupadas en dos paneles con título.
+  await expect(page.getByRole("heading", { name: "Seguimiento comercial" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prospectos, cotizaciones, pedidos y casos" })).toBeVisible();
+  const vacios = page.locator("section[aria-label^='Embudo']").filter({ hasText: "Sin oportunidades abiertas ni ganadas en el periodo" });
+  await expect(vacios.first()).toBeVisible();
+  await expect(vacios.locator("ol")).toHaveCount(0);
+
+  // Una oportunidad nueva no pide «Motivo de pérdida».
+  await page.goto("/oportunidades/nueva");
+  await expect(page.getByRole("button", { name: /Guardar/ }).first()).toBeVisible();
+  await expect(page.getByText("Motivo de pérdida")).toHaveCount(0);
+
+  // La ficha de oportunidad no repite en Detalles lo que ya dice la cabecera.
+  await page.goto("/oportunidades");
+  await page.locator("main table a[href^='/oportunidades/']").first().click();
+  await expect(page.getByRole("heading", { name: "Pronóstico" })).toBeVisible();
+  await expect(page.getByText("Probabilidad", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("Fecha de cierre", { exact: true })).toHaveCount(1);
+
+  // Informes: las columnas quedan alineadas de una carpeta a otra.
+  await page.goto("/informes");
+  const columnas = await page.locator("main table").evaluateAll((tablas) =>
+    tablas.map((t) => Math.round(t.querySelector("th:nth-child(2)")!.getBoundingClientRect().left)));
+  expect(columnas.length).toBeGreaterThan(1);
+  expect(new Set(columnas).size).toBe(1);
+
+  // Metas sin metas por asesor: el vacío lleva a definirlas.
+  await page.goto("/metas");
+  const definir = page.getByRole("link", { name: "Definir metas por asesor" });
+  if (await definir.count()) {
+    await definir.click();
+    await expect(page.getByRole("button", { name: "Guardar metas" })).toBeVisible();
+  }
 });

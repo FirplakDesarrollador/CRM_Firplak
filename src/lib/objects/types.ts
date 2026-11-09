@@ -28,6 +28,8 @@ export type FieldDef = {
   readOnly?: boolean;
   /** No aparece en el formulario de creación/edición. */
   formHidden?: boolean;
+  /** No aparece al crear, solo al editar (p. ej. «Motivo de pérdida» en una oportunidad nueva). */
+  createHidden?: boolean;
   /** Ocupa todo el ancho en el formulario. */
   wide?: boolean;
   help?: string;

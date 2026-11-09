@@ -48,6 +48,7 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
   ).filter((u): u is NonNullable<typeof u> => Boolean(u));
   const canCompany = canSystem(user.access, "manage_users");
   const canEdit = canCompany || manageable.length > 0;
+  const defineHref = `/metas?tipo=${type}&inicio=${start}&definir=1#definir-metas`;
 
   const fmt = (metric: GoalMetric, v: number) => (GOAL_METRICS.find((m) => m.key === metric)?.money ? formatCompactCurrency(v) : formatNumber(v));
   const qs = (patch: Record<string, string>) => `/metas?${new URLSearchParams({ tipo: type, inicio: start, ...patch })}`;
@@ -82,7 +83,12 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {company.length === 0 && <p className="text-sm text-muted"><Tr>No hay metas de compañía para este periodo.</Tr></p>}
+        {company.length === 0 && (
+          <div className="glass flex flex-wrap items-center justify-between gap-3 p-5 sm:col-span-2 xl:col-span-3">
+            <p className="text-sm text-muted"><Tr>No hay metas de compañía para este periodo.</Tr></p>
+            {canEdit && <Link href={defineHref} className="btn btn-primary btn-sm"><Tr>Definir metas del periodo</Tr></Link>}
+          </div>
+        )}
         {company.map((g) => {
           const gap = g.target - g.actual;
           return (
@@ -106,7 +112,10 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
       <section className="card overflow-hidden">
         <div className="card-header"><h2 className="card-title"><Tr>Cumplimiento por asesor</Tr></h2></div>
         {byUser.size === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted"><Tr>No hay metas individuales visibles para este periodo.</Tr></p>
+          <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+            <p className="text-sm text-muted"><Tr>No hay metas individuales visibles para este periodo.</Tr></p>
+            {canEdit && manageable.length > 0 && <Link href={defineHref} className="btn btn-sm"><Tr>Definir metas por asesor</Tr></Link>}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="table">
@@ -142,7 +151,7 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
       </section>
 
       {canEdit && (
-        <details className="card">
+        <details id="definir-metas" className="card scroll-mt-24" open={sp.definir === "1"}>
           <summary className="cursor-pointer list-none px-5 py-3 font-medium text-brand"><Tr>Definir metas del periodo</Tr></summary>
           <ActionForm key={`${type}-${start}`} action={saveGoals.bind(null, type, start)} className="space-y-3 border-t border-line p-4">
             <div className="overflow-x-auto">

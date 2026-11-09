@@ -172,7 +172,8 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
               </table>
             </section>
           ) : (
-            <DetailSections def={def} row={row} />
+            // Valor, cierre y probabilidad ya están en la cabecera; Cerrada y Ganada, en la etapa.
+            <DetailSections def={def} row={row} hide={["amount", "close_date", "probability", "is_closed", "is_won"]} />
           )}
         </div>
         <ActivityPanel

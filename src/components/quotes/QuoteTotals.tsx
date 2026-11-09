@@ -23,7 +23,7 @@ export function QuoteTotals({ q }: { q: Record<string, unknown> }) {
       </dl>
       <div className="mt-3 flex items-baseline justify-between gap-4 border-t border-line pt-3">
         <span className="text-sm text-ink-2"><Tr>Total con IVA</Tr></span>
-        <span className="kpi-value text-[1.7rem]">{formatCurrency(Number(q.grand_total ?? 0), currency)}</span>
+        <span className="kpi-value kpi-value-sm">{formatCurrency(Number(q.grand_total ?? 0), currency)}</span>
       </div>
     </section>
   );

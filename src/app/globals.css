@@ -908,6 +908,10 @@ svg.lucide {
     letter-spacing: -0.035em;
     color: var(--heading);
   }
+  /* Cifras de apoyo dentro de un panel agrupado (KpiGroup): un paso por debajo de las principales. */
+  .kpi-value-sm {
+    font-size: 1.7rem;
+  }
   .kpi-unit {
     font-size: 0.8rem;
     font-weight: 400;

@@ -331,6 +331,7 @@ Blanco y negro puros de suelo, navy y azul para la marca y los datos, oliva para
 ### Hierarchy
 - **Display** (300, 1.875rem, tracking -0.025em): saludo de Inicio. El panel del acceso usa el mismo tratamiento en 2.25rem.
 - **Metric** (300, 2.2rem, línea 1, tracking -0.035em): cifras grandes de las tarjetas, con unidad en 0.8rem y peso 400 en color atenuado.
+- **Metric secundaria** (300, 1.7rem): cifras de apoyo agrupadas en un panel con título (Indicadores) y el total de una cotización.
 - **Headline** (500, 1.25rem, tracking -0.015em): título de página, junto al ícono de objeto.
 - **Title** (500, 1rem): título de tarjeta o panel.
 - **Body** (400, 14 px, línea 1.5): texto de la interfaz. Las tablas van en 0.86rem, con cifras tabulares.

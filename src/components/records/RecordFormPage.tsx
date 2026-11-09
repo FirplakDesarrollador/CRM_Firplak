@@ -59,7 +59,7 @@ export async function RecordFormPage({
       </div>
       <RecordForm
         def={{ sections: def.sections, label: def.label }}
-        fields={editableFields(def)}
+        fields={editableFields(def).filter((f) => id || !f.createHidden)}
         record={record}
         ctx={{ users, pipelines, geo, choices, isNew: !id }}
         action={saveRecord.bind(null, object, id ?? null)}

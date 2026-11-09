@@ -40,7 +40,7 @@ export const opportunities: ObjectDef = {
     { name: "lead_source", label: "Origen", type: "select", options: LEAD_SOURCES, section: "info" },
     { name: "campaign_id", label: "Campaña de origen", type: "lookup", lookup: "campaigns", relation: "campaign", section: "info" },
     { name: "next_step", label: "Siguiente paso", type: "text", section: "info" },
-    { name: "loss_reason", label: "Motivo de pérdida", type: "select", options: LOSS_REASONS, section: "info" },
+    { name: "loss_reason", label: "Motivo de pérdida", type: "select", options: LOSS_REASONS, section: "info", hideEmpty: true, createHidden: true },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
     {
       name: "parent_opportunity_id", label: "Parte ganada de", type: "lookup", lookup: "opportunities", relation: "parent", readOnly: true, formHidden: true,

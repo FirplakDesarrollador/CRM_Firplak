@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ObjectIcon } from "@/components/ui/icons";
-import { BarList, Funnel, KpiTile, MonthlyColumns } from "@/components/dashboard/Charts";
+import { BarList, Funnel, KpiCell, KpiGroup, KpiTile, MonthlyColumns } from "@/components/dashboard/Charts";
 import { StageBadge } from "@/components/records/FieldValue";
 import { createClient } from "@/lib/supabase/server";
 import { getUsers } from "@/lib/records/data";
@@ -65,6 +65,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
   // Los pipelines de un canal siempre; uno sin canal solo si tiene oportunidades.
   const funnels = ((funnelsRaw ?? []) as unknown as PipelineFunnel[])
     .filter((f) => f.channel || f.stages.some((s) => Number(s.count) > 0));
+  // Un embudo sin oportunidades abiertas ni ganadas se resume en una línea en vez de etapas en $0.
+  const funnelTitle = (f: PipelineFunnel) => (f.channel ? `${f.channel} · ${t(f.market)}` : f.name);
+  const activeFunnels = funnels.filter((f) => f.stages.some((s) => Number(s.count) > 0));
+  const emptyFunnels = funnels.filter((f) => !activeFunnels.includes(f));
   const x = (extraRaw ?? {}) as Record<string, number | null>;
   const xn = (key: string) => Number(x[key] ?? 0);
   const d = raw as unknown as Dashboard | null;
@@ -87,7 +91,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
 
       {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">No se pudieron calcular los indicadores: {error.message}</p>}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiTile label="Ventas ganadas" {...formatMillions(n("won_amount"))} sub={`${n("won_count")} ${t(plural(n("won_count"), "oportunidad ganada", "oportunidades ganadas"))}`} tone="success" />
         <KpiTile label="Pipeline abierto" {...formatMillions(n("open_amount"))}
           sub={`${n("open_count")} ${t(plural(n("open_count"), "abierta · ponderado", "abiertas · ponderado"))} ${formatCompactCurrency(n("weighted_amount"))}`} />
@@ -95,12 +99,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
           sub={`${n("won_count")} ${t(plural(n("won_count"), "ganada /", "ganadas /"))} ${n("lost_count")} ${t(plural(n("lost_count"), "perdida", "perdidas"))}`} />
         <KpiTile label="Ticket promedio" {...formatMillions(n("avg_deal"))}
           sub={k.avg_cycle_days ? `${t("Ciclo de venta:")} ${formatNumber(k.avg_cycle_days)} ${t(plural(k.avg_cycle_days, "día", "días"))}` : t("Sin cierres en el periodo")} />
-        <KpiTile label="Nuevas oportunidades" value={formatNumber(n("new_count"))} sub={`${formatCompactCurrency(n("new_amount"))} ${t("creadas en el periodo")}`} />
-        <KpiTile label="Cierran en el periodo" value={formatNumber(n("closing_this_period"))}
-          sub={n("overdue_close") ? `${n("overdue_close")} ${t("con fecha de cierre vencida")}` : t("Ninguna con cierre vencido")} tone={n("overdue_close") ? "danger" : undefined} />
-        <KpiTile label="Actividades completadas" value={formatNumber(n("activities_completed"))} sub={`${n("meetings_upcoming")} ${t(plural(n("meetings_upcoming"), "reunión en los próximos 7 días", "reuniones en los próximos 7 días"))}`} />
-        <KpiTile label="Tareas vencidas" value={formatNumber(n("tasks_overdue"))} sub={n("tasks_overdue") ? "Requieren seguimiento" : "Al día"}
-          tone={n("tasks_overdue") ? "warning" : "success"} />
       </div>
 
       {(() => {
@@ -109,27 +107,36 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         return goalType ? <GoalSummary type={goalType} start={from} userId={owner ?? undefined} perUser={!owner} /> : null;
       })()}
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:max-xl:[&>*:last-child]:col-span-2 xl:grid-cols-5">
-        <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t(plural(xn("leads_open"), "prospecto abierto en total", "prospectos abiertos en total"))}`} />
-        <KpiTile label="Conversión de prospectos" value={x.lead_conversion_rate === null || x.lead_conversion_rate === undefined ? "—" : formatPercent(x.lead_conversion_rate)}
+      <KpiGroup id="seguimiento" title="Seguimiento comercial" className="xl:grid-cols-4">
+        <KpiCell label="Nuevas oportunidades" value={formatNumber(n("new_count"))} sub={`${formatCompactCurrency(n("new_amount"))} ${t("creadas en el periodo")}`} />
+        <KpiCell label="Cierran en el periodo" value={formatNumber(n("closing_this_period"))}
+          sub={n("overdue_close") ? `${n("overdue_close")} ${t("con fecha de cierre vencida")}` : t("Ninguna con cierre vencido")} tone={n("overdue_close") ? "danger" : undefined} />
+        <KpiCell label="Actividades completadas" value={formatNumber(n("activities_completed"))} sub={`${n("meetings_upcoming")} ${t(plural(n("meetings_upcoming"), "reunión en los próximos 7 días", "reuniones en los próximos 7 días"))}`} />
+        <KpiCell label="Tareas vencidas" value={formatNumber(n("tasks_overdue"))} sub={n("tasks_overdue") ? "Requieren seguimiento" : "Al día"}
+          tone={n("tasks_overdue") ? "warning" : "success"} />
+      </KpiGroup>
+
+      <KpiGroup id="antes-y-despues" title="Prospectos, cotizaciones, pedidos y casos" className="sm:grid-cols-3 xl:grid-cols-5">
+        <KpiCell label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t(plural(xn("leads_open"), "prospecto abierto en total", "prospectos abiertos en total"))}`} />
+        <KpiCell label="Conversión de prospectos" value={x.lead_conversion_rate === null || x.lead_conversion_rate === undefined ? "—" : formatPercent(x.lead_conversion_rate)}
           sub={`${xn("leads_converted")} ${t(plural(xn("leads_converted"), "convertido en el periodo", "convertidos en el periodo"))}`} />
-        <KpiTile label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} ${t(plural(xn("quotes_open"), "cotización ·", "cotizaciones ·"))} ${xn("quotes_accepted")} ${t(plural(xn("quotes_accepted"), "aceptada en el periodo", "aceptadas en el periodo"))}`} />
-        <KpiTile label="Pedidos en curso" {...formatMillions(xn("orders_in_progress_amount"))}
+        <KpiCell label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} ${t(plural(xn("quotes_open"), "cotización ·", "cotizaciones ·"))} ${xn("quotes_accepted")} ${t(plural(xn("quotes_accepted"), "aceptada en el periodo", "aceptadas en el periodo"))}`} />
+        <KpiCell label="Pedidos en curso" {...formatMillions(xn("orders_in_progress_amount"))}
           sub={`${xn("orders_in_progress")} ${t(plural(xn("orders_in_progress"), "pedido ·", "pedidos ·"))} ${xn("orders_delivered")} ${t(plural(xn("orders_delivered"), "entregado en el periodo", "entregados en el periodo"))}`} />
-        <KpiTile label="Casos abiertos" value={formatNumber(xn("cases_open"))}
+        <KpiCell label="Casos abiertos" value={formatNumber(xn("cases_open"))}
           sub={xn("cases_high") ? `${xn("cases_high")} ${t("de prioridad alta")}` : x.avg_resolution_days ? `${t("Resolución promedio:")} ${formatNumber(x.avg_resolution_days)} ${t(plural(x.avg_resolution_days, "día", "días"))}` : t("Sin casos de prioridad alta")}
           tone={xn("cases_high") ? "warning" : undefined} />
-      </div>
+      </KpiGroup>
 
       <section aria-labelledby="embudos" className="space-y-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="embudos" className="text-base font-medium"><Tr>Embudos de ventas por mercado y canal</Tr></h2>
           <p className="text-xs text-muted"><Tr>Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.</Tr></p>
         </div>
-        <div className={`grid gap-4 ${funnels.length > 1 ? "lg:grid-cols-2" : ""} ${funnels.length > 2 && funnels.length % 2 ? "2xl:grid-cols-3" : ""}`}>
-          {funnels.length === 0 && <p className="glass p-6 text-center text-sm text-muted"><Tr>Sin pipelines activos.</Tr></p>}
-          {funnels.map((f) => (
-            <section key={f.id} className="glass" aria-label={`${t("Embudo")} ${f.channel ? `${f.channel} · ${t(f.market)}` : f.name}`}>
+        {funnels.length === 0 && <p className="glass p-6 text-center text-sm text-muted"><Tr>Sin pipelines activos.</Tr></p>}
+        <div className={`grid gap-4 ${activeFunnels.length > 1 ? "lg:grid-cols-2" : ""} ${activeFunnels.length > 2 && activeFunnels.length % 2 ? "2xl:grid-cols-3" : ""}`}>
+          {activeFunnels.map((f) => (
+            <section key={f.id} className="glass" aria-label={`${t("Embudo")} ${funnelTitle(f)}`}>
               <div className="card-header">
                 <h3 className="card-title">{f.channel ? <><Val>{f.channel}</Val> · <Val>{f.market}</Val></> : <Val>{f.name}</Val>}</h3>
                 {f.channel && <span className="text-xs text-muted"><Val>{f.name}</Val></span>}
@@ -138,6 +145,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
             </section>
           ))}
         </div>
+        {emptyFunnels.length > 0 && (
+          <div className="grid gap-2 pt-2 lg:grid-cols-2">
+            {emptyFunnels.map((f) => (
+              <section key={f.id} className="glass flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 py-3" aria-label={`${t("Embudo")} ${funnelTitle(f)}`}>
+                <h3 className="card-title">{f.channel ? <><Val>{f.channel}</Val> · <Val>{f.market}</Val></> : <Val>{f.name}</Val>}</h3>
+                <p className="text-sm text-muted"><Tr>Sin oportunidades abiertas ni ganadas en el periodo</Tr></p>
+              </section>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="glass">
@@ -187,7 +204,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       </section>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <section className="card xl:col-span-2">
+        <section className="card xl:col-span-2 xl:self-start">
           <div className="card-header">
             <h2 className="card-title"><Tr>Oportunidades que cierran en 30 días</Tr></h2>
             <Link href="/oportunidades/pipeline" className="btn btn-sm btn-ghost"><Tr>Ver pipeline</Tr></Link>

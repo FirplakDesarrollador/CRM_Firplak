@@ -49,20 +49,24 @@ export default async function ReportsPage() {
         return (
           <section key={folder} className="card overflow-hidden">
             <div className="card-header"><h2 className="card-title">{folder} <span className="badge">{list.length}</span></h2></div>
-            <table className="table">
+            {/* Mismos anchos en todas las carpetas: las columnas quedan alineadas de una tabla a la otra. */}
+            <div className="overflow-x-auto">
+            <table className="table min-w-[46rem] table-fixed">
+              <colgroup><col className="w-[32%]" /><col className="w-[13%]" /><col className="w-[31%]" /><col className="w-[13%]" /><col className="w-[11%]" /></colgroup>
               <thead><tr><th><Tr>Informe</Tr></th><th><Tr>Objeto</Tr></th><th><Tr>Descripción</Tr></th><th><Tr>Autor</Tr></th><th><Tr>Modificado</Tr></th></tr></thead>
               <tbody>
                 {list.map((r) => (
                   <tr key={r.id}>
                     <td><Link href={`/informes/${r.id}`} className="link">{r.name}</Link>{r.is_shared && <span className="badge ml-2"><Tr>Compartido</Tr></span>}</td>
                     <td>{isObjectKey(r.object) ? <Tr>{OBJECTS[r.object].plural}</Tr> : r.object}</td>
-                    <td className="max-w-md truncate text-muted">{r.description ?? "—"}</td>
+                    <td className="truncate text-muted" title={r.description ?? undefined}>{r.description ?? "—"}</td>
                     <td>{r.owner?.full_name ?? "Firplak CRM"}</td>
                     <td><Fmt date={r.updated_at} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         );
       })}

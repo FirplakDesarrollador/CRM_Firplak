@@ -18,6 +18,32 @@ export function KpiTile({ label, value, unit, sub, tone }: {
   );
 }
 
+/**
+ * Cifras de apoyo agrupadas por tema en un solo panel: pesan menos que las tarjetas principales
+ * (`KpiTile`), así la vista tiene protagonista y no una grilla de cifras iguales.
+ */
+export function KpiGroup({ id, title, className = "", children }: { id: string; title: string; className?: string; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="glass">
+      <div className="card-header"><h2 id={id} className="card-title"><Tr>{title}</Tr></h2></div>
+      <div className={`grid grid-cols-2 gap-x-4 gap-y-5 px-5 py-4 ${className}`}>{children}</div>
+    </section>
+  );
+}
+
+export function KpiCell({ label, value, unit, sub, tone }: {
+  label: string; value: string; unit?: string; sub?: React.ReactNode; tone?: "success" | "danger" | "warning";
+}) {
+  const toneCls = tone === "success" ? "text-success" : tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-muted";
+  return (
+    <div className="min-w-0">
+      <p className="eyebrow"><Tr>{label}</Tr></p>
+      <p className="kpi-value kpi-value-sm mt-2">{value}{unit && <span className="kpi-unit"><Tr>{unit}</Tr></span>}</p>
+      {sub && <p className={`mt-1.5 text-xs font-medium ${toneCls}`}>{typeof sub === "string" ? <Tr>{sub}</Tr> : sub}</p>}
+    </div>
+  );
+}
+
 /** Barras horizontales (una serie): etiqueta, barra ≤ 24 px y valor en el extremo. */
 export function BarList({
   items,
