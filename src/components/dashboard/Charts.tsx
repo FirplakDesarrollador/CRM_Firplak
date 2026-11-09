@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { ChevronRight } from "lucide-react";
-import { formatCompactCurrency, formatCurrency } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, plural } from "@/lib/format";
 
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
@@ -97,7 +97,7 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
   return (
     <div>
       <div className="flex gap-2">
-        <div className="flex h-48 flex-col justify-between pb-5 text-right text-[0.68rem] text-muted num">
+        <div className="flex h-48 flex-col justify-between pb-5 text-right text-[0.72rem] text-muted num">
           {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none">{formatCompactCurrency(t)}</span>)}
         </div>
         <div className="relative h-48 flex-1">
@@ -112,14 +112,15 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
                 <div key={d.month} tabIndex={0} aria-describedby={`${uid}-${d.month}`} className="group relative flex h-full flex-1 items-end justify-center">
                   <div className="w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${h}%` }} />
                   <div role="tooltip" id={`${uid}-${d.month}`} className={`pointer-events-none absolute bottom-full z-10 mb-1 hidden w-max max-w-[70vw] rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block group-focus:block ${side}`}>
-                    <Fmt month={d.month} />: {formatCurrency(d.won_amount)} · {d.won_count} ganadas
+                    <Fmt month={d.month} />: {formatCurrency(d.won_amount)} · {d.won_count} {plural(d.won_count, "ganada", "ganadas")}
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="absolute inset-x-0 bottom-0 flex justify-around text-[0.68rem] text-muted">
-            {data.map((d) => <span key={d.month} className="flex-1 text-center"><Fmt month={d.month} /></span>)}
+          <div className="absolute inset-x-0 bottom-0 flex justify-around text-[0.72rem] text-muted">
+            {/* En el celular no caben 12 meses legibles: se rotula uno sí y uno no (la tabla y el detalle los tienen todos). */}
+            {data.map((d, i) => <span key={d.month} className={`flex-1 text-center ${i % 2 && data.length > 6 ? "max-sm:invisible" : ""}`}><Fmt month={d.month} /></span>)}
           </div>
         </div>
       </div>
@@ -183,7 +184,7 @@ export function ColumnChart({ items, format }: { items: { key: string; label: st
   if (!items.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin datos.</Tr></p>;
   return (
     <div className="flex gap-2">
-      <div className="num flex h-56 flex-col justify-between pb-10 text-right text-[0.68rem] text-muted">
+      <div className="num flex h-56 flex-col justify-between pb-10 text-right text-[0.72rem] text-muted">
         {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none">{format(t)}</span>)}
       </div>
       <div className="relative h-56 flex-1 overflow-x-auto">
@@ -200,7 +201,7 @@ export function ColumnChart({ items, format }: { items: { key: string; label: st
             </div>
           ))}
         </div>
-        <div className="absolute inset-x-0 bottom-0 flex h-10 justify-around text-[0.68rem] text-muted">
+        <div className="absolute inset-x-0 bottom-0 flex h-10 justify-around text-[0.72rem] text-muted">
           {items.map((d) => <span key={d.key} className="line-clamp-2 flex-1 px-0.5 pt-1 text-center leading-tight"><Val>{d.label}</Val></span>)}
         </div>
       </div>

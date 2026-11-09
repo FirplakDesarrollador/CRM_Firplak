@@ -373,7 +373,7 @@ El blur solo se nota porque hay algo detrás: lo que atraviesa el vidrio es la m
 - **Media** (`box-shadow: 0 12px 26px -10px rgba(16, 38, 58, 0.22)`): se suma al vidrio al pasar el cursor, y a los elementos que se elevan. En oscuro, negra al 70 %.
 - **Grande** (`box-shadow: 0 26px 54px -18px rgba(16, 38, 58, 0.32)`): menús y diálogos. En oscuro, negra al 80 %.
 - **Dock** (`box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75)`): dock flotante del celular.
-- **Foco** (`box-shadow: 0 0 0 3px rgba(39, 80, 111, 0.32)`): anillo de foco. En oscuro y en la barra, oliva: `0 0 0 3px rgba(183, 196, 127, 0.45)`.
+- **Foco** (`box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--navy-600)`): anillo de foco sólido con un borde del color de la superficie, más de 3:1 contra el fondo. En oscuro y en la barra, oliva: `0 0 0 2px var(--surface), 0 0 0 4px var(--sage-300)`. El primer Tab de cada página ofrece «Saltar al contenido».
 
 ### Named Rules
 **La Regla de las Dos Densidades.** Las tarjetas de información usan vidrio abierto (40 a 60 % en claro, 42 a 55 % en oscuro) con blur de 30 px. Los paneles de datos usan relleno denso (72 a 82 % en claro, 80 a 84 % en oscuro) con blur de 26 px. Una tarjeta de vidrio que contiene encabezado de panel, gráfico o formulario toma ese relleno denso por sí sola, y las tablas siempre van en panel denso, para leerse sin esfuerzo.

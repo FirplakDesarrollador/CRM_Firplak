@@ -30,7 +30,7 @@ export function NotificationBell({ items, unread }: { items: NotificationItem[];
       }
     >
       <div className="flex items-center justify-between gap-3 px-2.5 pb-2 pt-1.5">
-        <p className="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-muted">{t("Notificaciones")}</p>
+        <p className="text-[0.72rem] font-medium uppercase tracking-[0.18em] text-muted">{t("Notificaciones")}</p>
         {unread > 0 && (
           <button type="button" className="text-xs font-medium text-brand" disabled={pending}
             onClick={() => start(() => markAllNotificationsRead())}>
@@ -45,7 +45,7 @@ export function NotificationBell({ items, unread }: { items: NotificationItem[];
             <>
               <p className={`text-sm ${n.is_read ? "text-ink-2" : "font-medium text-ink"}`}>{n.title}</p>
               {n.body && <p className="line-clamp-2 text-xs text-muted">{n.body}</p>}
-              <p className="mt-0.5 text-[0.68rem] text-muted"><Fmt datetime={n.created_at} /></p>
+              <p className="mt-0.5 text-[0.72rem] text-muted"><Fmt datetime={n.created_at} /></p>
             </>
           );
           const cls = `block rounded-md px-2.5 py-2 no-underline hover:bg-surface-3 ${n.is_read ? "" : "bg-brand-soft/60"}`;

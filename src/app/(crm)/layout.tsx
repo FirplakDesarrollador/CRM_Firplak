@@ -30,6 +30,8 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   return (
     <I18nProvider locale={locale} data={dataLabels}>
     <div className="min-h-dvh">
+      {/* Primer elemento con Tab: salta la cabecera y los 17 módulos directo al contenido. */}
+      <a href="#contenido" className="skip-link">{t("Saltar al contenido")}</a>
       <BrandBackdrop />
       <AppHeader user={user} notifications={notifications ?? []} unread={unread ?? 0} t={t} />
       <div className="hidden md:block"><NavTabs items={navItems(user.access, t)} /></div>
@@ -38,7 +40,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           <Alert tone="warning"><Tr>Tu usuario está desactivado. Pide al administrador que lo active para ver la información.</Tr></Alert>
         </div>
       )}
-      <main className="mx-auto max-w-[1600px] px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-5 sm:px-6 md:pb-5">{children}</main>
+      <main id="contenido" tabIndex={-1} className="mx-auto max-w-[1600px] outline-none px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-5 sm:px-6 md:pb-5">{children}</main>
       <MobileTabBar items={navItems(user.access, t)} />
       {pushKey && <PushSync publicKey={pushKey} userId={user.id} />}
     </div>

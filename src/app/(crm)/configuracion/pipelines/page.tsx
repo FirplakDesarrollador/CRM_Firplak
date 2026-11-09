@@ -96,9 +96,9 @@ export default async function PipelinesPage() {
     <>
       <div>
         <h1 className="text-xl font-medium"><Tr>Pipelines y etapas</Tr></h1>
-        <p className="text-sm text-muted"><Tr>Cada pipeline necesita al menos una etapa abierta, una ganada y una perdida. La probabilidad y el pronóstico se aplican al mover una oportunidad.</Tr></p>
-        <p className="text-sm text-muted"><Tr>«Avanza con cotización» marca a qué etapa pasa sola la oportunidad (solo hacia adelante): «Al presentar la primera cotización», cuando una cotización queda Presentada; «Al aceptarse una parte (quedan otras abiertas)», cuando el cliente acepta una cotización y la oportunidad tiene otras abiertas. Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.</Tr></p>
-        <p className="text-sm text-muted"><Tr>Cada pipeline es de un mercado (Nacional o Internacional) y de un canal de venta: las oportunidades de una cuenta van al pipeline de su Mercado y su Canal, y en Indicadores cada uno tiene su embudo. Si falta el pipeline de un mercado y canal, sus oportunidades no se pueden crear hasta crearlo; «Duplicar» copia un pipeline con sus etapas a otro mercado.</Tr></p>
+        <p className="max-w-[75ch] text-sm text-muted"><Tr>Cada pipeline necesita al menos una etapa abierta, una ganada y una perdida. La probabilidad y el pronóstico se aplican al mover una oportunidad.</Tr></p>
+        <p className="max-w-[75ch] text-sm text-muted"><Tr>«Avanza con cotización» marca a qué etapa pasa sola la oportunidad (solo hacia adelante): «Al presentar la primera cotización», cuando una cotización queda Presentada; «Al aceptarse una parte (quedan otras abiertas)», cuando el cliente acepta una cotización y la oportunidad tiene otras abiertas. Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.</Tr></p>
+        <p className="max-w-[75ch] text-sm text-muted"><Tr>Cada pipeline es de un mercado (Nacional o Internacional) y de un canal de venta: las oportunidades de una cuenta van al pipeline de su Mercado y su Canal, y en Indicadores cada uno tiene su embudo. Si falta el pipeline de un mercado y canal, sus oportunidades no se pueden crear hasta crearlo; «Duplicar» copia un pipeline con sus etapas a otro mercado.</Tr></p>
       </div>
       <section className="card">
         <div className="card-header"><h2 className="card-title"><Tr>Nuevo pipeline</Tr></h2></div>

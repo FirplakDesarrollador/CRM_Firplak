@@ -60,7 +60,7 @@ export default async function PriceBooksPage() {
           <h1 className="text-xl font-medium"><Tr>Listas de precios</Tr></h1>
         </div>
       </div>
-      <p className="text-sm text-muted"><Tr>Cada lista es de un mercado (Nacional en COP, Internacional en USD) y de un canal. Una cotización usa la lista propia de la cuenta, si es de su mercado; si no, la de su canal en su mercado; en el mercado Nacional, si no hay, la lista general nacional. Nunca usa la de otro mercado ni de otro canal: si falta la lista, la cotización no se puede crear hasta crearla. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.</Tr></p>
+      <p className="max-w-[75ch] text-sm text-muted"><Tr>Cada lista es de un mercado (Nacional en COP, Internacional en USD) y de un canal. Una cotización usa la lista propia de la cuenta, si es de su mercado; si no, la de su canal en su mercado; en el mercado Nacional, si no hay, la lista general nacional. Nunca usa la de otro mercado ni de otro canal: si falta la lista, la cotización no se puede crear hasta crearla. En una lista de cliente van solo sus productos codificados: lo demás se cotiza con la lista del canal y queda marcado «No codificado». La lista de cliente se asigna en la ficha de la cuenta. Los precios por producto se editan en la ficha del producto.</Tr></p>
       {canEdit && (
         <section className="glass">
           <div className="card-header"><h2 className="card-title"><Tr>Nueva lista</Tr></h2></div>

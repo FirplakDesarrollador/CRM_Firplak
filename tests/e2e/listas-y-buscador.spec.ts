@@ -144,3 +144,35 @@ test("Cuenta principal: la lista del buscador queda encima de la tarjeta Direcci
   await page.goto("/cuentas/nueva");
   await compruebaLista(page);
 });
+
+test("teclado: el primer Tab ofrece «Saltar al contenido», que lleva al contenido; el foco se ve con contraste", async ({ page }) => {
+  await page.goto("/indicadores");
+  await page.waitForLoadState("networkidle");
+  await page.keyboard.press("Tab");
+  const saltar = page.getByRole("link", { name: "Saltar al contenido" });
+  await expect(saltar).toBeFocused();
+  await expect(saltar).toBeInViewport();
+  // El anillo es sólido (navy en claro), no el halo transparente de antes.
+  const anillo = await saltar.evaluate((el) => getComputedStyle(el).boxShadow);
+  expect(anillo).toMatch(/rgb\(39, 80, 111\)/);
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main#contenido")).toBeFocused();
+  // El siguiente Tab ya está dentro del contenido, no en la cabecera.
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => Boolean(document.activeElement?.closest("main")))).toBe(true);
+});
+
+test("letra pequeña: ejes del gráfico, menú de Configuración y notificaciones en 11.5 px o más", async ({ page }) => {
+  await page.goto("/indicadores");
+  const mensual = page.locator("section.glass").filter({ has: page.getByRole("heading", { name: "Ventas ganadas por mes" }) });
+  await expect(mensual).toBeVisible();
+  const ejes = await mensual.locator(".text-muted span").evaluateAll((els) => els.map((e) => parseFloat(getComputedStyle(e).fontSize)));
+  expect(ejes.length).toBeGreaterThan(0);
+  expect(Math.min(...ejes)).toBeGreaterThanOrEqual(11.5);
+  await page.goto("/configuracion/pipelines");
+  const grupos = await page.getByRole("navigation", { name: "Configuración" }).locator("p").evaluateAll((els) => els.map((e) => parseFloat(getComputedStyle(e).fontSize)));
+  expect(Math.min(...grupos)).toBeGreaterThanOrEqual(11.5);
+  // La ayuda se lee en líneas de 75 caracteres como máximo.
+  const ancho = await page.locator("main p.text-muted").first().evaluate((el) => el.getBoundingClientRect().width / parseFloat(getComputedStyle(el).fontSize));
+  expect(ancho).toBeLessThan(75 * 0.62);
+});

@@ -38,7 +38,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
     <>
       <div>
         <h1 className="text-xl font-medium"><Tr>Listas de valores</Tr></h1>
-        <p className="text-sm text-muted">
+        <p className="max-w-[75ch] text-sm text-muted">
           <Tr>Personaliza las opciones de las listas de selección. Desactivar un valor lo oculta en los formularios; los registros que ya lo usan lo conservan.</Tr>{" "}
           <Tr>La etiqueta en inglés es lo que ven quienes usan la aplicación en inglés; si se deja vacía, se usa la traducción estándar.</Tr>
         </p>
