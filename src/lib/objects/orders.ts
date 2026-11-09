@@ -51,7 +51,7 @@ export const orders: ObjectDef = {
     { name: "currency", label: "Moneda", type: "text", readOnly: true, formHidden: true, section: "totals" },
     { name: "tax", label: "IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "shipping", label: "Flete", type: "currency", currencyField: "currency", section: "totals" },
-    { name: "grand_total", label: "Total", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "grand_total", label: "Total con IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "bill_to_name", label: "Facturar a", type: "text", section: "terms" },
     { name: "billing_address", label: "Dirección de facturación", type: "text", section: "terms" },
     { name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms" },

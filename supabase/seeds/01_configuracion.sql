@@ -156,6 +156,11 @@ insert into public.custom_field_definitions (object, api_name, label, field_type
 ('opportunities', 'competidor', 'Competidor principal', 'text', '[]', false, 4, null)
 on conflict (object, api_name) do nothing;
 
+-- El canal de venta es el campo «Canal» de la cuenta (define pipeline y lista de precios). El campo de ejemplo
+-- «canal» queda inactivo para no mostrar dos «Canal» distintos (en producción ya está así).
+update public.custom_field_definitions set is_active = false, show_in_list = false
+where object = 'accounts' and api_name = 'canal' and is_active;
+
 -- Fase 14: etiquetas y ayudas en inglés de los campos de ejemplo.
 update public.custom_field_definitions f set label_en = v.label_en, help_text_en = v.help_en
 from (values

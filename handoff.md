@@ -82,6 +82,9 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 ## 5. Producción (Supabase)
 
+- **Pendiente de publicar (local, sin aplicar):** `20261205000100_alerts_plural` (solo texto: el aviso diario dice
+  «Tienes 1 tarea vencida» / «Tienes N tareas vencidas» en vez de «tarea(s) vencida(s)»; mismos permisos). Publicar con
+  `npm run db:publicar -- --proyecto kltekrfpquakyffbpmiv` cuando Luis dé el visto bueno.
 - **39 migraciones aplicadas**; la última, `20261204000100_quote_parts_opportunity`, el 2026-11-07 con `db:publicar` y visto
   bueno de Luis (39/39, 0 pendientes): sin marcas de etapa (los pipelines de producción tienen nombres propios); «Prueba»
   sigue Ganada por $16,165,796.21 con COT-1003 Aceptada. Antes, `20261203000100_pipelines_market` (38/38): «Proyectos y constructoras» y «Distribución y retail» quedaron Nacionales; «Prueba» sigue
@@ -158,6 +161,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-08 | `HASH_P3` | Paso 3 del plan de la crítica, claridad: una unidad por contexto (tarjeta «Millones COP», resúmenes «$X M», registros en pesos completos; regla en DESIGN.md): metas y resumen de meta «$780 M de $1,500 M · Faltan $720 M» (sin «Brecha» en pesos completos), campañas en «$X M». Sustantivos que concuerdan con la cifra en Indicadores e Inicio («1 pedido»), unidades en el PDF («1 unidad», «400 unidades»), fechas legibles en Buscar. «Tareas vencidas» en Inicio dice «Requieren seguimiento / Al día». «Total» de cotizaciones y pedidos pasa a «Total con IVA» (el neto es el que suma a la oportunidad). Sin jerga («pg_cron», «JSON») en Pronóstico y Configuración. Página de error con código para soporte. «Caliente» ya no usa el color de peligro. El campo de ejemplo «canal» queda inactivo en la semilla (era un segundo «Canal»). La demo genera los avisos del día al arrancar. Migración `20261205000100_alerts_plural` (pendiente de publicar). e2e y db:test. | Sin push; migración sin aplicar |
 | 2026-11-08 | `6396cb4` | Paso 2 del plan de la crítica, confirmaciones con consecuencia: diálogo propio (`useConfirm`, `<dialog>` modal, Esc cancela, foco en «Volver» si es peligroso) en vez del `confirm()` del navegador. Pide confirmar y explica qué pasa antes de: cotización Aceptada (se separa la parte o gana la oportunidad), Rechazada, Reemplazada; pedido Activado (crea la oferta en SAP) y Cancelado; «Marcar ganada»; eliminar registros, actividades, líneas, miembros de campaña y vistas. «Marcar ganada» se oculta si ya está perdida y viceversa. e2e de cada confirmación. | Sin push |
 | 2026-11-08 | `1093677` | Crítica de diseño (`/impeccable critique`, 25/40), paso 1 del plan, celular: las fichas (plantilla, cuenta, oportunidad, contacto) ya no se desbordan (grilla de una columna `minmax(0,1fr)`), botón «Registrar actividad» arriba que lleva al panel (`#actividad`), los 5 tipos de actividad siempre a la vista, líneas de cotización con etiquetas y total en el celular, formulario de agregar en 3 columnas, inicio con «Para hoy» primero y oportunidades como lista, unidades «Millones COP» sin partirse. e2e del celular. | Sin push |
 | 2026-11-08 | `41939db` | Configuración → Pipelines: las marcas de «Avanza con cotización» dicen cuándo se activan, «Al presentar la primera cotización» y «Al aceptarse una parte (quedan otras abiertas)», en vez de «Propuesta presentada» y «Negociación», que se confundían con estados de la cotización. Solo textos (los valores guardados no cambian). | Sin push: falta desplegar |

@@ -30,7 +30,7 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
     <>
       <div>
         <h1 className="text-xl font-medium"><Tr>Campos personalizados</Tr></h1>
-        <p className="text-sm text-muted"><Tr>Se definen en JSON y sus valores viven en la columna</Tr> <code>custom_fields</code> (jsonb) de cada registro. Aparecen en formularios, fichas, filtros, vistas y exportación.</p>
+        <p className="text-sm text-muted"><Tr>Campos propios de cada objeto. Aparecen en formularios, fichas, filtros, vistas y exportaciones.</Tr></p>
       </div>
       <div className="card">
         <div role="tablist" className="flex overflow-x-auto border-b border-line px-4">
@@ -122,7 +122,7 @@ export default async function CustomFieldsPage({ searchParams }: PageProps<"/con
                 </div>
               </ActionForm>
               <ActionForm action={deleteCustomField.bind(null, f.id)} className="flex flex-col items-end xl:pt-6">
-                <ConfirmSubmit message={`¿Eliminar el campo “${f.label}”? Los valores ya guardados se conservan en el JSON del registro.`}>
+                <ConfirmSubmit message={`¿Eliminar el campo “${f.label}”?`} body="Deja de aparecer en formularios, fichas y vistas. Los valores ya guardados se conservan en cada registro." confirmLabel="Eliminar campo" className="btn btn-sm btn-ghost text-danger">
                   <Trash2 size={14} /><span className="sr-only"><Tr>Eliminar</Tr></span>
                 </ConfirmSubmit>
               </ActionForm>

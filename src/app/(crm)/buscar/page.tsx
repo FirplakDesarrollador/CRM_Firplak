@@ -4,12 +4,14 @@ import { ObjectIcon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { OBJECTS, isObjectKey } from "@/lib/objects";
 import { requireUser } from "@/lib/session";
+import { readableDates } from "@/lib/format";
+import { getLocale } from "@/lib/i18n/server";
 
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Búsqueda" };
 
 export default async function SearchPage({ searchParams }: PageProps<"/buscar">) {
-  const [, sp] = await Promise.all([requireUser(), searchParams]);
+  const [, sp, locale] = await Promise.all([requireUser(), searchParams, getLocale()]);
   const q = (typeof sp.q === "string" ? sp.q : "").trim();
   const supabase = await createClient();
   const { data } = q.length >= 2 ? await supabase.rpc("global_search", { p_query: q, p_limit: 15 }) : { data: [] };
@@ -34,7 +36,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/buscar">)
             {g.items.map((r) => (
               <li key={r.id} className="px-4 py-2.5">
                 <Link href={`${isObjectKey(r.object) ? OBJECTS[r.object].path : "/"}/${r.id}`} className="link">{r.title}</Link>
-                {r.subtitle && <p className="text-xs text-muted">{r.subtitle}</p>}
+                {r.subtitle && <p className="text-xs text-muted">{readableDates(r.subtitle, locale)}</p>}
               </li>
             ))}
           </ul>

@@ -345,6 +345,8 @@ Blanco y negro puros de suelo, navy y azul para la marca y los datos, oliva para
 
 **La Regla de la Cifra Ligera.** Las cifras grandes van en peso 300 con tracking negativo. El peso sube en lo pequeño y baja en lo grande.
 
+**La Regla de una Unidad por Contexto.** La tarjeta de indicador escribe la unidad completa («3,684 Millones COP»). Cualquier otro total o resumen (subtítulos, metas, embudos, gráficos, pronóstico) va abreviado como «$2,140 M», y un avance se lee «$780 M de $1,500 M · Faltan $720 M». Un registro (fichas, listas, cotizaciones, pedidos) va en pesos completos («$376,219,200»). Nunca se mezclan dos de estas formas en la misma línea. Los conteos concuerdan con su sustantivo («1 pedido», «3 pedidos») y las fechas se escriben «13 abr 2026», nunca ISO.
+
 ## Layout
 
 La aplicación vive en un contenedor centrado de hasta 1600 px, con márgenes de 16 px que suben a 24 px desde 640 px. La barra superior mide 56 px y los módulos van en una segunda franja. Bajo la cabecera, el contenido se apila con 16 px entre bloques y 12 a 16 px entre tarjetas. Las tarjetas de información usan 20 px de relleno.

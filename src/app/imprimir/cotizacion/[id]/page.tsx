@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
+import { formatCurrency, formatDate, formatNumber, formatQuantityUnit } from "@/lib/format";
 import wordmark from "../../../../../public/brand/firplak-wordmark-navy.png";
 import { PrintButton } from "./PrintButton";
 
@@ -82,7 +82,7 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
               <tr key={l.id} className="border-b border-[rgba(29,29,27,0.08)] align-top">
                 <td className="py-2 pr-2 text-[var(--ink-500)]">{l.product?.product_code}</td>
                 <td className="py-2 pr-2">{l.description}</td>
-                <td className="py-2 pr-2 text-right tabular-nums">{formatNumber(l.quantity)} {l.product?.unit?.toLowerCase()}</td>
+                <td className="py-2 pr-2 text-right tabular-nums">{formatQuantityUnit(l.quantity, l.product?.unit)}</td>
                 <td className="py-2 pr-2 text-right tabular-nums">{formatCurrency(l.unit_price, q.currency)}</td>
                 <td className="py-2 pr-2 text-right tabular-nums">{Number(l.discount) ? `${formatNumber(l.discount)}%` : "—"}</td>
                 <td className="py-2 text-right tabular-nums">{formatCurrency(l.line_total, q.currency)}</td>

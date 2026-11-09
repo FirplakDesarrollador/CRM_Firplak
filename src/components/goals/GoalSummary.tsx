@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatMillions, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatPercent } from "@/lib/format";
 import { elapsedFraction, periodLabel, type GoalPeriodType } from "@/lib/goals/periods";
 import { getLocale } from "@/lib/i18n/server";
 import { GoalMeter } from "./GoalMeter";
@@ -35,7 +35,7 @@ export async function GoalSummary({ type, start, userId, perUser = false }: { ty
       <div className="mt-2 grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)] md:items-center">
         <p className="kpi-value">
           {main.target ? formatPercent((main.actual / main.target) * 100) : "—"}
-          <span className="kpi-unit">{formatMillions(main.actual).value} / {formatMillions(main.target).value} M</span>
+          <span className="kpi-unit">{formatCompactCurrency(main.actual)} <Tr>de</Tr> {formatCompactCurrency(main.target)}</span>
         </p>
         <GoalMeter actual={main.actual} target={main.target} elapsed={elapsed} />
       </div>

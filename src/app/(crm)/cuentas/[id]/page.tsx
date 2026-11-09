@@ -73,7 +73,7 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
         def={def}
         row={row}
         title={String(row.name)}
-        badges={row.rating ? <span className={`badge ${row.rating === "Caliente" ? "badge-danger" : row.rating === "Templada" ? "badge-warning" : "badge-info"}`}><Val>{String(row.rating)}</Val></span> : null}
+        badges={row.rating ? <span className={`badge ${row.rating === "Caliente" ? "badge-accent" : row.rating === "Templada" ? "" : "badge-info"}`}><Val>{String(row.rating)}</Val></span> : null}
         actions={
           <>
             {can(user.access, "opportunities", "create") && (

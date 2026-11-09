@@ -263,6 +263,10 @@ await check('la auditoría registra cambios de campos y campos personalizados', 
     assert.ok(rows.some((r) => r.field === 'cf.canal' && r.new_value === 'Distribuidor'));
   });
 });
+await check('el campo de ejemplo «canal» queda inactivo: el único Canal de la cuenta es el que define pipeline y lista', async () => {
+  const [f] = await q(`select is_active, show_in_list from custom_field_definitions where object = 'accounts' and api_name = 'canal'`);
+  assert.deepEqual(f, { is_active: false, show_in_list: false });
+});
 await check('el historial solo es visible si se ve el registro', async () => {
   const [o] = await q(`select id from opportunities where owner_id = $1 limit 1`, [admin.id]);
   await as(admin, () => q(`update opportunities set next_step = 'Paso auditado' where id = $1`, [o.id]));
@@ -314,6 +318,11 @@ await check('generate_alerts crea avisos una sola vez por día', async () => {
   assert.ok(Number(first[0].n) > 0);
   assert.equal(Number(second[0].n), 0);
   await assert.rejects(as(rep, () => q(`select generate_alerts()`)));
+});
+await check('el aviso de tareas vencidas concuerda con la cantidad: «1 tarea vencida», «N tareas vencidas»', async () => {
+  const titles = (await q(`select title from notifications where dedupe_key like 'tasks:%'`)).map((r) => r.title);
+  assert.ok(titles.length > 0, 'debe haber al menos un aviso de tareas vencidas');
+  for (const t of titles) assert.match(t, /^Tienes (1 tarea vencida|([02-9]|\d{2,}) tareas vencidas)$/);
 });
 
 await check('possible_duplicates encuentra cuentas por NIT y contactos por correo', async () => {

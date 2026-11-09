@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUsers } from "@/lib/records/data";
 import { canSystem } from "@/lib/permissions";
 import { ACTIVITY_TYPES } from "@/lib/objects/picklists";
-import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, formatNumber, formatPercent, todayISO } from "@/lib/format";
+import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, formatNumber, formatPercent, plural, todayISO } from "@/lib/format";
 import { PERIODS, resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
@@ -88,17 +88,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">No se pudieron calcular los indicadores: {error.message}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiTile label="Ventas ganadas" {...formatMillions(n("won_amount"))} sub={`${n("won_count")} ${t("oportunidades ganadas")}`} tone="success" />
+        <KpiTile label="Ventas ganadas" {...formatMillions(n("won_amount"))} sub={`${n("won_count")} ${t(plural(n("won_count"), "oportunidad ganada", "oportunidades ganadas"))}`} tone="success" />
         <KpiTile label="Pipeline abierto" {...formatMillions(n("open_amount"))}
-          sub={`${n("open_count")} ${t("abiertas · ponderado")} ${formatCompactCurrency(n("weighted_amount"))}`} />
+          sub={`${n("open_count")} ${t(plural(n("open_count"), "abierta · ponderado", "abiertas · ponderado"))} ${formatCompactCurrency(n("weighted_amount"))}`} />
         <KpiTile label="Tasa de éxito" value={k.win_rate === null || k.win_rate === undefined ? "—" : formatPercent(k.win_rate)}
-          sub={`${n("won_count")} ${t("ganadas /")} ${n("lost_count")} ${t("perdidas")}`} />
+          sub={`${n("won_count")} ${t(plural(n("won_count"), "ganada /", "ganadas /"))} ${n("lost_count")} ${t(plural(n("lost_count"), "perdida", "perdidas"))}`} />
         <KpiTile label="Ticket promedio" {...formatMillions(n("avg_deal"))}
-          sub={k.avg_cycle_days ? `${t("Ciclo de venta:")} ${formatNumber(k.avg_cycle_days)} ${t("días")}` : t("Sin cierres en el periodo")} />
+          sub={k.avg_cycle_days ? `${t("Ciclo de venta:")} ${formatNumber(k.avg_cycle_days)} ${t(plural(k.avg_cycle_days, "día", "días"))}` : t("Sin cierres en el periodo")} />
         <KpiTile label="Nuevas oportunidades" value={formatNumber(n("new_count"))} sub={`${formatCompactCurrency(n("new_amount"))} ${t("creadas en el periodo")}`} />
         <KpiTile label="Cierran en el periodo" value={formatNumber(n("closing_this_period"))}
           sub={n("overdue_close") ? `${n("overdue_close")} ${t("con fecha de cierre vencida")}` : t("Ninguna con cierre vencido")} tone={n("overdue_close") ? "danger" : undefined} />
-        <KpiTile label="Actividades completadas" value={formatNumber(n("activities_completed"))} sub={`${n("meetings_upcoming")} ${t("reuniones en los próximos 7 días")}`} />
+        <KpiTile label="Actividades completadas" value={formatNumber(n("activities_completed"))} sub={`${n("meetings_upcoming")} ${t(plural(n("meetings_upcoming"), "reunión en los próximos 7 días", "reuniones en los próximos 7 días"))}`} />
         <KpiTile label="Tareas vencidas" value={formatNumber(n("tasks_overdue"))} sub={n("tasks_overdue") ? "Requieren seguimiento" : "Al día"}
           tone={n("tasks_overdue") ? "warning" : "success"} />
       </div>
@@ -110,14 +110,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       })()}
 
       <div className="grid gap-3 sm:grid-cols-2 sm:max-xl:[&>*:last-child]:col-span-2 xl:grid-cols-5">
-        <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t("prospectos abiertos en total")}`} />
+        <KpiTile label="Prospectos nuevos" value={formatNumber(xn("leads_new"))} sub={`${xn("leads_open")} ${t(plural(xn("leads_open"), "prospecto abierto en total", "prospectos abiertos en total"))}`} />
         <KpiTile label="Conversión de prospectos" value={x.lead_conversion_rate === null || x.lead_conversion_rate === undefined ? "—" : formatPercent(x.lead_conversion_rate)}
-          sub={`${xn("leads_converted")} ${t("convertidos en el periodo")}`} />
-        <KpiTile label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} ${t("cotizaciones ·")} ${xn("quotes_accepted")} ${t("aceptadas en el periodo")}`} />
+          sub={`${xn("leads_converted")} ${t(plural(xn("leads_converted"), "convertido en el periodo", "convertidos en el periodo"))}`} />
+        <KpiTile label="Cotizaciones abiertas" {...formatMillions(xn("quotes_open_amount"))} sub={`${xn("quotes_open")} ${t(plural(xn("quotes_open"), "cotización ·", "cotizaciones ·"))} ${xn("quotes_accepted")} ${t(plural(xn("quotes_accepted"), "aceptada en el periodo", "aceptadas en el periodo"))}`} />
         <KpiTile label="Pedidos en curso" {...formatMillions(xn("orders_in_progress_amount"))}
-          sub={`${xn("orders_in_progress")} ${t("pedidos ·")} ${xn("orders_delivered")} ${t("entregados en el periodo")}`} />
+          sub={`${xn("orders_in_progress")} ${t(plural(xn("orders_in_progress"), "pedido ·", "pedidos ·"))} ${xn("orders_delivered")} ${t(plural(xn("orders_delivered"), "entregado en el periodo", "entregados en el periodo"))}`} />
         <KpiTile label="Casos abiertos" value={formatNumber(xn("cases_open"))}
-          sub={xn("cases_high") ? `${xn("cases_high")} ${t("de prioridad alta")}` : x.avg_resolution_days ? `${t("Resolución promedio:")} ${formatNumber(x.avg_resolution_days)} ${t("días")}` : t("Sin casos de prioridad alta")}
+          sub={xn("cases_high") ? `${xn("cases_high")} ${t("de prioridad alta")}` : x.avg_resolution_days ? `${t("Resolución promedio:")} ${formatNumber(x.avg_resolution_days)} ${t(plural(x.avg_resolution_days, "día", "días"))}` : t("Sin casos de prioridad alta")}
           tone={xn("cases_high") ? "warning" : undefined} />
       </div>
 

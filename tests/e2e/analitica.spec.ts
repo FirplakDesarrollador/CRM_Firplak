@@ -100,3 +100,31 @@ test("las tarjetas tienen blur real y el logo de fondo se mueve despacio", async
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect.poll(() => logo.evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
 });
+
+test("cifras y textos claros: totales en «$X M», sustantivos que concuerdan, fechas legibles y aviso de tareas vencidas", async ({ page }) => {
+  // Metas: avance y faltante en la misma unidad, sin mezclar millones con pesos completos.
+  await page.goto("/metas");
+  const ventas = page.locator("section.glass").filter({ hasText: "Ventas ganadas" }).first();
+  await expect(ventas).toContainText(/\$[\d,.]+ M de \$[\d,.]+ M · (Faltan \$[\d,.]+ M|Superada por \$[\d,.]+ M|Cumplida)/);
+  await expect(page.getByText("Brecha")).toHaveCount(0);
+
+  // Indicadores: «1 pedido», nunca «1 pedidos».
+  await page.goto("/indicadores");
+  await expect(page.getByText("Pedidos en curso")).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/\b1 (pedidos|cotizaciones|oportunidades|reuniones|prospectos|ganadas|perdidas)\b/);
+
+  // Inicio: el subtítulo de «Tareas vencidas» habla de tareas, no de reuniones.
+  await page.goto("/inicio");
+  const tareas = page.locator(".glass").filter({ hasText: "Tareas vencidas" }).first();
+  await expect(tareas).toContainText(/Requieren seguimiento|Al día/);
+
+  // Buscador: fechas como «13 abr 2026», no ISO.
+  await page.goto("/buscar?q=casa");
+  await expect(page.getByRole("link", { name: /Casa Viva/ }).first()).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/\d{4}-\d{2}-\d{2}/);
+
+  // La campana trae el aviso diario de tareas vencidas, con el plural correcto.
+  await page.getByRole("button", { name: "Notificaciones" }).click();
+  await expect(page.getByText(/^Tienes (1 tarea vencida|\d+ tareas vencidas)$/).first()).toBeVisible();
+  await expect(page.getByText(/tarea\(s\)/)).toHaveCount(0);
+});

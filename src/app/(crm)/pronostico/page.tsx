@@ -183,7 +183,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="card-title"><Tr>Tendencia del pronóstico</Tr></h2>
-            <p className="text-xs text-muted"><Tr>Una instantánea cada lunes a las 6:00 a. m. (con pg_cron) más el valor de hoy en vivo.</Tr></p>
+            <p className="text-xs text-muted"><Tr>Una instantánea cada lunes a las 6:00 a. m. más el valor de hoy en vivo.</Tr></p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {pastDates.length > 0 && (

@@ -54,6 +54,37 @@ export function formatCompactCurrency(value: number | string | null | undefined)
   return negative(text, n);
 }
 
+/**
+ * Regla de cifras de dinero (una por contexto):
+ * - Tarjeta de indicador: cifra grande en millones con la unidad escrita, `formatMillions` → «3,684 Millones COP».
+ * - Cualquier otro total o resumen (subtítulos, metas, embudos, gráficos, pronóstico): `formatCompactCurrency` → «$2,140 M».
+ * - Un registro (fichas, listas, cotizaciones, pedidos): pesos completos, `formatCurrency` → «$376,219,200».
+ */
+
+/** El sustantivo concuerda con la cifra: plural(1, "pedido", "pedidos") → "pedido"; 0 y 2+ van en plural. */
+export function plural(n: number | string | null | undefined, one: string, many: string) {
+  return Number(n ?? 0) === 1 ? one : many;
+}
+
+const UNIT_PLURALS: Record<string, string> = {
+  unidad: "unidades", juego: "juegos", caja: "cajas", metro: "metros", par: "pares", rollo: "rollos",
+  kit: "kits", paquete: "paquetes", galón: "galones", kilo: "kilos", litro: "litros", pieza: "piezas",
+};
+
+/** «1 unidad», «400 unidades». Los códigos de SAP en mayúsculas («UN», «M2») se dejan tal cual. */
+export function formatQuantityUnit(quantity: number | string | null | undefined, unit: string | null | undefined) {
+  const amount = formatNumber(quantity);
+  if (!unit) return amount;
+  if (unit === unit.toUpperCase() && unit.length <= 4) return `${amount} ${unit}`;
+  const word = unit.trim().toLowerCase();
+  return `${amount} ${Number(quantity) === 1 ? word : UNIT_PLURALS[word] ?? word}`;
+}
+
+/** Cambia las fechas ISO (2026-04-13) que vienen dentro de un texto por la fecha legible («13 abr 2026»). */
+export function readableDates(text: string, locale: DateLocale = "es") {
+  return text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (iso) => formatDate(iso, locale));
+}
+
 export function formatNumber(value: number | string | null | undefined) {
   if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);

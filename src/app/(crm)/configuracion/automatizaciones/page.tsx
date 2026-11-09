@@ -89,7 +89,7 @@ export default async function AutomationsPage({ searchParams }: PageProps<"/conf
       </div>
       <section className="card flex flex-wrap items-center justify-between gap-3 px-5 py-3">
         <p className="max-w-2xl text-sm text-muted">
-          <Tr>Las reglas programadas se revisan cada día a las 6:30 a. m. (con pg_cron activo en Supabase) y se disparan una sola vez por registro y fecha.</Tr>
+          <Tr>Las reglas programadas se revisan cada día a las 6:30 a. m. y se disparan una sola vez por registro y fecha.</Tr>
         </p>
         <ActionForm action={runScheduledAutomationsNow} className="flex flex-col items-end gap-1">
           <SubmitButton className="btn" pendingText="Ejecutando…"><Tr>Ejecutar programadas ahora</Tr></SubmitButton>

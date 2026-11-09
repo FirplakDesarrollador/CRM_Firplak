@@ -118,6 +118,9 @@ for (const [days, k] of [[21, 0.62], [14, 0.78], [7, 0.9]]) {
     update public.opportunity_snapshots set taken_on = taken_on - ${days}
       where taken_on = (now() at time zone 'America/Bogota')::date;`);
 }
+// Como en producción a las 7:00 a. m.: los avisos del día (tareas y cierres vencidos, oportunidades sin
+// actividad), para que la campana no diga «Sin notificaciones» mientras el inicio muestra tareas vencidas.
+await db.exec(`select public.generate_alerts()`);
 
 // Token MCP de prueba para Luis (consulta y cambios), solo para esta sesión.
 const mcpToken = `fcrm_${randomBytes(32).toString('base64url')}`;

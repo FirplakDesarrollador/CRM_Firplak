@@ -11,7 +11,7 @@ import { createClient, mcpSession } from "@/lib/supabase/server";
 import { ms365Configured } from "@/lib/ms365/config";
 import { getConnection } from "@/lib/ms365/graph";
 import { syncIsDue, syncUser } from "@/lib/ms365/sync";
-import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, todayISO } from "@/lib/format";
+import { addDaysISO, formatCompactCurrency, formatCurrency, formatMillions, plural, todayISO } from "@/lib/format";
 import { resolvePeriod } from "@/lib/periods";
 import { requireUser } from "@/lib/session";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -90,10 +90,10 @@ export default async function HomePage() {
       )}
 
       <div className="order-2 grid grid-cols-2 gap-3 xl:order-none xl:grid-cols-4">
-        <KpiTile label="Mis ventas del mes" {...formatMillions(k.won_amount ?? 0)} sub={`${k.won_count ?? 0} ${t("oportunidades ganadas")}`} tone="success" />
-        <KpiTile label="Mi pipeline abierto" {...formatMillions(k.open_amount ?? 0)} sub={`${k.open_count ?? 0} ${t("oportunidades · ponderado")} ${formatCompactCurrency(k.weighted_amount ?? 0)}`} />
+        <KpiTile label="Mis ventas del mes" {...formatMillions(k.won_amount ?? 0)} sub={`${k.won_count ?? 0} ${t(plural(k.won_count, "oportunidad ganada", "oportunidades ganadas"))}`} tone="success" />
+        <KpiTile label="Mi pipeline abierto" {...formatMillions(k.open_amount ?? 0)} sub={`${k.open_count ?? 0} ${t(plural(k.open_count, "oportunidad · ponderado", "oportunidades · ponderado"))} ${formatCompactCurrency(k.weighted_amount ?? 0)}`} />
         <KpiTile label="Cierran este mes" value={String(k.closing_this_period ?? 0)} sub={k.overdue_close ? `${k.overdue_close} ${t("con cierre vencido")}` : t("Ninguna vencida")} tone={k.overdue_close ? "danger" : undefined} />
-        <KpiTile label="Tareas vencidas" value={String(k.tasks_overdue ?? 0)} sub={`${k.meetings_upcoming ?? 0} ${t("reuniones esta semana")}`} tone={k.tasks_overdue ? "warning" : "success"} />
+        <KpiTile label="Tareas vencidas" value={String(k.tasks_overdue ?? 0)} sub={k.tasks_overdue ? t("Requieren seguimiento") : t("Al día")} tone={k.tasks_overdue ? "warning" : "success"} />
       </div>
 
       <div className="order-3 xl:order-none"><GoalSummary type="month" start={periodStart("month", today)} userId={user.id} /></div>

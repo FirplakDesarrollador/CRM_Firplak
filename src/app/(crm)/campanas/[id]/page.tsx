@@ -11,7 +11,7 @@ import { getObjectDef, getRecord, getRecordAccess, untypedClient, type Row } fro
 import { createClient } from "@/lib/supabase/server";
 import { CAMPAIGN_STATUSES } from "@/lib/objects/picklists";
 import { can } from "@/lib/permissions";
-import { formatMillions, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatMillions, formatPercent } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
 import { Members, type Member } from "./Members";
@@ -67,8 +67,8 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <KpiTile label="Miembros" value={String(memberRows.length)} sub={`${responded} ${t("respondieron")} (${memberRows.length ? formatPercent((responded / memberRows.length) * 100) : "—"})`} />
               <KpiTile label="Prospectos generados" value={String(leads.data?.length ?? 0)} />
-              <KpiTile label="Ventas ganadas" {...formatMillions(won)} sub={`${t("Pipeline abierto:")} ${formatMillions(pipeline).value} M`} tone="success" />
-              <KpiTile label="Retorno" value={cost ? formatPercent(((won - cost) / cost) * 100) : "—"} sub={cost ? `${t("Costo:")} ${formatMillions(cost).value} M` : t("Sin costo registrado")} />
+              <KpiTile label="Ventas ganadas" {...formatMillions(won)} sub={`${t("Pipeline abierto:")} ${formatCompactCurrency(pipeline)}`} tone="success" />
+              <KpiTile label="Retorno" value={cost ? formatPercent(((won - cost) / cost) * 100) : "—"} sub={cost ? `${t("Costo:")} ${formatCompactCurrency(cost)}` : t("Sin costo registrado")} />
             </div>
             <Members campaignId={id} members={memberRows} canEdit={access.canEdit} />
             <RelatedList def={oppsDef} title="Oportunidades influenciadas" rows={oppRows} columns={["name", "account_id", "stage_id", "amount", "close_date"]} />

@@ -31,7 +31,7 @@ export default async function SetupHome() {
     { href: "/configuracion/roles", title: "Roles", value: roles.count, text: "La jerarquía define qué registros ve cada gerente." },
     { href: "/configuracion/perfiles", title: "Perfiles de permisos", value: profiles.count, text: "Qué puede leer, crear, editar o eliminar cada perfil." },
     { href: "/configuracion/pipelines", title: "Pipelines activos", value: pipelines.count, text: "Etapas, probabilidades y categorías de pronóstico." },
-    { href: "/configuracion/campos", title: "Campos personalizados", value: fields.count, text: "Campos propios por objeto, guardados en JSON." },
+    { href: "/configuracion/campos", title: "Campos personalizados", value: fields.count, text: "Campos propios de cada objeto, en formularios, fichas y vistas." },
     { href: "/configuracion/compartir", title: "Compartir por defecto", value: null, text: "Visibilidad base de cada objeto para toda la empresa." },
   ];
   return (

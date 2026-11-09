@@ -49,7 +49,7 @@ export const quotes: ObjectDef = {
     { name: "currency", label: "Moneda", type: "text", readOnly: true, formHidden: true, section: "totals" },
     { name: "tax", label: "IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "shipping", label: "Flete", type: "currency", currencyField: "currency", section: "totals" },
-    { name: "grand_total", label: "Total", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "grand_total", label: "Total con IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     {
       name: "account_id", label: "Facturar a", type: "lookup", lookup: "accounts", relation: "account", required: true, section: "terms",
       fillFrom: "opportunity_id", help: "Cliente o prospecto. Debe ser la misma cuenta de la oportunidad.",

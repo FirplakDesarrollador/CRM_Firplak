@@ -10,7 +10,7 @@ import { Tr } from "@/components/ui/Tr";
 import { createClient } from "@/lib/supabase/server";
 import { getUsers } from "@/lib/records/data";
 import { canSystem } from "@/lib/permissions";
-import { formatCurrency, formatMillions, formatNumber, formatPercent, todayISO } from "@/lib/format";
+import { formatCompactCurrency, formatNumber, formatPercent, todayISO } from "@/lib/format";
 import { GOAL_METRICS, elapsedFraction, periodLabel, periodStart, shiftPeriod, type GoalMetric, type GoalPeriodType } from "@/lib/goals/periods";
 import { saveGoals } from "@/lib/goals/actions";
 import { getLocale } from "@/lib/i18n/server";
@@ -49,7 +49,7 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
   const canCompany = canSystem(user.access, "manage_users");
   const canEdit = canCompany || manageable.length > 0;
 
-  const fmt = (metric: GoalMetric, v: number) => (GOAL_METRICS.find((m) => m.key === metric)?.money ? formatCurrency(v) : formatNumber(v));
+  const fmt = (metric: GoalMetric, v: number) => (GOAL_METRICS.find((m) => m.key === metric)?.money ? formatCompactCurrency(v) : formatNumber(v));
   const qs = (patch: Record<string, string>) => `/metas?${new URLSearchParams({ tipo: type, inicio: start, ...patch })}`;
   const targetOf = (userId: string | null, metric: GoalMetric) =>
     progress.find((p) => p.user_id === userId && p.metric === metric)?.target;
@@ -84,7 +84,6 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {company.length === 0 && <p className="text-sm text-muted"><Tr>No hay metas de compañía para este periodo.</Tr></p>}
         {company.map((g) => {
-          const money = GOAL_METRICS.find((m) => m.key === g.metric)?.money;
           const gap = g.target - g.actual;
           return (
             <section key={g.goal_id} className="glass space-y-3 p-5">
@@ -95,8 +94,9 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
               </p>
               <GoalMeter actual={g.actual} target={g.target} elapsed={elapsed} />
               <p className="text-xs text-muted">
-                {money ? `${formatMillions(g.actual).value} / ${formatMillions(g.target).value} M` : `${formatNumber(g.actual)} / ${formatNumber(g.target)}`}
-                {" · "}<Tr>Brecha</Tr>: {gap > 0 ? fmt(g.metric, gap) : `(${fmt(g.metric, -gap)})`}
+                <span className="num">{fmt(g.metric, g.actual)}</span> <Tr>de</Tr> <span className="num">{fmt(g.metric, g.target)}</span>
+                {" · "}{gap > 0 ? <><Tr>Faltan</Tr> <span className="num">{fmt(g.metric, gap)}</span></>
+                  : gap < 0 ? <><Tr>Superada por</Tr> <span className="num">{fmt(g.metric, -gap)}</span></> : <Tr>Cumplida</Tr>}
               </p>
             </section>
           );
@@ -126,7 +126,7 @@ export default async function GoalsPage({ searchParams }: PageProps<"/metas">) {
                       return (
                         <td key={m.key}>
                           <div className="mb-1 flex justify-between gap-2 text-xs">
-                            <span className="num">{m.money ? formatMillions(g.actual).value : formatNumber(g.actual)} / {m.money ? `${formatMillions(g.target).value} M` : formatNumber(g.target)}</span>
+                            <span><span className="num">{fmt(m.key, g.actual)}</span> <Tr>de</Tr> <span className="num">{fmt(m.key, g.target)}</span></span>
                             <span className="num font-medium">{g.target ? formatPercent((g.actual / g.target) * 100) : "—"}</span>
                           </div>
                           <GoalMeter actual={g.actual} target={g.target} elapsed={elapsed} compact />
