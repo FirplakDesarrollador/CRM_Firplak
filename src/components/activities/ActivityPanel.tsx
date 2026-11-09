@@ -18,7 +18,7 @@ export function ActivityPanel({
   canCreate: boolean;
 }) {
   return (
-    <section className="glass">
+    <section id="actividad" className="glass scroll-mt-24">
       <div className="card-header"><h2 className="card-title"><Tr>Actividad</Tr></h2></div>
       <div className="px-4 pb-4">
         {canCreate && <Composer related={related} users={users} currentUserId={userId} />}

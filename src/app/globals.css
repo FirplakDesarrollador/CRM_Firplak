@@ -914,6 +914,9 @@ svg.lucide {
     letter-spacing: 0;
     color: var(--muted);
     margin-left: 0.35rem;
+    /* «Millones COP» se lee como una unidad: si no cabe junto a la cifra, baja entera. */
+    white-space: nowrap;
+    display: inline-block;
   }
   .num {
     font-variant-numeric: tabular-nums;

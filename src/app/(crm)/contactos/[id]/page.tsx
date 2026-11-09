@@ -10,6 +10,7 @@ import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
 import { FieldHistory } from "@/components/records/FieldHistory";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
+import { ActivityJump } from "@/components/activities/ActivityJump";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
 import { can } from "@/lib/permissions";
@@ -67,7 +68,8 @@ export default async function ContactDetailPage({ params, searchParams }: PagePr
       >
         <ApprovalStrip def={def} row={row} basePath={path} />
       </RecordHeader>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <ActivityJump />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-4">
           <div className="card">
             <Tabs basePath={path} active={tab} tabs={[{ key: "relacionado", label: "Relacionado" }, { key: "detalles", label: "Detalles" }, { key: "historial", label: "Historial de cambios" }]} />

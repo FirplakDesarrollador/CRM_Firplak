@@ -10,6 +10,7 @@ import { DeleteButton } from "@/components/records/DeleteButton";
 import { Tabs } from "@/components/records/Tabs";
 import { FieldHistory } from "@/components/records/FieldHistory";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
+import { ActivityJump } from "@/components/activities/ActivityJump";
 import { TeamCard } from "@/components/teams/TeamCard";
 import { DocumentsCard } from "@/components/ms365/DocumentsCard";
 import { SapAccountCard } from "@/components/sap/SapCards";
@@ -110,7 +111,8 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
         </Alert>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <ActivityJump />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-4">
           <div className="card">
             <Tabs basePath={path} active={tab} tabs={[

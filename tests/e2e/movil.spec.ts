@@ -16,6 +16,31 @@ test("ninguna página se desborda a lo ancho en el celular", async ({ page }) =>
   }
 });
 
+test("las fichas no se desbordan en el celular, llevan a registrar actividad y las líneas de cotización tienen etiquetas", async ({ page }) => {
+  const ancho = () => page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  const abrir = async (lista: string, enlace: string) => {
+    await page.goto(lista);
+    await page.locator(`main table a[href^="${enlace}/"]`).first().click();
+    await page.waitForLoadState("networkidle");
+  };
+  for (const [lista, enlace] of [["/cuentas", "/cuentas"], ["/oportunidades", "/oportunidades"], ["/contactos", "/contactos"]]) {
+    await abrir(lista, enlace);
+    const [scroll, client] = await ancho();
+    expect(scroll, `${page.url()} mide ${scroll} px en una pantalla de ${client} px`).toBeLessThanOrEqual(client);
+  }
+  // «Registrar actividad» arriba lleva al panel, con los cinco tipos a la vista.
+  await page.getByRole("link", { name: "Registrar actividad" }).click();
+  await expect(page).toHaveURL(/#actividad$/);
+  for (const tipo of ["Tarea", "Llamada", "Reunión", "Correo", "Nota"]) await expect(page.getByRole("tab", { name: tipo })).toBeInViewport();
+  // En la cotización, cantidad, precio y descuento llevan su etiqueta visible.
+  await page.goto("/cotizaciones");
+  await page.getByRole("link", { name: "COT-1002" }).click();
+  const linea = page.locator("li", { has: page.getByLabel("Precio unitario") }).first();
+  for (const etiqueta of ["Cantidad", "Precio unit.", "Desc. %", "Total"]) await expect(linea.getByText(etiqueta, { exact: true })).toBeVisible();
+  const [scroll, client] = await ancho();
+  expect(scroll).toBeLessThanOrEqual(client);
+});
+
 test("la barra inferior reemplaza al menú y «Más» abre los demás módulos", async ({ page }) => {
   await page.goto("/inicio");
   const barra = page.getByRole("navigation", { name: "Navegación principal" });

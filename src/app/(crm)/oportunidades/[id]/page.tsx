@@ -12,6 +12,7 @@ import { StageBadge } from "@/components/records/FieldValue";
 import { FieldHistory } from "@/components/records/FieldHistory";
 import { StagePath } from "@/components/opportunities/StagePath";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
+import { ActivityJump } from "@/components/activities/ActivityJump";
 import { TeamCard } from "@/components/teams/TeamCard";
 import { DocumentsCard } from "@/components/ms365/DocumentsCard";
 import { SplitsCard, getSplits } from "@/components/splits/SplitsCard";
@@ -104,7 +105,8 @@ export default async function OpportunityDetailPage({ params, searchParams }: Pa
         <ApprovalStrip def={def} row={row} basePath={path} />
       </RecordHeader>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <ActivityJump />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-4">
           <div className="card">
             <Tabs basePath={path} active={tab} tabs={[

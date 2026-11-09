@@ -2,6 +2,7 @@ import type { ObjectDef } from "@/lib/objects";
 import type { Row } from "@/lib/records/data";
 import type { UserOption } from "@/lib/records/data";
 import type { ActivityRow } from "@/components/activities/data";
+import { ActivityJump } from "@/components/activities/ActivityJump";
 import { ActivityPanel } from "@/components/activities/ActivityPanel";
 import { ApprovalBar } from "@/components/approvals/ApprovalBar";
 import { ApprovalHistory } from "@/components/approvals/ApprovalHistory";
@@ -63,7 +64,9 @@ export async function RecordLayout({
         {headerExtra}
         {approvals && <ApprovalBar object={def.key} recordId={row.id} path={basePath} {...approvals} />}
       </RecordHeader>
-      <div className={`grid gap-4 ${activity ? "xl:grid-cols-[minmax(0,1fr)_26rem]" : ""}`}>
+      {activity?.canCreate && <ActivityJump />}
+      {/* Una columna que no crece más que la pantalla: las tablas anchas se desplazan dentro de su tarjeta. */}
+      <div className={`grid grid-cols-1 gap-4 ${activity ? "xl:grid-cols-[minmax(0,1fr)_26rem]" : ""}`}>
         <div className="min-w-0 space-y-4">
           {allTabs.length > 1 && (
             <div className="card">

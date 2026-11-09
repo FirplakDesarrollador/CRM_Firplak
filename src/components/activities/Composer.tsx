@@ -42,12 +42,14 @@ export function Composer({ related, users, currentUserId }: { related: Related; 
 
   return (
     <div>
-      <div role="tablist" className="flex overflow-x-auto border-b border-line [scrollbar-width:none]">
+      {/* Los cinco tipos siempre a la vista (antes se cortaban «Correo» y «Nota»): ícono sobre la etiqueta. */}
+      <div role="tablist" className="grid grid-cols-5 gap-1 border-b border-line pb-2">
         {TABS.map((item) => {
           const Icon = ACTIVITY_ICONS[item.key];
           return (
-            <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} className="tab mr-3.5 text-sm" onClick={() => setTab(item.key)}>
-              <Icon size={14} /> {t(item.label)}
+            <button key={item.key} type="button" role="tab" aria-selected={tab === item.key}
+              className="tab m-0 min-h-11 flex-col justify-center gap-0.5 px-1 py-1.5 text-xs" onClick={() => setTab(item.key)}>
+              <Icon size={15} /> {t(item.label)}
             </button>
           );
         })}

@@ -49,28 +49,47 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
           {line.not_listed && <span className="badge badge-warning ml-2" title="No está en la lista de precios del cliente: se cotiza con la lista del canal."><Tr>No codificado</Tr></span>}
         </p>
       </div>
+      {/* En el celular: cantidad, precio y descuento en una fila con su etiqueta, y el total junto a sus acciones.
+          Desde md, «contents» los vuelve celdas de la tabla (los títulos están en la cabecera). */}
       {canEdit ? (
-        <form action={action} className="contents">
-          <AmountInput name="quantity" aria-label="Cantidad" defaultValue={line.quantity} className="input num h-8 text-center" />
-          <AmountInput name="unit_price" aria-label="Precio unitario" defaultValue={line.unit_price} className="input num h-8 text-right" />
-          <AmountInput name="discount" aria-label="Descuento %" defaultValue={line.discount} className="input num h-8 text-center" />
-          <p className="num text-right font-medium">{formatCurrency(line.line_total, currency)}</p>
-          <div className="flex items-center justify-end gap-1">
-            <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
-            <button type="submit" formAction={del} className="btn btn-sm btn-ghost text-danger" aria-label="Quitar línea"
-              onClick={(e) => { if (!confirm("¿Quitar esta línea?")) e.preventDefault(); }}>
-              <Trash2 size={14} />
-            </button>
+        <form action={action} className="grid grid-cols-3 gap-2 md:contents">
+          <label className="block md:contents">
+            <span className="label md:hidden"><Tr>Cantidad</Tr></span>
+            <AmountInput name="quantity" aria-label="Cantidad" defaultValue={line.quantity} className="input num h-8 text-center" />
+          </label>
+          <label className="block md:contents">
+            <span className="label md:hidden"><Tr>Precio unit.</Tr></span>
+            <AmountInput name="unit_price" aria-label="Precio unitario" defaultValue={line.unit_price} className="input num h-8 text-right" />
+          </label>
+          <label className="block md:contents">
+            <span className="label md:hidden"><Tr>Desc. %</Tr></span>
+            <AmountInput name="discount" aria-label="Descuento %" defaultValue={line.discount} className="input num h-8 text-center" />
+          </label>
+          <div className="col-span-3 flex items-center justify-between gap-2 md:contents">
+            <p className="num text-right font-medium">
+              <span className="mr-1.5 text-xs font-normal text-muted md:hidden"><Tr>Total</Tr></span>
+              {formatCurrency(line.line_total, currency)}
+            </p>
+            <div className="flex items-center justify-end gap-1">
+              <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
+              <button type="submit" formAction={del} className="btn btn-sm btn-ghost text-danger" aria-label="Quitar línea"
+                onClick={(e) => { if (!confirm("¿Quitar esta línea?")) e.preventDefault(); }}>
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
         </form>
       ) : (
-        <>
-          <p className="num text-center">{formatNumber(line.quantity)}</p>
-          <p className="num text-right">{formatCurrency(line.unit_price, currency)}</p>
-          <p className="num text-center">{formatNumber(line.discount)}%</p>
-          <p className="num text-right font-medium">{formatCurrency(line.line_total, currency)}</p>
-          <span />
-        </>
+        <div className="grid grid-cols-3 gap-2 md:contents">
+          <div className="md:contents"><span className="label md:hidden"><Tr>Cantidad</Tr></span><p className="num text-center">{formatNumber(line.quantity)}</p></div>
+          <div className="md:contents"><span className="label md:hidden"><Tr>Precio unit.</Tr></span><p className="num text-right">{formatCurrency(line.unit_price, currency)}</p></div>
+          <div className="md:contents"><span className="label md:hidden"><Tr>Desc. %</Tr></span><p className="num text-center">{formatNumber(line.discount)}%</p></div>
+          <p className="num col-span-3 text-right font-medium md:col-span-1">
+            <span className="mr-1.5 text-xs font-normal text-muted md:hidden"><Tr>Total</Tr></span>
+            {formatCurrency(line.line_total, currency)}
+          </p>
+          <span className="hidden md:block" />
+        </div>
       )}
       {(state.message || delState.message) && <p className="error-text md:col-span-6">{state.message ?? delState.message}</p>}
     </li>
@@ -96,8 +115,8 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
         {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} currency={currency} />)}
       </ul>
       {canEdit && (
-        <form ref={formRef} action={action} className={`grid gap-2 border-t border-line bg-surface-2 px-4 py-4 md:items-end ${COLS}`}>
-          <div>
+        <form ref={formRef} action={action} className={`grid grid-cols-3 gap-2 border-t border-line bg-surface-2 px-4 py-4 md:items-end ${COLS}`}>
+          <div className="col-span-3 md:col-span-1">
             <label className="label" htmlFor="ql-product"><Tr>Producto</Tr></label>
             <LookupInput key={state.values?.nonce ?? "add"} id="ql-product" name="product_id" object="products" placeholder="Buscar producto o referencia…"
               invalid={Boolean(state.errors?.product_id)} />
@@ -116,11 +135,11 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
             <AmountInput id="ql-disc" name="discount" defaultValue={0} className="input num text-center" />
           </div>
           {/* Ocupa las columnas de total y acciones, para que los campos queden bajo sus títulos. */}
-          <div className="flex md:col-span-2 md:justify-end">
+          <div className="col-span-3 flex md:col-span-2 md:justify-end">
             <SubmitButton className="btn btn-primary w-full md:w-auto" pendingText="Agregando…"><Plus size={15} /> <Tr>Agregar</Tr></SubmitButton>
           </div>
           {!state.ok && (state.message || state.errors) && (
-            <p className="error-text md:col-span-6">{state.message ?? Object.values(state.errors ?? {})[0]}</p>
+            <p className="error-text col-span-3 md:col-span-6">{state.message ?? Object.values(state.errors ?? {})[0]}</p>
           )}
         </form>
       )}

@@ -69,8 +69,10 @@ export default async function HomePage() {
   const k = ((dash as { kpis?: Record<string, number> } | null)?.kpis ?? {}) as Record<string, number>;
   const firstName = user.fullName.split(" ")[0];
 
+  // En el celular el asesor llega entre visitas: primero lo que hay que hacer hoy, después las cifras. Las
+  // secciones van en una columna flexible con orden propio; desde xl vuelven a su grilla y su orden de siempre.
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       <InstallBanner />
       <div>
         <h1 className="editorial text-3xl">{greeting(locale)}, {firstName}</h1>
@@ -87,22 +89,43 @@ export default async function HomePage() {
         </Link>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="order-2 grid grid-cols-2 gap-3 xl:order-none xl:grid-cols-4">
         <KpiTile label="Mis ventas del mes" {...formatMillions(k.won_amount ?? 0)} sub={`${k.won_count ?? 0} ${t("oportunidades ganadas")}`} tone="success" />
         <KpiTile label="Mi pipeline abierto" {...formatMillions(k.open_amount ?? 0)} sub={`${k.open_count ?? 0} ${t("oportunidades · ponderado")} ${formatCompactCurrency(k.weighted_amount ?? 0)}`} />
         <KpiTile label="Cierran este mes" value={String(k.closing_this_period ?? 0)} sub={k.overdue_close ? `${k.overdue_close} ${t("con cierre vencido")}` : t("Ninguna vencida")} tone={k.overdue_close ? "danger" : undefined} />
         <KpiTile label="Tareas vencidas" value={String(k.tasks_overdue ?? 0)} sub={`${k.meetings_upcoming ?? 0} ${t("reuniones esta semana")}`} tone={k.tasks_overdue ? "warning" : "success"} />
       </div>
 
-      <GoalSummary type="month" start={periodStart("month", today)} userId={user.id} />
+      <div className="order-3 xl:order-none"><GoalSummary type="month" start={periodStart("month", today)} userId={user.id} /></div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <section className="card xl:col-span-2">
+      <div className="contents xl:grid xl:grid-cols-3 xl:gap-4">
+        <section className="card order-4 xl:order-none xl:col-span-2">
           <div className="card-header">
             <h2 className="card-title"><Tr>Mis oportunidades abiertas</Tr></h2>
             <Link href="/oportunidades/pipeline?owner=me" className="btn btn-sm btn-ghost"><Tr>Pipeline</Tr> <ArrowRight size={14} /></Link>
           </div>
-          <div className="overflow-x-auto">
+          {/* En el celular, una lista: nombre y cuenta, etapa, valor y cierre sin desplazar la tabla de lado. */}
+          <ul className="divide-y divide-[var(--border)] md:hidden">
+            {(opps ?? []).length === 0 && (
+              <li className="px-4 py-8 text-center text-sm text-muted"><Tr>No tienes oportunidades abiertas.</Tr> <Link href="/oportunidades/nueva" className="link"><Tr>Crea una</Tr></Link>.</li>
+            )}
+            {(opps ?? []).map((o) => (
+              <li key={o.id} className="space-y-1.5 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link href={`/oportunidades/${o.id}`} className="link">{o.name}</Link>
+                    <p className="text-xs text-muted">{o.account?.name}</p>
+                  </div>
+                  <p className="num shrink-0 font-medium">{formatCurrency(o.amount)}</p>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <StageBadge stage={o.stage as never} />
+                  <span className={o.close_date < today ? "font-semibold text-danger" : "text-muted"}><Fmt date={o.close_date} /></span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="table">
               <thead><tr><th><Tr>Oportunidad</Tr></th><th><Tr>Etapa</Tr></th><th className="text-right"><Tr>Valor</Tr></th><th><Tr>Cierre</Tr></th></tr></thead>
               <tbody>
@@ -122,7 +145,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card order-1 xl:order-none">
           <div className="card-header">
             <h2 className="card-title"><Tr>Para hoy</Tr></h2>
             <Link href="/actividades" className="btn btn-sm btn-ghost"><Tr>Agenda</Tr> <ArrowRight size={14} /></Link>
@@ -134,7 +157,7 @@ export default async function HomePage() {
         </section>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="order-5 grid grid-cols-1 gap-4 xl:order-none xl:grid-cols-2">
         <section className="card">
           <div className="card-header"><h2 className="card-title"><Tr>Próximas reuniones</Tr></h2></div>
           <ul className="divide-y divide-[var(--border)]">
