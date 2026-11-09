@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Firplak CRM</title>
+  <style>html, body { height: 100%; margin: 0; background: #254153; }</style>
+</head>
+<body>
+  <!-- La app abre el CRM publicado (server.url en capacitor.config.js); esta página solo es el respaldo que exige Capacitor. -->
+  <script src="config.js"></script>
+  <script>window.location.replace(window.CRM_URL || 'https://crm-firplak.vercel.app');</script>
+</body>
+</html>

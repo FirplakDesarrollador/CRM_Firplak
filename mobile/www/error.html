@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sin conexión · Firplak CRM</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      padding: calc(env(safe-area-inset-top) + 24px) 28px calc(env(safe-area-inset-bottom) + 24px);
+      background: #254153; color: #fff; text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      -webkit-user-select: none; user-select: none;
+    }
+    img { width: 96px; height: 96px; margin-bottom: 12px; }
+    h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+    p { margin: 0; max-width: 30ch; font-size: 16px; line-height: 1.45; color: rgba(255, 255, 255, 0.78); }
+    button {
+      margin-top: 20px; min-height: 48px; padding: 0 28px; border: 0; border-radius: 12px;
+      background: #fff; color: #254153; font: inherit; font-size: 16px; font-weight: 600;
+    }
+    button:active { opacity: 0.85; }
+    button:disabled { opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <img src="sello.svg" alt="Firplak CRM">
+  <h1>Sin conexión</h1>
+  <p>No se pudo abrir el CRM. Revisa tu internet y vuelve a intentarlo.</p>
+  <button type="button" id="reintentar">Reintentar</button>
+  <script src="config.js"></script>
+  <script>
+    var boton = document.getElementById('reintentar');
+    function reintentar() {
+      boton.disabled = true;
+      boton.textContent = 'Abriendo…';
+      setTimeout(function () { boton.disabled = false; boton.textContent = 'Reintentar'; }, 6000);
+      window.location.replace(window.CRM_URL || 'https://crm-firplak.vercel.app');
+    }
+    boton.addEventListener('click', reintentar);
+    // Al volver la señal, se abre solo.
+    window.addEventListener('online', reintentar);
+  </script>
+</body>
+</html>

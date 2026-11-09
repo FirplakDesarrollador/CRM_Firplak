@@ -1,0 +1,3 @@
+node_modules/
+# Lo escribe `npm run sync` con la dirección del CRM que abre la app.
+www/config.js

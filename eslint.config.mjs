@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
     "src/lib/database.types.ts",
     // Informes de Playwright: si una prueba falla, traen el visor de trazas (JavaScript minificado).
     "test-results/**",
+    // App nativa (Capacitor): proyecto aparte con sus propias dependencias y archivos generados por Xcode.
+    "mobile/**",
   ]),
 ]);
 

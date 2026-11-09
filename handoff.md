@@ -1,7 +1,7 @@
 # Firplak CRM · Handoff
 
 > Estado del proyecto para quien lo retome (persona o asistente de IA). **Se actualiza con cada cambio**, en el
-> mismo commit. Última actualización: **2026-11-07**.
+> mismo commit. Última actualización: **2026-11-09**.
 > El detalle de cada módulo está en [README.md](README.md); la salida en vivo, en
 > [docs/puesta-en-produccion.md](docs/puesta-en-produccion.md); el sistema visual, en [DESIGN.md](DESIGN.md).
 
@@ -61,6 +61,16 @@ Usuarios del demo (clave `demo1234`): `luis.demo@firplak.com` (admin), `gerente.
 jefe de Camila), `asesora.centro@firplak.com` (asesora). `test:e2e` levanta su propio demo: no debe haber otro
 servidor en el puerto 3000.
 
+**App de iPhone (prototipo, carpeta `mobile/`):** proyecto aparte con sus propias dependencias; necesita Xcode.
+
+```bash
+cd mobile && npm install
+npm run sync          # la app abre el CRM publicado (https://crm-firplak.vercel.app)
+npm run sync:local    # la app abre http://localhost:3000 (con `npm run dev:demo` corriendo en la raíz)
+npm run open          # abre el proyecto en Xcode: elegir un simulador y Ejecutar
+npm run assets        # regenera el ícono y la pantalla de arranque desde el sello de `public/brand/`
+```
+
 ## 4. Qué está construido
 
 Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre:
@@ -79,6 +89,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 | Cotizaciones | Desde la oportunidad («Nueva cotización») o sin ella: si no se elige oportunidad, se crea una con el nombre de la cotización, en el pipeline del canal, cierre = «Válida hasta» y sincronizada. **«Facturar a» es la cuenta** y debe ser la de la oportunidad (la base lo valida). Dirección de facturación, dirección de entrega y condiciones de pago se toman de la cuenta (mientras está en Borrador siguen a la cuenta; presentada queda fija); «Entregar en otra dirección» y «Cambiar condiciones de pago» permiten escribirlas a mano. Las **Condiciones de pago** son una lista de valores de la cuenta (Contado, Anticipado, 8 a 90 días). Líneas desde la lista de precios según moneda, descuento por línea, IVA y flete, PDF, «Crear pedido» al quedar *Aceptada*. **Aprobación obligatoria:** con más de 15 % de descuento no pasa a *En revisión*, *Aprobada*, *Presentada* ni *Aceptada* por fuera del flujo; cambiar el descuento tras aprobar exige aprobar de nuevo (migración `20261130000100`). |
 | Integraciones | Microsoft 365 (Outlook, Teams, Planner, SharePoint), SAP B1 (lectura de cartera e inventario; pedido activado → **oferta de venta**; importación de productos a demanda), servidor MCP con OAuth 2.1 para Claude/ChatGPT, correo con Resend. |
 | Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin modo sin conexión** (solo aviso y página propia). |
+| App de iPhone (prototipo) | `mobile/`: app nativa hecha con **Capacitor 8** (Swift Package Manager, sin CocoaPods) que abre el CRM publicado dentro de una vista web; **la app web no cambia** y cada despliegue de `main` se ve en la app sin recompilar. Identificador `com.firplak.crm`, nombre «Firplak CRM», iOS 15 o superior, ícono y pantalla de arranque con el sello. Lo propio de la app se inyecta desde `CrmViewController` (`mobile/ios/App/App/AppDelegate.swift`): el CRM se comporta como «instalado», campos a 16 px (sin zoom al escribir), la pantalla de arranque se quita al cargar, la hora y la batería cambian de color según el fondo que tengan debajo, y deslizar desde el borde izquierdo vuelve atrás. Sin señal muestra «Sin conexión» con «Reintentar» (`mobile/www/error.html`). Probada solo en el simulador (iPhone 18 Pro Max, iOS 27.2). |
 
 ## 5. Producción (Supabase)
 
@@ -141,6 +152,16 @@ Fases: borradores locales → bandeja de salida (actividades, notas, contactos, 
 de solo lectura → (opcional) editar oportunidades con aviso de conflicto. Luis dirá dónde se quedan sin señal,
 qué necesitan con urgencia y si usan iPhone o Android.
 
+### App de iPhone (prototipo en `mobile/`)
+- **Cuenta de Apple Developer de Firplak** (99 USD al año, pide el D-U-N-S de la empresa): la tramitan Luis y TI. Sin
+  ella no hay TestFlight ni App Store; con el Apple ID personal de Luis solo se puede instalar en su iPhone por 7 días.
+- Probar en un iPhone real (hasta ahora solo simulador) y el inicio de sesión con Microsoft dentro de la app.
+- Para que Apple la apruebe en el App Store necesita funciones nativas, no solo la página: Face ID para entrar,
+  notificaciones push nativas (APNs; las push web de la PWA no llegan a la app) y, más adelante, el modo sin conexión.
+- Android: el mismo proyecto de Capacitor admite `npx cap add android` cuando se decida.
+- Nota técnica: la plantilla de Capacitor 8 crea la pantalla en `SceneDelegate.swift`, no desde el storyboard; por eso
+  ahí se instancia `CrmViewController()`. Si `cap` regenera ese archivo, hay que volver a poner esa línea.
+
 ### Diseño: lo que quedó de la crítica (2026-11-09, 25/40)
 Los 6 pasos del plan están hechos (celular, confirmaciones, claridad, Indicadores, teclado, pulido). Quedan:
 - Ctrl K sin sugerencias al abrirlo (recientes o accesos rápidos).
@@ -161,6 +182,9 @@ Los 6 pasos del plan están hechos (celular, confirmaciones, claridad, Indicador
 - Columna obsoleta `controlling_values` en dependencias de listas.
 - 184 filas huérfanas en `field_history`.
 - `.env.local` apunta a producción: `npm run dev` trabaja con datos reales (usar `dev:demo` para probar).
+- `npm run lint` falla en el equipo de Luis por las carpetas de plugins sin versionar (`.agents/`, `.claude/skills/`):
+  30 errores, todos ahí. El código del proyecto pasa limpio
+  (`npx eslint . --ignore-pattern ".agents/**" --ignore-pattern ".claude/**"`). Falta ignorarlas en `eslint.config.mjs`.
 
 ### Por confirmar en un iPhone real
 Cabecera con más aire bajo la hora, campos sin zoom y botón «Guardar» sobre la barra inferior (probado en
@@ -170,6 +194,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-09 | `HASH_X` | **Prototipo de app de iPhone** en `mobile/` (Capacitor 8): abre el CRM publicado en una vista web, con ícono y pantalla de arranque del sello, hora y batería que cambian de color según el fondo, campos sin zoom, gesto de volver y página «Sin conexión». La app web no cambia: solo se excluye `mobile/` de TypeScript y ESLint. Probada en el simulador contra el demo local y dejada apuntando a producción. | Sin push; no afecta el despliegue |
 | 2026-11-09 | `76572e8` | Ícono de la app más grande (pedido de Luis): el sello ocupa el 74 % del ícono (antes 60 %) y el 62 % en el adaptable de Android, dentro de su zona segura. | Desplegado (2026-11-09) |
 | 2026-11-09 | `479564d` | Ícono de la app: sello con la «A» oficial de Firplak y «CRM» en Outfit Bold (la letra de la app, en trazos), elegido por Luis entre 4 propuestas. Íconos de 192 y 512, adaptable de Android y de iPhone regenerados desde `public/brand/firplak-crm-sello-white.svg`; el de la barra de estado de Android sigue siendo solo la «A». | Desplegado (2026-11-09) |
 | 2026-11-09 | `0a70713` | Publicada en producción la migración `20261205000100_alerts_plural` (aviso diario «Tienes 1 tarea vencida» / «Tienes N tareas vencidas»); asesor de seguridad sin hallazgos nuevos. Rama `codex/migraciones-seguras` subida con los 6 pasos de la crítica. | Migración aplicada con `db:publicar` y visto bueno de Luis (40/40); interfaz desplegada |
