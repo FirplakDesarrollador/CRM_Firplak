@@ -821,6 +821,27 @@ export const UI_EN: Record<string, string> = {
   "Pipeline del": "Pipeline for", "Se toma de la cuenta": "Taken from the account", "— Sin canal —": "— No channel —",
   "Canal de venta": "Sales channel", "Canal o tipo": "Channel or type",
   "No codificado": "Not listed",
+  Eliminar: "Delete", "Eliminar vista": "Delete view", "Registrar actividad": "Log activity", "Esta acción no se puede deshacer.": "This cannot be undone.",
+  "¿El cliente aceptó esta cotización?": "Did the customer accept this quote?",
+  "Si la oportunidad tiene otras cotizaciones abiertas, esta parte se separa en su propia oportunidad ganada; si es la última abierta, la oportunidad queda ganada.":
+    "If the opportunity has other open quotes, this part is split into its own won opportunity; if it is the last open one, the opportunity is won.",
+  "Sí, aceptada": "Yes, accepted",
+  "¿Marcar la cotización como rechazada?": "Mark the quote as rejected?",
+  "Deja de sumar al valor de la oportunidad. Si era la última parte abierta, se avisa al asesor y a su jefe para cerrar la oportunidad.":
+    "It stops adding to the opportunity amount. If it was the last open part, the owner and their manager are notified to close the opportunity.",
+  "¿Marcarla como reemplazada por otra versión?": "Mark it as superseded by another version?",
+  "Úsalo para la versión anterior de una parte: deja de sumar al valor de la oportunidad y no genera avisos.":
+    "Use it for the previous version of a part: it stops adding to the opportunity amount and sends no notifications.",
+  "Marcar reemplazada": "Mark superseded", "¿Activar el pedido?": "Activate the order?",
+  "Si SAP está conectado, se crea la oferta de venta en SAP Business One con estos productos, cantidades y precios. Revísalos antes de continuar.":
+    "If SAP is connected, the sales quotation is created in SAP Business One with these products, quantities and prices. Review them before continuing.",
+  "Activar pedido": "Activate order", "¿Cancelar el pedido?": "Cancel the order?",
+  "Se avisa al asesor y a su jefe. Si ya tiene oferta de venta en SAP, revísala allá: el CRM no la anula.":
+    "The owner and their manager are notified. If it already has a sales quotation in SAP, review it there: the CRM does not void it.",
+  "Cancelar pedido": "Cancel order", "¿Marcar la oportunidad como ganada?": "Mark the opportunity as won?",
+  "Pasa a la etapa ganada y cuenta como venta en Indicadores, Metas y Pronóstico. Si tiene cotizaciones abiertas, la pestaña Cotizaciones te las muestra para cerrarlas.":
+    "It moves to the won stage and counts as a sale in Dashboards, Goals and Forecast. If it has open quotes, the Quotes tab shows them so you can close them.",
+  "¿Quitar esta línea?": "Remove this line?", "¿Quitar de la campaña?": "Remove from the campaign?", "¿Eliminar esta actividad?": "Delete this activity?",
   "Avanza con cotización": "Advances with quote",
   "«Avanza con cotización» marca a qué etapa pasa sola la oportunidad (solo hacia adelante): «Al presentar la primera cotización», cuando una cotización queda Presentada; «Al aceptarse una parte (quedan otras abiertas)», cuando el cliente acepta una cotización y la oportunidad tiene otras abiertas. Cuando ya no quedan partes abiertas y alguna fue aceptada, pasa a la etapa ganada.":
     "“Advances with quote” marks the stage the opportunity moves to on its own (forward only): “When the first quote is presented”, when a quote becomes Presented; “When a part is accepted (others remain open)”, when the customer accepts a quote and the opportunity has other open ones. When no parts remain open and one was accepted, it moves to the won stage.",

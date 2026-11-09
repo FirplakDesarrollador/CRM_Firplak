@@ -11,6 +11,7 @@ import { formatCurrency, formatNumber } from "@/lib/format";
 import type { FormState } from "@/lib/records/form";
 
 import { Tr } from "@/components/ui/Tr";
+import { ConfirmSubmit } from "@/components/ui/ActionForm";
 export type QuoteLine = {
   id: string;
   description: string | null;
@@ -72,10 +73,10 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
             </p>
             <div className="flex items-center justify-end gap-1">
               <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar</Tr></SubmitButton>
-              <button type="submit" formAction={del} className="btn btn-sm btn-ghost text-danger" aria-label="Quitar línea"
-                onClick={(e) => { if (!confirm("¿Quitar esta línea?")) e.preventDefault(); }}>
+              <ConfirmSubmit formAction={del} className="btn btn-sm btn-ghost text-danger" aria-label="Quitar línea"
+                message="¿Quitar esta línea?" confirmLabel="Quitar">
                 <Trash2 size={14} />
-              </button>
+              </ConfirmSubmit>
             </div>
           </div>
         </form>

@@ -8,6 +8,7 @@ import { ACTIVITY_TYPES, PRIORITIES } from "@/lib/objects/picklists";
 import { deleteActivity, setActivityStatus } from "@/lib/records/actions";
 import { formatDate, formatDateTime, formatTime, relativeDays, todayISO } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export type ActivityItemData = {
   id: string;
@@ -43,6 +44,7 @@ const TYPE_TONE: Record<string, string> = {
 
 export function ActivityItem({ activity, showRelated = true, canEdit = true }: { activity: ActivityItemData; showRelated?: boolean; canEdit?: boolean }) {
   const [pending, start] = useTransition();
+  const [dialog, ask] = useConfirm();
   const [status, setStatus] = useOptimistic(activity.status);
   const locale = useLocale();
   const t = useT();
@@ -88,7 +90,9 @@ export function ActivityItem({ activity, showRelated = true, canEdit = true }: {
               type="button"
               className="text-muted opacity-0 transition hover:text-danger focus:opacity-100 group-hover:opacity-100"
               aria-label="Eliminar actividad"
-              onClick={() => confirm("¿Eliminar esta actividad?") && start(async () => { await deleteActivity(activity.id); })}
+              onClick={async () => {
+                if (await ask({ title: "¿Eliminar esta actividad?", confirmLabel: "Eliminar", tone: "danger" })) start(async () => { await deleteActivity(activity.id); });
+              }}
             >
               <Trash2 size={14} />
             </button>
@@ -112,6 +116,7 @@ export function ActivityItem({ activity, showRelated = true, canEdit = true }: {
           </p>
         )}
       </div>
+      {dialog}
     </li>
   );
 }

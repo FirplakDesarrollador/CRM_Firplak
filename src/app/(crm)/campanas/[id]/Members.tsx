@@ -11,6 +11,7 @@ import type { FormState } from "@/lib/records/form";
 
 import { Tr } from "@/components/ui/Tr";
 import { Opt } from "@/components/ui/Opt";
+import { ConfirmSubmit } from "@/components/ui/ActionForm";
 export type Member = {
   id: string;
   status: string;
@@ -47,10 +48,10 @@ function MemberRow({ m, canEdit }: { m: Member; canEdit: boolean }) {
       )}
       {canEdit && (
         <form action={remove}>
-          <button type="submit" className="btn btn-sm btn-ghost text-danger" aria-label="Quitar de la campaña"
-            onClick={(e) => { if (!confirm("¿Quitar de la campaña?")) e.preventDefault(); }}>
+          <ConfirmSubmit className="btn btn-sm btn-ghost text-danger" aria-label="Quitar de la campaña"
+            message="¿Quitar de la campaña?" confirmLabel="Quitar">
             <Trash2 size={14} />
-          </button>
+          </ConfirmSubmit>
         </form>
       )}
       {error && <p className="error-text basis-full">{error}</p>}

@@ -8,6 +8,7 @@ import { LossDialog } from "./LossDialog";
 
 import { Tr } from "@/components/ui/Tr";
 import { useValueLabel } from "@/lib/i18n/client";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 /** Ruta de etapas de la oportunidad: clic en una etapa para avanzar o retroceder. */
 export function StagePath({ opportunityId, stages, currentStageId, canEdit, lossReasons }: {
   opportunityId: string; stages: StageRow[]; currentStageId: string; canEdit: boolean; lossReasons?: string[];
@@ -17,6 +18,7 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit, loss
   const [stageId, setStageId] = useOptimistic(currentStageId);
   const [error, setError] = useState<string | null>(null);
   const [askLoss, setAskLoss] = useState<string | null>(null);
+  const [dialog, ask] = useConfirm();
 
   const open = stages.filter((s) => s.category === "open");
   const won = stages.find((s) => s.category === "won");
@@ -65,12 +67,20 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit, loss
         </ol>
         {canEdit && (
           <div className="flex gap-2">
-            {won && (
-              <button type="button" className={`btn btn-sm ${current?.id === won.id ? "btn-primary" : ""}`} disabled={pending || current?.id === won.id} onClick={() => move(won.id)}>
+            {/* Cerrada, solo se muestra su resultado: para reabrirla se elige una etapa abierta. */}
+            {won && current?.id !== lost?.id && (
+              <button type="button" className={`btn btn-sm ${current?.id === won.id ? "btn-primary" : ""}`} disabled={pending || current?.id === won.id}
+                onClick={async () => {
+                  if (await ask({
+                    title: "¿Marcar la oportunidad como ganada?",
+                    body: "Pasa a la etapa ganada y cuenta como venta en Indicadores, Metas y Pronóstico. Si tiene cotizaciones abiertas, la pestaña Cotizaciones te las muestra para cerrarlas.",
+                    confirmLabel: "Marcar ganada",
+                  })) move(won.id);
+                }}>
                 <Trophy size={14} /> <Tr>{current?.id === won.id ? "Ganada" : "Marcar ganada"}</Tr>
               </button>
             )}
-            {lost && (
+            {lost && current?.id !== won?.id && (
               <button type="button" className="btn btn-sm btn-danger" disabled={pending || current?.id === lost.id} onClick={() => setAskLoss(lost.id)}>
                 <XCircle size={14} /> <Tr>{current?.id === lost.id ? "Perdida" : "Marcar perdida"}</Tr>
               </button>
@@ -79,6 +89,7 @@ export function StagePath({ opportunityId, stages, currentStageId, canEdit, loss
         )}
       </div>
       {error && <p className="error-text">{error}</p>}
+      {dialog}
       <LossDialog
         reasons={lossReasons}
         open={askLoss !== null}

@@ -6,25 +6,30 @@ import { deleteRecord } from "@/lib/records/actions";
 import type { ObjectKey } from "@/lib/objects";
 
 import { Tr } from "@/components/ui/Tr";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 export function DeleteButton({ object, id, label }: { object: ObjectKey; id: string; label: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [dialog, ask] = useConfirm();
   return (
     <span className="inline-flex flex-col items-end">
       <button
         type="button"
         className="btn btn-danger"
         disabled={pending}
-        onClick={() => {
-          if (!confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+        aria-label={`Eliminar ${label}`}
+        onClick={async () => {
+          if (!(await ask({ title: `¿Eliminar ${label}?`, body: "Esta acción no se puede deshacer.", confirmLabel: "Eliminar", tone: "danger" }))) return;
           start(async () => {
             const res = await deleteRecord(object, id);
             if (res?.message) setError(res.message);
           });
         }}
       >
-        <Trash2 size={15} /> <Tr>{pending ? "Eliminando…" : "Eliminar"}</Tr>
+        {/* En el celular solo el ícono: no compite en tamaño con «Editar». */}
+        <Trash2 size={15} /> <span className="hidden sm:inline"><Tr>{pending ? "Eliminando…" : "Eliminar"}</Tr></span>
       </button>
+      {dialog}
       {error && <span className="error-text">{error}</span>}
     </span>
   );

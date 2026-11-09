@@ -4,7 +4,6 @@ import { sesion } from "./ayuda";
 test.use({ storageState: sesion("admin") });
 
 test("Listas de valores: de Personalizar se puede volver al resumen y entrar de nuevo", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/configuracion/listas");
   const tarjeta = page.locator("section.card").filter({ has: page.getByRole("button", { name: "Personalizar" }) }).first();
   const id = await tarjeta.getAttribute("id");
@@ -34,11 +33,11 @@ test("Listas de valores: de Personalizar se puede volver al resumen y entrar de 
 
   // Queda como estaba para las demás pruebas.
   await lista.getByRole("button", { name: "Restablecer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Confirmar" }).click();
   await expect(lista.getByRole("button", { name: "Personalizar" })).toBeVisible();
 });
 
 test("Listas dependientes: Segmento solo ofrece lo que corresponde a Mercado y Canal", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/configuracion/listas?objeto=accounts");
   const lista = page.locator("section#lista-segment");
   await expect(lista.getByRole("button", { name: "Personalizar" }).or(lista.getByRole("link", { name: "Editar" }))).toBeVisible();
@@ -104,6 +103,7 @@ test("Listas dependientes: Segmento solo ofrece lo que corresponde a Mercado y C
   // Queda como estaba para las demás pruebas.
   await page.goto("/configuracion/listas?objeto=accounts&editar=segment");
   await page.locator("section#lista-segment").getByRole("button", { name: "Restablecer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Confirmar" }).click();
   await expect(page.locator("section#lista-segment").getByRole("button", { name: "Personalizar" })).toBeVisible();
 });
 

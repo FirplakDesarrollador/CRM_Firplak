@@ -94,10 +94,21 @@ test.describe("administrador", () => {
     await guardar(page);
     await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
     await expect(page.getByRole("link", { name: "Almacenes Casa Viva" }).first()).toBeVisible();
+    const ficha = page.url();
 
     await page.goto("/oportunidades/pipeline");
     await page.getByLabel("Pipeline", { exact: true }).selectOption({ label: "Canal Distribución · Nacional · Distribución y retail" });
     await expect(page.getByText(nombre).first()).toBeVisible();
+
+    // «Marcar ganada» pide confirmación; ganada, ya no ofrece «Marcar perdida».
+    await page.goto(ficha);
+    await page.getByRole("button", { name: "Marcar ganada" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Volver" }).click();
+    await expect(page.getByRole("button", { name: "Marcar perdida" })).toBeVisible();
+    await page.getByRole("button", { name: "Marcar ganada" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Marcar ganada" }).click();
+    await expect(page.getByRole("button", { name: "Ganada" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Marcar perdida" })).toHaveCount(0);
   });
 
   test("una cotización sin oportunidad crea la suya en el pipeline del canal, factura a la cuenta y usa la lista propia del cliente", async ({ page }) => {
@@ -359,6 +370,9 @@ test.describe("administrador", () => {
     // El cliente acepta la Torre 1: se separa en su propia oportunidad ganada y la original queda con la Torre 2.
     await page.goto(torre1);
     await page.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Aceptada" }).click();
+    // Estado con consecuencias: se confirma diciendo qué pasa.
+    await expect(page.getByRole("dialog")).toContainText("esta parte se separa en su propia oportunidad ganada");
+    await page.getByRole("dialog").getByRole("button", { name: "Sí, aceptada" }).click();
     await expect(page.getByRole("link", { name: new RegExp(`${proyecto} · Torre 1`, "i") }).first()).toBeVisible();
     await page.goto(`${oportunidad}?tab=cotizaciones`);
     await expect(page.getByRole("heading", { name: /Partes ganadas/ })).toBeVisible();
@@ -433,6 +447,11 @@ test.describe("administrador", () => {
     await expect(page.getByText("DEMO-MB-060").first()).toBeVisible();
 
     await page.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Activado" }).click();
+    // Antes de crear la oferta en SAP se pide confirmación; «Volver» no cambia nada.
+    await page.getByRole("dialog").getByRole("button", { name: "Volver" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await page.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Activado" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Activar pedido" }).click();
     await page.getByRole("tab", { name: "SAP" }).click();
     await expect(page.getByText(/oferta/i).first()).toBeVisible();
     await expect(page.getByText(/^6\d{3}$|N\.º.*6\d{3}/).first()).toBeVisible();

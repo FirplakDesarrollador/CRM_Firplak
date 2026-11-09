@@ -15,6 +15,7 @@ import { useLocale, useT } from "@/lib/i18n/client";
 import { opLabels } from "@/lib/i18n";
 
 import { Tr } from "@/components/ui/Tr";
+import { ConfirmSubmit } from "@/components/ui/ActionForm";
 type View = { id: string; name: string; owner_id: string | null; is_shared: boolean; definition: ListDefinition };
 
 type Props = {
@@ -314,10 +315,10 @@ function SaveViewPanel({ object, definition, view, userId, canShare, onClose }: 
       {(state.message || delState.message) && <p className="error-text">{state.message ?? delState.message}</p>}
       <div className="flex flex-wrap justify-between gap-2">
         {ownsView ? (
-          <button type="submit" formAction={delAction} className="btn btn-sm btn-danger"
-            onClick={(e) => { if (!confirm(`¿Eliminar la vista “${view!.name}”?`)) e.preventDefault(); }}>
+          <ConfirmSubmit formAction={delAction} className="btn btn-sm btn-danger"
+            message={`¿Eliminar la vista “${view!.name}”?`} confirmLabel="Eliminar vista">
             <Trash2 size={14} /> {t("Eliminar vista")}
-          </button>
+          </ConfirmSubmit>
         ) : <span />}
         <div className="flex gap-2">
           <button type="button" className="btn btn-sm" onClick={onClose}>{t("Cancelar")}</button>
