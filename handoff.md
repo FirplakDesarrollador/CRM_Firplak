@@ -170,7 +170,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-09 | `76572e8` | Ícono de la app más grande (pedido de Luis): el sello ocupa el 74 % del ícono (antes 60 %) y el 62 % en el adaptable de Android, dentro de su zona segura. | Sin push; falta desplegar |
+| 2026-11-09 | `76572e8` | Ícono de la app más grande (pedido de Luis): el sello ocupa el 74 % del ícono (antes 60 %) y el 62 % en el adaptable de Android, dentro de su zona segura. | Desplegado (2026-11-09) |
 | 2026-11-09 | `479564d` | Ícono de la app: sello con la «A» oficial de Firplak y «CRM» en Outfit Bold (la letra de la app, en trazos), elegido por Luis entre 4 propuestas. Íconos de 192 y 512, adaptable de Android y de iPhone regenerados desde `public/brand/firplak-crm-sello-white.svg`; el de la barra de estado de Android sigue siendo solo la «A». | Desplegado (2026-11-09) |
 | 2026-11-09 | `0a70713` | Publicada en producción la migración `20261205000100_alerts_plural` (aviso diario «Tienes 1 tarea vencida» / «Tienes N tareas vencidas»); asesor de seguridad sin hallazgos nuevos. Rama `codex/migraciones-seguras` subida con los 6 pasos de la crítica. | Migración aplicada con `db:publicar` y visto bueno de Luis (40/40); interfaz desplegada |
 | 2026-11-08 | `9c51205` | Paso 6 del plan de la crítica, pulido: «Eliminar» de las fichas pasa a botón discreto (texto rojo sin borde) y no compite con «Editar»; en las líneas de cotización y pedido, «Guardar» se resalta solo cuando esa línea tiene cambios sin guardar. Lista de lo que queda de la crítica en Pendientes. e2e. | Desplegado (2026-11-09) |
