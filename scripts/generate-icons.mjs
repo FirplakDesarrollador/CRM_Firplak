@@ -26,10 +26,10 @@ async function icon(file, size, scale, radius = 0) {
   console.log(`public/icons/${file} (${size}×${size})`);
 }
 
-await icon('icon-192.png', 192, 0.6, 40);
-await icon('icon-512.png', 512, 0.6, 104);
-await icon('maskable-512.png', 512, 0.5);
-await icon('apple-touch-icon.png', 180, 0.6);
+await icon('icon-192.png', 192, 0.74, 40);
+await icon('icon-512.png', 512, 0.74, 104);
+await icon('maskable-512.png', 512, 0.62);
+await icon('apple-touch-icon.png', 180, 0.74);
 
 // Ícono pequeño de la barra de estado de Android: solo la «A» (a ese tamaño «CRM» no se lee), blanca sobre transparente.
 await sharp(mark).resize(96, 96, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toFile(join(out, 'badge-96.png'));
