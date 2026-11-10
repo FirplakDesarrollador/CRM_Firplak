@@ -1234,3 +1234,35 @@ dialog::backdrop {
     font-size: 16px !important;
   }
 }
+
+/* App instalada en iPhone: desde iOS 26 el sistema pinta sobre la franja de la hora un degradado difuminado del color
+   de fondo de la página, y con ese color decide si la hora va oscura o clara. Con la página blanca quedaba una franja
+   gris con la hora oscura encima de la barra navy; ni una barra opaca ni un elemento fijo arriba la quitan. En las
+   pantallas con barra superior, el fondo de la página pasa a ser el de la barra (en oscuro ya es negro, como ella) y
+   el fondo claro lo pinta una capa fija detrás de todo, también del logo. La página se alarga lo que mide la franja
+   de la hora: en la app instalada el alto de la página no la cuenta y, en una pantalla con poco contenido, quedaría
+   una banda del color de fondo abajo. */
+@media (display-mode: standalone) {
+  @supports (-webkit-touch-callout: none) {
+    html:has(header.shell-bar) {
+      min-height: calc(100% + env(safe-area-inset-top, 0px));
+      background-color: #0a1826;
+    }
+    :root[data-theme="dark"]:has(header.shell-bar) {
+      background-color: var(--bg);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]):has(header.shell-bar) {
+        background-color: var(--bg);
+      }
+    }
+    html:has(header.shell-bar) body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background-color: var(--bg);
+      pointer-events: none;
+    }
+  }
+}
