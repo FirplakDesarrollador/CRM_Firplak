@@ -174,9 +174,12 @@ qué necesitan con urgencia y si usan iPhone o Android.
 - **Cuenta de Apple Developer de Firplak** (99 USD al año, pide el D-U-N-S de la empresa): la tramitan Luis y TI. Sin
   ella no hay TestFlight ni App Store; con el Apple ID personal de Luis solo se puede instalar en su iPhone por 7 días.
 - **Instalada en el iPhone de Luis (2026-11-09)** como `com.firplak.crm.prueba`, firmada con su equipo personal
-  (vence a los 7 días; para renovarla, repetir los comandos de la sección 3). Quedó instalada pero **sin abrir**: falta
-  que Luis confíe en el desarrollador en el iPhone y la pruebe (inicio de sesión con Microsoft dentro de la app, Face
-  ID con su cara y el código como respaldo, y lo de «Por confirmar en un iPhone real»).
+  (vence a los 7 días; para renovarla, repetir los comandos de la sección 3). **Abre en el iPhone** (confirmado por
+  Luis). Falta que la pruebe por dentro: inicio de sesión con Microsoft dentro de la app, Face ID con su cara y el
+  código como respaldo, y lo de «Por confirmar en un iPhone real».
+- Al confiar en el desarrollador, el iPhone necesita internet para verificar la app (Settings → General → VPN &
+  Device Management → Trust → Verify App). La primera vez falló con «Unable to Verify App» en Wi-Fi; se resolvió
+  borrando la app, reiniciando el iPhone, reinstalando y verificando otra vez.
 - Para que Apple la apruebe en el App Store necesita funciones nativas, no solo la página. **Face ID ya está**
   (bloqueo de la app, probado en el simulador); faltan las notificaciones push nativas (APNs; las push web de la PWA
   no llegan a la app) y, más adelante, el modo sin conexión.
@@ -222,7 +225,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-09 | `5d110e1` | **App de iPhone instalada en el iPhone de Luis** (iPhone 17 Pro Max, iOS 27.2) con su Apple ID personal: compilada y firmada desde la terminal con el equipo y el identificador de prueba `com.firplak.crm.prueba` pasados en el comando, sin tocar el proyecto. Comandos en la sección 3. Instalación confirmada por `devicectl`; no se pudo abrir desde el Mac porque falta confiar en el desarrollador en el iPhone, así que todavía no está probada en el dispositivo. Sin cambios de código. | Solo local (documentación); no afecta el despliegue |
+| 2026-11-09 | `5d110e1` | **App de iPhone instalada en el iPhone de Luis** (iPhone 17 Pro Max, iOS 27.2) con su Apple ID personal: compilada y firmada desde la terminal con el equipo y el identificador de prueba `com.firplak.crm.prueba` pasados en el comando, sin tocar el proyecto. Comandos en la sección 3. Instalación confirmada por `devicectl`; tras confiar en el desarrollador y verificar la app en el iPhone, Luis confirmó que abre; falta probarla por dentro (ingreso, Face ID). Sin cambios de código. | Solo local (documentación); no afecta el despliegue |
 | 2026-11-09 | `10dd46c` | **Bloqueo con Face ID en la app de iPhone** (`mobile/ios/App/App/Bloqueo.swift`): tapa la app con la pantalla del sello y pide Face ID (o el código del iPhone) al abrir y al volver después de 5 minutos, solo con sesión iniciada; no guarda contraseñas. También se tapa en el selector de apps. Probado en el simulador (cara que coincide, cara que no, cancelar, volver antes y después del tiempo, sin sesión); falta un iPhone real. La app web no cambia. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |
 | 2026-11-09 | `cc5bae4` | **Prototipo de app de iPhone** en `mobile/` (Capacitor 8): abre el CRM publicado en una vista web, con ícono y pantalla de arranque del sello, hora y batería que cambian de color según el fondo, campos sin zoom, gesto de volver y página «Sin conexión». La app web no cambia: solo se excluye `mobile/` de TypeScript y ESLint. Probada en el simulador contra el demo local y dejada apuntando a producción. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |
 | 2026-11-09 | `76572e8` | Ícono de la app más grande (pedido de Luis): el sello ocupa el 74 % del ícono (antes 60 %) y el 62 % en el adaptable de Android, dentro de su zona segura. | Desplegado (2026-11-09) |
