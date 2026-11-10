@@ -11,6 +11,7 @@ import type { CurrentUser } from "@/lib/session";
 import type { T } from "@/lib/i18n";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell, type NotificationItem } from "./NotificationBell";
+import { UnsentLink } from "./UnsentLink";
 
 export function AppHeader({ user, notifications, unread, t }: { user: CurrentUser; notifications: NotificationItem[]; unread: number; t: T }) {
   const quick = [
@@ -49,6 +50,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
             })}
           </Dropdown>
         )}
+        <UnsentLink userId={user.id} />
         <NotificationBell items={notifications} unread={unread} />
         <Dropdown
           label="Menú de usuario"
@@ -75,7 +77,7 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
             {(canSystem(user.access, "customize") || canSystem(user.access, "manage_users")) && (
               <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> {t("Configuración")}</Link>
             )}
-            <SignOutForm label={t("Cerrar sesión")} />
+            <SignOutForm label={t("Cerrar sesión")} userId={user.id} />
           </div>
         </Dropdown>
       </div>

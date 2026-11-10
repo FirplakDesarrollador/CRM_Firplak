@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ChevronRight, Mail, Phone, Tags } from "lucide-react";
+import { ArrowLeft, ChevronRight, Mail, Pencil, Phone, Plus, Tags } from "lucide-react";
 import { todayISO } from "@/lib/format";
 import { useT, useValueLabel } from "@/lib/i18n/client";
 import { defaultBook } from "@/lib/offline/prices";
-import type { OfflineAccount, OfflineSnapshot } from "@/lib/offline/types";
+import type { OfflineAccount, OfflineSnapshot, OutboxItem } from "@/lib/offline/types";
 import { ActivityList, agendaGroups } from "./OfflineAgenda";
 import { OpportunityList } from "./OfflineOpportunities";
+import { LocalActivityList, UnsentBadge } from "./OfflineOutbox";
 import { EmptyRow, matches, SearchBox, Section } from "./parts";
 import { go } from "./route";
 
@@ -17,14 +18,25 @@ function address(street: string | null, city: string | null, state: string | nul
   return [street, [city, state].filter(Boolean).join(", "), country].filter(Boolean).join(" · ");
 }
 
-export function OfflineClients({ accounts }: { accounts: OfflineAccount[] }) {
+export function OfflineClients({ accounts, local }: {
+  accounts: OfflineAccount[];
+  /** Clientes creados sin señal en este dispositivo, por id. */
+  local: Map<string, OutboxItem>;
+}) {
   const t = useT();
   const label = useValueLabel();
   const [query, setQuery] = useState("");
   const found = accounts.filter((a) => matches(query, a.name, a.tax_id, a.sap_card_code, cityOf(a)));
   return (
     <>
-      <SearchBox id="buscar-cliente" label={t("Buscar cliente por nombre, NIT o ciudad")} value={query} onChange={setQuery} />
+      <div className="flex flex-wrap items-start gap-2">
+        <div className="min-w-0 flex-1 basis-60">
+          <SearchBox id="buscar-cliente" label={t("Buscar cliente por nombre, NIT o ciudad")} value={query} onChange={setQuery} />
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => go({ f: "cliente", e: null }, true)}>
+          <Plus size={15} aria-hidden="true" /> {t("Nuevo cliente")}
+        </button>
+      </div>
       <section className="card">
         <ul className="divide-y divide-[var(--border)]">
           {accounts.length === 0 && <EmptyRow>{t("Aún no tienes clientes asignados.")}</EmptyRow>}
@@ -40,6 +52,7 @@ export function OfflineClients({ accounts }: { accounts: OfflineAccount[] }) {
                   <span className="block truncate font-semibold">{a.name}</span>
                   <span className="block truncate text-xs text-muted">{[a.industry ? label(a.industry) : null, cityOf(a)].filter(Boolean).join(" · ") || t("Sin canal ni ciudad")}</span>
                 </span>
+                <UnsentBadge item={local.get(a.id)} />
                 <ChevronRight size={16} className="flex-none text-muted" aria-hidden="true" />
               </button>
             </li>
@@ -59,7 +72,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function OfflineClient({ account, snapshot, known }: { account: OfflineAccount; snapshot: OfflineSnapshot; known: Set<string> }) {
+export function OfflineClient({ account, snapshot, known, local, activities, names }: {
+  account: OfflineAccount;
+  snapshot: OfflineSnapshot;
+  known: Set<string>;
+  /** Si el cliente se creó sin señal en este dispositivo, su registro en la bandeja de salida. */
+  local: OutboxItem | undefined;
+  /** Actividades registradas sin señal para este cliente. */
+  activities: OutboxItem[];
+  names: Map<string, string>;
+}) {
   const t = useT();
   const label = useValueLabel();
   const contacts = snapshot.contacts.filter((c) => c.account_id === account.id);
@@ -82,7 +104,18 @@ export function OfflineClient({ account, snapshot, known }: { account: OfflineAc
           {account.account_type && <span className="badge badge-brand">{label(account.account_type)}</span>}
           {account.industry && <span className="badge">{label(account.industry)}</span>}
           {account.market && <span className="badge">{label(account.market)}</span>}
+          <UnsentBadge item={local} />
         </div>
+        {local && local.status !== "sent" && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <p className="text-sm text-muted">
+              {t(local.status === "rejected" ? "El CRM no aceptó este cliente. Corrígelo para volver a enviarlo." : "Creado sin señal. Se enviará al CRM cuando haya conexión.")}
+            </p>
+            <button type="button" className="btn btn-sm" onClick={() => go({ f: "cliente", e: account.id }, true)}>
+              <Pencil size={13} aria-hidden="true" /> {t(local.status === "rejected" ? "Corregir" : "Editar")}
+            </button>
+          </div>
+        )}
       </div>
 
       <section className="card p-4">
@@ -98,10 +131,21 @@ export function OfflineClient({ account, snapshot, known }: { account: OfflineAc
           {billing && <Field label={t("Dirección de facturación")}>{billing}</Field>}
           {shipping && <Field label={t("Dirección de entrega")}>{shipping}</Field>}
         </dl>
-        <button type="button" className="btn btn-sm mt-4" onClick={() => go({ v: "productos", p: `a:${account.id}`, c: null }, true)}>
-          <Tags size={14} aria-hidden="true" /> {t("Ver precios de este cliente")}
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" className="btn btn-sm btn-primary" onClick={() => go({ f: "actividad", e: null }, true)}>
+            <Plus size={14} aria-hidden="true" /> {t("Registrar actividad")}
+          </button>
+          <button type="button" className="btn btn-sm" onClick={() => go({ v: "productos", p: `a:${account.id}`, c: null }, true)}>
+            <Tags size={14} aria-hidden="true" /> {t("Ver precios de este cliente")}
+          </button>
+        </div>
       </section>
+
+      {activities.length > 0 && (
+        <Section title={t("Registradas sin señal")} count={activities.length}>
+          <LocalActivityList items={activities} names={names} showClient={false} />
+        </Section>
+      )}
 
       <Section title={t("Contactos")} count={contacts.length}>
         <ul className="divide-y divide-[var(--border)]">

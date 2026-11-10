@@ -1,20 +1,14 @@
 "use client";
 
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, Plus } from "lucide-react";
 import { ACTIVITY_ICONS } from "@/components/ui/icons";
 import { ACTIVITY_STATUSES, ACTIVITY_TYPES, PRIORITIES } from "@/lib/objects/picklists";
 import { addDaysISO, dayISO, formatDate, formatDateTime, formatTime, relativeDays, todayISO, type DateLocale } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
-import type { OfflineActivity } from "@/lib/offline/types";
-import { ClientLink, EmptyRow, Section } from "./parts";
-
-const TYPE_TONE: Record<string, string> = {
-  task: "bg-info-soft text-info",
-  call: "bg-success-soft text-success",
-  meeting: "bg-accent-soft text-accent",
-  email: "bg-brand-soft text-brand",
-  note: "bg-surface-3 text-ink-2",
-};
+import type { OfflineActivity, OutboxItem } from "@/lib/offline/types";
+import { LocalActivityList } from "./OfflineOutbox";
+import { ClientLink, EmptyRow, Section, TYPE_TONE } from "./parts";
+import { go } from "./route";
 
 const WEEKDAYS: Record<DateLocale, string[]> = {
   es: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
@@ -111,20 +105,35 @@ export function groupTitle(group: AgendaGroup, today: string, locale: DateLocale
   return `${weekday}, ${formatDate(group.day, locale)}`;
 }
 
-export function OfflineAgenda({ activities, known }: { activities: OfflineActivity[]; known: Set<string> }) {
+export function OfflineAgenda({ activities, known, local, names, canCreate }: {
+  activities: OfflineActivity[];
+  known: Set<string>;
+  /** Actividades registradas sin señal en este dispositivo. */
+  local: OutboxItem[];
+  names: Map<string, string>;
+  canCreate: boolean;
+}) {
   const t = useT();
   const locale = useLocale();
   const today = todayISO();
   const groups = agendaGroups(activities, today);
-  if (groups.length === 0) {
-    return (
-      <section className="card">
-        <ul><EmptyRow>{t("No tienes actividades pendientes ni reuniones en los próximos 7 días.")}</EmptyRow></ul>
-      </section>
-    );
-  }
   return (
     <>
+      {canCreate && (
+        <button type="button" className="btn btn-primary self-start" onClick={() => go({ f: "actividad", e: null }, true)}>
+          <Plus size={15} aria-hidden="true" /> {t("Registrar actividad")}
+        </button>
+      )}
+      {local.length > 0 && (
+        <Section title={t("Registradas sin señal")} count={local.length}>
+          <LocalActivityList items={local} names={names} />
+        </Section>
+      )}
+      {groups.length === 0 && (
+        <section className="card">
+          <ul><EmptyRow>{t("No tienes actividades pendientes ni reuniones en los próximos 7 días.")}</EmptyRow></ul>
+        </section>
+      )}
       {groups.map((group) => (
         <Section key={group.key} title={groupTitle(group, today, locale, t)} count={group.items.length}>
           <ActivityList groups={[group]} known={known} />

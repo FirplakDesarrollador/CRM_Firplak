@@ -17,6 +17,15 @@ export function matches(query: string, ...texts: (string | null | undefined)[]) 
   return words.every((word) => haystack.includes(word));
 }
 
+/** Color del ícono según el tipo de actividad. */
+export const TYPE_TONE: Record<string, string> = {
+  task: "bg-info-soft text-info",
+  call: "bg-success-soft text-success",
+  meeting: "bg-accent-soft text-accent",
+  email: "bg-brand-soft text-brand",
+  note: "bg-surface-3 text-ink-2",
+};
+
 export function SearchBox({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (value: string) => void }) {
   return (
     <div className="relative">

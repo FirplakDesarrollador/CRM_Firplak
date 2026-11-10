@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { getObject, isObjectKey, type ListDefinition, type ObjectKey } from "@/lib/objects";
 import { getObjectDef, untypedClient } from "./data";
-import { parseAmount, type FormState } from "./form";
+import type { FormState } from "./form";
 import { friendlyError, persistRecord } from "./persist";
+import { insertActivity } from "./activities";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
 import { syncActivityToMicrosoft } from "@/lib/ms365/sync";
@@ -59,43 +60,8 @@ export async function moveOpportunityStage(id: string, stageId: string, lossReas
 export async function createActivity(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const type = String(formData.get("activity_type") ?? "task");
-  const subject = String(formData.get("subject") ?? "").trim();
-  if (!subject) return { errors: { subject: "Escribe un asunto" } };
-
-  const get = (k: string) => {
-    const v = String(formData.get(k) ?? "").trim();
-    return v || null;
-  };
-  const start = get("start_at");
-  const duration = parseAmount(String(get("duration_minutes") ?? "")) || null;
-  const startIso = start ? `${start}:00-05:00` : null;
-  const endIso = startIso && duration && type === "meeting"
-    ? new Date(Date.parse(startIso) + duration * 60000).toISOString()
-    : null;
-
-  const supabase = await createClient();
-  const { data: created, error } = await supabase.from("activities").insert({
-    activity_type: type,
-    subject,
-    description: get("description"),
-    status: formData.get("completed") === "on" ? "completed" : "pending",
-    priority: get("priority") ?? "normal",
-    due_date: get("due_date"),
-    start_at: startIso,
-    end_at: endIso,
-    location: get("location"),
-    call_result: get("call_result"),
-    duration_minutes: duration,
-    account_id: get("account_id"),
-    contact_id: get("contact_id"),
-    opportunity_id: get("opportunity_id"),
-    lead_id: get("lead_id"),
-    case_id: get("case_id"),
-    owner_id: get("owner_id") ?? user.id,
-  }).select("id").single();
-  if (error) return { message: friendlyError(error.message) };
-  if ((type === "meeting" || type === "task") && created) await syncActivityToMicrosoft(created.id);
+  const result = await insertActivity(formData, user);
+  if (!result.ok) return result.state;
   revalidatePath("/", "layout");
   return { ok: true, message: "Actividad registrada" };
 }

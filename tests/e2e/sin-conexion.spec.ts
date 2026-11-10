@@ -14,7 +14,8 @@ const ALMACEN = "descarga";
 /** Lo que hay descargado en este navegador: de quién es y cuántos clientes trae. `null` si no hay nada. */
 const descargado = (page: Page) =>
   page.evaluate(([base, almacen]) => new Promise<{ userId: string; clientes: number } | null>((resolve, reject) => {
-    const abrir = indexedDB.open(base, 1);
+    // Sin versión: abre la base como esté. Si no existe, queda vacía y la app la completa al usarla.
+    const abrir = indexedDB.open(base);
     abrir.onupgradeneeded = () => {
       if (!abrir.result.objectStoreNames.contains(almacen)) abrir.result.createObjectStore(almacen);
     };
@@ -134,7 +135,7 @@ test.describe("administrador", () => {
 
     // La descarga que dejó otra persona en este dispositivo se borra al entrar al CRM.
     await page.evaluate(([base, almacen]) => new Promise<void>((resolve, reject) => {
-      const abrir = indexedDB.open(base, 1);
+      const abrir = indexedDB.open(base);
       abrir.onerror = () => reject(abrir.error);
       abrir.onsuccess = () => {
         const db = abrir.result;

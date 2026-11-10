@@ -25,14 +25,15 @@ export type PersistResult =
 /**
  * Crea o actualiza un registro con las mismas comprobaciones de los formularios: permisos,
  * campos, duplicados, reglas de validación y automatizaciones. Con `dryRun` valida todo sin
- * guardar (vista previa de los asistentes de IA).
+ * guardar (vista previa de los asistentes de IA). Con `newId`, el registro nuevo se crea con ese id: lo trae
+ * el dispositivo que lo escribió sin señal, para que reenviarlo no lo duplique.
  */
 export async function persistRecord(
   objectKey: ObjectKey,
   id: string | null,
   formData: FormData,
   user: CurrentUser,
-  opts: { dryRun?: boolean; ignoreDuplicates?: boolean } = {},
+  opts: { dryRun?: boolean; ignoreDuplicates?: boolean; newId?: string } = {},
 ): Promise<PersistResult> {
   const def = await getObjectDef(objectKey);
   if (!can(user.access, def.permission, id ? "edit" : "create")) {
@@ -165,6 +166,7 @@ export async function persistRecord(
     values.opportunity_id = createdOpportunity;
   }
 
+  if (!id && opts.newId) values.id = opts.newId;
   const result = id
     ? await db.from(def.table).update(values).eq("id", id).select("id").maybeSingle()
     : await db.from(def.table).insert(values).select("id").single();

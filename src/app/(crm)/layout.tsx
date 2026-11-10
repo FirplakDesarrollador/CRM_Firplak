@@ -5,6 +5,7 @@ import { NavTabs } from "@/components/shell/NavTabs";
 import { MobileTabBar } from "@/components/shell/MobileTabBar";
 import { PushSync } from "@/components/pwa/PushSettings";
 import { DraftsSweep } from "@/components/pwa/DraftsSweep";
+import { OutboxSync } from "@/components/pwa/OutboxSync";
 import { vapidPublicKey } from "@/lib/push/config";
 import { navItems } from "@/components/shell/nav";
 import { Alert } from "@/components/ui/Alert";
@@ -45,6 +46,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
       <MobileTabBar items={navItems(user.access, t)} />
       {pushKey && <PushSync publicKey={pushKey} userId={user.id} />}
       <DraftsSweep userId={user.id} />
+      <OutboxSync userId={user.id} />
     </div>
     </I18nProvider>
   );

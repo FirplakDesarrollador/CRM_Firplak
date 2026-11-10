@@ -1,7 +1,7 @@
 # Firplak CRM · Handoff
 
 > Estado del proyecto para quien lo retome (persona o asistente de IA). **Se actualiza con cada cambio**, en el
-> mismo commit. Última actualización: **2026-11-09**.
+> mismo commit. Última actualización: **2026-11-10**.
 > El detalle de cada módulo está en [README.md](README.md); la salida en vivo, en
 > [docs/puesta-en-produccion.md](docs/puesta-en-produccion.md); el sistema visual, en [DESIGN.md](DESIGN.md).
 
@@ -107,7 +107,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 | Cotizaciones como partes | Las cotizaciones de una oportunidad son **partes del negocio** (decisión de Luis). **Valor** de la oportunidad abierta = suma de sus partes abiertas (sin Aceptadas, Rechazadas ni Reemplazadas), automático; ganada = suma de las aceptadas; perdida conserva su valor; sin cotizaciones (o solo borradores vacíos) lo escribe el asesor. Ya no hay «Sincronizar». **Parte aceptada con otras abiertas:** se separa en su propia oportunidad **Ganada** (misma cuenta, asesor, pipeline y reparto; cierre hoy; «Parte ganada de» la original, que la lista en «Partes ganadas») y se lleva sus pedidos; la última abierta aceptada gana la original. **Etapas solo hacia adelante:** cada pipeline marca en «Avanza con cotización» (Configuración → Pipelines) la etapa «Al presentar la primera cotización» y la de «Al aceptarse una parte (quedan otras abiertas)». La última parte abierta rechazada sin ninguna aceptada avisa al asesor y a su jefe; «Reemplazada» (versión anterior) no suma ni avisa. Marcar Perdida rechaza las partes abiertas y no se permite con partes aceptadas o pedidos activos; una oportunidad cerrada no admite cotizaciones nuevas; un pedido cancelado avisa. Migración `20261204000100`. |
 | Cotizaciones | Desde la oportunidad («Nueva cotización») o sin ella: si no se elige oportunidad, se crea una con el nombre de la cotización, en el pipeline del canal, cierre = «Válida hasta» y sincronizada. **«Facturar a» es la cuenta** y debe ser la de la oportunidad (la base lo valida). Dirección de facturación, dirección de entrega y condiciones de pago se toman de la cuenta (mientras está en Borrador siguen a la cuenta; presentada queda fija); «Entregar en otra dirección» y «Cambiar condiciones de pago» permiten escribirlas a mano. Las **Condiciones de pago** son una lista de valores de la cuenta (Contado, Anticipado, 8 a 90 días). Líneas desde la lista de precios según moneda, descuento por línea, IVA y flete, PDF, «Crear pedido» al quedar *Aceptada*. **Aprobación obligatoria:** con más de 15 % de descuento no pasa a *En revisión*, *Aprobada*, *Presentada* ni *Aceptada* por fuera del flujo; cambiar el descuento tras aprobar exige aprobar de nuevo (migración `20261130000100`). |
 | Integraciones | Microsoft 365 (Outlook, Teams, Planner, SharePoint), SAP B1 (lectura de cartera e inventario; pedido activado → **oferta de venta**; importación de productos a demanda), servidor MCP con OAuth 2.1 para Claude/ChatGPT, correo con Resend. |
-| Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin conexión, fase 1 (borradores):** lo que se escribe en el formulario de un registro o en el de actividades queda como borrador en el dispositivo (`src/lib/drafts.ts`, `useFormDraft`), se recupera al volver a abrirlo y no se pierde si al guardar no hay internet; todavía no se crean registros sin conexión. **Sin conexión, parte A (consulta):** «Preparar el día» (tarjeta en Inicio y en el menú de usuario → «Consulta sin señal») baja al dispositivo los clientes del asesor con sus contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios; la pantalla `/sin-conexion` los muestra sin red, con el precio de cada cliente calculado en el teléfono (detalle y partes que faltan en la sección 6). |
+| Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin conexión, fase 1 (borradores):** lo que se escribe en el formulario de un registro o en el de actividades queda como borrador en el dispositivo (`src/lib/drafts.ts`, `useFormDraft`), se recupera al volver a abrirlo y no se pierde si al guardar no hay internet; todavía no se crean registros sin conexión. **Sin conexión, parte A (consulta):** «Preparar el día» (tarjeta en Inicio y en el menú de usuario → «Consulta sin señal») baja al dispositivo los clientes del asesor con sus contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios; la pantalla `/sin-conexion` los muestra sin red, con el precio de cada cliente calculado en el teléfono. **Sin conexión, parte B (bandeja de salida):** en esa misma pantalla, sin señal, se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota); quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, cada uno Pendiente, Enviado o Rechazado con su motivo; la cabecera del CRM dice «N sin enviar» (detalle y lo que falta en la sección 6). |
 | App de iPhone (prototipo) | `mobile/`: app nativa hecha con **Capacitor 8** (Swift Package Manager, sin CocoaPods) que abre el CRM publicado dentro de una vista web; **la app web no cambia** y cada despliegue de `main` se ve en la app sin recompilar. Identificador `com.firplak.crm`, nombre «Firplak CRM», iOS 15 o superior, ícono y pantalla de arranque con el sello. Lo propio de la app se inyecta desde `CrmViewController` (`mobile/ios/App/App/AppDelegate.swift`): el CRM se comporta como «instalado», campos a 16 px (sin zoom al escribir), la pantalla de arranque se quita al cargar, la hora y la batería cambian de color según el fondo que tengan debajo, y deslizar desde el borde izquierdo vuelve atrás. Sin señal muestra «Sin conexión» con «Reintentar» (`mobile/www/error.html`). **Bloqueo con Face ID** (`mobile/ios/App/App/Bloqueo.swift`, enganchado en `SceneDelegate.swift`): una ventana con la pantalla del sello tapa la app y pide Face ID (o Touch ID; si falla, el código del iPhone) al abrirla y al volver después de 5 minutos fuera, solo si hay sesión iniciada (cookie `sb-…-auth-token` de la vista web); en la pantalla de ingreso no pide nada. No guarda contraseñas ni toca la sesión del CRM. La app también se tapa siempre que deja de estar en primer plano, para que el selector de apps no muestre datos de clientes. Si se cancela o la cara no coincide queda el botón «Desbloquear con Face ID». Un iPhone sin código no se bloquea. Para probar, el argumento de arranque `-bloqueoGracia 5` (solo en compilación de depuración) acorta los 5 minutos a 5 segundos. Probada solo en el simulador (iPhone 18 Pro Max, iOS 27.2). |
 
 ## 5. Producción (Supabase)
@@ -170,7 +170,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - B2C: personas naturales con cédula.
 - Mapeo de Segmentos por Mercado y Canal (falta la tabla de Luis).
 
-### Modo sin conexión: borradores y parte A hechos; faltan B (bandeja de salida) y C (cotizaciones)
+### Modo sin conexión: borradores, parte A y parte B hechos; falta C (cotizaciones)
 Luis dio la orden de empezar el 2026-11-09 y ese mismo día aprobó el plan. Los asesores se quedan sin señal en
 ascensores, parqueaderos de sótano, obras y oficinas con mala red, y en el avión. Sin señal necesitan, en este orden:
 cotizar (informar precios), registrar actividades y crear un cliente. La fuerza comercial usa la **app web (PWA) en
@@ -196,7 +196,7 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
 6. iPhone y Android, por la app web; no contar todavía con la app de Apple.
 
 **Orden de construcción:** A. descarga y consulta (**hecha**) → B. bandeja de salida con actividades y crear cliente
-→ C. cotizaciones sin señal. Cada parte con sus pruebas y su commit local.
+(**hecha**) → C. cotizaciones sin señal. Cada parte con sus pruebas y su commit local.
 
 - **Borradores (antes «fase 1»), cómo quedó:** el formulario de cualquier registro (`RecordForm`) y el de actividades de las fichas
   (`Composer`) guardan lo escrito en `localStorage` (`crm:borrador:<usuario>:<dirección>`), 400 ms después de la
@@ -237,10 +237,44 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
     2026-11-09 en 375 px con la asesora de demo: la pantalla abre con los datos, la ficha de «Almacenes Casa Viva»
     muestra sus contactos y sus precios propios, y el resto sale con «Precio de canal».
   - **Sin comprobar todavía:** en un iPhone o Android real (solo Chrome de escritorio y el panel del navegador).
-- **Para la parte B, a tener en cuenta:** hoy cerrar sesión borra también la pantalla guardada; cuando exista la
-  bandeja de salida habrá que conservar lo no enviado (decisión 4) y decidir si la pantalla se queda para mostrarlo.
-  La bandeja va en otro almacén de la misma base IndexedDB (subir la versión). Los registros creados sin señal
-  llevan el identificador generado en el teléfono, para que reenviar no duplique.
+- **Parte B, cómo quedó** (sin cambios de base de datos):
+  - **Dónde se crea:** en `/sin-conexion`, con o sin señal. Clientes → «Nuevo cliente» (nombre, tipo, canal,
+    mercado, NIT, teléfono, correo, ciudad, dirección, notas) y «Registrar actividad» desde la Agenda o desde la
+    ficha de un cliente (tarea, llamada, reunión, correo o nota, con los mismos campos del formulario rápido del
+    CRM). Formularios en `src/components/offline/OfflineForms.tsx`.
+  - **La bandeja de salida** es el almacén `salida` de la misma base IndexedDB (versión 2;
+    `src/lib/offline/store.ts`). Cada registro lleva el identificador que tendrá en el CRM, generado en el
+    teléfono, así que reenviarlo no lo duplica. Un cliente creado sin señal aparece en la lista de clientes marcado
+    «Sin enviar», con los precios de la lista de su canal y mercado, y se le pueden registrar actividades antes de
+    que exista en el CRM.
+  - **El envío** (`src/lib/offline/sync.ts`, `POST /api/sin-conexion/enviar`): solo, al guardar, al volver la
+    señal, al volver a la app y cada minuto; también con «Enviar ahora». Primero los clientes y después lo demás por
+    orden de creación; la actividad de un cliente sin enviar espera a que ese cliente salga. Pasa por las mismas
+    reglas que el CRM (`persistRecord` e `insertActivity`, que ahora comparte el formulario rápido): campos
+    obligatorios, reglas de validación, duplicados y permisos. Sin red o con error del servidor el registro sigue
+    Pendiente; si el CRM no lo acepta queda **Rechazado** con el motivo y los campos.
+  - **La pestaña «Envíos»** muestra Rechazados, Por enviar y Enviados. Un rechazado se corrige («Corregir») o se
+    descarta; si el motivo es un posible duplicado, dice con cuál se parece y deja «Enviar de todas formas».
+    Descartar un cliente descarta también sus actividades (se avisa cuántas). Un enviado enlaza a su ficha («Ver en
+    el CRM») y sale de la bandeja con la siguiente descarga o a los 7 días.
+  - **En el CRM:** la cabecera muestra «N sin enviar» (`UnsentLink`) y lleva a la bandeja; el envío también corre
+    desde cualquier pantalla del CRM (`OutboxSync`).
+  - **Cerrar sesión (decisión 4):** con registros sin enviar, el menú avisa cuántos son y pide confirmar («Cerrar
+    sesión de todas formas»). Se borra lo descargado y lo ya enviado; lo pendiente y lo rechazado se quedan. Solo se
+    envían con la sesión de quien los creó: otra persona en el mismo dispositivo no los ve ni los envía, y sin sesión
+    la pantalla solo dice cuántos hay. Cuando vuelve a entrar quien los creó, salen solos.
+  - **Pruebas:** `tests/e2e/sin-conexion-envios.spec.ts` (cliente y llamada creados con la red cortada y enviados al
+    volver; duplicado rechazado, corregido, enviado de todas formas y descartado; aviso al cerrar sesión, otra
+    persona en el dispositivo y envío al volver la dueña).
+  - **Límites conocidos:** (1) un campo personalizado obligatorio en cuentas que no esté en el formulario sin señal
+    hace que el CRM rechace el cliente (el rechazo nombra el campo): se crea entonces desde el CRM. (2) Sin señal no
+    se editan ni se completan registros que ya están en el CRM (por ejemplo marcar hecha una tarea descargada): solo
+    se crean nuevos. (3) No se crean contactos ni oportunidades sin señal. (4) iOS no envía en segundo plano: sale
+    al volver a abrir la app.
+  - **Sin comprobar todavía:** en un iPhone o Android real.
+- **Para la parte C, a tener en cuenta:** una cotización sin señal depende de su cliente (puede ser uno sin enviar)
+  y lleva el precio calculado en el teléfono; al enviarla se respeta ese precio aunque la lista haya cambiado
+  (decisión 1) y la línea se marca, lo que probablemente pide una columna nueva (migración con su prueba).
 - **Idea pendiente:** con mala señal (no sin señal) las demás pantallas del CRM pueden tardar minutos en fallar; hoy
   solo `/sin-conexion` tiene límite de 3 s. Valorar un límite para las demás navegaciones cuando hay descarga.
 - A tener en cuenta: el almacenamiento del navegador no está cifrado (por eso solo guarda lo de quien inició sesión
@@ -302,6 +336,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-10 | `HASH_B` | **Modo sin conexión, parte B: bandeja de salida, actividades y crear cliente.** En «Consulta sin señal» ahora se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota) sin red. Quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, primero los clientes y luego sus actividades; cada registro queda Pendiente, Enviado o Rechazado con el motivo, y se puede corregir, reenviar o descartar en la pestaña nueva «Envíos». La cabecera del CRM avisa «N sin enviar». Al cerrar sesión con registros sin enviar se avisa y se conservan hasta que entre la misma persona; nadie más los ve ni los envía. Sin cambios de base de datos. Prueba nueva `tests/e2e/sin-conexion-envios.spec.ts`. | Solo local; depende de la parte A (migración `20261206000100_offline_snapshot` sin publicar) |
 | 2026-11-09 | `f47e84b` | **Modo sin conexión, parte A: «Preparar el día» y consulta sin señal** (plan aprobado por Luis, con sus 6 decisiones en la sección 6). Una tarjeta en Inicio descarga al dispositivo los clientes del asesor con contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios, y dice cuándo se descargó. La pantalla nueva «Consulta sin señal» (`/sin-conexion`, también en el menú de usuario) los muestra sin red: agenda, clientes, oportunidades y productos con el precio que le toca a cada cliente, calculado en el teléfono con la regla del CRM (`db:test` comprueba que coincide con la base). Sin red, cualquier pantalla del CRM lleva allí y recuerda a dónde volver. Lo descargado se borra al cerrar sesión y cuando entra otra persona. Service worker v4; `npm run dev:demo -- --produccion` para probar con la app compilada. 147 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion.spec.ts`. | Solo local. **Migración `20261206000100_offline_snapshot` sin publicar**: publicarla antes de subir a `main` |
 | 2026-11-09 | `18576a5` | **Modo sin conexión, fase 1: borradores en el dispositivo.** Lo que se escribe en el formulario de un registro o en el de actividades se guarda en el dispositivo mientras se llena, se recupera al volver a abrirlo («Descartar borrador» lo quita) y no se pierde si al guardar no hay internet o el envío falla (aviso «Sin conexión: no se guardó…», que se lleva a la vista). Se borra al guardar, al cancelar, al cerrar sesión y a los 14 días. De paso: las listas desplegables ya no vuelven a su valor anterior cuando un guardado sale con errores (pasaba en todos los formularios), y el resultado de guardar se lleva a la vista en formularios largos. Sin cambios de base de datos. Prueba nueva `tests/e2e/borradores.spec.ts`. | Solo local; no afecta el despliegue hasta subirlo a `main` |
 | 2026-11-09 | `5d110e1` | **App de iPhone instalada en el iPhone de Luis** (iPhone 17 Pro Max, iOS 27.2) con su Apple ID personal: compilada y firmada desde la terminal con el equipo y el identificador de prueba `com.firplak.crm.prueba` pasados en el comando, sin tocar el proyecto. Comandos en la sección 3. Instalación confirmada por `devicectl`; tras confiar en el desarrollador y verificar la app en el iPhone, Luis confirmó que abre, que entra con su cuenta y que pide Face ID al volver a abrirla. Sin cambios de código. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |

@@ -121,4 +121,39 @@ export type OfflineMeta = {
   /** Traducciones de valores de listas y etapas (solo en inglés). */
   labels: Record<string, string>;
   counts: { accounts: number; contacts: number; opportunities: number; activities: number; products: number };
+  /** Valores de las listas del formulario «Nuevo cliente», como estaban al descargar. */
+  options?: OfflineOptions;
+};
+
+export type OfflineOptions = { account_type: string[]; industry: string[]; market: string[] };
+
+// ── Bandeja de salida: lo que se crea sin señal y espera a enviarse ─────────────────────────────────────────
+
+export type OutboxKind = "account" | "activity";
+/** Pendiente de enviar, enviado al CRM o rechazado por el CRM (con el motivo). */
+export type OutboxStatus = "pending" | "sent" | "rejected";
+
+export type OutboxItem = {
+  /** Lo genera el dispositivo y es el id del registro en el CRM: reenviar no duplica. */
+  id: string;
+  /** Quién lo creó. Solo esa persona lo ve y lo envía. */
+  userId: string;
+  kind: OutboxKind;
+  /** Nombre del cliente o asunto de la actividad. */
+  title: string;
+  /** Los campos del formulario, como texto. */
+  values: Record<string, string>;
+  createdAt: number;
+  status: OutboxStatus;
+  /** Por qué lo rechazó el CRM. */
+  reason: string | null;
+  errors?: { field: string; label: string; message: string }[];
+  /** Clientes del CRM que podrían ser el mismo. */
+  duplicates?: { id: string; label: string }[];
+  sentAt: number | null;
+  attempts: number;
+  /** Cliente creado sin señal del que depende: se envía primero. */
+  dependsOn: string | null;
+  /** La persona revisó los posibles duplicados y pidió enviarlo de todas formas. */
+  ignoreDuplicates?: boolean;
 };

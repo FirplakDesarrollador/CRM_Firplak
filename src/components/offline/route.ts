@@ -5,7 +5,7 @@ import { useMemo, useSyncExternalStore } from "react";
 // La pantalla sin conexión guarda dónde está la persona en la parte de la dirección que va después de «#»:
 // cambiarla no le pide nada al servidor, así que pestañas, fichas y el botón «atrás» funcionan sin red.
 
-export const VIEWS = ["agenda", "clientes", "oportunidades", "productos"] as const;
+export const VIEWS = ["agenda", "clientes", "oportunidades", "productos", "salida"] as const;
 export type View = (typeof VIEWS)[number];
 
 const ROUTE_EVENT = "crm:sin-conexion:ruta";
@@ -37,7 +37,14 @@ export type Route = {
   prices: string | null;
   /** Pantalla del CRM que se intentó abrir sin red. */
   back: string;
+  /** Formulario abierto para crear (o corregir) algo sin señal. */
+  form: Form | null;
+  /** Registro de la bandeja de salida que se está corrigiendo. */
+  edit: string | null;
 };
+
+const FORMS = ["cliente", "actividad"] as const;
+export type Form = (typeof FORMS)[number];
 
 export function useRoute(): Route {
   const hash = useSyncExternalStore(subscribe, () => window.location.hash, () => "");
@@ -49,6 +56,8 @@ export function useRoute(): Route {
       client: p.get("c"),
       prices: p.get("p"),
       back: safeBack(p.get("volver")),
+      form: FORMS.find((form) => form === p.get("f")) ?? null,
+      edit: p.get("e"),
     };
   }, [hash]);
 }
@@ -70,4 +79,10 @@ export function go(changes: Record<string, string | null>, push = false) {
   else window.history.replaceState(window.history.state, "", url);
   window.dispatchEvent(new Event(ROUTE_EVENT));
   window.scrollTo({ top: 0 });
+}
+
+/** Cierra el formulario abierto: vuelve a la pantalla desde la que se abrió. */
+export function closeForm() {
+  if ((window.history.state as { fp?: number } | null)?.fp) window.history.back();
+  else go({ f: null, e: null });
 }

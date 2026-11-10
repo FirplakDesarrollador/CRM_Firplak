@@ -1,8 +1,8 @@
 // «Preparar el día»: baja al dispositivo lo que el asesor consulta sin señal y deja lista la pantalla que lo
 // muestra, para que abra aunque la app arranque sin internet.
 
-import { saveSnapshot, SHELL_CACHE } from "./store";
-import type { OfflineMeta, OfflineSnapshot } from "./types";
+import { purgeSent, saveSnapshot, SHELL_CACHE } from "./store";
+import type { OfflineMeta, OfflineOptions, OfflineSnapshot } from "./types";
 
 export { SHELL_CACHE };
 export const OFFLINE_PATH = "/sin-conexion";
@@ -27,7 +27,7 @@ export function isSignedOut(response: Response) {
   }
 }
 
-type Download = { snapshot: OfflineSnapshot; locale: "es" | "en"; labels: Record<string, string> };
+type Download = { snapshot: OfflineSnapshot; locale: "es" | "en"; labels: Record<string, string>; options?: OfflineOptions };
 
 /**
  * Descarga y guarda. Lanza `SessionExpiredError` si no hay sesión y `TypeError` si no hay red.
@@ -35,10 +35,11 @@ type Download = { snapshot: OfflineSnapshot; locale: "es" | "en"; labels: Record
  * muestra lo descargado quedó guardada para abrir sin red; los datos quedan aunque eso falle.
  */
 export async function prepareDay(): Promise<{ meta: OfflineMeta; shell: boolean } | null> {
+  const started = Date.now();
   const response = await fetch("/api/sin-conexion/descarga", { cache: "no-store", credentials: "same-origin" });
   if (isSignedOut(response)) throw new SessionExpiredError();
   if (!response.ok) throw new Error(`Descarga fallida (${response.status})`);
-  const { snapshot, locale, labels } = (await response.json()) as Download;
+  const { snapshot, locale, labels, options } = (await response.json()) as Download;
   if (!snapshot?.user) throw new SessionExpiredError();
 
   const meta: OfflineMeta = {
@@ -47,6 +48,7 @@ export async function prepareDay(): Promise<{ meta: OfflineMeta; shell: boolean 
     savedAt: Date.now(),
     locale,
     labels,
+    options,
     counts: {
       accounts: snapshot.accounts.length,
       contacts: snapshot.contacts.length,
@@ -56,6 +58,8 @@ export async function prepareDay(): Promise<{ meta: OfflineMeta; shell: boolean 
     },
   };
   if (!(await saveSnapshot(meta, snapshot))) return null;
+  // Lo que ya se había enviado antes de pedir la descarga viene en ella: deja de mostrarse aparte.
+  await purgeSent(meta.userId, started).catch(() => undefined);
   const shell = await warmShell().catch(() => false);
   return { meta, shell };
 }
