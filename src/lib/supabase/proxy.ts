@@ -6,8 +6,10 @@ import { hasSupabaseEnv, supabaseAnonKey, supabaseUrl } from "@/lib/env";
 // /api/mcp se autentica con su propio token; OAuth (descubrimiento, registro y tokens) es público.
 // /api/ms365/sync y /api/push/dispatch usan su propio secreto (CRON_SECRET).
 // La app instalable (manifest, service worker, íconos y la página sin conexión) es pública.
+// /sin-conexion también: es la pantalla que muestra lo descargado en el dispositivo y no trae datos del servidor
+// (los pide /api/sin-conexion/…, que sí exige sesión). Pública para que se pueda guardar y abrir sin red.
 const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/api/mcp", "/api/oauth", "/.well-known", "/api/ms365/sync", "/api/push/dispatch",
-  "/offline", "/sw.js", "/manifest.webmanifest", "/icons"];
+  "/offline", "/sin-conexion", "/sw.js", "/manifest.webmanifest", "/icons"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

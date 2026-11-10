@@ -129,7 +129,12 @@ export function formatMonth(yyyyMm: string, locale: DateLocale = "es") {
 
 /** Hoy (YYYY-MM-DD) en la zona horaria de Colombia. */
 export function todayISO() {
-  return new Date(Date.now() - BOGOTA_OFFSET_MS).toISOString().slice(0, 10);
+  return dayISO(Date.now());
+}
+
+/** El día (YYYY-MM-DD) en que cae un instante en la zona horaria de Colombia. */
+export function dayISO(value: string | number | Date) {
+  return new Date(new Date(value).getTime() - BOGOTA_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 export function addDaysISO(iso: string, days: number) {

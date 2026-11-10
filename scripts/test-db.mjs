@@ -1513,6 +1513,176 @@ await check('permisos de las funciones nuevas', async () => {
   }
 });
 
+console.log('Modo sin conexión: descarga del día');
+await check('la descarga trae lo del asesor (clientes, contactos, negocios abiertos y agenda) y nada de otros', async () => {
+  const snap = (user) => as(user, async () => (await q(`select offline_snapshot() s`))[0].s);
+  const hoy = `(now() at time zone 'America/Bogota')::date`;
+  const [etapa] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación'`);
+  const [ganada] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.category = 'won'`);
+  // Del administrador: una cuenta que el asesor no trabaja, otra donde el asesor lleva un negocio abierto y otra
+  // donde solo tiene uno ya cerrado.
+  const cuentaDe = async (name) => (await q(`insert into accounts (name, industry, owner_id) values ($1, 'Canal Constructores', $2) returning id`, [name, admin.id]))[0].id;
+  const ajena = await cuentaDe('Sin señal ajena');
+  const porNegocio = await cuentaDe('Sin señal por negocio');
+  const porCerrado = await cuentaDe('Sin señal por negocio cerrado');
+  await q(`insert into contacts (last_name, account_id) values ('Contacto ajeno', $1)`, [ajena]);
+  const [abierto] = await q(`insert into opportunities (name, account_id, stage_id, amount, owner_id) values ('Negocio sin señal', $1, $2, 5000000, $3) returning id`, [porNegocio, etapa.id, rep.id]);
+  const [cerrado] = await q(`insert into opportunities (name, account_id, stage_id, amount, owner_id) values ('Negocio ya ganado', $1, $2, 1, $3) returning id`, [porCerrado, etapa.id, rep.id]);
+  await q(`update opportunities set stage_id = $1 where id = $2`, [ganada.id, cerrado.id]);
+  await q(`insert into activities (activity_type, subject, due_date, owner_id, account_id) values ('task', 'Tarea del administrador', ${hoy}, $1, $2)`, [admin.id, ajena]);
+
+  const propia = await as(rep, async () => {
+    const [acc] = await q(`insert into accounts (name, industry, billing_city) values ('Sin señal propia', 'Canal Constructores', 'Cali') returning id`);
+    await q(`insert into contacts (first_name, last_name, account_id, mobile) values ('Rosa', 'Obra', $1, '3001234567')`, [acc.id]);
+    await q(`insert into activities (activity_type, subject, due_date, account_id) values
+      ('task', 'Vencida hace 3 días', ${hoy} - 3, $1), ('call', 'En 7 días', ${hoy} + 7, $1), ('task', 'En 8 días', ${hoy} + 8, $1),
+      ('task', 'Sin fecha', null, $1)`, [acc.id]);
+    await q(`insert into activities (activity_type, subject, due_date, status, account_id) values ('task', 'Ya hecha', ${hoy}, 'completed', $1)`, [acc.id]);
+    await q(`insert into activities (activity_type, subject, start_at, status, account_id) values
+      ('meeting', 'Reunión de mañana ya registrada', now() + interval '1 day', 'completed', $1),
+      ('meeting', 'Reunión cancelada', now() + interval '1 day', 'cancelled', $1),
+      ('meeting', 'Reunión en 20 días', now() + interval '20 days', 'pending', $1)`, [acc.id]);
+    await q(`insert into activities (activity_type, subject, account_id) values ('note', 'Nota suelta', $1)`, [acc.id]);
+    return acc.id;
+  });
+
+  const s = await snap(rep);
+  assert.equal(s.version, 1);
+  assert.equal(s.user.id, rep.id);
+  assert.match(s.today, /^\d{4}-\d{2}-\d{2}$/);
+  const cuentas = s.accounts.map((a) => a.id);
+  assert.ok(cuentas.includes(propia) && cuentas.includes(porNegocio), s.accounts.map((a) => a.name).join(', '));
+  assert.ok(!cuentas.includes(ajena) && !cuentas.includes(porCerrado), s.accounts.map((a) => a.name).join(', '));
+  assert.ok(s.accounts.every((a) => a.owner_id === rep.id || a.id === porNegocio || s.activities.some((x) => x.account_id === a.id)), 'solo cuentas propias, de sus negocios o de su agenda');
+  assert.equal(s.accounts.find((a) => a.id === propia).billing_city, 'Cali');
+  const contactos = s.contacts.map((c) => c.full_name.toLowerCase());
+  assert.ok(contactos.includes('rosa obra') && !contactos.includes('contacto ajeno'), contactos.join(', '));
+  assert.ok(s.contacts.every((c) => s.accounts.some((a) => a.id === c.account_id)));
+  const negocios = s.opportunities.map((o) => o.id);
+  assert.ok(negocios.includes(abierto.id) && !negocios.includes(cerrado.id) && !negocios.includes(repOpp.id), s.opportunities.map((o) => o.name).join(', '));
+  assert.equal(s.opportunities.find((o) => o.id === abierto.id).stage, 'Calificación');
+  const agenda = s.activities.filter((a) => a.account_id === propia).map((a) => a.subject).sort();
+  assert.deepEqual(agenda, ['En 7 días', 'Reunión de mañana ya registrada', 'Sin fecha', 'Vencida hace 3 días']);
+  assert.equal(s.activities.find((a) => a.subject === 'Sin fecha').account_name, s.accounts.find((a) => a.id === propia).name);
+  assert.ok(!s.activities.some((a) => a.subject === 'Tarea del administrador'));
+
+  // El administrador descarga lo suyo, no lo del asesor.
+  const deAdmin = await snap(admin);
+  assert.ok(deAdmin.accounts.some((a) => a.id === ajena) && !deAdmin.accounts.some((a) => a.id === propia));
+  assert.ok(deAdmin.activities.some((a) => a.subject === 'Tarea del administrador') && !deAdmin.activities.some((a) => a.subject === 'Sin fecha'));
+  // Quien está en el equipo de una cuenta también la descarga.
+  await q(`insert into account_team_members (account_id, user_id, team_role) values ($1, $2, 'Especificador')`, [ajena, rep.id]);
+  assert.ok((await snap(rep)).accounts.some((a) => a.id === ajena));
+  await q(`delete from account_team_members where account_id = $1 and user_id = $2`, [ajena, rep.id]);
+});
+await check('la descarga trae el catálogo activo, las listas de canal, las propias de sus clientes y solo precios vigentes', async () => {
+  const snap = (user) => as(user, async () => (await q(`select offline_snapshot() s`))[0].s);
+  const [inactivo] = await q(`insert into products (name, product_code, is_active) values ('Producto retirado', 'SIN-SENAL-RET', false) returning id`);
+  const [vigente] = await q(`insert into products (name, product_code) values ('Producto sin señal', 'SIN-SENAL-OK') returning id`);
+  const [sinPrecio] = await q(`insert into products (name, product_code) values ('Producto con precio retirado', 'SIN-SENAL-SP') returning id`);
+  const [canal] = await q(`select id from price_books where name = 'Lista estándar COP'`);
+  await q(`insert into price_book_entries (price_book_id, product_id, unit_price, is_active) values ($1, $2, 100, true), ($1, $3, 123456, true), ($1, $4, 200, false)`,
+    [canal.id, inactivo.id, vigente.id, sinPrecio.id]);
+  const [archivada] = await q(`insert into price_books (name, market, channel, is_active) values ('Lista archivada sin señal', 'Nacional', 'Canal Constructores', false) returning id`);
+  await q(`insert into price_book_entries (price_book_id, product_id, unit_price) values ($1, $2, 1)`, [archivada.id, vigente.id]);
+
+  let s = await snap(rep);
+  const codigos = s.products.map((p) => p.product_code);
+  assert.ok(codigos.includes('SIN-SENAL-OK') && codigos.includes('SIN-SENAL-SP') && !codigos.includes('SIN-SENAL-RET'));
+  const listas = s.price_books.map((b) => b.name);
+  assert.ok(listas.includes('Lista estándar COP') && listas.includes('Distribuidores 2026'), listas.join(', '));
+  assert.ok(!listas.includes('Lista archivada sin señal'));
+  assert.ok(s.price_books.every((b) => !b.is_client_list), listas.join(', '));
+  const precio = (snapshot, book, product) => snapshot.prices.find((p) => p[0] === book && p[1] === product)?.[2];
+  assert.equal(Number(precio(s, canal.id, vigente.id)), 123456);
+  assert.equal(precio(s, canal.id, inactivo.id), undefined);
+  assert.equal(precio(s, canal.id, sinPrecio.id), undefined);
+  assert.equal(precio(s, archivada.id, vigente.id), undefined);
+  assert.ok(s.prices.every((p) => s.price_books.some((b) => b.id === p[0]) && s.products.some((x) => x.id === p[1])));
+
+  const [propia] = await q(`insert into price_books (name, is_client_list) values ('Lista propia sin señal', true) returning id`);
+  await q(`insert into price_book_entries (price_book_id, product_id, unit_price) values ($1, $2, 99000)`, [propia.id, vigente.id]);
+  // La lista propia de un cliente que no es suyo no baja; la de un cliente suyo, sí.
+  const [ajena] = await q(`select id from accounts where name ilike 'Sin señal ajena'`);
+  await q(`update accounts set price_book_id = $1 where id = $2`, [propia.id, ajena.id]);
+  assert.ok(!(await snap(rep)).price_books.some((b) => b.id === propia.id));
+  assert.ok((await snap(admin)).price_books.some((b) => b.id === propia.id));
+  const [suya] = await q(`update accounts set price_book_id = $1 where name ilike 'Sin señal propia' returning id`, [propia.id]);
+  s = await snap(rep);
+  assert.ok(s.price_books.some((b) => b.id === propia.id && b.is_client_list && b.market === 'Nacional' && b.currency === 'COP'));
+  assert.equal(Number(precio(s, propia.id, vigente.id)), 99000);
+  assert.equal(s.accounts.find((a) => a.id === suya.id).price_book_id, propia.id);
+});
+await check('el precio calculado en el dispositivo es el mismo que da la base', async () => {
+  // La regla vive dos veces: en la base (default_price_book, channel_price_book, quote_line_price) y en
+  // src/lib/offline/prices.ts, que es la que usa el celular sin señal. Aquí se comparan sobre los mismos datos.
+  const ts = (await import('typescript')).default;
+  const fuente = readFileSync(join(root, 'src/lib/offline/prices.ts'), 'utf8');
+  const js = ts.transpileModule(fuente, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const { defaultBook, channelBook, priceFor, priceIndex, marketCurrency } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
+
+  // Un cliente internacional sin lista de su canal y uno nacional sin canal, para cubrir los bordes de la regla.
+  await as(admin, () => q(`insert into accounts (name, industry, market) values ('Sin señal exportación', 'Canal Constructores', 'Internacional'),
+    ('Sin señal sin canal', null, 'Nacional')`));
+
+  const vistos = { lista: 0, canal: 0, sinPrecio: 0, propia: 0, sinLista: 0 };
+  for (const user of [admin, rep]) {
+    const s = await as(user, async () => (await q(`select offline_snapshot() s`))[0].s);
+    const index = priceIndex(s.prices);
+    for (const account of s.accounts) {
+      for (const currency of ['COP', 'USD']) {
+        const [esperada] = await as(user, () => q(`select default_price_book($1, $2) propia, channel_price_book($1, $2) canal`, [account.id, currency]));
+        assert.equal(defaultBook(account, s.price_books, currency)?.id ?? null, esperada.propia, `lista de «${account.name}» en ${currency}`);
+        assert.equal(channelBook(account, s.price_books, currency)?.id ?? null, esperada.canal, `lista de canal de «${account.name}» en ${currency}`);
+      }
+      const currency = marketCurrency(account.market);
+      const filas = await as(user, () => q(`
+        with b as (select default_price_book($1, $2) lista, channel_price_book($1, $2) canal, (select price_book_id from accounts where id = $1) propia)
+        select p.id,
+          (select e.unit_price from price_book_entries e where e.price_book_id = b.lista and e.product_id = p.id and e.is_active) directo,
+          case when b.propia is not null and b.propia = b.lista then
+            (select e.unit_price from price_book_entries e where e.price_book_id = b.canal and e.product_id = p.id and e.is_active) end de_canal,
+          b.lista, b.propia
+        from products p cross join b where p.is_active`, [account.id, currency]));
+      assert.equal(filas.length, s.products.length);
+      if (filas[0].lista === null) vistos.sinLista += 1;
+      else if (filas[0].lista === filas[0].propia) vistos.propia += 1;
+      for (const fila of filas) {
+        const esperado = fila.directo !== null ? { unit_price: Number(fila.directo), source: 'lista' }
+          : fila.de_canal !== null ? { unit_price: Number(fila.de_canal), source: 'canal' } : null;
+        const calculado = priceFor(account, fila.id, s.price_books, index);
+        assert.deepEqual(calculado && { unit_price: calculado.unit_price, source: calculado.source }, esperado, `precio para «${account.name}»`);
+        if (calculado) assert.equal(calculado.currency, currency);
+        vistos[esperado ? esperado.source : 'sinPrecio'] += 1;
+      }
+    }
+    // Y contra una cotización de verdad: la del cliente con lista propia.
+    const [cot] = await q(`select q.id, q.account_id from quotes q where q.name = 'Cotización gran cliente'`);
+    const cliente = s.accounts.find((a) => a.id === cot.account_id);
+    if (!cliente) continue;
+    for (const product of s.products) {
+      const [{ p }] = await as(user, () => q(`select quote_line_price($1, $2) p`, [cot.id, product.id]));
+      const calculado = priceFor(cliente, product.id, s.price_books, index);
+      assert.deepEqual(calculado ? { unit_price: calculado.unit_price, source: calculado.source } : { unit_price: null },
+        { unit_price: p.unit_price === null ? null : Number(p.unit_price), ...(p.source ? { source: p.source } : {}) }, `cotización: ${product.product_code}`);
+      if (p.source === 'canal') assert.equal(calculado.book.name, p.price_book);
+    }
+    vistos.cotizacion = true;
+  }
+  // La comparación pasó por todos los casos de la regla.
+  assert.ok(vistos.lista > 0 && vistos.canal > 0 && vistos.sinPrecio > 0 && vistos.propia > 0 && vistos.sinLista > 0 && vistos.cotizacion, JSON.stringify(vistos));
+});
+await check('la descarga exige sesión', async () => {
+  assert.equal((await q(`select has_function_privilege('authenticated', 'public.offline_snapshot()'::regprocedure, 'EXECUTE') ok`))[0].ok, true);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.offline_snapshot()'::regprocedure, 'EXECUTE') ok`))[0].ok, false);
+  await db.exec(`set role anon`);
+  try {
+    await assert.rejects(q(`select offline_snapshot()`), /permission denied/);
+  } finally {
+    await db.exec(`reset role`);
+  }
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

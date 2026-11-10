@@ -8,6 +8,12 @@
       "port": 3000
     },
     {
+      "name": "firplak-crm-demo-produccion",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:demo", "--", "--produccion"],
+      "port": 3000
+    },
+    {
       "name": "firplak-crm",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],

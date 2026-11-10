@@ -131,8 +131,13 @@ test.describe("administrador", () => {
     const ficha = new URL(page.url()).pathname;
 
     await page.goto(`${ficha}/editar`);
-    await page.getByLabel(/^Teléfono/).fill("6041234567");
-    await expect.poll(() => borradores(page)).toEqual([`${ficha}/editar`]);
+    // En desarrollo, la primera vez que se abre esta pantalla puede tardar en quedar activa: lo escrito antes de
+    // eso no cuenta como borrador, así que se escribe hasta que el borrador aparece.
+    await expect(async () => {
+      await page.getByLabel(/^Teléfono/).fill("");
+      await page.getByLabel(/^Teléfono/).fill("6041234567");
+      await expect.poll(() => borradores(page), { timeout: 2000 }).toEqual([`${ficha}/editar`]);
+    }).toPass();
     await page.reload();
     // Mismo registro, sin cambios de por medio: se aplica solo.
     await expect(page.getByText(AVISO_RECUPERADO)).toBeVisible();

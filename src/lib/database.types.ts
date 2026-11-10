@@ -4256,6 +4256,10 @@ export type Database = {
         }
         Returns: string
       }
+      offline_snapshot: {
+        Args: never
+        Returns: Json
+      }
       opportunity_advance_to_role: {
         Args: {
           p_opp: string

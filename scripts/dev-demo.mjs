@@ -5,6 +5,11 @@
 // cerrarlo (Ctrl+C) todo se borra y la próxima vez empieza de cero.
 //
 // Requisito: PostgREST instalado (macOS: `brew install postgrest`).
+//
+// `npm run dev:demo -- --produccion` compila y sirve la app como en producción (`next build` + `next start`)
+// contra la misma base de demo. Sirve para probar lo que en desarrollo no se puede: el service worker con
+// caché de archivos y la consulta sin señal recargando la página sin red (en desarrollo, Next no termina de
+// cargar una página si no alcanza su servidor).
 
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
@@ -644,38 +649,48 @@ await new Promise((r) => pushServer.listen(PUSH_PORT, '127.0.0.1', r));
 // Estas variables tienen prioridad sobre .env.local: la app solo habla con la base de demo y con
 // el Microsoft 365 simulado; nunca usa las claves reales ni envía correos aunque estén configurados.
 const cronSecret = randomBytes(16).toString('hex');
-const next = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['next', 'dev', '--hostname', 'localhost', '--port', String(APP_PORT)], {
-  cwd: root,
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${API_PORT}`,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
-    NEXT_PUBLIC_SITE_URL: `http://localhost:${APP_PORT}`,
-    // service_role de esta base de demo (no la real): la usa el servidor para publicar en Teams.
-    SUPABASE_SERVICE_ROLE_KEY: sign({ role: 'service_role', iss: 'firplak-demo', iat: Math.floor(Date.now() / 1000), exp: 4102444800 }),
-    MS365_TENANT_ID: MS.tenant,
-    MS365_CLIENT_ID: MS.clientId,
-    MS365_CLIENT_SECRET: MS.clientSecret,
-    MS365_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
-    CRON_SECRET: cronSecret,
-    VAPID_PUBLIC_KEY: VAPID.publicKey,
-    VAPID_PRIVATE_KEY: VAPID.privateKey,
-    VAPID_SUBJECT: 'mailto:demo@firplak.com',
-    PUSH_EXTRA_ORIGINS: `http://127.0.0.1:${PUSH_PORT}`,
-    SAP_SL_URL: `http://127.0.0.1:${SAP_PORT}/b1s/v1`,
-    SAP_COMPANY_DB: SAP.company,
-    SAP_USER: SAP.user,
-    SAP_PASSWORD: SAP.password,
-    MS365_LOGIN_URL: `http://127.0.0.1:${MS_PORT}`,
-    MS365_GRAPH_URL: `http://127.0.0.1:${MS_PORT}/v1.0`,
-    // El servidor MCP firma las sesiones de los tokens con el secreto de esta base de demo.
-    SUPABASE_JWT_SECRET: SECRET,
-    RESEND_API_KEY: '',
-    EMAIL_FROM: '',
-    ALLOWED_EMAIL_DOMAINS: '',
-  },
-});
+const PRODUCTION = process.argv.includes('--produccion');
+const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const appEnv = {
+  ...process.env,
+  NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${API_PORT}`,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
+  NEXT_PUBLIC_SITE_URL: `http://localhost:${APP_PORT}`,
+  // service_role de esta base de demo (no la real): la usa el servidor para publicar en Teams.
+  SUPABASE_SERVICE_ROLE_KEY: sign({ role: 'service_role', iss: 'firplak-demo', iat: Math.floor(Date.now() / 1000), exp: 4102444800 }),
+  MS365_TENANT_ID: MS.tenant,
+  MS365_CLIENT_ID: MS.clientId,
+  MS365_CLIENT_SECRET: MS.clientSecret,
+  MS365_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
+  CRON_SECRET: cronSecret,
+  VAPID_PUBLIC_KEY: VAPID.publicKey,
+  VAPID_PRIVATE_KEY: VAPID.privateKey,
+  VAPID_SUBJECT: 'mailto:demo@firplak.com',
+  PUSH_EXTRA_ORIGINS: `http://127.0.0.1:${PUSH_PORT}`,
+  SAP_SL_URL: `http://127.0.0.1:${SAP_PORT}/b1s/v1`,
+  SAP_COMPANY_DB: SAP.company,
+  SAP_USER: SAP.user,
+  SAP_PASSWORD: SAP.password,
+  MS365_LOGIN_URL: `http://127.0.0.1:${MS_PORT}`,
+  MS365_GRAPH_URL: `http://127.0.0.1:${MS_PORT}/v1.0`,
+  // El servidor MCP firma las sesiones de los tokens con el secreto de esta base de demo.
+  SUPABASE_JWT_SECRET: SECRET,
+  RESEND_API_KEY: '',
+  EMAIL_FROM: '',
+  ALLOWED_EMAIL_DOMAINS: '',
+};
+if (PRODUCTION) {
+  // Las variables NEXT_PUBLIC_* quedan dentro de la compilación: por eso se compila aquí, con las de demo.
+  const build = spawn(npx, ['next', 'build'], { cwd: root, stdio: 'inherit', env: appEnv });
+  const code = await new Promise((resolve) => build.on('exit', resolve));
+  if (code !== 0) {
+    console.error('La compilación falló: no se inició la app.');
+    for (const c of children) c.kill();
+    rmSync(tmp, { recursive: true, force: true });
+    process.exit(1);
+  }
+}
+const next = spawn(npx, ['next', PRODUCTION ? 'start' : 'dev', '--hostname', 'localhost', '--port', String(APP_PORT)], { cwd: root, stdio: 'inherit', env: appEnv });
 children.push(next);
 
 // En producción lo despierta el webhook de la base; aquí se revisa cada pocos segundos.

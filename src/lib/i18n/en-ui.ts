@@ -918,4 +918,43 @@ export const UI_EN: Record<string, string> = {
   "Hay un borrador de este registro guardado en este dispositivo, pero el registro cambió después.":
     "There's a draft of this record saved on this device, but the record has changed since.",
   "Recuperar borrador": "Restore draft", "Descartar borrador": "Discard draft",
+  // Modo sin conexión: preparar el día y consulta sin señal.
+  "Preparar el día": "Prepare the day", "Actualizar": "Update", "Descargando…": "Downloading…",
+  "Descargado hoy": "Downloaded today", "Descargado ayer": "Downloaded yesterday", "Descargado el": "Downloaded on",
+  cliente: "customer", clientes: "customers", actividad: "activity", actividades: "activities", producto: "product", productos: "products",
+  "Actualiza antes de salir.": "Update before you head out.",
+  "Descarga tus clientes, agenda y precios para consultarlos sin señal.": "Download your customers, agenda and prices to look them up without signal.",
+  "Necesitas conexión para descargar.": "You need a connection to download.",
+  "Ver lo descargado": "View downloaded data", "Lo descargado": "Downloaded data",
+  "Tu sesión venció.": "Your session expired.", "Inicia sesión": "Sign in", "para preparar el día.": "to prepare the day.",
+  "No se pudo descargar. Revisa tu conexión e inténtalo de nuevo.": "The download failed. Check your connection and try again.",
+  "Los datos quedaron en este dispositivo, pero la pantalla para verlos sin señal no se guardó. Vuelve a intentarlo.":
+    "The data is on this device, but the screen to view it without signal wasn't saved. Try again.",
+  "Consulta sin señal": "Offline lookup", "Sin señal": "No signal", "Volver al CRM": "Back to the CRM", "Iniciar sesión": "Sign in",
+  "Tu sesión se cerró y lo descargado en este dispositivo se borró. Inicia sesión para volver a preparar el día.":
+    "You were signed out and the data downloaded to this device was deleted. Sign in to prepare the day again.",
+  "Aún no has preparado el día en este dispositivo.": "You haven't prepared the day on this device yet.",
+  "Toca «Preparar el día» para descargar tus clientes, tu agenda y los precios. Después podrás consultarlos aquí aunque no tengas señal.":
+    "Tap “Prepare the day” to download your customers, your agenda and the prices. After that you can look them up here even without signal.",
+  "Cuando vuelvas a tener conexión, toca «Preparar el día» para descargar tus clientes, tu agenda y los precios.":
+    "When you're back online, tap “Prepare the day” to download your customers, your agenda and the prices.",
+  Contactos: "Contacts", Clientes: "Customers", "Ver cliente": "View customer", "Sin fecha": "No date", "Mañana": "Tomorrow",
+  "No tienes actividades pendientes ni reuniones en los próximos 7 días.": "You have no pending activities or meetings in the next 7 days.",
+  "Buscar cliente por nombre, NIT o ciudad": "Search customers by name, tax ID or city",
+  "Aún no tienes clientes asignados.": "You don't have any customers assigned yet.",
+  "Ningún cliente coincide con la búsqueda.": "No customer matches the search.",
+  "Sin canal ni ciudad": "No channel or city", "Código SAP": "SAP code",
+  "Sin lista de precios que le aplique": "No price list applies", "Ver precios de este cliente": "View this customer's prices",
+  "Este cliente no tiene contactos.": "This customer has no contacts.", "Sin datos de contacto": "No contact details",
+  "Llamar a": "Call", "Escribir a": "Email",
+  "Oportunidades abiertas": "Open opportunities", "No tienes oportunidades abiertas con este cliente.": "You have no open opportunities with this customer.",
+  "Nada pendiente con este cliente.": "Nothing pending with this customer.",
+  "Precios para": "Prices for", "Elige un cliente o una lista": "Choose a customer or a list", "Mis clientes": "My customers",
+  "Buscar producto por nombre o referencia": "Search products by name or reference",
+  "Este cliente no tiene una lista de precios que le aplique. Elige una lista para ver precios.":
+    "No price list applies to this customer. Choose a list to see prices.",
+  "propia del cliente": "customer's own list", "No hay productos activos.": "There are no active products.",
+  "Ningún producto coincide con la búsqueda.": "No product matches the search.",
+  "Precio de canal": "Channel price", "Sin precio en esta lista": "No price in this list",
+  "Mostrando": "Showing", "Escribe para buscar.": "Type to search.",
 };

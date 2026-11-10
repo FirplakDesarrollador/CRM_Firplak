@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronDown, FileUp, Mail, Plus, Settings, SlidersHorizontal, UserRound } from "lucide-react";
+import { ChevronDown, CloudDownload, FileUp, Mail, Plus, Settings, SlidersHorizontal, UserRound } from "lucide-react";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { Dropdown, menuItemClass } from "@/components/ui/Dropdown";
 import { OBJECT_ICONS } from "@/components/ui/icons";
@@ -70,6 +70,8 @@ export function AppHeader({ user, notifications, unread, t }: { user: CurrentUse
             <Link href="/preferencias?tab=perfil" className={menuItemClass}><UserRound size={15} className="text-muted" /> {t("Mi perfil")}</Link>
             <Link href="/importar" className={menuItemClass}><FileUp size={15} className="text-muted" /> {t("Importar datos")}</Link>
             <Link href="/correo/plantillas" className={menuItemClass}><Mail size={15} className="text-muted" /> {t("Plantillas de correo")}</Link>
+            {/* Enlace normal, no <Link>: la navegación completa es la que el service worker puede atender sin red. */}
+            <a href="/sin-conexion" className={menuItemClass}><CloudDownload size={15} className="text-muted" /> {t("Consulta sin señal")}</a>
             {(canSystem(user.access, "customize") || canSystem(user.access, "manage_users")) && (
               <Link href="/configuracion" className={menuItemClass}><Settings size={15} className="text-muted" /> {t("Configuración")}</Link>
             )}

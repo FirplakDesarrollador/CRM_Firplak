@@ -21,6 +21,7 @@ import { periodStart } from "@/lib/goals/periods";
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
 import { InstallBanner } from "@/components/pwa/InstallApp";
+import { PrepareDayCard } from "@/components/offline/PrepareDayCard";
 export const metadata: Metadata = { title: "Inicio" };
 
 function greeting(locale: "es" | "en") {
@@ -78,6 +79,7 @@ export default async function HomePage() {
         <h1 className="editorial text-3xl">{greeting(locale)}, {firstName}</h1>
         <p className="text-sm text-muted">{t("Este es tu resumen de")} {new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-CO", { month: "long", timeZone: "UTC" }).format(new Date(`${today}T00:00:00Z`))}.</p>
       </div>
+      <PrepareDayCard linkToOffline />
 
       {Boolean(approvals) && (
         <Link href="/aprobaciones" className="glass flex items-center justify-between gap-3 px-5 py-3 no-underline hover:text-ink">

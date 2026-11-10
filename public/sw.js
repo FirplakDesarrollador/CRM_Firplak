@@ -1,11 +1,19 @@
 // Service worker de Firplak CRM (app instalable).
-// · Páginas: siempre de la red (los datos son privados y cambian); sin conexión, página «offline».
-// · Archivos estáticos de Next con huella (/_next/static/…): caché primero. En desarrollo
-//   (?static=0) no se guardan, porque cambian sin cambiar de nombre.
+// · Páginas: siempre de la red (los datos son privados y cambian). Sin conexión:
+//     – si el asesor preparó el día, abre «Consulta sin señal» (/sin-conexion), cuyo HTML y archivos guardó la
+//       app en una caché aparte; esa pantalla no trae datos: los lee del dispositivo;
+//     – si no, la página «offline».
+// · Archivos estáticos de Next con huella (/_next/static/…): caché primero. En desarrollo (?static=0) van
+//   primero a la red, porque cambian sin cambiar de nombre, y la copia guardada solo se usa sin red.
 // · Notificaciones push: se muestran al llegar y al tocarlas abren el registro.
 // Nunca se guardan páginas con datos ni respuestas de la API.
-const VERSION = 'firplak-crm-v2';
+const VERSION = 'firplak-crm-v4';
 const OFFLINE_URL = '/offline';
+// La pantalla de consulta sin señal. La llena la app al «Preparar el día» y la borra al cerrar sesión.
+const SHELL_CACHE = 'firplak-crm-sin-conexion';
+const SHELL_URL = '/sin-conexion';
+// Con mala señal una página puede tardar minutos en fallar: la pantalla sin señal no espera tanto.
+const SHELL_TIMEOUT = 3000;
 const CACHE_STATIC = new URL(self.location).searchParams.get('static') !== '0';
 
 self.addEventListener('install', (event) => {
@@ -17,9 +25,36 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== SHELL_CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
   );
 });
+
+const savedShell = () => caches.open(SHELL_CACHE).then((cache) => cache.match(SHELL_URL));
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+async function page(request, url) {
+  if (url.pathname === SHELL_URL) {
+    const shell = await savedShell();
+    if (!shell) return fetch(request).catch(() => caches.match(OFFLINE_URL));
+    return withTimeout(fetch(request), SHELL_TIMEOUT).catch(() => shell);
+  }
+  try {
+    return await fetch(request);
+  } catch {
+    // Sin red: si hay algo descargado se lleva allí, recordando qué pantalla se quería abrir.
+    if (await savedShell()) return Response.redirect(`${SHELL_URL}#volver=${encodeURIComponent(url.pathname + url.search)}`, 302);
+    return caches.match(OFFLINE_URL);
+  }
+}
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -28,20 +63,22 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
+    event.respondWith(page(request, url));
     return;
   }
-  if (CACHE_STATIC && url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(
-      caches.match(request).then((hit) => hit ?? fetch(request).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(VERSION).then((cache) => cache.put(request, copy));
-        }
-        return res;
-      })),
-    );
+  if (!url.pathname.startsWith('/_next/static/')) return;
+  const fromNetwork = () => fetch(request).then((res) => {
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(VERSION).then((cache) => cache.put(request, copy));
+    }
+    return res;
+  });
+  if (!CACHE_STATIC) {
+    event.respondWith(fromNetwork().catch(() => caches.match(request).then((hit) => hit ?? Response.error())));
+    return;
   }
+  event.respondWith(caches.match(request).then((hit) => hit ?? fromNetwork()));
 });
 
 self.addEventListener('push', (event) => {

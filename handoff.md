@@ -51,9 +51,10 @@ pedido de Luis, que cargará las reales en Metas.
 ```bash
 npm install
 npm run dev:demo      # base en memoria con datos de ejemplo, Microsoft 365 y SAP simulados → http://localhost:3000
-npm run db:test       # pruebas de la base (PGlite): 131 comprobaciones
+npm run dev:demo -- --produccion   # lo mismo con la app compilada (`next build` + `next start`): para probar sin señal
+npm run db:test       # pruebas de la base (PGlite): 147 comprobaciones
 npm run db:huella     # huella del esquema de las migraciones, para comparar con producción
-npm run test:e2e      # pruebas de interfaz (Playwright, Chrome instalado): 51 pruebas
+npm run test:e2e      # pruebas de interfaz (Playwright, Chrome instalado): 71 pruebas
 npm run lint && npm run build
 ```
 
@@ -106,11 +107,15 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 | Cotizaciones como partes | Las cotizaciones de una oportunidad son **partes del negocio** (decisión de Luis). **Valor** de la oportunidad abierta = suma de sus partes abiertas (sin Aceptadas, Rechazadas ni Reemplazadas), automático; ganada = suma de las aceptadas; perdida conserva su valor; sin cotizaciones (o solo borradores vacíos) lo escribe el asesor. Ya no hay «Sincronizar». **Parte aceptada con otras abiertas:** se separa en su propia oportunidad **Ganada** (misma cuenta, asesor, pipeline y reparto; cierre hoy; «Parte ganada de» la original, que la lista en «Partes ganadas») y se lleva sus pedidos; la última abierta aceptada gana la original. **Etapas solo hacia adelante:** cada pipeline marca en «Avanza con cotización» (Configuración → Pipelines) la etapa «Al presentar la primera cotización» y la de «Al aceptarse una parte (quedan otras abiertas)». La última parte abierta rechazada sin ninguna aceptada avisa al asesor y a su jefe; «Reemplazada» (versión anterior) no suma ni avisa. Marcar Perdida rechaza las partes abiertas y no se permite con partes aceptadas o pedidos activos; una oportunidad cerrada no admite cotizaciones nuevas; un pedido cancelado avisa. Migración `20261204000100`. |
 | Cotizaciones | Desde la oportunidad («Nueva cotización») o sin ella: si no se elige oportunidad, se crea una con el nombre de la cotización, en el pipeline del canal, cierre = «Válida hasta» y sincronizada. **«Facturar a» es la cuenta** y debe ser la de la oportunidad (la base lo valida). Dirección de facturación, dirección de entrega y condiciones de pago se toman de la cuenta (mientras está en Borrador siguen a la cuenta; presentada queda fija); «Entregar en otra dirección» y «Cambiar condiciones de pago» permiten escribirlas a mano. Las **Condiciones de pago** son una lista de valores de la cuenta (Contado, Anticipado, 8 a 90 días). Líneas desde la lista de precios según moneda, descuento por línea, IVA y flete, PDF, «Crear pedido» al quedar *Aceptada*. **Aprobación obligatoria:** con más de 15 % de descuento no pasa a *En revisión*, *Aprobada*, *Presentada* ni *Aceptada* por fuera del flujo; cambiar el descuento tras aprobar exige aprobar de nuevo (migración `20261130000100`). |
 | Integraciones | Microsoft 365 (Outlook, Teams, Planner, SharePoint), SAP B1 (lectura de cartera e inventario; pedido activado → **oferta de venta**; importación de productos a demanda), servidor MCP con OAuth 2.1 para Claude/ChatGPT, correo con Resend. |
-| Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin conexión, fase 1 (borradores):** lo que se escribe en el formulario de un registro o en el de actividades queda como borrador en el dispositivo (`src/lib/drafts.ts`, `useFormDraft`), se recupera al volver a abrirlo y no se pierde si al guardar no hay internet; no se crean ni se leen datos sin conexión (fases siguientes en la sección 6). |
+| Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin conexión, fase 1 (borradores):** lo que se escribe en el formulario de un registro o en el de actividades queda como borrador en el dispositivo (`src/lib/drafts.ts`, `useFormDraft`), se recupera al volver a abrirlo y no se pierde si al guardar no hay internet; todavía no se crean registros sin conexión. **Sin conexión, parte A (consulta):** «Preparar el día» (tarjeta en Inicio y en el menú de usuario → «Consulta sin señal») baja al dispositivo los clientes del asesor con sus contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios; la pantalla `/sin-conexion` los muestra sin red, con el precio de cada cliente calculado en el teléfono (detalle y partes que faltan en la sección 6). |
 | App de iPhone (prototipo) | `mobile/`: app nativa hecha con **Capacitor 8** (Swift Package Manager, sin CocoaPods) que abre el CRM publicado dentro de una vista web; **la app web no cambia** y cada despliegue de `main` se ve en la app sin recompilar. Identificador `com.firplak.crm`, nombre «Firplak CRM», iOS 15 o superior, ícono y pantalla de arranque con el sello. Lo propio de la app se inyecta desde `CrmViewController` (`mobile/ios/App/App/AppDelegate.swift`): el CRM se comporta como «instalado», campos a 16 px (sin zoom al escribir), la pantalla de arranque se quita al cargar, la hora y la batería cambian de color según el fondo que tengan debajo, y deslizar desde el borde izquierdo vuelve atrás. Sin señal muestra «Sin conexión» con «Reintentar» (`mobile/www/error.html`). **Bloqueo con Face ID** (`mobile/ios/App/App/Bloqueo.swift`, enganchado en `SceneDelegate.swift`): una ventana con la pantalla del sello tapa la app y pide Face ID (o Touch ID; si falla, el código del iPhone) al abrirla y al volver después de 5 minutos fuera, solo si hay sesión iniciada (cookie `sb-…-auth-token` de la vista web); en la pantalla de ingreso no pide nada. No guarda contraseñas ni toca la sesión del CRM. La app también se tapa siempre que deja de estar en primer plano, para que el selector de apps no muestre datos de clientes. Si se cancela o la cara no coincide queda el botón «Desbloquear con Face ID». Un iPhone sin código no se bloquea. Para probar, el argumento de arranque `-bloqueoGracia 5` (solo en compilación de depuración) acorta los 5 minutos a 5 segundos. Probada solo en el simulador (iPhone 18 Pro Max, iOS 27.2). |
 
 ## 5. Producción (Supabase)
 
+- **Pendiente de publicar (1):** `20261206000100_offline_snapshot` (función `offline_snapshot()` de «Preparar el día»).
+  Solo agrega una función de lectura que corre con los permisos de quien la llama (RLS), cerrada a `public` y `anon`
+  y abierta a `authenticated`; no toca tablas ni datos. Sin ella, «Preparar el día» falla en producción con «No se
+  pudo descargar». Publicarla con `npm run db:publicar` cuando Luis lo autorice, antes de subir la parte A a `main`.
 - **40 migraciones aplicadas**; la última, `20261205000100_alerts_plural`, el 2026-11-09 con `db:publicar` y visto bueno de
   Luis (40/40, 0 pendientes): solo texto, el aviso diario dice «Tienes 1 tarea vencida» / «Tienes N tareas vencidas»;
   mismos permisos (`authenticated` ya la ejecutaba desde la fase 5) y el asesor de seguridad sin hallazgos nuevos.
@@ -165,12 +170,35 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - B2C: personas naturales con cédula.
 - Mapeo de Segmentos por Mercado y Canal (falta la tabla de Luis).
 
-### Modo sin conexión (opción B «visitas»): fase 1 hecha, faltan las demás
-Luis dio la orden de empezar el 2026-11-09. Fases: **1. borradores locales (hecha)** → 2. bandeja de salida
-(actividades, notas, contactos, prospectos) → 3. «Descargar mi cartera» de solo lectura → 4. (opcional) editar
-oportunidades con aviso de conflicto.
+### Modo sin conexión: borradores y parte A hechos; faltan B (bandeja de salida) y C (cotizaciones)
+Luis dio la orden de empezar el 2026-11-09 y ese mismo día aprobó el plan. Los asesores se quedan sin señal en
+ascensores, parqueaderos de sótano, obras y oficinas con mala red, y en el avión. Sin señal necesitan, en este orden:
+cotizar (informar precios), registrar actividades y crear un cliente. La fuerza comercial usa la **app web (PWA) en
+iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis.
 
-- **Fase 1, cómo quedó:** el formulario de cualquier registro (`RecordForm`) y el de actividades de las fichas
+**Cómo lo usa un asesor (plan aprobado):**
+1. En la mañana, con wifi, toca **«Preparar el día»** y el teléfono descarga productos y precios, sus clientes con
+   contactos y direcciones, sus oportunidades abiertas y su agenda. La app dice «Descargado hoy, 7:12 a. m.» y avisa
+   cuando la descarga es de otro día.
+2. Sin señal consulta todo lo descargado y además crea un cliente, registra actividades y arma cotizaciones. El
+   teléfono calcula el precio con la regla del CRM: la lista propia del cliente y, si no, la de su canal y mercado.
+3. Al volver la señal todo se envía solo, en orden (clientes, luego sus cotizaciones y actividades). Cada registro
+   queda **Pendiente**, **Enviado** o **Rechazado** (con el motivo) y la cabecera dice «3 sin enviar».
+
+**Decisiones de Luis (2026-11-09):**
+1. Si el precio cambió entre la descarga y el envío, **se respeta el cotizado** (la línea se marca y se le avisa).
+2. Cada asesor descarga **solo sus clientes**.
+3. Una cotización sin enviar se ve en pantalla marcada «Sin enviar» con número provisional; el número oficial y el
+   PDF salen al sincronizar.
+4. Al cerrar sesión con registros sin enviar, se avisa y se conservan hasta que entre la misma persona.
+5. Acepta que precios y cartera queden sin cifrar en el teléfono; lo descargado se borra al cerrar sesión (la
+   excepción es la bandeja de salida sin enviar).
+6. iPhone y Android, por la app web; no contar todavía con la app de Apple.
+
+**Orden de construcción:** A. descarga y consulta (**hecha**) → B. bandeja de salida con actividades y crear cliente
+→ C. cotizaciones sin señal. Cada parte con sus pruebas y su commit local.
+
+- **Borradores (antes «fase 1»), cómo quedó:** el formulario de cualquier registro (`RecordForm`) y el de actividades de las fichas
   (`Composer`) guardan lo escrito en `localStorage` (`crm:borrador:<usuario>:<dirección>`), 400 ms después de la
   última tecla y al salir o esconder la app. Al volver a abrir el formulario se recupera con un aviso y el botón
   «Descartar borrador». Guardar sin internet no llama al servidor: avisa «Sin conexión: no se guardó…» y conserva
@@ -178,15 +206,45 @@ oportunidades con aviso de conflicto.
   «Cancelar», al cerrar sesión y a los 14 días; «Volver» lo conserva. Al entrar se borran los de otras personas en
   el mismo dispositivo. Al editar, si el registro cambió después del borrador, se ofrece («Recuperar borrador»)
   en vez de aplicarse solo. Prueba: `tests/e2e/borradores.spec.ts`.
-- **Decisiones tomadas sin preguntar, por confirmar con Luis:** 14 días de vigencia; «Cancelar» descarta el
+- **Borradores, decisiones tomadas sin preguntar, por confirmar con Luis:** 14 días de vigencia; «Cancelar» descarta el
   borrador; solo guardan borrador los formularios de registros y el de actividades (no los de configuración, las
   líneas de cotización ni la conversión de prospectos).
-- **Para las fases 2 y 3 hace falta que Luis diga:** dónde se quedan sin señal los asesores, qué necesitan con
-  urgencia sin conexión y si usan iPhone o Android. La fase 2 necesita además decisiones de diseño: qué pasa cuando
-  el servidor rechaza al sincronizar algo creado sin conexión (reglas de validación, duplicados) y si la bandeja de
-  salida se conserva al cerrar sesión.
-- A tener en cuenta: el almacenamiento del navegador no está cifrado (por eso solo guarda lo que escribió el propio
-  usuario y se limpia al salir); iOS puede borrarlo si la app no se usa en semanas y no tiene sincronización en
+- **Parte A, cómo quedó:**
+  - **La descarga:** la función `offline_snapshot()` (migración `20261206000100`, **sin publicar en producción**)
+    devuelve en una sola llamada, con los permisos de quien la llama: sus cuentas (propias, de su equipo de cuenta
+    y las de sus oportunidades abiertas y su agenda) con contactos, sus oportunidades abiertas, su agenda (pendientes
+    vencidos, sin fecha o de los próximos 7 días, y las reuniones de esos 7 días), el catálogo activo y los precios
+    de las listas de canal y de las listas propias de sus clientes. La app la pide por `/api/sin-conexion/descarga`
+    y la guarda en IndexedDB (`firplak-crm-sin-conexion`, almacén `descarga`; `src/lib/offline/store.ts`).
+  - **La pantalla** `/sin-conexion` («Consulta sin señal», `src/components/offline/`) es pública para el proxy y no
+    trae datos del servidor: los lee del dispositivo. Pestañas Agenda, Clientes (búsqueda y ficha con contactos,
+    oportunidades y agenda), Oportunidades y Productos (precios de un cliente o de una lista). La posición va en la
+    parte de la dirección después de «#», así que pestañas, fichas y «atrás» funcionan sin red.
+  - **Precios en el teléfono:** `src/lib/offline/prices.ts` repite la regla de la base (lista propia → lista del
+    canal y mercado → general nacional; nunca cruza de mercado ni moneda). `db:test` compara su resultado, producto
+    por producto, con el de la base y con `quote_line_price`: si la regla cambia en una migración y no aquí, falla.
+  - **Abrir sin red:** al preparar el día la app guarda el HTML de `/sin-conexion` y sus archivos en la caché
+    `firplak-crm-sin-conexion`. El service worker (`public/sw.js`, v4) la sirve cuando una navegación falla o tarda
+    más de 3 s en esa pantalla, y lleva cualquier otra pantalla del CRM a `/sin-conexion#volver=<ruta>`; con red, el
+    botón «Volver al CRM» regresa a esa ruta. Sin nada descargado sigue saliendo la página «offline» de siempre.
+  - **Privacidad:** lo descargado se borra al cerrar sesión (junto con la pantalla guardada), al entrar otra persona
+    en el mismo dispositivo y cuando el servidor responde que ya no hay sesión.
+  - **Pruebas:** `tests/e2e/sin-conexion.spec.ts` (preparar el día, consulta y precios con la red cortada, redirección
+    del service worker, borrado al cerrar sesión y al entrar otra persona) y 4 comprobaciones en `db:test`.
+  - **Límite del modo de desarrollo:** con `next dev` una página no termina de cargar si el servidor no responde, así
+    que abrir `/sin-conexion` desde cero sin red solo se puede probar con la app compilada:
+    `npm run dev:demo -- --produccion` (preparar el día, apagar el servidor y navegar). Comprobado así a mano el
+    2026-11-09 en 375 px con la asesora de demo: la pantalla abre con los datos, la ficha de «Almacenes Casa Viva»
+    muestra sus contactos y sus precios propios, y el resto sale con «Precio de canal».
+  - **Sin comprobar todavía:** en un iPhone o Android real (solo Chrome de escritorio y el panel del navegador).
+- **Para la parte B, a tener en cuenta:** hoy cerrar sesión borra también la pantalla guardada; cuando exista la
+  bandeja de salida habrá que conservar lo no enviado (decisión 4) y decidir si la pantalla se queda para mostrarlo.
+  La bandeja va en otro almacén de la misma base IndexedDB (subir la versión). Los registros creados sin señal
+  llevan el identificador generado en el teléfono, para que reenviar no duplique.
+- **Idea pendiente:** con mala señal (no sin señal) las demás pantallas del CRM pueden tardar minutos en fallar; hoy
+  solo `/sin-conexion` tiene límite de 3 s. Valorar un límite para las demás navegaciones cuando hay descarga.
+- A tener en cuenta: el almacenamiento del navegador no está cifrado (por eso solo guarda lo de quien inició sesión
+  y se limpia al salir); iOS puede borrarlo si la app no se usa en semanas y no tiene sincronización en
   segundo plano; renovar la sesión de Supabase necesita internet.
 
 ### App de iPhone (prototipo en `mobile/`)
@@ -201,7 +259,7 @@ oportunidades con aviso de conflicto.
   borrando la app, reiniciando el iPhone, reinstalando y verificando otra vez.
 - Para que Apple la apruebe en el App Store necesita funciones nativas, no solo la página. **Face ID ya está**
   (bloqueo de la app, probado en el simulador y en el iPhone de Luis); faltan las notificaciones push nativas (APNs; las push web de la PWA
-  no llegan a la app) y, más adelante, el resto del modo sin conexión (la fase 1, borradores, ya está).
+  no llegan a la app) y, más adelante, el resto del modo sin conexión (borradores y consulta sin señal ya están en la app web).
 - Bloqueo con Face ID, lo que falta: confirmar en el iPhone el código como respaldo (el simulador no tiene código;
   con la cara de verdad ya funcionó); decidir con Luis si lleva un ajuste para apagarlo (hoy va siempre encendido), si 5
   minutos es el tiempo correcto y si la tapa al bajar el centro de control o al salir una alerta del sistema molesta;
@@ -244,6 +302,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-09 | `HASH_X` | **Modo sin conexión, parte A: «Preparar el día» y consulta sin señal** (plan aprobado por Luis, con sus 6 decisiones en la sección 6). Una tarjeta en Inicio descarga al dispositivo los clientes del asesor con contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios, y dice cuándo se descargó. La pantalla nueva «Consulta sin señal» (`/sin-conexion`, también en el menú de usuario) los muestra sin red: agenda, clientes, oportunidades y productos con el precio que le toca a cada cliente, calculado en el teléfono con la regla del CRM (`db:test` comprueba que coincide con la base). Sin red, cualquier pantalla del CRM lleva allí y recuerda a dónde volver. Lo descargado se borra al cerrar sesión y cuando entra otra persona. Service worker v4; `npm run dev:demo -- --produccion` para probar con la app compilada. 147 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion.spec.ts`. | Solo local. **Migración `20261206000100_offline_snapshot` sin publicar**: publicarla antes de subir a `main` |
 | 2026-11-09 | `18576a5` | **Modo sin conexión, fase 1: borradores en el dispositivo.** Lo que se escribe en el formulario de un registro o en el de actividades se guarda en el dispositivo mientras se llena, se recupera al volver a abrirlo («Descartar borrador» lo quita) y no se pierde si al guardar no hay internet o el envío falla (aviso «Sin conexión: no se guardó…», que se lleva a la vista). Se borra al guardar, al cancelar, al cerrar sesión y a los 14 días. De paso: las listas desplegables ya no vuelven a su valor anterior cuando un guardado sale con errores (pasaba en todos los formularios), y el resultado de guardar se lleva a la vista en formularios largos. Sin cambios de base de datos. Prueba nueva `tests/e2e/borradores.spec.ts`. | Solo local; no afecta el despliegue hasta subirlo a `main` |
 | 2026-11-09 | `5d110e1` | **App de iPhone instalada en el iPhone de Luis** (iPhone 17 Pro Max, iOS 27.2) con su Apple ID personal: compilada y firmada desde la terminal con el equipo y el identificador de prueba `com.firplak.crm.prueba` pasados en el comando, sin tocar el proyecto. Comandos en la sección 3. Instalación confirmada por `devicectl`; tras confiar en el desarrollador y verificar la app en el iPhone, Luis confirmó que abre, que entra con su cuenta y que pide Face ID al volver a abrirla. Sin cambios de código. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |
 | 2026-11-09 | `10dd46c` | **Bloqueo con Face ID en la app de iPhone** (`mobile/ios/App/App/Bloqueo.swift`): tapa la app con la pantalla del sello y pide Face ID (o el código del iPhone) al abrir y al volver después de 5 minutos, solo con sesión iniciada; no guarda contraseñas. También se tapa en el selector de apps. Probado en el simulador (cara que coincide, cara que no, cancelar, volver antes y después del tiempo, sin sesión); falta un iPhone real. La app web no cambia. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |
