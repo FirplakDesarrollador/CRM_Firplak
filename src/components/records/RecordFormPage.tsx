@@ -65,6 +65,8 @@ export async function RecordFormPage({
         action={saveRecord.bind(null, object, id ?? null)}
         cancelHref={cancelHref}
         returnTo={returnTo}
+        owner={user.id}
+        version={id ? String(record?.updated_at ?? "") : undefined}
       />
     </div>
   );

@@ -315,6 +315,8 @@ test.describe("administrador", () => {
     await nuevaCuenta(hogar, "Nacional", "Canal B2C");
     await page.goto("/oportunidades/nueva");
     await page.waitForLoadState("networkidle");
+    // La oportunidad anterior no se guardó y quedó como borrador con su cuenta: se descarta.
+    await page.getByRole("button", { name: "Descartar borrador" }).click();
     await page.getByLabel(/Nombre de la oportunidad/).fill(unico("Remodelación Baño"));
     await buscarYElegir(page, /^Cuenta/, hogar);
     await expect(page.getByText("No hay pipeline para el mercado Nacional y el Canal B2C").first()).toBeVisible();

@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/shell/AppHeader";
 import { NavTabs } from "@/components/shell/NavTabs";
 import { MobileTabBar } from "@/components/shell/MobileTabBar";
 import { PushSync } from "@/components/pwa/PushSettings";
+import { DraftsSweep } from "@/components/pwa/DraftsSweep";
 import { vapidPublicKey } from "@/lib/push/config";
 import { navItems } from "@/components/shell/nav";
 import { Alert } from "@/components/ui/Alert";
@@ -43,6 +44,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
       <main id="contenido" tabIndex={-1} className="mx-auto max-w-[1600px] outline-none px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-5 sm:px-6 md:pb-5">{children}</main>
       <MobileTabBar items={navItems(user.access, t)} />
       {pushKey && <PushSync publicKey={pushKey} userId={user.id} />}
+      <DraftsSweep userId={user.id} />
     </div>
     </I18nProvider>
   );

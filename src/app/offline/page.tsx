@@ -16,7 +16,8 @@ export default function OfflinePage() {
         <h1 className="text-xl font-medium">Sin conexión</h1>
         <p className="text-sm leading-relaxed text-[#c5d2da]">
           El CRM necesita internet para mostrar información actualizada. Revisa tu conexión de datos o wifi y vuelve a intentar.
-          Lo que estabas escribiendo y no alcanzaste a guardar no se envió.
+          Lo que estabas escribiendo en un registro o una actividad no se envió, pero quedó como borrador en este
+          dispositivo: vuelve a abrir el formulario cuando haya internet.
         </p>
         <RetryButton />
       </div>

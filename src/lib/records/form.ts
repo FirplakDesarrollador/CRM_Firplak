@@ -5,6 +5,8 @@ export type FormState = {
   message?: string;
   errors?: Record<string, string>;
   values?: Record<string, string>;
+  /** No se intentó o no se pudo guardar por falta de conexión (lo escrito queda como borrador en el dispositivo). */
+  offline?: boolean;
   /** Posibles duplicados encontrados al crear (se puede guardar de todas formas). */
   duplicates?: { id: string; label: string; href: string }[];
 };

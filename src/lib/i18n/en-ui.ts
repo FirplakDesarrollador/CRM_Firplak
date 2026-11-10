@@ -909,4 +909,13 @@ export const UI_EN: Record<string, string> = {
   "Nombre interno (opcional)": "API name (optional)", "Precio (opcional)": "Price (optional)", "Valor estimado (COP)": "Estimated amount (COP)",
   "Cambia toda la interfaz. Los datos (etapas, valores de listas, campos personalizados y mensajes de reglas) se muestran tal como se crearon.":
     "Changes the whole interface. Data (stages, picklist values, custom fields and rule messages) is shown as it was created.", "Ver todo": "View all", "Sin origen": "No source",
+  // Borradores de formularios y avisos de «Sin conexión».
+  "Sin conexión: no se guardó. Lo que escribiste queda en este dispositivo; guarda de nuevo cuando vuelva internet.":
+    "No connection: nothing was saved. What you wrote stays on this device; save again when you're back online.",
+  "No se pudo guardar. Lo que escribiste queda en este dispositivo; inténtalo de nuevo.":
+    "Couldn't save. What you wrote stays on this device; try again.",
+  "Recuperamos lo que estabas escribiendo y no alcanzaste a guardar.": "We restored what you were writing and didn't get to save.",
+  "Hay un borrador de este registro guardado en este dispositivo, pero el registro cambió después.":
+    "There's a draft of this record saved on this device, but the record has changed since.",
+  "Recuperar borrador": "Restore draft", "Descartar borrador": "Discard draft",
 };

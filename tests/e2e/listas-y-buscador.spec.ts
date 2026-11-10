@@ -142,6 +142,8 @@ test("Cuenta principal: la lista del buscador queda encima de la tarjeta Direcci
   await compruebaLista(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/cuentas/nueva");
+  // Lo elegido en la primera pasada quedó como borrador: se descarta para empezar con el campo vacío.
+  await page.getByRole("button", { name: "Descartar borrador" }).click();
   await compruebaLista(page);
 });
 

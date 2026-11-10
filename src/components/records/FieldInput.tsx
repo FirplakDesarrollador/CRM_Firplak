@@ -141,7 +141,11 @@ function LinkedLookup({ field, id, invalid, initial, initialFilter }: {
 const termsCache = new Map<string, Promise<Record<string, string | null>>>();
 function accountTerms(accountId: string) {
   if (!termsCache.has(accountId)) {
-    termsCache.set(accountId, fetch(`/api/cuenta-condiciones?id=${accountId}`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+    // Si la consulta falla (sin conexión), no se recuerda la respuesta vacía: la próxima vez se vuelve a pedir.
+    termsCache.set(accountId, fetch(`/api/cuenta-condiciones?id=${accountId}`).then((r) => (r.ok ? r.json() : {})).catch(() => {
+      termsCache.delete(accountId);
+      return {};
+    }));
   }
   return termsCache.get(accountId)!;
 }
@@ -369,8 +373,10 @@ export function FieldInput({
   const common = { id, name: field.name, "aria-invalid": invalid, required: field.required };
 
   let control: React.ReactNode;
+  // Las listas simples llevan `key` con su valor: tras un intento fallido de guardar, React devuelve el formulario
+  // a sus valores iniciales y en un <select> ya montado no aplica el `defaultValue` nuevo (volvía al valor anterior).
   // Un país nuevo empieza en Colombia; los registros existentes conservan lo que tenían.
-  const geoValue = field.geoRole === "country" && !str && ctx.isNew && !echo ? "Colombia" : str;
+  const geoValue = field.geoRole === "country" && !str && ctx.isNew && echo === undefined ? "Colombia" : str;
   const kind = field.geoRole && ctx.geo && place ? "geo" : field.derived ? "derived" : field.choices ? "choices" : field.type;
   switch (kind) {
     case "derived":
@@ -378,7 +384,7 @@ export function FieldInput({
       break;
     case "choices":
       control = (
-        <select {...common} className="select" defaultValue={str}>
+        <select key={str} {...common} className="select" defaultValue={str}>
           <option value="">{t("— Ninguna —")}</option>
           {(ctx.choices?.[field.choices!] ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           {str && !(ctx.choices?.[field.choices!] ?? []).some((o) => o.id === str) && (
@@ -399,7 +405,7 @@ export function FieldInput({
         break;
       }
       control = (
-        <select {...common} className="select" defaultValue={str}>
+        <select key={str} {...common} className="select" defaultValue={str}>
           <option value="">{t("— Ninguno —")}</option>
           {(field.options ?? []).map((o) => (
             <option key={o} value={o}>{field.optionLabels?.[o] ?? o}</option>
@@ -465,7 +471,7 @@ export function FieldInput({
       break;
     case "user":
       control = (
-        <select {...common} className="select" defaultValue={str}>
+        <select key={str} {...common} className="select" defaultValue={str}>
           <option value="">{t("— Yo —")}</option>
           {ctx.users.filter((u) => u.is_active || u.id === str).map((u) => (
             <option key={u.id} value={u.id}>{u.full_name}</option>
