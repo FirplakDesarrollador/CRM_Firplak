@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
   // variable la compilación local los deja igual, para probar la consulta sin señal como queda en el hosting
   // (`npm run dev:demo -- --vercel`). En Vercel no se define: allá decide el adaptador.
   ...(process.env.CRM_ARCHIVOS_COMO_VERCEL === "1" ? { supportsImmutableAssets: true } : {}),
+  // El PDF de la cotización lee del disco la letra Outfit y el logo: que viajen con esa función en el hosting.
+  outputFileTracingIncludes: {
+    "/imprimir/cotizacion/\\[id\\]/pdf": [
+      "./node_modules/@fontsource/outfit/files/outfit-{latin,latin-ext}-{300,400,500}-normal.woff",
+      "./public/brand/firplak-wordmark-navy.png",
+    ],
+  },
   turbopack: {
     rules: {
       "*.css": {

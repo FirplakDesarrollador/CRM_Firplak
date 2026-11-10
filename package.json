@@ -20,7 +20,9 @@
     "db:huella": "node scripts/huella-local.mjs"
   },
   "dependencies": {
+    "@fontsource/outfit": "5.3.0",
     "@modelcontextprotocol/sdk": "1.32.1",
+    "@react-pdf/renderer": "4.9.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "lucide-react": "^1.64.0",

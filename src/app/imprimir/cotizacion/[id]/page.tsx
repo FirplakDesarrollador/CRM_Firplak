@@ -1,35 +1,24 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { formatCurrency, formatDate, formatNumber, formatQuantityUnit } from "@/lib/format";
 import wordmark from "../../../../../public/brand/firplak-wordmark-navy.png";
+import { loadPrintQuote, quotePdfName } from "./datos";
 import { PrintButton } from "./PrintButton";
 
 export const metadata: Metadata = { title: "Cotización" };
 
-/** Vista imprimible de la cotización (usar "Guardar como PDF" del navegador). */
+/**
+ * Vista imprimible de la cotización (usar "Guardar como PDF" del navegador). El mismo contenido sale como archivo
+ * en `pdf/CotizacionPdf.tsx`, para el iPhone con el CRM instalado: si cambias una, cambia la otra.
+ */
 export default async function PrintQuotePage({ params }: PageProps<"/imprimir/cotizacion/[id]">) {
   const [{ id }, user] = await Promise.all([params, getCurrentUser()]);
   if (!user) redirect("/login");
-  const supabase = await createClient();
-  const [{ data: q }, { data: lines }] = await Promise.all([
-    supabase
-      .from("quotes")
-      .select("*, account:accounts!quotes_account_id_fkey(name, tax_id, billing_street, billing_city, phone), contact:contacts!quotes_contact_id_fkey(full_name, email, mobile), opportunity:opportunities!quotes_opportunity_id_fkey(name), owner:profiles!quotes_owner_id_fkey(full_name, email, phone, title)")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("quote_line_items")
-      .select("id, description, quantity, unit_price, discount, line_total, product:products!quote_line_items_product_id_fkey(product_code, unit)")
-      .eq("quote_id", id)
-      .order("sort_order"),
-  ]);
-  if (!q) notFound();
-  // La dirección de facturación viene de la cuenta; la de entrega, si no se escribió otra, es la misma.
-  const billing = q.billing_address ?? ([q.account?.billing_street, q.account?.billing_city].filter(Boolean).join(", ") || null);
-  const shipping = q.shipping_address ?? billing;
+  const quote = await loadPrintQuote(id);
+  if (!quote) notFound();
+  const { q, lines, billing, shipping } = quote;
   const label = "text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--sage-700)]";
 
   return (
@@ -39,7 +28,9 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
       <style>{`@page { size: letter; margin: 14mm; } @media print { body { background: #fff !important; } }
         /* Al imprimir, ningún bloque (filas, totales, condiciones, observaciones, firma) queda partido entre dos páginas. */
         .print-keep, .print-rows tr { break-inside: avoid; }`}</style>
-      <div className="mx-auto mb-4 flex max-w-[52rem] justify-end print:hidden"><PrintButton /></div>
+      <div className="mx-auto mb-4 flex max-w-[52rem] flex-wrap items-center justify-end gap-3 print:hidden">
+        <PrintButton pdfUrl={`/imprimir/cotizacion/${id}/pdf`} fileName={quotePdfName(q.quote_number)} />
+      </div>
       <article className="mx-auto max-w-[52rem] rounded-[22px] bg-white p-10 text-[13px] text-[var(--ink-900)] shadow-[var(--shadow-lg)] print:max-w-none print:rounded-none print:p-0 print:shadow-none">
         <header className="flex items-start justify-between gap-6 border-b border-[rgba(29,29,27,0.14)] pb-6">
           <Image src={wordmark} alt="Firplak · inspirando hogares" width={190} height={52} priority />
@@ -80,7 +71,7 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
             </tr>
           </thead>
           <tbody>
-            {(lines ?? []).map((l) => (
+            {lines.map((l) => (
               <tr key={l.id} className="border-b border-[rgba(29,29,27,0.08)] align-top">
                 <td className="py-2 pr-2 text-[var(--ink-500)]">{l.product?.product_code}</td>
                 <td className="py-2 pr-2">{l.description}</td>
