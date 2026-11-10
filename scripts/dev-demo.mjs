@@ -10,6 +10,10 @@
 // contra la misma base de demo. Sirve para probar lo que en desarrollo no se puede: el service worker con
 // caché de archivos y la consulta sin señal recargando la página sin red (en desarrollo, Next no termina de
 // cargar una página si no alcanza su servidor).
+//
+// `npm run dev:demo -- --vercel` hace lo mismo y además publica los archivos con huella donde los deja Vercel
+// (`/_next/static/immutable/…` en vez de `/_next/static/…`). La consulta sin señal guarda esos archivos por su
+// dirección, así que hay que probarla con las dos formas: la de aquí y la del hosting.
 
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
@@ -649,7 +653,8 @@ await new Promise((r) => pushServer.listen(PUSH_PORT, '127.0.0.1', r));
 // Estas variables tienen prioridad sobre .env.local: la app solo habla con la base de demo y con
 // el Microsoft 365 simulado; nunca usa las claves reales ni envía correos aunque estén configurados.
 const cronSecret = randomBytes(16).toString('hex');
-const PRODUCTION = process.argv.includes('--produccion');
+const LIKE_VERCEL = process.argv.includes('--vercel');
+const PRODUCTION = LIKE_VERCEL || process.argv.includes('--produccion');
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const appEnv = {
   ...process.env,
@@ -678,6 +683,8 @@ const appEnv = {
   RESEND_API_KEY: '',
   EMAIL_FROM: '',
   ALLOWED_EMAIL_DOMAINS: '',
+  // La lee next.config.ts.
+  ...(LIKE_VERCEL ? { CRM_ARCHIVOS_COMO_VERCEL: '1' } : {}),
 };
 if (PRODUCTION) {
   // Las variables NEXT_PUBLIC_* quedan dentro de la compilación: por eso se compila aquí, con las de demo.

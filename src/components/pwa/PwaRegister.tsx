@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { WifiOff } from "lucide-react";
 import { useOfflineMeta } from "@/components/offline/useOffline";
-import { OFFLINE_PATH } from "@/lib/offline/download";
+import { ensureShell, OFFLINE_PATH } from "@/lib/offline/download";
 
 /**
  * Registra el service worker (app instalable) y avisa cuando se pierde la conexión.
@@ -29,6 +29,12 @@ export function PwaRegister() {
       window.removeEventListener("offline", update);
     };
   }, []);
+
+  // Hay descarga y hay red: si la pantalla para verla sin señal no quedó completa, se guarda de nuevo sola.
+  useEffect(() => {
+    if (!meta || offline) return;
+    void ensureShell().catch(() => undefined);
+  }, [meta, offline]);
 
   // La pantalla de consulta sin señal ya dice que no hay señal, y allí no se guarda nada.
   if (!offline || pathname === OFFLINE_PATH) return null;

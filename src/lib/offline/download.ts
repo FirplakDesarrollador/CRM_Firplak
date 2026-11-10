@@ -64,28 +64,47 @@ export async function prepareDay(): Promise<{ meta: OfflineMeta; shell: boolean 
   return { meta, shell };
 }
 
-/** Archivos de Next que nombra un texto (HTML o datos de la página): scripts, estilos y fuentes con huella. */
+/**
+ * Archivos de Next que nombra un texto (HTML o datos de la página): scripts, estilos y fuentes con huella.
+ * En Vercel van en `/_next/static/immutable/…` y en una compilación local en `/_next/static/…`; por eso también
+ * se toma todo lo que el HTML cargue de `/_next/static/`, se llame como se llame su carpeta.
+ */
 export function staticAssets(text: string) {
   const found = new Set<string>();
-  for (const match of text.matchAll(/(?:\/_next\/)?static\/(?:chunks|css|media)\/[^"'\\\s<>)]+/g)) {
-    const path = match[0].replaceAll("&amp;", "&");
+  const add = (raw: string) => {
+    const path = raw.replaceAll("&amp;", "&");
     found.add(path.startsWith("/_next/") ? path : `/_next/${path}`);
-  }
+  };
+  for (const match of text.matchAll(/(?:\/_next\/)?static\/(?:immutable\/)?(?:chunks|css|media)\/[^"'\\\s<>)]+/g)) add(match[0]);
+  for (const match of text.matchAll(/\s(?:src|href)="(\/_next\/static\/[^"]+)"/g)) add(match[1]);
   return [...found];
 }
 
+const isScript = (url: string) => /\.js(\?|$)/.test(url);
+
+let warming: Promise<boolean> | null = null;
+
 /**
  * Guarda la pantalla sin conexión con todo lo que necesita para abrir sin red. El HTML se escribe al final, y
- * solo si sus archivos quedaron: así nunca se sirve una pantalla a medias.
+ * solo si sus archivos quedaron: así nunca se sirve una pantalla a medias. Si ya hay una guardándose, espera esa.
  */
-export async function warmShell() {
+export function warmShell() {
+  warming ??= saveShell().finally(() => {
+    warming = null;
+  });
+  return warming;
+}
+
+async function saveShell() {
   if (!("caches" in window)) return false;
   const page = await fetch(OFFLINE_PATH, { cache: "no-store", credentials: "same-origin" });
   if (!page.ok || page.redirected) return false;
   const html = await page.clone().text();
 
-  const cache = await window.caches.open(SHELL_CACHE);
   const assets = new Set(staticAssets(html));
+  // Sin sus scripts la pantalla no abre: mejor decir que no quedó que guardar solo el HTML.
+  if (![...assets].some(isScript)) return false;
+  const cache = await window.caches.open(SHELL_CACHE);
   const fetched = new Set<string>();
   // Los estilos nombran las fuentes; se sigue hasta no encontrar archivos nuevos.
   for (let round = 0; round < 3; round++) {
@@ -113,4 +132,25 @@ export async function warmShell() {
     if (!keep.has(request.url)) await cache.delete(request);
   }
   return true;
+}
+
+/** Si la pantalla guardada abre sin red: está su HTML y cada archivo que nombra, scripts incluidos. */
+export async function shellReady() {
+  if (!("caches" in window) || !(await window.caches.has(SHELL_CACHE))) return false;
+  const cache = await window.caches.open(SHELL_CACHE);
+  const page = await cache.match(OFFLINE_PATH);
+  if (!page) return false;
+  const assets = staticAssets(await page.text());
+  if (!assets.some(isScript)) return false;
+  const saved = await Promise.all(assets.map((url) => cache.match(url)));
+  return saved.every(Boolean);
+}
+
+/**
+ * Con algo descargado y con red: si la pantalla para verlo no está completa, la vuelve a guardar. Repara sola los
+ * dispositivos donde quedó a medias, sin pedirle a nadie que descargue otra vez.
+ */
+export async function ensureShell() {
+  if (await shellReady()) return true;
+  return warmShell();
 }

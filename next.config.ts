@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Vercel publica los archivos con huella en /_next/static/immutable/… (lo activa su adaptador). Con esta
+  // variable la compilación local los deja igual, para probar la consulta sin señal como queda en el hosting
+  // (`npm run dev:demo -- --vercel`). En Vercel no se define: allá decide el adaptador.
+  ...(process.env.CRM_ARCHIVOS_COMO_VERCEL === "1" ? { supportsImmutableAssets: true } : {}),
   turbopack: {
     rules: {
       "*.css": {

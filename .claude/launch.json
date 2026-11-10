@@ -14,6 +14,12 @@
       "port": 3000
     },
     {
+      "name": "firplak-crm-demo-vercel",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:demo", "--", "--vercel"],
+      "port": 3000
+    },
+    {
       "name": "firplak-crm",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],

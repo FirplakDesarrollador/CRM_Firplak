@@ -3,8 +3,9 @@
 //     – si el asesor preparó el día, abre «Consulta sin señal» (/sin-conexion), cuyo HTML y archivos guardó la
 //       app en una caché aparte; esa pantalla no trae datos: los lee del dispositivo;
 //     – si no, la página «offline».
-// · Archivos estáticos de Next con huella (/_next/static/…): caché primero. En desarrollo (?static=0) van
-//   primero a la red, porque cambian sin cambiar de nombre, y la copia guardada solo se usa sin red.
+// · Archivos estáticos de Next con huella (/_next/static/…; en Vercel, /_next/static/immutable/…): caché primero.
+//   En desarrollo (?static=0) van primero a la red, porque cambian sin cambiar de nombre, y la copia guardada
+//   solo se usa sin red.
 // · Notificaciones push: se muestran al llegar y al tocarlas abren el registro.
 // Nunca se guardan páginas con datos ni respuestas de la API.
 const VERSION = 'firplak-crm-v4';
@@ -30,6 +31,8 @@ self.addEventListener('activate', (event) => {
 });
 
 const savedShell = () => caches.open(SHELL_CACHE).then((cache) => cache.match(SHELL_URL));
+// Un archivo con huella es el mismo aunque la dirección traiga otro parámetro (?dpl=…).
+const savedStatic = (request) => caches.match(request).then((hit) => hit ?? caches.match(request, { ignoreSearch: true }));
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
@@ -75,10 +78,10 @@ self.addEventListener('fetch', (event) => {
     return res;
   });
   if (!CACHE_STATIC) {
-    event.respondWith(fromNetwork().catch(() => caches.match(request).then((hit) => hit ?? Response.error())));
+    event.respondWith(fromNetwork().catch(() => savedStatic(request).then((hit) => hit ?? Response.error())));
     return;
   }
-  event.respondWith(caches.match(request).then((hit) => hit ?? fromNetwork()));
+  event.respondWith(savedStatic(request).then((hit) => hit ?? fromNetwork()));
 });
 
 self.addEventListener('push', (event) => {

@@ -57,6 +57,33 @@ test("la barra inferior reemplaza al menú y «Más» abre los demás módulos",
   await expect(hoja).toHaveCount(0);
 });
 
+// Reporte de Luis (10 nov 2026): con el día preparado y el celular en modo avión, tocar «Actividades» mostraba
+// un error en vez de lo descargado. Se prueba con el toque real: un `goto` no pasa por el mismo camino.
+test("sin señal, tocar una sección de la barra inferior abre lo descargado", async ({ page, context }) => {
+  await page.goto("/inicio");
+  const tarjeta = page.getByRole("region", { name: "Consulta sin señal" });
+  await tarjeta.getByRole("button", { name: "Preparar el día" }).click();
+  await expect(tarjeta.getByText(/^Descargado hoy, /)).toBeVisible();
+  // La pantalla queda guardada con sus archivos, y el service worker ya atiende esta página.
+  // (el HTML de la pantalla es lo último que se guarda, después de sus archivos).
+  await expect.poll(() => page.evaluate(async () => {
+    if (!(await caches.has("firplak-crm-sin-conexion"))) return 0;
+    const cache = await caches.open("firplak-crm-sin-conexion");
+    return (await cache.match("/sin-conexion")) ? (await cache.keys()).length : 0;
+  })).toBeGreaterThan(1);
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
+
+  await context.setOffline(true);
+  await expect(page.getByRole("status").filter({ hasText: "Sin conexión: no se puede guardar." })).toBeVisible();
+  await page.getByRole("navigation", { name: "Navegación principal" }).getByRole("link", { name: "Actividades" }).click();
+  await expect(page).toHaveURL(/\/sin-conexion#volver=%2Factividades$/);
+  // Hasta aquí llega el modo de desarrollo (sin servidor la página no termina de cargar): que los datos se vean
+  // se comprueba con la app compilada, `npm run dev:demo -- --vercel`.
+  await expect(page.getByRole("heading", { level: 1, name: "Consulta sin señal" })).toBeVisible();
+  await context.setOffline(false);
+});
+
 test("el buscador muestra un texto que cabe en el celular", async ({ page }) => {
   await page.goto("/inicio");
   const buscador = page.getByRole("textbox", { name: "Búsqueda global" });

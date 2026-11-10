@@ -52,7 +52,8 @@ pedido de Luis, que cargará las reales en Metas.
 npm install
 npm run dev:demo      # base en memoria con datos de ejemplo, Microsoft 365 y SAP simulados → http://localhost:3000
 npm run dev:demo -- --produccion   # lo mismo con la app compilada (`next build` + `next start`): para probar sin señal
-npm run db:test       # pruebas de la base (PGlite): 147 comprobaciones
+npm run dev:demo -- --vercel       # compilada y con los archivos donde los deja Vercel (/_next/static/immutable/…)
+npm run db:test       # pruebas de la base (PGlite): 149 comprobaciones
 npm run db:huella     # huella del esquema de las migraciones, para comparar con producción
 npm run test:e2e      # pruebas de interfaz (Playwright, Chrome instalado): 71 pruebas
 npm run lint && npm run build
@@ -126,6 +127,10 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
     `/sin-conexion`, el `sw.js` es el v4 y las dos rutas `/api/sin-conexion/*` redirigen al ingreso si no hay
     sesión. **Sin comprobar con una sesión real en producción** («Preparar el día», enviar un registro): eso lo
     prueba Luis con su usuario.
+  - **Primera prueba de Luis en su iPhone (2026-11-10): falló abrir lo descargado sin señal.** «Preparar el día»
+    descargó bien, pero en modo avión tocar «Actividades» mostró el error de Next en inglés («This page couldn't
+    load»). Causa y arreglo en la sección 6 («Abrir sin red»). **El arreglo está en la rama, sin publicar:** lo
+    que hoy está en `main` todavía falla así. Publicarlo necesita un nuevo visto bueno de Luis.
 - Antes, `20261205000100_alerts_plural`, el 2026-11-09 con `db:publicar` y visto bueno de
   Luis (40/40, 0 pendientes): solo texto, el aviso diario dice «Tienes 1 tarea vencida» / «Tienes N tareas vencidas»;
   mismos permisos (`authenticated` ya la ejecutaba desde la fase 5) y el asesor de seguridad sin hallazgos nuevos.
@@ -180,7 +185,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - B2C: personas naturales con cédula.
 - Mapeo de Segmentos por Mercado y Canal (falta la tabla de Luis).
 
-### Modo sin conexión: construido completo (borradores, A, B y C) y desplegado; falta probarlo en teléfonos
+### Modo sin conexión: construido y desplegado; la prueba en iPhone encontró un fallo, corregido en la rama y sin publicar
 Luis dio la orden de empezar el 2026-11-09 y ese mismo día aprobó el plan. Los asesores se quedan sin señal en
 ascensores, parqueaderos de sótano, obras y oficinas con mala red, y en el avión. Sin señal necesitan, en este orden:
 cotizar (informar precios), registrar actividades y crear un cliente. La fuerza comercial usa la **app web (PWA) en
@@ -208,9 +213,11 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
 **Orden de construcción:** A. descarga y consulta (**hecha**) → B. bandeja de salida con actividades y crear cliente
 (**hecha**) → C. cotizaciones sin señal (**hecha**). Cada parte con sus pruebas y su commit.
 
-**Lo que falta para que lo usen los asesores:** probarlo en un iPhone y un Android reales, instalado como app
-web, con una sesión de producción. Las dos migraciones están en producción y la interfaz está desplegada en `main`
-desde el 2026-11-10 (sección 5).
+**Lo que falta para que lo usen los asesores:** (1) publicar en `main` el arreglo de «Abrir sin red» (con el visto
+bueno de Luis); (2) probarlo de nuevo en un iPhone y un Android reales, instalado como app web, con una sesión de
+producción: abrir el CRM una vez con señal (la pantalla guardada se completa sola) o tocar «Actualizar», poner modo
+avión y navegar. Las dos migraciones están en producción y la interfaz está desplegada en `main` desde el
+2026-11-10 (sección 5), todavía sin el arreglo.
 
 - **Borradores (antes «fase 1»), cómo quedó:** el formulario de cualquier registro (`RecordForm`) y el de actividades de las fichas
   (`Composer`) guardan lo escrito en `localStorage` (`crm:borrador:<usuario>:<dirección>`), 400 ms después de la
@@ -241,6 +248,22 @@ desde el 2026-11-10 (sección 5).
     `firplak-crm-sin-conexion`. El service worker (`public/sw.js`, v4) la sirve cuando una navegación falla o tarda
     más de 3 s en esa pantalla, y lleva cualquier otra pantalla del CRM a `/sin-conexion#volver=<ruta>`; con red, el
     botón «Volver al CRM» regresa a esa ruta. Sin nada descargado sigue saliendo la página «offline» de siempre.
+  - **Fallo en producción y arreglo (2026-11-10, reporte de Luis desde el iPhone):** en Vercel, Next publica los
+    archivos con huella en `/_next/static/immutable/…` (lo activa su adaptador); en una compilación local quedan en
+    `/_next/static/…`. La app solo reconocía la forma local, así que en producción guardaba el HTML de la pantalla
+    **sin sus scripts** y aun así decía «Descargado». Sin señal el service worker llevaba a esa pantalla, que no
+    podía arrancar, y salía el error de Next en inglés. No era del iPhone: pasaba en cualquier dispositivo contra
+    Vercel. Ahora: (1) `staticAssets()` (`src/lib/offline/download.ts`) reconoce las dos formas y todo lo que el
+    HTML cargue de `/_next/static/`; (2) si la pantalla queda sin scripts no se da por guardada (la tarjeta avisa);
+    (3) `ensureShell()`, desde `PwaRegister`, revisa con red que la pantalla guardada esté completa y si no la
+    vuelve a guardar sola: **repara los dispositivos que ya la tenían a medias** la primera vez que abren el CRM
+    con señal después del despliegue; (4) el service worker encuentra un archivo guardado aunque la dirección
+    traiga otro parámetro; (5) `src/app/global-error.tsx` reemplaza la pantalla de error de Next por una en
+    español («No se pudo abrir esta pantalla», Reintentar / Ir al inicio).
+  - **Cómo se prueba como en Vercel:** `npm run dev:demo -- --vercel` compila con `supportsImmutableAssets`
+    (variable `CRM_ARCHIVOS_COMO_VERCEL=1`, que solo lee `next.config.ts` en local; en Vercel decide el adaptador).
+    Ojo al probar con Chrome: su caché HTTP sirve esos archivos «sin red» y tapa lo que falte en la caché de la
+    app; hay que vaciarla antes de cortar la red (`Network.clearBrowserCache`).
   - **Privacidad:** lo descargado se borra al cerrar sesión (junto con la pantalla guardada), al entrar otra persona
     en el mismo dispositivo y cuando el servidor responde que ya no hay sesión.
   - **Pruebas:** `tests/e2e/sin-conexion.spec.ts` (preparar el día, consulta y precios con la red cortada, redirección
@@ -250,7 +273,9 @@ desde el 2026-11-10 (sección 5).
     `npm run dev:demo -- --produccion` (preparar el día, apagar el servidor y navegar). Comprobado así a mano el
     2026-11-09 en 375 px con la asesora de demo: la pantalla abre con los datos, la ficha de «Almacenes Casa Viva»
     muestra sus contactos y sus precios propios, y el resto sale con «Precio de canal».
-  - **Sin comprobar todavía:** en un iPhone o Android real (solo Chrome de escritorio y el panel del navegador).
+  - **Sin comprobar todavía:** el arreglo en un iPhone o Android real (comprobado en Chrome con el tamaño de un
+    celular, toques reales, contra la app compilada como en Vercel: recién descargado, con la pantalla a medias y
+    después de repararse sola). Llega a los teléfonos cuando se publique en `main`.
 - **Parte B, cómo quedó** (sin cambios de base de datos):
   - **Dónde se crea:** en `/sin-conexion`, con o sin señal. Clientes → «Nuevo cliente» (nombre, tipo, canal,
     mercado, NIT, teléfono, correo, ciudad, dirección, notas) y «Registrar actividad» desde la Agenda o desde la
@@ -386,6 +411,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-10 | `HASH_INMUTABLES` | **Arreglo: sin señal, tocar una sección abría un error en vez de lo descargado** (reporte de Luis desde su iPhone, en producción). En Vercel los archivos de la app van en `/_next/static/immutable/…` y la app solo reconocía la forma de una compilación local: guardaba la pantalla «Consulta sin señal» sin sus scripts y decía «Descargado». Ahora reconoce las dos formas, no da por guardada una pantalla incompleta, la completa sola al volver a abrir el CRM con señal (repara los teléfonos que ya la tenían a medias) y, si algo falla al abrir, el aviso sale en español y no el de Next en inglés. Demo nueva `npm run dev:demo -- --vercel` para probar como en el hosting. Pruebas: toque real en la barra inferior con la red cortada (`movil.spec.ts`), reconocimiento de archivos y reparación (`sin-conexion.spec.ts`). Sin cambios de base de datos. | **Sin publicar**: falta el visto bueno de Luis para subir a `main`; después, probar de nuevo en el iPhone |
 | 2026-11-10 | `4adf656` | **Modo sin conexión subido a `main`** con el visto bueno de Luis: la rama `codex/migraciones-seguras` y `main` quedaron en el mismo commit (avance directo, 19 commits: borradores, partes A, B y C, y el prototipo de iPhone en `mobile/`, que no cambia la app web). Antes de subir se revisó que no salieran claves ni archivos reservados. | Desplegado (2026-11-10): Vercel construyó sin errores; sitio publicado con `/sin-conexion` y `sw.js` v4. Falta la prueba con sesión real y en teléfonos |
 | 2026-11-10 | `5731c71` | Publicadas en producción las dos migraciones del modo sin conexión: `20261206000100_offline_snapshot` (descarga de «Preparar el día») y `20261207000100_offline_quotes` (precio de lista de las cotizaciones hechas sin señal). Comprobado después: 42 de 42 en el historial, permisos de las dos funciones como en la migración, columna vacía en las líneas existentes y asesor de seguridad sin hallazgos nuevos. | Migraciones aplicadas con `db:publicar` y visto bueno de Luis (42/42) |
 | 2026-11-10 | `4374fa7` | **Modo sin conexión, parte C: cotizaciones sin señal.** En «Consulta sin señal» se arma una cotización sin red desde la ficha del cliente o desde Productos: el teléfono pone el precio que le toca a ese cliente (lista propia o de su canal) y calcula los totales con IVA igual que el CRM. Queda «Sin enviar» con número provisional y editable; al volver la señal llega sola al CRM como borrador, con su número oficial, después de su cliente si este también se creó sin señal. Si el precio de lista cambió desde la descarga se respeta el cotizado, se le avisa al asesor y la línea queda marcada «Cotizado sin señal» en la cotización del CRM, con el precio de lista vigente al llegar. Un producto que ya no está disponible la deja Rechazada para corregirla. 149 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion-cotizaciones.spec.ts`. | Desplegado (2026-11-10); migración `20261207000100_offline_quotes` publicada el mismo día |

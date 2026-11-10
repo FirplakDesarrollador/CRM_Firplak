@@ -1,12 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ingresar, sesion, USUARIOS } from "./ayuda";
+import { staticAssets } from "../../src/lib/offline/download";
 
 // Modo sin conexión, parte A: «Preparar el día» baja al dispositivo los clientes, la agenda y los precios del
 // asesor, y la pantalla «Consulta sin señal» los muestra sin pedirle nada al servidor.
 //
 // Estas pruebas corren sobre el servidor de desarrollo, donde una página no termina de cargar si el servidor no
 // responde. Por eso aquí se corta la red con la pantalla ya abierta. Abrirla desde cero sin red (con el servidor
-// apagado) se comprueba a mano con `npm run dev:demo -- --produccion`.
+// apagado) se comprueba a mano con `npm run dev:demo -- --produccion` y, con los archivos donde los deja el
+// hosting, con `npm run dev:demo -- --vercel`.
 
 const BASE = "firplak-crm-sin-conexion";
 const ALMACEN = "descarga";
@@ -49,6 +51,27 @@ async function prepararElDia(page: Page) {
 }
 
 const producto = (page: Page, referencia: string) => page.locator("#panel-sin-conexion li", { hasText: referencia });
+
+// En Vercel los archivos con huella van en /_next/static/immutable/…, no en /_next/static/… como en una
+// compilación local. La app no los reconocía: guardaba la pantalla sin sus scripts y sin señal no abría
+// (reporte de Luis del 10 nov 2026, desde el iPhone).
+test("reconoce los archivos de la pantalla donde los deja el hosting y donde los deja una compilación local", () => {
+  const vercel = `<link rel="stylesheet" href="/_next/static/immutable/chunks/0vzt-zfzif1zz.css" data-precedence="next"/>
+    <link rel="preload" as="font" href="/_next/static/immutable/media/c0680f1bdb3a2e90-s.p.1ay-qk1u8nydy.woff2" crossorigin=""/>
+    <script src="/_next/static/immutable/chunks/turbopack-1cvbnb3nlabgn.js" async=""></script>
+    <script src="/_next/static/otra-carpeta/x1.js?dpl=dpl_1&amp;v=2" async=""></script>
+    <script>self.__next_f.push([1,"3:I[1,[\"static/immutable/chunks/3na5n3mkfnrc5.js\",\"static/immutable/chunks/44xcerwlley0q.js\"],\"OfflineApp\"]"])</script>`;
+  expect(staticAssets(vercel).sort()).toEqual([
+    "/_next/static/immutable/chunks/0vzt-zfzif1zz.css",
+    "/_next/static/immutable/chunks/3na5n3mkfnrc5.js",
+    "/_next/static/immutable/chunks/44xcerwlley0q.js",
+    "/_next/static/immutable/chunks/turbopack-1cvbnb3nlabgn.js",
+    "/_next/static/immutable/media/c0680f1bdb3a2e90-s.p.1ay-qk1u8nydy.woff2",
+    "/_next/static/otra-carpeta/x1.js?dpl=dpl_1&v=2",
+  ]);
+  const local = `<script src="/_next/static/chunks/a1.js" async=""></script><script>self.__next_f.push([1,"[\"static/chunks/b2.js\"]"])</script>`;
+  expect(staticAssets(local).sort()).toEqual(["/_next/static/chunks/a1.js", "/_next/static/chunks/b2.js"]);
+});
 
 test.describe("asesora", () => {
   test.use({ storageState: sesion("asesora") });
@@ -110,6 +133,29 @@ test.describe("asesora", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Consulta sin señal" })).toBeVisible();
     await context.setOffline(false);
   });
+});
+
+test("una pantalla guardada a medias se completa sola al volver a entrar con red", async ({ page }) => {
+  await ingresar(page, USUARIOS.asesora);
+  await expect(page).toHaveURL(/\/inicio/);
+  await prepararElDia(page);
+  // El HTML es lo último que se guarda: cuando está, ya están todos sus archivos.
+  await expect.poll(() => page.evaluate(async (base) => Boolean((await caches.has(base)) && (await (await caches.open(base)).match("/sin-conexion"))), BASE)).toBe(true);
+  const completa = await pantallaGuardada(page);
+  expect(completa).toBeGreaterThan(1);
+
+  // Como quedó en los dispositivos que la guardaron antes del arreglo: solo el HTML, sin sus archivos.
+  await page.evaluate(async (base) => {
+    const cache = await caches.open(base);
+    for (const request of await cache.keys()) {
+      if (new URL(request.url).pathname !== "/sin-conexion") await cache.delete(request);
+    }
+  }, BASE);
+  expect(await pantallaGuardada(page)).toBe(1);
+
+  await page.reload();
+  await expect(tarjeta(page).getByText(/^Descargado hoy, /)).toBeVisible();
+  await expect.poll(() => pantallaGuardada(page)).toBe(completa);
 });
 
 test.describe("administrador", () => {
