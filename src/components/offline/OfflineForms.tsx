@@ -16,10 +16,10 @@ import { showNotice } from "./useOutbox";
 // Formularios para crear sin señal. Lo que se guarda queda en la bandeja de salida del dispositivo con el mismo
 // nombre de campo que usa el CRM: al volver la conexión, el servidor lo valida y lo guarda con sus reglas.
 
-type Errors = Record<string, string>;
+export type Errors = Record<string, string>;
 
 /** Lo escrito en el formulario, sin espacios sobrantes ni campos vacíos. */
-function read(form: HTMLFormElement) {
+export function read(form: HTMLFormElement) {
   const values: Record<string, string> = {};
   for (const [key, value] of new FormData(form)) {
     const text = typeof value === "string" ? value.trim() : "";
@@ -29,14 +29,14 @@ function read(form: HTMLFormElement) {
 }
 
 /** Lleva a la persona al primer campo con error. */
-function focusFirst(form: HTMLFormElement, errors: Errors) {
+export function focusFirst(form: HTMLFormElement, errors: Errors) {
   const name = Object.keys(errors)[0];
   const field = name ? form.elements.namedItem(name) : null;
   if (field instanceof HTMLElement) field.focus();
 }
 
 /** Errores con que el CRM rechazó el registro, por campo. Los de campos que no están aquí van en `others`. */
-function serverErrors(item: OutboxItem | null, names: string[]) {
+export function serverErrors(item: OutboxItem | null, names: string[]) {
   const fields: Errors = {};
   const others: string[] = [];
   for (const error of item?.errors ?? []) {
@@ -46,11 +46,12 @@ function serverErrors(item: OutboxItem | null, names: string[]) {
   return { fields, others };
 }
 
-function savedNotice(t: (es: string) => string) {
+export function savedNotice(t: (es: string) => string) {
   showNotice(navigator.onLine ? t("Guardado. Se está enviando al CRM.") : t("Guardado en este dispositivo. Se enviará cuando haya señal."));
 }
 
-function Shell({ title, help, children }: { title: string; help: string; children: React.ReactNode }) {
+/** Encabezado de un formulario. `bare`: el contenido trae sus propias tarjetas. */
+export function Shell({ title, help, bare, children }: { title: string; help: string; bare?: boolean; children: React.ReactNode }) {
   const t = useT();
   return (
     <>
@@ -59,12 +60,12 @@ function Shell({ title, help, children }: { title: string; help: string; childre
         <h2 className="editorial mt-1 text-2xl">{title}</h2>
         <p className="mt-1 text-sm text-muted">{help}</p>
       </div>
-      <section className="card p-4">{children}</section>
+      {bare ? children : <section className="card p-4">{children}</section>}
     </>
   );
 }
 
-function Field({ id, label, error, required, className, children }: { id: string; label: string; error?: string; required?: boolean; className?: string; children: React.ReactNode }) {
+export function Field({ id, label, error, required, className, children }: { id: string; label: string; error?: string; required?: boolean; className?: string; children: React.ReactNode }) {
   const t = useT();
   return (
     <div className={className}>
@@ -76,9 +77,9 @@ function Field({ id, label, error, required, className, children }: { id: string
 }
 
 /** Atributos de un campo que puede tener error. */
-const invalid = (id: string, error: string | undefined) => ({ "aria-invalid": Boolean(error), "aria-describedby": error ? `${id}-error` : undefined });
+export const invalid = (id: string, error: string | undefined) => ({ "aria-invalid": Boolean(error), "aria-describedby": error ? `${id}-error` : undefined });
 
-function Rejection({ item, others }: { item: OutboxItem | null; others: string[] }) {
+export function Rejection({ item, others }: { item: OutboxItem | null; others: string[] }) {
   const t = useT();
   if (!item || item.status !== "rejected") return null;
   return (
@@ -89,7 +90,7 @@ function Rejection({ item, others }: { item: OutboxItem | null; others: string[]
   );
 }
 
-function Actions({ saving, label }: { saving: boolean; label: string }) {
+export function Actions({ saving, label }: { saving: boolean; label: string }) {
   const t = useT();
   return (
     <div className="flex flex-wrap justify-end gap-2 pt-1">

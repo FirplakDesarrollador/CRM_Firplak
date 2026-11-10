@@ -41,6 +41,8 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "defaultValue" | 
   placeholder?: number | string;
   /** Decimales permitidos (2 por defecto). */
   decimals?: number;
+  /** Avisa el texto ya formateado cada vez que cambia, para quien calcula con él mientras se escribe. */
+  onValueChange?: (text: string) => void;
 };
 
 /**
@@ -48,7 +50,7 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "defaultValue" | 
  * y usa punto para los decimales («1,250,000.50»), la regla de PRODUCT.md. Al guardar, `parseAmount` lo
  * interpreta en el servidor. `decimals={0}` para enteros.
  */
-export function AmountInput({ defaultValue, placeholder, decimals = 2, ...rest }: Props) {
+export function AmountInput({ defaultValue, placeholder, decimals = 2, onValueChange, ...rest }: Props) {
   const initial = formatAmountValue(defaultValue);
   const [value, setValue] = useState(initial);
   // Si el valor guardado cambia (p. ej. tras guardar), el campo lo muestra.
@@ -100,6 +102,7 @@ export function AmountInput({ defaultValue, placeholder, decimals = 2, ...rest }
         if (/^insertFrom|insertReplacementText/.test(kind) || (kind === "insertText" && (data?.length ?? 0) > 1)) {
           const next = formatAmountValue(raw);
           setValue(next);
+          onValueChange?.(next);
           caretAt.current = next.length;
           setTick((n) => n + 1);
           return;
@@ -125,6 +128,7 @@ export function AmountInput({ defaultValue, placeholder, decimals = 2, ...rest }
           if (/\d/.test(next[pos]) || (keepsDot && next[pos] === ".")) seen++;
         }
         setValue(next);
+        onValueChange?.(next);
         caretAt.current = pos;
         setTick((n) => n + 1);
       }} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { FileText } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { formatCurrency } from "@/lib/format";
 import { useT } from "@/lib/i18n/client";
@@ -53,12 +54,18 @@ export function OfflineProducts({ snapshot, selection }: { snapshot: OfflineSnap
       </div>
 
       {account && !book && <Alert tone="warning">{t("Este cliente no tiene una lista de precios que le aplique. Elige una lista para ver precios.")}</Alert>}
-      {book && (
-        <p className="text-sm text-muted" role="status">
-          {t("Lista de precios")}: <span className="font-semibold text-ink">{book.name}</span> · {book.currency}
-          {account && book.is_client_list ? ` · ${t("propia del cliente")}` : ""}
-        </p>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        {book ? (
+          <p className="text-sm text-muted" role="status">
+            {t("Lista de precios")}: <span className="font-semibold text-ink">{book.name}</span> · {book.currency}
+            {account && book.is_client_list ? ` · ${t("propia del cliente")}` : ""}
+          </p>
+        ) : <span />}
+        {/* Con un cliente elegido, la cotización arranca con ese cliente y sus precios. */}
+        <button type="button" className="btn btn-sm" onClick={() => go({ f: "cotizacion", e: null }, true)}>
+          <FileText size={14} aria-hidden="true" /> {t("Cotizar")}
+        </button>
+      </div>
 
       <section className="card">
         <ul className="divide-y divide-[var(--border)]">

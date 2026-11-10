@@ -3288,6 +3288,7 @@ export type Database = {
           id: string
           line_total: number | null
           not_listed: boolean
+          offline_list_price: number | null
           product_id: string | null
           quantity: number
           quote_id: string
@@ -3301,6 +3302,7 @@ export type Database = {
           id?: string
           line_total?: never
           not_listed?: boolean
+          offline_list_price?: number | null
           product_id?: string | null
           quantity?: number
           quote_id: string
@@ -3314,6 +3316,7 @@ export type Database = {
           id?: string
           line_total?: never
           not_listed?: boolean
+          offline_list_price?: number | null
           product_id?: string | null
           quantity?: number
           quote_id?: string

@@ -27,7 +27,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
   const row = await getRecord(def, id);
   if (!row) notFound();
   const supabase = await createClient();
-  const [access, { data: lines }, { data: order }, { data: account }, t] = await Promise.all([
+  const [access, { data: lines }, { data: order }, { data: account }, { data: offline }, t] = await Promise.all([
     getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
@@ -36,8 +36,13 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       .order("sort_order"),
     supabase.from("orders").select("id, order_number").eq("quote_id", id).maybeSingle(),
     supabase.from("accounts").select("name, market").eq("id", String(row.account_id ?? "")).maybeSingle(),
+    // Las líneas cotizadas sin señal a otro precio. Va aparte: si la columna aún no existe en la base, la
+    // cotización se sigue viendo completa, solo sin la marca.
+    supabase.from("quote_line_items").select("id, offline_list_price").eq("quote_id", id).not("offline_list_price", "is", null),
     getT(),
   ]);
+  const offlinePrices = new Map((offline ?? []).map((line) => [line.id, Number(line.offline_list_price)]));
+  const quoteLines = ((lines ?? []) as unknown as QuoteLine[]).map((line) => (offlinePrices.has(line.id) ? { ...line, offline_list_price: offlinePrices.get(line.id) } : line));
   // La cuenta cambió de mercado y este borrador quedó en la moneda y la lista anteriores (tiene productos).
   const market = account?.market === "Internacional" ? "Internacional" : "Nacional";
   const marketCurrency = market === "Internacional" ? "USD" : "COP";
@@ -81,7 +86,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
             {stale && <div className="2xl:col-span-2"><Alert tone="warning">{staleText}</Alert></div>}
-            <QuoteLines quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
+            <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
             <QuoteTotals q={row} />
           </div>
         ),

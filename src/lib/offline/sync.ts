@@ -5,13 +5,22 @@ import { isSignedOut } from "./download";
 import { listOutbox, purgeOldSent, updateOutbox } from "./store";
 import type { OutboxItem } from "./types";
 
-export type SyncResult = { sent: number; rejected: number; pending: number; signedOut: boolean };
+export type SyncResult = {
+  sent: number;
+  rejected: number;
+  pending: number;
+  signedOut: boolean;
+  /** Cotizaciones enviadas en esta ronda con algún precio que ya había cambiado en el CRM. */
+  priceChanges: number;
+};
 
 type Answer = {
   status?: "sent" | "rejected" | "other-user";
   reason?: string;
   errors?: OutboxItem["errors"];
   duplicates?: OutboxItem["duplicates"];
+  quote_number?: string | null;
+  changed?: NonNullable<OutboxItem["result"]>["changed"];
 };
 
 let running: Promise<SyncResult> | null = null;
@@ -26,7 +35,7 @@ export function syncOutbox(userId: string): Promise<SyncResult> {
     const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
     if (!locks) return send(userId);
     const result = await locks.request("firplak-crm-envio", { ifAvailable: true }, (lock) => (lock ? send(userId) : null));
-    return result ?? summary(await listOutbox(userId), 0, 0, false);
+    return result ?? summary(await listOutbox(userId), 0, 0, false, 0);
   };
   running = work().finally(() => {
     running = null;
@@ -34,19 +43,20 @@ export function syncOutbox(userId: string): Promise<SyncResult> {
   return running;
 }
 
-function summary(items: OutboxItem[], sent: number, rejected: number, signedOut: boolean): SyncResult {
-  return { sent, rejected, pending: items.filter((item) => item.status === "pending").length, signedOut };
+function summary(items: OutboxItem[], sent: number, rejected: number, signedOut: boolean, priceChanges: number): SyncResult {
+  return { sent, rejected, pending: items.filter((item) => item.status === "pending").length, signedOut, priceChanges };
 }
 
 async function send(userId: string): Promise<SyncResult> {
   await purgeOldSent(userId).catch(() => undefined);
   const items = await listOutbox(userId);
-  // Primero los clientes: las actividades de un cliente nuevo necesitan que exista.
+  // Primero los clientes: las actividades y las cotizaciones de un cliente nuevo necesitan que exista.
   const queue = items.filter((item) => item.status === "pending").sort((a, b) => Number(b.kind === "account") - Number(a.kind === "account") || a.createdAt - b.createdAt);
   const status = new Map(items.map((item) => [item.id, item.status]));
   let sent = 0;
   let rejected = 0;
   let signedOut = false;
+  let priceChanges = 0;
 
   for (const item of queue) {
     // Su cliente sigue en la bandeja sin enviarse (pendiente o rechazado): espera.
@@ -59,7 +69,7 @@ async function send(userId: string): Promise<SyncResult> {
         credentials: "same-origin",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: item.id, userId: item.userId, kind: item.kind, values: item.values, ignoreDuplicates: item.ignoreDuplicates === true }),
+        body: JSON.stringify({ id: item.id, userId: item.userId, kind: item.kind, values: item.values, lines: item.lines, ignoreDuplicates: item.ignoreDuplicates === true }),
       });
     } catch {
       break; // sin red: todo sigue pendiente
@@ -70,7 +80,9 @@ async function send(userId: string): Promise<SyncResult> {
     }
     const answer = (await response.json().catch(() => null)) as Answer | null;
     if (response.ok && answer?.status === "sent") {
-      await updateOutbox(item.id, { status: "sent", sentAt: Date.now(), reason: null, errors: undefined, duplicates: undefined });
+      const result = item.kind === "quote" ? { number: answer.quote_number ?? null, changed: answer.changed ?? [] } : undefined;
+      await updateOutbox(item.id, { status: "sent", sentAt: Date.now(), reason: null, errors: undefined, duplicates: undefined, result });
+      if (result?.changed.length) priceChanges++;
       status.set(item.id, "sent");
       sent++;
       continue;
@@ -91,5 +103,5 @@ async function send(userId: string): Promise<SyncResult> {
     if (response.status !== 403) await updateOutbox(item.id, { attempts: item.attempts + 1 });
     break;
   }
-  return summary(await listOutbox(userId), sent, rejected, signedOut);
+  return summary(await listOutbox(userId), sent, rejected, signedOut, priceChanges);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import type { OutboxKind } from "@/lib/offline/types";
 
 // La pantalla sin conexión guarda dónde está la persona en la parte de la dirección que va después de «#»:
 // cambiarla no le pide nada al servidor, así que pestañas, fichas y el botón «atrás» funcionan sin red.
@@ -41,10 +42,15 @@ export type Route = {
   form: Form | null;
   /** Registro de la bandeja de salida que se está corrigiendo. */
   edit: string | null;
+  /** Cotización hecha sin señal que se está viendo. */
+  quote: string | null;
 };
 
-const FORMS = ["cliente", "actividad"] as const;
+const FORMS = ["cliente", "actividad", "cotizacion"] as const;
 export type Form = (typeof FORMS)[number];
+
+/** Con qué formulario se corrige cada tipo de registro de la bandeja de salida. */
+export const FORM_OF: Record<OutboxKind, Form> = { account: "cliente", activity: "actividad", quote: "cotizacion" };
 
 export function useRoute(): Route {
   const hash = useSyncExternalStore(subscribe, () => window.location.hash, () => "");
@@ -58,6 +64,7 @@ export function useRoute(): Route {
       back: safeBack(p.get("volver")),
       form: FORMS.find((form) => form === p.get("f")) ?? null,
       edit: p.get("e"),
+      quote: p.get("q"),
     };
   }, [hash]);
 }

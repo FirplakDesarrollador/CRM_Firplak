@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ChevronRight, Mail, Pencil, Phone, Plus, Tags } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText, Mail, Pencil, Phone, Plus, Tags } from "lucide-react";
 import { todayISO } from "@/lib/format";
 import { useT, useValueLabel } from "@/lib/i18n/client";
 import { defaultBook } from "@/lib/offline/prices";
@@ -9,6 +9,7 @@ import type { OfflineAccount, OfflineSnapshot, OutboxItem } from "@/lib/offline/
 import { ActivityList, agendaGroups } from "./OfflineAgenda";
 import { OpportunityList } from "./OfflineOpportunities";
 import { LocalActivityList, UnsentBadge } from "./OfflineOutbox";
+import { LocalQuoteList } from "./OfflineQuote";
 import { EmptyRow, matches, SearchBox, Section } from "./parts";
 import { go } from "./route";
 
@@ -72,7 +73,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function OfflineClient({ account, snapshot, known, local, activities, names }: {
+export function OfflineClient({ account, snapshot, known, local, activities, quotes, names }: {
   account: OfflineAccount;
   snapshot: OfflineSnapshot;
   known: Set<string>;
@@ -80,6 +81,8 @@ export function OfflineClient({ account, snapshot, known, local, activities, nam
   local: OutboxItem | undefined;
   /** Actividades registradas sin señal para este cliente. */
   activities: OutboxItem[];
+  /** Cotizaciones hechas sin señal para este cliente. */
+  quotes: OutboxItem[];
   names: Map<string, string>;
 }) {
   const t = useT();
@@ -135,11 +138,20 @@ export function OfflineClient({ account, snapshot, known, local, activities, nam
           <button type="button" className="btn btn-sm btn-primary" onClick={() => go({ f: "actividad", e: null }, true)}>
             <Plus size={14} aria-hidden="true" /> {t("Registrar actividad")}
           </button>
+          <button type="button" className="btn btn-sm" onClick={() => go({ f: "cotizacion", e: null }, true)}>
+            <FileText size={14} aria-hidden="true" /> {t("Cotizar")}
+          </button>
           <button type="button" className="btn btn-sm" onClick={() => go({ v: "productos", p: `a:${account.id}`, c: null }, true)}>
             <Tags size={14} aria-hidden="true" /> {t("Ver precios de este cliente")}
           </button>
         </div>
       </section>
+
+      {quotes.length > 0 && (
+        <Section title={t("Cotizaciones hechas sin señal")} count={quotes.length}>
+          <LocalQuoteList items={quotes} />
+        </Section>
+      )}
 
       {activities.length > 0 && (
         <Section title={t("Registradas sin señal")} count={activities.length}>

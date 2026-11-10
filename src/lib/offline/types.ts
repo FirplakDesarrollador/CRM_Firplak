@@ -129,7 +129,7 @@ export type OfflineOptions = { account_type: string[]; industry: string[]; marke
 
 // ── Bandeja de salida: lo que se crea sin señal y espera a enviarse ─────────────────────────────────────────
 
-export type OutboxKind = "account" | "activity";
+export type OutboxKind = "account" | "activity" | "quote";
 /** Pendiente de enviar, enviado al CRM o rechazado por el CRM (con el motivo). */
 export type OutboxStatus = "pending" | "sent" | "rejected";
 
@@ -139,7 +139,7 @@ export type OutboxItem = {
   /** Quién lo creó. Solo esa persona lo ve y lo envía. */
   userId: string;
   kind: OutboxKind;
-  /** Nombre del cliente o asunto de la actividad. */
+  /** Nombre del cliente, asunto de la actividad o nombre de la cotización. */
   title: string;
   /** Los campos del formulario, como texto. */
   values: Record<string, string>;
@@ -156,4 +156,32 @@ export type OutboxItem = {
   dependsOn: string | null;
   /** La persona revisó los posibles duplicados y pidió enviarlo de todas formas. */
   ignoreDuplicates?: boolean;
+  /** Cotización: moneda del mercado del cliente (COP o USD). */
+  currency?: string;
+  /** Cotización: los productos, con el precio que vio el cliente. */
+  lines?: OutboxLine[];
+  /** Cotización ya enviada: su número oficial y los precios que cambiaron desde la descarga. */
+  result?: OutboxQuoteResult;
+};
+
+/** Una línea de una cotización hecha sin señal. El precio es el cotizado: el CRM lo respeta. */
+export type OutboxLine = {
+  product_id: string;
+  name: string;
+  code: string | null;
+  unit: string | null;
+  quantity: number;
+  unit_price: number;
+  /** Porcentaje, de 0 a 100. */
+  discount: number;
+  /** De dónde salió el precio: la lista del cliente, la de su canal o lo escribió la persona. */
+  source: "lista" | "canal" | "manual";
+  /** Nombre de la lista de precios de donde salió, si salió de una. */
+  book: string | null;
+};
+
+export type OutboxQuoteResult = {
+  number: string | null;
+  /** Productos cuyo precio de lista ya era otro al enviar. Se cotizaron al precio que vio el cliente. */
+  changed: { product_id: string; name: string; quoted: number; current: number }[];
 };

@@ -1683,6 +1683,70 @@ await check('la descarga exige sesión', async () => {
   }
 });
 
+await check('cotización hecha sin señal: se respeta el precio cotizado, la línea queda marcada y los totales coinciden', async () => {
+  const ts = (await import('typescript')).default;
+  const fuente = readFileSync(join(root, 'src/lib/offline/quotes.ts'), 'utf8');
+  const js = ts.transpileModule(fuente, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const { quoteTotals, lineTotal, provisionalNumber } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
+
+  const [etapa] = await q(`select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación'`);
+  const [cuenta] = await q(`insert into accounts (name, industry, market, owner_id) values ('Sin señal cotización', 'Canal Constructores', 'Nacional', $1) returning id`, [rep.id]);
+  const [negocio] = await as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount) values ('Negocio cotizado sin señal', $1, $2, 0) returning id`, [cuenta.id, etapa.id]));
+
+  // La cotización llega con el id que le puso el dispositivo; reenviarla choca con ese id en vez de duplicarla.
+  const id = '5c0f1e2a-0000-4000-8000-0000000000c1';
+  const [cot] = await as(rep, () => q(`insert into quotes (id, name, opportunity_id, status) values ($1, 'Cotizada en obra', $2, 'Borrador')
+    returning id, quote_number, currency, tax_rate`, [id, negocio.id]));
+  assert.equal(cot.id, id);
+  assert.match(cot.quote_number, /^COT-\d+$/);
+  assert.match(provisionalNumber(id), /^PROV-5C0F1E$/);
+  await assert.rejects(as(rep, () => q(`insert into quotes (id, name, opportunity_id) values ($1, 'Repetida', $2)`, [id, negocio.id])), /duplicate key/);
+
+  // Tres productos con precio en la lista que le tocó a la cotización (la de su canal).
+  await q(`insert into price_book_entries (price_book_id, product_id, unit_price)
+    select q.price_book_id, p.id, 100000 + 50000 * row_number() over (order by p.product_code)
+    from quotes q, (select id, product_code from products where is_active order by product_code limit 3) p where q.id = $1
+    on conflict (price_book_id, product_id) do update set unit_price = excluded.unit_price, is_active = true`, [id]);
+  const conPrecio = [];
+  for (const p of await q(`select id from products where is_active order by product_code`)) {
+    const [{ precio }] = await as(rep, () => q(`select quote_line_price($1, $2) precio`, [id, p.id]));
+    if (precio.unit_price !== null) conPrecio.push({ id: p.id, lista: Number(precio.unit_price) });
+  }
+  assert.ok(conPrecio.length >= 3, 'hacen falta tres productos con precio para esta cuenta');
+  const [igual, cambiado, raro] = conPrecio;
+  // En el dispositivo: uno al precio de lista, otro a un precio que ya cambió en el CRM y uno con decimales difíciles.
+  const lineas = [
+    { product_id: igual.id, quantity: 3, unit_price: igual.lista, discount: 10, lista: igual.lista },
+    { product_id: cambiado.id, quantity: 2.5, unit_price: cambiado.lista - 1000, discount: 0, lista: cambiado.lista },
+    { product_id: raro.id, quantity: 7.35, unit_price: 333333.33, discount: 12.5, lista: raro.lista },
+  ];
+  // Todas las líneas en una sola instrucción: o entran todas o ninguna.
+  await as(rep, () => q(`insert into quote_line_items (quote_id, product_id, quantity, unit_price, discount, sort_order, offline_list_price)
+    select $1, (l->>'product_id')::uuid, (l->>'quantity')::numeric, (l->>'unit_price')::numeric, (l->>'discount')::numeric, n::int, (l->>'lista')::numeric
+    from jsonb_array_elements($2::jsonb) with ordinality t(l, n)`, [id, JSON.stringify(lineas)]));
+
+  const guardadas = await q(`select product_id, unit_price, line_total, offline_list_price from quote_line_items where quote_id = $1 order by sort_order`, [id]);
+  // Se respeta lo cotizado; la marca solo queda donde el precio de lista es otro.
+  assert.deepEqual(guardadas.map((l) => Number(l.unit_price)), lineas.map((l) => l.unit_price));
+  assert.deepEqual(guardadas.map((l) => l.offline_list_price === null ? null : Number(l.offline_list_price)), [null, cambiado.lista, raro.lista]);
+  assert.deepEqual(guardadas.map((l) => Number(l.line_total)), lineas.map(lineTotal));
+
+  const [t] = await q(`select subtotal, discount_total, net_total, tax_rate, tax, grand_total from quotes where id = $1`, [id]);
+  assert.deepEqual(
+    { subtotal: Number(t.subtotal), discount: Number(t.discount_total), net: Number(t.net_total), taxRate: Number(t.tax_rate), tax: Number(t.tax), total: Number(t.grand_total) },
+    quoteTotals(lineas, cot.currency));
+  assert.equal(cot.currency, 'COP');
+  assert.equal(quoteTotals(lineas, 'USD').tax, 0);
+
+  // La marca sigue mientras la línea conserve el precio cotizado; al cambiarlo, se borra.
+  await as(rep, () => q(`update quote_line_items set discount = 5 where quote_id = $1 and product_id = $2`, [id, cambiado.id]));
+  assert.equal(await count(`select count(*) n from quote_line_items where quote_id = $1 and offline_list_price is not null`, [id]), 2);
+  await as(rep, () => q(`update quote_line_items set unit_price = $3 where quote_id = $1 and product_id = $2`, [id, cambiado.id, cambiado.lista]));
+  assert.equal(await count(`select count(*) n from quote_line_items where quote_id = $1 and offline_list_price is not null`, [id]), 1);
+  await assert.rejects(q(`update quote_line_items set offline_list_price = -1 where quote_id = $1`, [id]), /check/);
+  assert.equal((await q(`select has_function_privilege('authenticated', 'public.quote_line_offline_price()'::regprocedure, 'EXECUTE') ok`))[0].ok, false);
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

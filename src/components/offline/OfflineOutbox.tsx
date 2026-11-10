@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, ExternalLink, LogIn, Pencil, RotateCw, Send, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, FileText, LogIn, Pencil, RotateCw, Send, Trash2 } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { ACTIVITY_ICONS } from "@/components/ui/icons";
-import { formatDate, formatDateTime, plural } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime, plural } from "@/lib/format";
 import { useLocale, useT, useValueLabel } from "@/lib/i18n/client";
 import { ACTIVITY_TYPES } from "@/lib/objects/picklists";
-import { unsent } from "@/lib/offline/outbox";
+import { outboxQuoteTotals, quoteNumber, unsent } from "@/lib/offline/outbox";
 import { removeOutbox, requestSend, updateOutbox } from "@/lib/offline/store";
 import { syncOutbox } from "@/lib/offline/sync";
 import type { OutboxItem, OutboxStatus } from "@/lib/offline/types";
 import { EmptyRow, Section, TYPE_TONE } from "./parts";
-import { go } from "./route";
+import { FORM_OF, go } from "./route";
 
 // La bandeja de salida: lo que se creó sin señal y su estado (pendiente, enviado o rechazado por el CRM).
 
@@ -34,7 +34,7 @@ export function UnsentBadge({ item }: { item: OutboxItem | undefined }) {
   return item.status === "rejected" ? <StatusBadge status="rejected" /> : <span className="badge badge-warning">{t("Sin enviar")}</span>;
 }
 
-const edit = (item: OutboxItem) => go({ f: item.kind === "account" ? "cliente" : "actividad", e: item.id }, true);
+const edit = (item: OutboxItem) => go({ f: FORM_OF[item.kind], e: item.id }, true);
 
 /** Cuándo es la actividad, tal como la escribió la persona (las horas son de Colombia). */
 function useWhen() {
@@ -88,12 +88,14 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
   const when = useWhen();
   const [confirming, setConfirming] = useState(false);
   const type = item.values.activity_type ?? "task";
-  const Icon = item.kind === "account" ? Building2 : ACTIVITY_ICONS[type as keyof typeof ACTIVITY_ICONS];
-  const tone = item.kind === "account" ? "bg-brand-soft text-brand" : TYPE_TONE[type] ?? TYPE_TONE.note;
+  const Icon = item.kind === "account" ? Building2 : item.kind === "quote" ? FileText : ACTIVITY_ICONS[type as keyof typeof ACTIVITY_ICONS];
+  const tone = item.kind === "account" ? "bg-brand-soft text-brand" : item.kind === "quote" ? "bg-accent-soft text-accent" : TYPE_TONE[type] ?? TYPE_TONE.note;
   const client = item.values.account_id ? names.get(item.values.account_id) : null;
   const detail = item.kind === "account"
     ? [t("Cliente nuevo"), item.values.industry ? label(item.values.industry) : null]
-    : [t(ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES] ?? type), client, when(item)];
+    : item.kind === "quote"
+      ? [`${t("Cotización")} ${quoteNumber(item)}`, client, formatCurrency(outboxQuoteTotals(item).total, item.currency ?? "COP")]
+      : [t(ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES] ?? type), client, when(item)];
   const parent = item.dependsOn ? items.find((other) => other.id === item.dependsOn && other.status !== "sent") : undefined;
   const children = item.kind === "account" ? items.filter((other) => other.dependsOn === item.id && other.status !== "sent").length : 0;
 
@@ -109,7 +111,13 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
           {Icon && <Icon size={15} aria-hidden="true" />}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold [overflow-wrap:anywhere]">{item.title}</p>
+          {item.kind === "quote" ? (
+            <button type="button" className="link text-left font-semibold [overflow-wrap:anywhere]" onClick={() => go({ q: item.id }, true)} aria-label={`${t("Ver cotización")}: ${item.title}`}>
+              {item.title}
+            </button>
+          ) : (
+            <p className="font-semibold [overflow-wrap:anywhere]">{item.title}</p>
+          )}
           <p className="mt-0.5 text-xs text-muted">{detail.filter(Boolean).join(" · ")}</p>
         </div>
         <StatusBadge status={item.status} />
@@ -147,7 +155,7 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
           <p className="text-sm font-medium">{t("¿Descartar este registro? No se enviará al CRM.")}</p>
           {children > 0 && (
             <p className="mt-0.5 text-sm text-muted">
-              {t("También se descartará lo registrado para este cliente")}: {children} {t(plural(children, "actividad", "actividades"))}.
+              {t("También se descartará lo registrado para este cliente")}: {children} {t(plural(children, "registro", "registros"))}.
             </p>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
@@ -156,8 +164,11 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
           </div>
         </div>
       )}
-      {item.status === "sent" && item.kind === "account" && online && (
-        <a className="link mt-2 inline-flex items-center gap-1 text-xs" href={`/cuentas/${item.id}`}><ExternalLink size={12} aria-hidden="true" /> {t("Ver en el CRM")}</a>
+      {item.status === "sent" && item.kind !== "activity" && online && (
+        <a className="link mt-2 inline-flex items-center gap-1 text-xs" href={`/${item.kind === "quote" ? "cotizaciones" : "cuentas"}/${item.id}`}><ExternalLink size={12} aria-hidden="true" /> {t("Ver en el CRM")}</a>
+      )}
+      {item.status === "sent" && item.kind === "quote" && (item.result?.changed.length ?? 0) > 0 && (
+        <p className="mt-1 text-xs text-warning">{t("Cambió el precio de lista de algunos productos: se respetó lo cotizado.")}</p>
       )}
     </li>
   );
@@ -230,7 +241,7 @@ export function OfflineOutbox({ items, names, online, sessionUserId }: {
       {group(t("Enviados"), sent)}
       {items.length === 0 && (
         <section className="card">
-          <ul><EmptyRow>{t("Aquí verás los clientes y las actividades que crees sin señal, y si ya llegaron al CRM.")}</EmptyRow></ul>
+          <ul><EmptyRow>{t("Aquí verás los clientes, las actividades y las cotizaciones que crees sin señal, y si ya llegaron al CRM.")}</EmptyRow></ul>
         </section>
       )}
     </>

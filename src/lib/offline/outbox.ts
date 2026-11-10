@@ -1,5 +1,6 @@
 // Ayudas para mostrar lo creado sin señal junto a lo descargado.
 
+import { provisionalNumber, quoteTotals } from "./quotes";
 import type { OfflineAccount, OutboxItem } from "./types";
 
 /** Id para un registro nuevo. Es el que tendrá en el CRM, así reenviarlo no lo duplica. */
@@ -48,3 +49,9 @@ export function accountFromOutbox(item: OutboxItem): OfflineAccount {
 
 /** Lo que falta por enviar (pendiente o rechazado). */
 export const unsent = (items: OutboxItem[]) => items.filter((item) => item.status !== "sent");
+
+/** Número de una cotización hecha sin señal: el oficial si ya llegó al CRM; si no, el provisional. */
+export const quoteNumber = (item: OutboxItem) => item.result?.number ?? provisionalNumber(item.id);
+
+/** Totales de una cotización hecha sin señal, con los precios que se cotizaron. */
+export const outboxQuoteTotals = (item: OutboxItem) => quoteTotals(item.lines ?? [], item.currency ?? "COP");

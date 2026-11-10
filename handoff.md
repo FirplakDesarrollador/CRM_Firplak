@@ -107,15 +107,21 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 | Cotizaciones como partes | Las cotizaciones de una oportunidad son **partes del negocio** (decisión de Luis). **Valor** de la oportunidad abierta = suma de sus partes abiertas (sin Aceptadas, Rechazadas ni Reemplazadas), automático; ganada = suma de las aceptadas; perdida conserva su valor; sin cotizaciones (o solo borradores vacíos) lo escribe el asesor. Ya no hay «Sincronizar». **Parte aceptada con otras abiertas:** se separa en su propia oportunidad **Ganada** (misma cuenta, asesor, pipeline y reparto; cierre hoy; «Parte ganada de» la original, que la lista en «Partes ganadas») y se lleva sus pedidos; la última abierta aceptada gana la original. **Etapas solo hacia adelante:** cada pipeline marca en «Avanza con cotización» (Configuración → Pipelines) la etapa «Al presentar la primera cotización» y la de «Al aceptarse una parte (quedan otras abiertas)». La última parte abierta rechazada sin ninguna aceptada avisa al asesor y a su jefe; «Reemplazada» (versión anterior) no suma ni avisa. Marcar Perdida rechaza las partes abiertas y no se permite con partes aceptadas o pedidos activos; una oportunidad cerrada no admite cotizaciones nuevas; un pedido cancelado avisa. Migración `20261204000100`. |
 | Cotizaciones | Desde la oportunidad («Nueva cotización») o sin ella: si no se elige oportunidad, se crea una con el nombre de la cotización, en el pipeline del canal, cierre = «Válida hasta» y sincronizada. **«Facturar a» es la cuenta** y debe ser la de la oportunidad (la base lo valida). Dirección de facturación, dirección de entrega y condiciones de pago se toman de la cuenta (mientras está en Borrador siguen a la cuenta; presentada queda fija); «Entregar en otra dirección» y «Cambiar condiciones de pago» permiten escribirlas a mano. Las **Condiciones de pago** son una lista de valores de la cuenta (Contado, Anticipado, 8 a 90 días). Líneas desde la lista de precios según moneda, descuento por línea, IVA y flete, PDF, «Crear pedido» al quedar *Aceptada*. **Aprobación obligatoria:** con más de 15 % de descuento no pasa a *En revisión*, *Aprobada*, *Presentada* ni *Aceptada* por fuera del flujo; cambiar el descuento tras aprobar exige aprobar de nuevo (migración `20261130000100`). |
 | Integraciones | Microsoft 365 (Outlook, Teams, Planner, SharePoint), SAP B1 (lectura de cartera e inventario; pedido activado → **oferta de venta**; importación de productos a demanda), servidor MCP con OAuth 2.1 para Claude/ChatGPT, correo con Resend. |
-| Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin conexión, fase 1 (borradores):** lo que se escribe en el formulario de un registro o en el de actividades queda como borrador en el dispositivo (`src/lib/drafts.ts`, `useFormDraft`), se recupera al volver a abrirlo y no se pierde si al guardar no hay internet; todavía no se crean registros sin conexión. **Sin conexión, parte A (consulta):** «Preparar el día» (tarjeta en Inicio y en el menú de usuario → «Consulta sin señal») baja al dispositivo los clientes del asesor con sus contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios; la pantalla `/sin-conexion` los muestra sin red, con el precio de cada cliente calculado en el teléfono. **Sin conexión, parte B (bandeja de salida):** en esa misma pantalla, sin señal, se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota); quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, cada uno Pendiente, Enviado o Rechazado con su motivo; la cabecera del CRM dice «N sin enviar» (detalle y lo que falta en la sección 6). |
+| Celular (PWA) | Instalable, con ícono propio (sello: «A» de Firplak y «CRM» en Outfit Bold, `public/brand/firplak-crm-sello-white.svg`; `node scripts/generate-icons.mjs` regenera los PNG); barra inferior de navegación; notificaciones push. En iPhone instalado: cabecera bajo la hora y la isla dinámica, campos a 16 px (sin zoom al enfocar), botón «Guardar» de los formularios encima de la barra inferior. **Sin conexión, fase 1 (borradores):** lo que se escribe en el formulario de un registro o en el de actividades queda como borrador en el dispositivo (`src/lib/drafts.ts`, `useFormDraft`), se recupera al volver a abrirlo y no se pierde si al guardar no hay internet; todavía no se crean registros sin conexión. **Sin conexión, parte A (consulta):** «Preparar el día» (tarjeta en Inicio y en el menú de usuario → «Consulta sin señal») baja al dispositivo los clientes del asesor con sus contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios; la pantalla `/sin-conexion` los muestra sin red, con el precio de cada cliente calculado en el teléfono. **Sin conexión, parte B (bandeja de salida):** en esa misma pantalla, sin señal, se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota); quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, cada uno Pendiente, Enviado o Rechazado con su motivo; la cabecera del CRM dice «N sin enviar». **Sin conexión, parte C (cotizaciones):** desde la ficha del cliente o la pestaña Productos se arma una cotización sin señal, con el precio que le toca a ese cliente y los totales con IVA calculados en el teléfono; queda «Sin enviar» con número provisional (`PROV-…`) y al volver la señal llega al CRM como borrador con su número oficial. Si el precio de lista cambió desde la descarga, se respeta el cotizado y la línea queda marcada «Cotizado sin señal» (detalle y límites en la sección 6). |
 | App de iPhone (prototipo) | `mobile/`: app nativa hecha con **Capacitor 8** (Swift Package Manager, sin CocoaPods) que abre el CRM publicado dentro de una vista web; **la app web no cambia** y cada despliegue de `main` se ve en la app sin recompilar. Identificador `com.firplak.crm`, nombre «Firplak CRM», iOS 15 o superior, ícono y pantalla de arranque con el sello. Lo propio de la app se inyecta desde `CrmViewController` (`mobile/ios/App/App/AppDelegate.swift`): el CRM se comporta como «instalado», campos a 16 px (sin zoom al escribir), la pantalla de arranque se quita al cargar, la hora y la batería cambian de color según el fondo que tengan debajo, y deslizar desde el borde izquierdo vuelve atrás. Sin señal muestra «Sin conexión» con «Reintentar» (`mobile/www/error.html`). **Bloqueo con Face ID** (`mobile/ios/App/App/Bloqueo.swift`, enganchado en `SceneDelegate.swift`): una ventana con la pantalla del sello tapa la app y pide Face ID (o Touch ID; si falla, el código del iPhone) al abrirla y al volver después de 5 minutos fuera, solo si hay sesión iniciada (cookie `sb-…-auth-token` de la vista web); en la pantalla de ingreso no pide nada. No guarda contraseñas ni toca la sesión del CRM. La app también se tapa siempre que deja de estar en primer plano, para que el selector de apps no muestre datos de clientes. Si se cancela o la cara no coincide queda el botón «Desbloquear con Face ID». Un iPhone sin código no se bloquea. Para probar, el argumento de arranque `-bloqueoGracia 5` (solo en compilación de depuración) acorta los 5 minutos a 5 segundos. Probada solo en el simulador (iPhone 18 Pro Max, iOS 27.2). |
 
 ## 5. Producción (Supabase)
 
-- **Pendiente de publicar (1):** `20261206000100_offline_snapshot` (función `offline_snapshot()` de «Preparar el día»).
-  Solo agrega una función de lectura que corre con los permisos de quien la llama (RLS), cerrada a `public` y `anon`
-  y abierta a `authenticated`; no toca tablas ni datos. Sin ella, «Preparar el día» falla en producción con «No se
-  pudo descargar». Publicarla con `npm run db:publicar` cuando Luis lo autorice, antes de subir la parte A a `main`.
+- **Pendientes de publicar (2)**, las dos del modo sin conexión. Publicarlas con `npm run db:publicar` cuando Luis lo
+  autorice, **antes de subir el modo sin conexión a `main`**:
+  - `20261206000100_offline_snapshot` (función `offline_snapshot()` de «Preparar el día»). Solo agrega una función de
+    lectura que corre con los permisos de quien la llama (RLS), cerrada a `public` y `anon` y abierta a
+    `authenticated`; no toca tablas ni datos. Sin ella, «Preparar el día» falla en producción con «No se pudo
+    descargar».
+  - `20261207000100_offline_quotes` (columna `quote_line_items.offline_list_price` y su disparador
+    `quote_line_offline_price()`, cerrado a `public`, `anon` y `authenticated`). Agrega una columna vacía; no cambia
+    ninguna fila ni ningún total. Sin ella, la cotización del CRM no abre (la página pide esa columna) y las
+    cotizaciones hechas sin señal no terminan de llegar.
 - **40 migraciones aplicadas**; la última, `20261205000100_alerts_plural`, el 2026-11-09 con `db:publicar` y visto bueno de
   Luis (40/40, 0 pendientes): solo texto, el aviso diario dice «Tienes 1 tarea vencida» / «Tienes N tareas vencidas»;
   mismos permisos (`authenticated` ya la ejecutaba desde la fase 5) y el asesor de seguridad sin hallazgos nuevos.
@@ -170,7 +176,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - B2C: personas naturales con cédula.
 - Mapeo de Segmentos por Mercado y Canal (falta la tabla de Luis).
 
-### Modo sin conexión: borradores, parte A y parte B hechos; falta C (cotizaciones)
+### Modo sin conexión: construido completo (borradores, A, B y C); falta publicarlo y probarlo en teléfonos
 Luis dio la orden de empezar el 2026-11-09 y ese mismo día aprobó el plan. Los asesores se quedan sin señal en
 ascensores, parqueaderos de sótano, obras y oficinas con mala red, y en el avión. Sin señal necesitan, en este orden:
 cotizar (informar precios), registrar actividades y crear un cliente. La fuerza comercial usa la **app web (PWA) en
@@ -196,7 +202,10 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
 6. iPhone y Android, por la app web; no contar todavía con la app de Apple.
 
 **Orden de construcción:** A. descarga y consulta (**hecha**) → B. bandeja de salida con actividades y crear cliente
-(**hecha**) → C. cotizaciones sin señal. Cada parte con sus pruebas y su commit local.
+(**hecha**) → C. cotizaciones sin señal (**hecha**). Cada parte con sus pruebas y su commit local.
+
+**Lo que falta para que lo usen los asesores:** (1) publicar en producción las dos migraciones de la sección 5;
+(2) subir la rama a `main` (Luis lo pide); (3) probarlo en un iPhone y un Android reales, instalado como app web.
 
 - **Borradores (antes «fase 1»), cómo quedó:** el formulario de cualquier registro (`RecordForm`) y el de actividades de las fichas
   (`Composer`) guardan lo escrito en `localStorage` (`crm:borrador:<usuario>:<dirección>`), 400 ms después de la
@@ -272,9 +281,45 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
     se crean nuevos. (3) No se crean contactos ni oportunidades sin señal. (4) iOS no envía en segundo plano: sale
     al volver a abrir la app.
   - **Sin comprobar todavía:** en un iPhone o Android real.
-- **Para la parte C, a tener en cuenta:** una cotización sin señal depende de su cliente (puede ser uno sin enviar)
-  y lleva el precio calculado en el teléfono; al enviarla se respeta ese precio aunque la lista haya cambiado
-  (decisión 1) y la línea se marca, lo que probablemente pide una columna nueva (migración con su prueba).
+- **Parte C, cómo quedó:**
+  - **Dónde se cotiza:** en `/sin-conexion`, con o sin señal: «Cotizar» en la ficha de un cliente o «Cotizar» en la
+    pestaña Productos. El formulario (`src/components/offline/OfflineQuoteForm.tsx`) pide cliente, nombre,
+    oportunidad (una abierta descargada o «se crea una nueva con el nombre de la cotización»), contacto y
+    observaciones, y los productos se buscan en el catálogo descargado. Cada línea trae el precio que le toca al
+    cliente (lista propia o «Precio de canal») y ese precio no se edita: se ajusta con el descuento por línea. Solo
+    si el producto no está en la lista del cliente ni en la de su canal se escribe el precio («Precio manual»). La
+    moneda y la lista salen del cliente y no se eligen.
+  - **Totales en el teléfono:** `src/lib/offline/quotes.ts` hace la misma cuenta que la base (`line_total` y
+    `recalc_quote`), en enteros para no arrastrar redondeos: subtotal, descuentos, neto, IVA (19 % en pesos, 0 % en
+    otra moneda) y total. El flete no se pone sin señal: se agrega en el CRM. `db:test` compara los totales del
+    teléfono con los de la base sobre la misma cotización.
+  - **Mientras no llega:** vive en la bandeja de salida (`kind: "quote"`, con sus líneas). Se ve en la ficha del
+    cliente («Cotizaciones hechas sin señal») y en «Envíos», con número provisional `PROV-XXXXXX`, la insignia
+    «Sin enviar» y los totales; se puede editar. No tiene PDF: el PDF y el número oficial salen del CRM (decisión 3).
+    La de un cliente creado sin señal espera a que ese cliente salga primero y usa la lista de su canal.
+  - **Al llegar** (`POST /api/sin-conexion/enviar`): pasa por `persistRecord` como cualquier cotización (reglas,
+    permisos, «Facturar a»), nace en **Borrador**, con el identificador generado en el teléfono (reenviarla no la
+    duplica) y, si no traía oportunidad, crea una con su nombre. Las líneas entran con el precio cotizado. Máximo
+    200 líneas. Un producto que ya no está activo la deja **Rechazada**, nombrando el producto, para quitarlo y
+    reenviar («Corregir»).
+  - **Precio que cambió (decisión 1):** se respeta el cotizado. La columna nueva
+    `quote_line_items.offline_list_price` (migración `20261207000100`, **sin publicar en producción**) guarda el
+    precio de lista vigente al llegar cuando es distinto del cotizado; un disparador la deja vacía si son iguales
+    y la borra si después alguien cambia el precio o el producto de la línea. El teléfono avisa («Desde tu descarga
+    cambió el precio de lista de N productos…», y en cada línea «Precio de lista al enviar: $X. Se respetó el
+    cotizado.») y la cotización del CRM marca la línea «Cotizado sin señal · Precio de lista al llegar al CRM: $X».
+    Un «Precio manual» se marca igual si al llegar la lista ya trae un precio distinto para ese producto.
+  - **Pruebas:** `tests/e2e/sin-conexion-cotizaciones.spec.ts` (cotizar con la red cortada con los precios del
+    cliente, editar y ver que llega sola al CRM; precio de lista cambiado desde la descarga; cotizar a un cliente
+    creado sin señal) y 2 comprobaciones nuevas en `db:test` (149 en total).
+  - **Límites conocidos:** (1) si el CRM rechaza la cotización por un producto y el asesor la descarta en vez de
+    corregirla, puede quedar en el CRM un borrador sin productos (y su oportunidad): se borra a mano. (2) Si al
+    llegar el producto ya no tiene precio en la lista del cliente, la línea entra con el precio cotizado pero sin
+    marca. (3) Al reenviar una cotización que ya había llegado sin líneas, se completan las líneas pero no se
+    actualiza el encabezado. (4) Sin señal no se editan cotizaciones que ya están en el CRM, ni se pone flete, ni
+    se cambia el IVA, ni se pide aprobación de descuento: todo eso se hace en el CRM cuando llega el borrador (la
+    regla del 15 % aplica allá al presentarla).
+  - **Sin comprobar todavía:** en un iPhone o Android real (comprobado en Chrome de escritorio y a 375 px).
 - **Idea pendiente:** con mala señal (no sin señal) las demás pantallas del CRM pueden tardar minutos en fallar; hoy
   solo `/sin-conexion` tiene límite de 3 s. Valorar un límite para las demás navegaciones cuando hay descarga.
 - A tener en cuenta: el almacenamiento del navegador no está cifrado (por eso solo guarda lo de quien inició sesión
@@ -336,6 +381,7 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
+| 2026-11-10 | `HASH_C` | **Modo sin conexión, parte C: cotizaciones sin señal.** En «Consulta sin señal» se arma una cotización sin red desde la ficha del cliente o desde Productos: el teléfono pone el precio que le toca a ese cliente (lista propia o de su canal) y calcula los totales con IVA igual que el CRM. Queda «Sin enviar» con número provisional y editable; al volver la señal llega sola al CRM como borrador, con su número oficial, después de su cliente si este también se creó sin señal. Si el precio de lista cambió desde la descarga se respeta el cotizado, se le avisa al asesor y la línea queda marcada «Cotizado sin señal» en la cotización del CRM, con el precio de lista vigente al llegar. Un producto que ya no está disponible la deja Rechazada para corregirla. 149 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion-cotizaciones.spec.ts`. | Solo local. **Migración `20261207000100_offline_quotes` sin publicar**: publicarla, con `20261206000100`, antes de subir a `main` |
 | 2026-11-10 | `6ffc622` | **Modo sin conexión, parte B: bandeja de salida, actividades y crear cliente.** En «Consulta sin señal» ahora se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota) sin red. Quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, primero los clientes y luego sus actividades; cada registro queda Pendiente, Enviado o Rechazado con el motivo, y se puede corregir, reenviar o descartar en la pestaña nueva «Envíos». La cabecera del CRM avisa «N sin enviar». Al cerrar sesión con registros sin enviar se avisa y se conservan hasta que entre la misma persona; nadie más los ve ni los envía. Sin cambios de base de datos. Prueba nueva `tests/e2e/sin-conexion-envios.spec.ts`. | Solo local; depende de la parte A (migración `20261206000100_offline_snapshot` sin publicar) |
 | 2026-11-09 | `f47e84b` | **Modo sin conexión, parte A: «Preparar el día» y consulta sin señal** (plan aprobado por Luis, con sus 6 decisiones en la sección 6). Una tarjeta en Inicio descarga al dispositivo los clientes del asesor con contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios, y dice cuándo se descargó. La pantalla nueva «Consulta sin señal» (`/sin-conexion`, también en el menú de usuario) los muestra sin red: agenda, clientes, oportunidades y productos con el precio que le toca a cada cliente, calculado en el teléfono con la regla del CRM (`db:test` comprueba que coincide con la base). Sin red, cualquier pantalla del CRM lleva allí y recuerda a dónde volver. Lo descargado se borra al cerrar sesión y cuando entra otra persona. Service worker v4; `npm run dev:demo -- --produccion` para probar con la app compilada. 147 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion.spec.ts`. | Solo local. **Migración `20261206000100_offline_snapshot` sin publicar**: publicarla antes de subir a `main` |
 | 2026-11-09 | `18576a5` | **Modo sin conexión, fase 1: borradores en el dispositivo.** Lo que se escribe en el formulario de un registro o en el de actividades se guarda en el dispositivo mientras se llena, se recupera al volver a abrirlo («Descartar borrador» lo quita) y no se pierde si al guardar no hay internet o el envío falla (aviso «Sin conexión: no se guardó…», que se lleva a la vista). Se borra al guardar, al cancelar, al cerrar sesión y a los 14 días. De paso: las listas desplegables ya no vuelven a su valor anterior cuando un guardado sale con errores (pasaba en todos los formularios), y el resultado de guardar se lleva a la vista en formularios largos. Sin cambios de base de datos. Prueba nueva `tests/e2e/borradores.spec.ts`. | Solo local; no afecta el despliegue hasta subirlo a `main` |

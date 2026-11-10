@@ -22,6 +22,8 @@ export type QuoteLine = {
   line_total: number;
   /** Producto que no está en la lista propia del cliente (precio de la lista del canal). */
   not_listed?: boolean;
+  /** Cotizada sin señal a un precio distinto al de la lista: el de lista cuando llegó al CRM. */
+  offline_list_price?: number | null;
   product: { id: string; name: string; product_code: string | null; unit: string } | null;
 };
 
@@ -57,7 +59,15 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
         <p className="text-xs text-muted">
           {line.product?.product_code} · {line.product?.unit}
           {line.not_listed && <span className="badge badge-warning ml-2" title="No está en la lista de precios del cliente: se cotiza con la lista del canal."><Tr>No codificado</Tr></span>}
+          {line.offline_list_price != null && (
+            <span className="badge badge-info ml-2" title={`${t("Se cotizó sin conexión con el precio descargado. Precio de lista al llegar al CRM")}: ${formatCurrency(line.offline_list_price, currency)}`}>
+              <Tr>Cotizado sin señal</Tr>
+            </span>
+          )}
         </p>
+        {line.offline_list_price != null && (
+          <p className="text-xs text-muted"><Tr>Precio de lista al llegar al CRM</Tr>: <span className="num">{formatCurrency(line.offline_list_price, currency)}</span></p>
+        )}
       </div>
       {/* En el celular: cantidad, precio y descuento en una fila con su etiqueta, y el total junto a sus acciones.
           Desde md, «contents» los vuelve celdas de la tabla (los títulos están en la cabecera). */}

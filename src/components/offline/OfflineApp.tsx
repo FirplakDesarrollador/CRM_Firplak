@@ -8,6 +8,7 @@ import type { Locale } from "@/lib/i18n";
 import { I18nProvider, useT } from "@/lib/i18n/client";
 import { isSignedOut } from "@/lib/offline/download";
 import { accountFromOutbox, unsent } from "@/lib/offline/outbox";
+import type { SyncResult } from "@/lib/offline/sync";
 import { clearOffline, sweepOffline } from "@/lib/offline/store";
 import type { OfflineAccount, OfflineMeta, OfflineSnapshot, OutboxItem } from "@/lib/offline/types";
 import { agendaGroups, OfflineAgenda } from "./OfflineAgenda";
@@ -16,10 +17,12 @@ import { OfflineActivityForm, OfflineClientForm } from "./OfflineForms";
 import { OfflineOpportunities } from "./OfflineOpportunities";
 import { OfflineOutbox } from "./OfflineOutbox";
 import { OfflineProducts } from "./OfflineProducts";
+import { OfflineQuote } from "./OfflineQuote";
+import { OfflineQuoteForm } from "./OfflineQuoteForm";
 import { PrepareDayCard } from "./PrepareDayCard";
-import { closeForm, go, useRoute, VIEWS, type Route, type View } from "./route";
+import { closeForm, FORM_OF, go, useRoute, VIEWS, type Route, type View } from "./route";
 import { useOfflineData, useOnline } from "./useOffline";
-import { useDeviceUnsent, useNotice, useOutbox, useOutboxSync } from "./useOutbox";
+import { showNotice, useDeviceUnsent, useNotice, useOutbox, useOutboxSync } from "./useOutbox";
 
 const TAB_LABELS: Record<View, string> = { agenda: "Agenda", clientes: "Clientes", oportunidades: "Oportunidades", productos: "Productos", salida: "Envíos" };
 
@@ -67,9 +70,10 @@ function Downloaded({ snapshot, route, outbox }: { snapshot: OfflineSnapshot; ro
   const { items, names } = outbox;
   const accounts = useMemo(() => new Map(snapshot.accounts.map((a) => [a.id, a])), [snapshot.accounts]);
   const known = useMemo(() => new Set(accounts.keys()), [accounts]);
-  // Lo creado sin señal: los clientes (para marcarlos) y las actividades (para verlas en la agenda y la ficha).
+  // Lo creado sin señal: los clientes (para marcarlos) y las actividades y cotizaciones (para verlas en la agenda y la ficha).
   const local = useMemo(() => new Map(items.filter((item) => item.kind === "account").map((item) => [item.id, item])), [items]);
   const activities = useMemo(() => items.filter((item) => item.kind === "activity").sort((a, b) => b.createdAt - a.createdAt), [items]);
+  const quotes = useMemo(() => items.filter((item) => item.kind === "quote").sort((a, b) => b.createdAt - a.createdAt), [items]);
   const client = route.view === "clientes" && route.client ? accounts.get(route.client) : undefined;
   // En un teléfono las pestañas no caben: la que está abierta se trae a la vista.
   useEffect(() => {
@@ -99,7 +103,7 @@ function Downloaded({ snapshot, route, outbox }: { snapshot: OfflineSnapshot; ro
             aria-selected={route.view === view}
             aria-controls="panel-sin-conexion"
             className="tab"
-            onClick={() => go({ v: view, c: null, f: null, e: null })}
+            onClick={() => go({ v: view, c: null, f: null, e: null, q: null })}
           >
             {t(TAB_LABELS[view])} <span className={`badge num ${view === "salida" && counts.salida > 0 ? "badge-warning" : ""}`}>{counts[view]}</span>
           </button>
@@ -108,7 +112,17 @@ function Downloaded({ snapshot, route, outbox }: { snapshot: OfflineSnapshot; ro
       <div id="panel-sin-conexion" role="tabpanel" aria-labelledby={`pestana-${route.view}`} className="flex flex-col gap-4">
         {route.view === "agenda" && <OfflineAgenda activities={snapshot.activities} known={known} local={activities} names={names} canCreate />}
         {route.view === "clientes" && (client
-          ? <OfflineClient account={client} snapshot={snapshot} known={known} local={local.get(client.id)} activities={activities.filter((item) => item.values.account_id === client.id)} names={names} />
+          ? (
+            <OfflineClient
+              account={client}
+              snapshot={snapshot}
+              known={known}
+              local={local.get(client.id)}
+              activities={activities.filter((item) => item.values.account_id === client.id)}
+              quotes={quotes.filter((item) => item.values.account_id === client.id)}
+              names={names}
+            />
+          )
           : <OfflineClients accounts={snapshot.accounts} local={local} />)}
         {route.view === "oportunidades" && <OfflineOpportunities opportunities={snapshot.opportunities} accounts={accounts} />}
         {route.view === "productos" && <OfflineProducts snapshot={snapshot} selection={route.prices} />}
@@ -127,7 +141,11 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
   // De quién es lo que se muestra y se crea aquí: quien tiene la sesión o, sin señal, quien hizo la descarga.
   const userId = signedOut ? null : session.userId ?? meta?.userId ?? null;
   const { items, ready: outboxReady } = useOutbox(userId);
-  useOutboxSync(session.userId);
+  // Lo cotizado se respeta: si al enviar el precio de lista ya era otro, se le cuenta a quien cotizó.
+  const onSent = (result: SyncResult) => {
+    if (result.priceChanges > 0) showNotice(t("Tu cotización llegó al CRM con los precios que cotizaste. El precio de lista de algunos productos cambió desde tu descarga: esas líneas quedaron marcadas."));
+  };
+  useOutboxSync(session.userId, onSent);
   const deviceUnsent = useDeviceUnsent();
   const notice = useNotice();
   const waiting = unsent(items).length;
@@ -145,6 +163,8 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
 
   const editing = route.edit ? items.find((item) => item.id === route.edit) ?? null : null;
   const form = route.form && userId ? route.form : null;
+  // Cliente desde cuya ficha, o desde cuyos precios, se abrió un formulario.
+  const fromClient = route.view === "clientes" ? route.client : route.view === "productos" && route.prices?.startsWith("a:") ? route.prices.slice(2) : null;
 
   return (
     <div className="min-h-dvh">
@@ -159,7 +179,7 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
               type="button"
               className="btn btn-sm btn-ghost"
               aria-label={`${waiting} ${t("sin enviar")}`}
-              onClick={() => go({ v: "salida", c: null, f: null, e: null })}
+              onClick={() => go({ v: "salida", c: null, f: null, e: null, q: null })}
             >
               <Send size={14} aria-hidden="true" /> <span className="badge badge-warning num">{waiting}</span>
               <span className="hidden sm:inline">{t("sin enviar")}</span>
@@ -187,18 +207,27 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
           </>
         ) : form && userId ? (
           // Un formulario ocupa la pantalla: lo demás espera detrás.
-          !outboxReady ? (
+          !outboxReady || (form === "cotizacion" && !ready) ? (
             <div className="card flex flex-col gap-3 p-4" aria-hidden="true">
               <span className="skeleton h-4 w-2/3" />
               <span className="skeleton h-4 w-1/2" />
             </div>
-          ) : route.edit && (!editing || editing.status === "sent" || (editing.kind === "account") !== (form === "cliente")) ? (
+          ) : route.edit && (!editing || editing.status === "sent" || FORM_OF[editing.kind] !== form) ? (
             <>
               <Alert tone="info">{t("Este registro ya no se puede corregir aquí: ya se envió o se descartó.")}</Alert>
               <button type="button" className="btn self-start" onClick={closeForm}><ArrowLeft size={14} aria-hidden="true" /> {t("Volver")}</button>
             </>
           ) : form === "cliente" ? (
             <OfflineClientForm key={route.edit ?? "nuevo"} userId={userId} options={meta?.options} editing={editing} />
+          ) : form === "cotizacion" ? (
+            merged ? (
+              <OfflineQuoteForm key={route.edit ?? "nueva"} userId={userId} snapshot={merged} outbox={items} editing={editing} client={fromClient} />
+            ) : (
+              <>
+                <Alert tone="info">{t("Para cotizar sin señal primero hay que preparar el día: así quedan en este dispositivo los productos y sus precios.")}</Alert>
+                <button type="button" className="btn self-start" onClick={closeForm}><ArrowLeft size={14} aria-hidden="true" /> {t("Volver")}</button>
+              </>
+            )
           ) : (
             <OfflineActivityForm
               key={route.edit ?? "nueva"}
@@ -209,6 +238,19 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
               client={route.view === "clientes" ? route.client : null}
             />
           )
+        ) : route.quote && userId ? (
+          // Una cotización hecha sin señal también ocupa la pantalla.
+          <>
+            {notice && <Alert tone="success">{notice}</Alert>}
+            {outboxReady
+              ? <OfflineQuote item={items.find((item) => item.id === route.quote)} snapshot={merged} names={names} online={online} />
+              : (
+                <div className="card flex flex-col gap-3 p-4" aria-hidden="true">
+                  <span className="skeleton h-4 w-2/3" />
+                  <span className="skeleton h-4 w-1/2" />
+                </div>
+              )}
+          </>
         ) : (
           <>
             {notice && <Alert tone="success">{notice}</Alert>}
