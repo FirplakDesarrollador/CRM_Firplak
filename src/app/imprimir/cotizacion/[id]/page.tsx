@@ -33,7 +33,9 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/co
   const label = "text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--sage-700)]";
 
   return (
-    <div className="min-h-dvh bg-[var(--cream-200)] py-8 print:bg-white print:py-0">
+    // En la app instalada en iPhone la página ocupa también la franja de la hora, y ahí los toques no llegan: el
+    // botón de imprimir baja lo que mide esa franja. En el navegador env() vale 0 y no cambia nada.
+    <div className="min-h-dvh bg-[var(--cream-200)] pb-8 pt-[calc(2rem+env(safe-area-inset-top,0px))] print:bg-white print:pb-0 print:pt-0">
       <style>{`@page { size: letter; margin: 14mm; } @media print { body { background: #fff !important; } }
         /* Al imprimir, ningún bloque (filas, totales, condiciones, observaciones, firma) queda partido entre dos páginas. */
         .print-keep, .print-rows tr { break-inside: avoid; }`}</style>
