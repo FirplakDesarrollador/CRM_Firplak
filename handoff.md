@@ -112,17 +112,18 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 ## 5. Producción (Supabase)
 
-- **Pendientes de publicar (2)**, las dos del modo sin conexión. Publicarlas con `npm run db:publicar` cuando Luis lo
-  autorice, **antes de subir el modo sin conexión a `main`**:
-  - `20261206000100_offline_snapshot` (función `offline_snapshot()` de «Preparar el día»). Solo agrega una función de
-    lectura que corre con los permisos de quien la llama (RLS), cerrada a `public` y `anon` y abierta a
-    `authenticated`; no toca tablas ni datos. Sin ella, «Preparar el día» falla en producción con «No se pudo
-    descargar».
-  - `20261207000100_offline_quotes` (columna `quote_line_items.offline_list_price` y su disparador
-    `quote_line_offline_price()`, cerrado a `public`, `anon` y `authenticated`). Agrega una columna vacía; no cambia
-    ninguna fila ni ningún total. Sin ella, la cotización del CRM no abre (la página pide esa columna) y las
-    cotizaciones hechas sin señal no terminan de llegar.
-- **40 migraciones aplicadas**; la última, `20261205000100_alerts_plural`, el 2026-11-09 con `db:publicar` y visto bueno de
+- **42 migraciones aplicadas, 0 pendientes.** Las dos últimas, las del modo sin conexión, el 2026-11-10 con
+  `db:publicar` y visto bueno de Luis (42/42). Comprobado en producción después de aplicar:
+  - `20261206000100_offline_snapshot` (función `offline_snapshot()` de «Preparar el día»): corre con los permisos de
+    quien la llama (RLS), cerrada a `public` y `anon` y abierta a `authenticated`; no toca tablas ni datos.
+  - `20261207000100_offline_quotes` (columna `quote_line_items.offline_list_price`, `numeric(18,2)` con su chequeo
+    de no negativo, y el disparador `quote_line_items_offline_price` activo; su función `quote_line_offline_price()`
+    cerrada a `public`, `anon` y `authenticated`, con `search_path` vacío). La columna quedó vacía en todas las
+    líneas existentes; no cambió ninguna fila ni ningún total.
+  - Asesor de seguridad sin hallazgos nuevos: ninguna de las dos funciones aparece; quedan solo los conocidos.
+  - **La interfaz del modo sin conexión todavía no está desplegada**: la rama no se ha subido a `main`. Lo publicado
+    es compatible con la app que hoy está en `main` (solo agrega una función y una columna vacía).
+- Antes, `20261205000100_alerts_plural`, el 2026-11-09 con `db:publicar` y visto bueno de
   Luis (40/40, 0 pendientes): solo texto, el aviso diario dice «Tienes 1 tarea vencida» / «Tienes N tareas vencidas»;
   mismos permisos (`authenticated` ya la ejecutaba desde la fase 5) y el asesor de seguridad sin hallazgos nuevos.
   Antes, `20261204000100_quote_parts_opportunity`, el 2026-11-07 con `db:publicar` y visto
@@ -176,7 +177,7 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 - B2C: personas naturales con cédula.
 - Mapeo de Segmentos por Mercado y Canal (falta la tabla de Luis).
 
-### Modo sin conexión: construido completo (borradores, A, B y C); falta publicarlo y probarlo en teléfonos
+### Modo sin conexión: construido completo (borradores, A, B y C); falta subirlo a `main` y probarlo en teléfonos
 Luis dio la orden de empezar el 2026-11-09 y ese mismo día aprobó el plan. Los asesores se quedan sin señal en
 ascensores, parqueaderos de sótano, obras y oficinas con mala red, y en el avión. Sin señal necesitan, en este orden:
 cotizar (informar precios), registrar actividades y crear un cliente. La fuerza comercial usa la **app web (PWA) en
@@ -204,8 +205,9 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
 **Orden de construcción:** A. descarga y consulta (**hecha**) → B. bandeja de salida con actividades y crear cliente
 (**hecha**) → C. cotizaciones sin señal (**hecha**). Cada parte con sus pruebas y su commit local.
 
-**Lo que falta para que lo usen los asesores:** (1) publicar en producción las dos migraciones de la sección 5;
-(2) subir la rama a `main` (Luis lo pide); (3) probarlo en un iPhone y un Android reales, instalado como app web.
+**Lo que falta para que lo usen los asesores:** (1) subir la rama a `main` (Luis lo pide); (2) probarlo en un
+iPhone y un Android reales, instalado como app web. Las dos migraciones ya están en producción (2026-11-10,
+sección 5).
 
 - **Borradores (antes «fase 1»), cómo quedó:** el formulario de cualquier registro (`RecordForm`) y el de actividades de las fichas
   (`Composer`) guardan lo escrito en `localStorage` (`crm:borrador:<usuario>:<dirección>`), 400 ms después de la
@@ -219,7 +221,7 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
   borrador; solo guardan borrador los formularios de registros y el de actividades (no los de configuración, las
   líneas de cotización ni la conversión de prospectos).
 - **Parte A, cómo quedó:**
-  - **La descarga:** la función `offline_snapshot()` (migración `20261206000100`, **sin publicar en producción**)
+  - **La descarga:** la función `offline_snapshot()` (migración `20261206000100`, en producción desde el 2026-11-10)
     devuelve en una sola llamada, con los permisos de quien la llama: sus cuentas (propias, de su equipo de cuenta
     y las de sus oportunidades abiertas y su agenda) con contactos, sus oportunidades abiertas, su agenda (pendientes
     vencidos, sin fecha o de los próximos 7 días, y las reuniones de esos 7 días), el catálogo activo y los precios
@@ -303,7 +305,7 @@ iPhone y Android**; la app nativa de iPhone es solo un prototipo que prueba Luis
     200 líneas. Un producto que ya no está activo la deja **Rechazada**, nombrando el producto, para quitarlo y
     reenviar («Corregir»).
   - **Precio que cambió (decisión 1):** se respeta el cotizado. La columna nueva
-    `quote_line_items.offline_list_price` (migración `20261207000100`, **sin publicar en producción**) guarda el
+    `quote_line_items.offline_list_price` (migración `20261207000100`, en producción desde el 2026-11-10) guarda el
     precio de lista vigente al llegar cuando es distinto del cotizado; un disparador la deja vacía si son iguales
     y la borra si después alguien cambia el precio o el producto de la línea. El teléfono avisa («Desde tu descarga
     cambió el precio de lista de N productos…», y en cada línea «Precio de lista al enviar: $X. Se respetó el
@@ -381,9 +383,10 @@ Chrome con área segura simulada, no en el dispositivo).
 
 | Fecha | Commit | Cambio | Producción |
 |---|---|---|---|
-| 2026-11-10 | `4374fa7` | **Modo sin conexión, parte C: cotizaciones sin señal.** En «Consulta sin señal» se arma una cotización sin red desde la ficha del cliente o desde Productos: el teléfono pone el precio que le toca a ese cliente (lista propia o de su canal) y calcula los totales con IVA igual que el CRM. Queda «Sin enviar» con número provisional y editable; al volver la señal llega sola al CRM como borrador, con su número oficial, después de su cliente si este también se creó sin señal. Si el precio de lista cambió desde la descarga se respeta el cotizado, se le avisa al asesor y la línea queda marcada «Cotizado sin señal» en la cotización del CRM, con el precio de lista vigente al llegar. Un producto que ya no está disponible la deja Rechazada para corregirla. 149 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion-cotizaciones.spec.ts`. | Solo local. **Migración `20261207000100_offline_quotes` sin publicar**: publicarla, con `20261206000100`, antes de subir a `main` |
-| 2026-11-10 | `6ffc622` | **Modo sin conexión, parte B: bandeja de salida, actividades y crear cliente.** En «Consulta sin señal» ahora se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota) sin red. Quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, primero los clientes y luego sus actividades; cada registro queda Pendiente, Enviado o Rechazado con el motivo, y se puede corregir, reenviar o descartar en la pestaña nueva «Envíos». La cabecera del CRM avisa «N sin enviar». Al cerrar sesión con registros sin enviar se avisa y se conservan hasta que entre la misma persona; nadie más los ve ni los envía. Sin cambios de base de datos. Prueba nueva `tests/e2e/sin-conexion-envios.spec.ts`. | Solo local; depende de la parte A (migración `20261206000100_offline_snapshot` sin publicar) |
-| 2026-11-09 | `f47e84b` | **Modo sin conexión, parte A: «Preparar el día» y consulta sin señal** (plan aprobado por Luis, con sus 6 decisiones en la sección 6). Una tarjeta en Inicio descarga al dispositivo los clientes del asesor con contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios, y dice cuándo se descargó. La pantalla nueva «Consulta sin señal» (`/sin-conexion`, también en el menú de usuario) los muestra sin red: agenda, clientes, oportunidades y productos con el precio que le toca a cada cliente, calculado en el teléfono con la regla del CRM (`db:test` comprueba que coincide con la base). Sin red, cualquier pantalla del CRM lleva allí y recuerda a dónde volver. Lo descargado se borra al cerrar sesión y cuando entra otra persona. Service worker v4; `npm run dev:demo -- --produccion` para probar con la app compilada. 147 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion.spec.ts`. | Solo local. **Migración `20261206000100_offline_snapshot` sin publicar**: publicarla antes de subir a `main` |
+| 2026-11-10 | `5731c71` | Publicadas en producción las dos migraciones del modo sin conexión: `20261206000100_offline_snapshot` (descarga de «Preparar el día») y `20261207000100_offline_quotes` (precio de lista de las cotizaciones hechas sin señal). Comprobado después: 42 de 42 en el historial, permisos de las dos funciones como en la migración, columna vacía en las líneas existentes y asesor de seguridad sin hallazgos nuevos. | Migraciones aplicadas con `db:publicar` y visto bueno de Luis (42/42). Interfaz del modo sin conexión sin desplegar: falta subir la rama a `main` |
+| 2026-11-10 | `4374fa7` | **Modo sin conexión, parte C: cotizaciones sin señal.** En «Consulta sin señal» se arma una cotización sin red desde la ficha del cliente o desde Productos: el teléfono pone el precio que le toca a ese cliente (lista propia o de su canal) y calcula los totales con IVA igual que el CRM. Queda «Sin enviar» con número provisional y editable; al volver la señal llega sola al CRM como borrador, con su número oficial, después de su cliente si este también se creó sin señal. Si el precio de lista cambió desde la descarga se respeta el cotizado, se le avisa al asesor y la línea queda marcada «Cotizado sin señal» en la cotización del CRM, con el precio de lista vigente al llegar. Un producto que ya no está disponible la deja Rechazada para corregirla. 149 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion-cotizaciones.spec.ts`. | Solo local (sin subir a `main`). Migración `20261207000100_offline_quotes` publicada el 2026-11-10 |
+| 2026-11-10 | `6ffc622` | **Modo sin conexión, parte B: bandeja de salida, actividades y crear cliente.** En «Consulta sin señal» ahora se crea un cliente y se registran actividades (tarea, llamada, reunión, correo, nota) sin red. Quedan en el dispositivo y se envían solos al CRM cuando vuelve la conexión, primero los clientes y luego sus actividades; cada registro queda Pendiente, Enviado o Rechazado con el motivo, y se puede corregir, reenviar o descartar en la pestaña nueva «Envíos». La cabecera del CRM avisa «N sin enviar». Al cerrar sesión con registros sin enviar se avisa y se conservan hasta que entre la misma persona; nadie más los ve ni los envía. Sin cambios de base de datos. Prueba nueva `tests/e2e/sin-conexion-envios.spec.ts`. | Solo local (sin subir a `main`); depende de la parte A (migración `20261206000100_offline_snapshot`, publicada el 2026-11-10) |
+| 2026-11-09 | `f47e84b` | **Modo sin conexión, parte A: «Preparar el día» y consulta sin señal** (plan aprobado por Luis, con sus 6 decisiones en la sección 6). Una tarjeta en Inicio descarga al dispositivo los clientes del asesor con contactos, sus oportunidades abiertas, su agenda de 7 días y el catálogo con precios, y dice cuándo se descargó. La pantalla nueva «Consulta sin señal» (`/sin-conexion`, también en el menú de usuario) los muestra sin red: agenda, clientes, oportunidades y productos con el precio que le toca a cada cliente, calculado en el teléfono con la regla del CRM (`db:test` comprueba que coincide con la base). Sin red, cualquier pantalla del CRM lleva allí y recuerda a dónde volver. Lo descargado se borra al cerrar sesión y cuando entra otra persona. Service worker v4; `npm run dev:demo -- --produccion` para probar con la app compilada. 147 comprobaciones de base; prueba nueva `tests/e2e/sin-conexion.spec.ts`. | Solo local (sin subir a `main`). Migración `20261206000100_offline_snapshot` publicada el 2026-11-10 |
 | 2026-11-09 | `18576a5` | **Modo sin conexión, fase 1: borradores en el dispositivo.** Lo que se escribe en el formulario de un registro o en el de actividades se guarda en el dispositivo mientras se llena, se recupera al volver a abrirlo («Descartar borrador» lo quita) y no se pierde si al guardar no hay internet o el envío falla (aviso «Sin conexión: no se guardó…», que se lleva a la vista). Se borra al guardar, al cancelar, al cerrar sesión y a los 14 días. De paso: las listas desplegables ya no vuelven a su valor anterior cuando un guardado sale con errores (pasaba en todos los formularios), y el resultado de guardar se lleva a la vista en formularios largos. Sin cambios de base de datos. Prueba nueva `tests/e2e/borradores.spec.ts`. | Solo local; no afecta el despliegue hasta subirlo a `main` |
 | 2026-11-09 | `5d110e1` | **App de iPhone instalada en el iPhone de Luis** (iPhone 17 Pro Max, iOS 27.2) con su Apple ID personal: compilada y firmada desde la terminal con el equipo y el identificador de prueba `com.firplak.crm.prueba` pasados en el comando, sin tocar el proyecto. Comandos en la sección 3. Instalación confirmada por `devicectl`; tras confiar en el desarrollador y verificar la app en el iPhone, Luis confirmó que abre, que entra con su cuenta y que pide Face ID al volver a abrirla. Sin cambios de código. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |
 | 2026-11-09 | `10dd46c` | **Bloqueo con Face ID en la app de iPhone** (`mobile/ios/App/App/Bloqueo.swift`): tapa la app con la pantalla del sello y pide Face ID (o el código del iPhone) al abrir y al volver después de 5 minutos, solo con sesión iniciada; no guarda contraseñas. También se tapa en el selector de apps. Probado en el simulador (cara que coincide, cara que no, cancelar, volver antes y después del tiempo, sin sesión); falta un iPhone real. La app web no cambia. | Subido a la rama `codex/migraciones-seguras` (2026-11-09), no a `main`; no afecta el despliegue |
