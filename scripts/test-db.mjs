@@ -1242,6 +1242,64 @@ await check('productos: Planta y Grupo de Artículo se guardan y sus listas las 
   });
   await as(admin, () => q(`delete from picklist_values where object = 'products' and field in ('plant', 'item_group')`));
 });
+await check('kits: planta KIT, componentes que no son kit y Planta/Grupo sin depender de Familia', async () => {
+  const uno = async (sql, params) => (await as(admin, () => q(sql, params)))[0];
+  // Un kit toma la planta «KIT» aunque se guarde con otra o sin ninguna; un producto suelto no puede usarla.
+  const kit = await uno(`insert into products (name, product_code, is_kit, plant, family) values ('Kit Lvm Oslo con mueble elev 63cm', 'KIT-OSLO-63', true, 'Planta Demo Norte', 'Muebles de baño') returning id, plant`);
+  assert.equal(kit.plant, 'KIT');
+  await assert.rejects(as(admin, () => q(`insert into products (name, product_code, plant) values ('Suelto con planta de kit', 'SUELTO-KIT', 'KIT')`)), /solo para productos marcados como Kit/);
+  const lvm = await uno(`insert into products (name, product_code, plant) values ('Lavamanos Oslo 63cm', 'LVM-OSLO-63', 'Planta Demo Norte') returning id`);
+  const mueble = await uno(`insert into products (name, product_code, plant) values ('Mueble elevado dos puertas 63cm', 'MUE-ELEV-63', 'Planta Demo Sur') returning id`);
+  const otroKit = await uno(`insert into products (name, product_code, is_kit) values ('Kit de cocina', 'KIT-COCINA', true) returning id`);
+
+  // Componentes: varios por kit, con cantidad; el mismo componente puede ir en varios kits.
+  await as(admin, () => q(`insert into product_kit_components (kit_id, component_id, quantity) values ($1, $2, 1), ($1, $3, 2), ($4, $2, 1)`, [kit.id, lvm.id, mueble.id, otroKit.id]));
+  const filas = await as(admin, () => q(`select p.product_code, c.quantity::float q from product_kit_components c join products p on p.id = c.component_id where c.kit_id = $1 order by p.product_code`, [kit.id]));
+  assert.deepEqual(filas, [{ product_code: 'LVM-OSLO-63', q: 1 }, { product_code: 'MUE-ELEV-63', q: 2 }]);
+  // Lo que la base no deja: componentes en un producto suelto, un kit dentro de otro, repetir, cantidad cero, a sí mismo.
+  const agregar = (k, c, n = 1) => as(admin, () => q(`insert into product_kit_components (kit_id, component_id, quantity) values ($1, $2, $3)`, [k, c, n]));
+  await assert.rejects(agregar(lvm.id, mueble.id), /Solo un producto marcado como Kit/);
+  await assert.rejects(agregar(kit.id, otroKit.id), /no puede ser componente de otro kit/);
+  await assert.rejects(agregar(kit.id, lvm.id));
+  await assert.rejects(agregar(otroKit.id, mueble.id, 0));
+  await assert.rejects(agregar(kit.id, kit.id));
+  // Cambios de tipo: un componente en uso no pasa a kit, un kit con componentes no deja de serlo, y un componente en uso no se borra.
+  await assert.rejects(as(admin, () => q(`update products set is_kit = true where id = $1`, [lvm.id])), /es componente de un kit/);
+  await assert.rejects(as(admin, () => q(`update products set is_kit = false where id = $1`, [kit.id])), /Quita primero los componentes/);
+  await assert.rejects(as(admin, () => q(`delete from products where id = $1`, [lvm.id])));
+  // El asesor ve los componentes y no puede cambiarlos.
+  assert.equal((await as(rep, () => q(`select count(*)::int n from product_kit_components where kit_id = $1`, [kit.id])))[0].n, 2);
+  await assert.rejects(as(rep, () => q(`insert into product_kit_components (kit_id, component_id) values ($1, $2)`, [otroKit.id, mueble.id])));
+  assert.equal((await as(rep, () => q(`delete from product_kit_components where kit_id = $1 returning id`, [kit.id]))).length, 0);
+
+  // Planta y Grupo dependen de Familia en un producto suelto; en un kit no.
+  await as(admin, async () => {
+    await q(`insert into picklist_values (object, field, value, sort_order, controlling_map) values
+      ('products', 'plant', 'Planta Demo Norte', 10, '{"family":["Muebles de baño"]}'),
+      ('products', 'item_group', 'Grupo Demo Baño', 10, '{"family":["Muebles de baño"]}'),
+      ('products', 'item_group', 'Kit Baño Best', 20, '{}')`);
+    await q(`insert into picklist_dependencies (object, field, controlling_field) values ('products', 'plant', 'family'), ('products', 'item_group', 'family')`);
+  });
+  const crear = (codigo, extra) => as(admin, () => q(`insert into products (name, product_code, family, plant, item_group, is_kit) values ($1, $1, $2, $3, $4, $5) returning plant, item_group`,
+    [codigo, extra.family, extra.plant ?? null, extra.item_group ?? null, Boolean(extra.is_kit)]));
+  assert.deepEqual((await crear('DEP-OK', { family: 'Muebles de baño', plant: 'Planta Demo Norte', item_group: 'Grupo Demo Baño' }))[0], { plant: 'Planta Demo Norte', item_group: 'Grupo Demo Baño' });
+  await assert.rejects(crear('DEP-MAL-PLANTA', { family: 'Cocinas', plant: 'Planta Demo Norte' }), /no corresponde/);
+  await assert.rejects(crear('DEP-MAL-GRUPO', { family: 'Cocinas', item_group: 'Grupo Demo Baño' }), /no corresponde/);
+  assert.deepEqual((await crear('DEP-KIT', { family: 'Cocinas', item_group: 'Kit Baño Best', is_kit: true }))[0], { plant: 'KIT', item_group: 'Kit Baño Best' });
+  await as(admin, async () => {
+    await q(`delete from picklist_dependencies where object = 'products'`);
+    await q(`delete from picklist_values where object = 'products' and field in ('plant', 'item_group')`);
+  });
+
+  // Sin componentes, el kit puede volver a ser un producto suelto (la planta queda por definir); borrar un kit se lleva sus componentes.
+  await as(admin, () => q(`delete from product_kit_components where kit_id = $1`, [kit.id]));
+  assert.equal((await uno(`update products set is_kit = false where id = $1 returning plant`, [kit.id])).plant, null);
+  await as(admin, () => q(`delete from products where id = $1`, [otroKit.id]));
+  assert.equal((await as(admin, () => q(`select count(*)::int n from product_kit_components where component_id = $1`, [lvm.id])))[0].n, 0);
+  // Los disparadores no se pueden llamar por la API.
+  const [permisos] = await q(`select has_function_privilege('authenticated', 'public.product_kit_rules()', 'execute') a, has_function_privilege('anon', 'public.kit_component_rules()', 'execute') b`);
+  assert.deepEqual(permisos, { a: false, b: false });
+});
 await check('lista propia del cliente: sus productos con su precio; los no codificados con el precio del canal y marcados', async () => {
   await as(admin, async () => {
     await q(`insert into products (name, product_code) values ('Mueble codificado', 'PR-COD'), ('Cocina nueva', 'PR-NUEVA')`);

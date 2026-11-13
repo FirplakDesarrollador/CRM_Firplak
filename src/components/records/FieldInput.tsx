@@ -237,8 +237,22 @@ function DependentSelect({
   const ref = useRef<HTMLSelectElement>(null);
   const [controls, setControls] = useState<Record<string, string>>(() => Object.fromEntries(controllers.map((c) => [c.name, c.value])));
   const [value, setValue] = useState(initialValue);
-  const allowed = allowedOptions(field, controls);
-  const missing = controllers.filter((c) => !controls[c.name]).map((c) => `«${c.label}»`);
+  // Con la casilla que la libera marcada (un kit), la lista ofrece todos sus valores.
+  const [free, setFree] = useState(false);
+  const allowed = free ? field.options ?? [] : allowedOptions(field, controls);
+  const missing = free ? [] : controllers.filter((c) => !controls[c.name]).map((c) => `«${c.label}»`);
+
+  useEffect(() => {
+    const form = ref.current?.form;
+    const name = field.dependencyOffWhen;
+    if (!form || !name) return;
+    const box = () => form.elements.namedItem(name) as HTMLInputElement | null;
+    const sync = () => setFree(Boolean(box()?.checked));
+    sync();
+    const onChange = (e: Event) => { if ((e.target as HTMLInputElement).name === name) sync(); };
+    form.addEventListener("change", onChange);
+    return () => form.removeEventListener("change", onChange);
+  }, [field.dependencyOffWhen]);
 
   useEffect(() => {
     const form = ref.current?.form;
@@ -250,11 +264,11 @@ function DependentSelect({
       const next = { ...controls, [target.name]: target.value };
       const ok = allowedOptions(field, next);
       setControls(next);
-      setValue((v) => (ok.includes(v) ? v : ""));
+      if (!free) setValue((v) => (ok.includes(v) ? v : ""));
     };
     form.addEventListener("change", onChange);
     return () => form.removeEventListener("change", onChange);
-  }, [field, controls]);
+  }, [field, controls, free]);
 
   return (
     <>

@@ -19,6 +19,7 @@ import { Tr } from "@/components/ui/Tr";
 import { Val } from "@/components/ui/Val";
 import { Fmt } from "@/components/ui/Fmt";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { KitComponents, type KitComponent } from "@/components/products/KitComponents";
 export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
@@ -27,11 +28,19 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   const row = await getRecord(def, id);
   if (!row) notFound();
   const supabase = await createClient();
-  const [access, { data: books }, { data: entries }, { data: cases }] = await Promise.all([
+  const isKit = Boolean(row.is_kit);
+  const [access, { data: books }, { data: entries }, { data: cases }, { data: components }, { data: inKits }] = await Promise.all([
     getRecordAccess("products", null, row.id),
     supabase.from("price_books").select("id, name, market, currency, channel, is_client_list, is_active").order("market").order("name"),
     supabase.from("price_book_entries").select("id, price_book_id, unit_price, is_active").eq("product_id", id),
     supabase.from("cases").select("id, case_number, subject, status, created_at").eq("product_id", id).order("created_at", { ascending: false }).limit(20),
+    // Kit: sus componentes. Componente: los kits que lo incluyen.
+    supabase.from("product_kit_components")
+      .select("id, quantity, component:products!product_kit_components_component_id_fkey(id, name, product_code, plant, unit, is_active)")
+      .eq("kit_id", id).order("sort_order").order("created_at"),
+    supabase.from("product_kit_components")
+      .select("id, quantity, kit:products!product_kit_components_kit_id_fkey(id, name, product_code)")
+      .eq("component_id", id).order("created_at"),
   ]);
 
   return (
@@ -41,7 +50,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       title={String(row.name)}
       basePath={`/productos/${id}`}
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
-      badges={row.is_active ? null : <span className="badge"><Tr>Inactivo</Tr></span>}
+      badges={<>{isKit && <span className="badge badge-brand"><Tr>Kit</Tr></span>}{row.is_active ? null : <span className="badge"><Tr>Inactivo</Tr></span>}</>}
       actions={
         <>
           {access.canEdit && <Link href={`/productos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
@@ -53,6 +62,23 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
         label: "Precios",
         content: (
           <>
+            {isKit && <KitComponents kitId={id} rows={(components ?? []) as unknown as KitComponent[]} canEdit={access.canEdit} />}
+            {!isKit && (inKits ?? []).length > 0 && (
+              <section className="card overflow-hidden">
+                <div className="card-header"><h2 className="card-title"><Tr>Kits que lo incluyen</Tr> <span className="badge">{inKits!.length}</span></h2></div>
+                <ul className="divide-y divide-[var(--border)]">
+                  {(inKits as unknown as { id: string; quantity: number; kit: { id: string; name: string; product_code: string | null } | null }[]).map((k) => (
+                    <li key={k.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                      <div>
+                        {k.kit ? <Link href={`/productos/${k.kit.id}`} className="link font-medium">{k.kit.name}</Link> : "—"}
+                        {k.kit?.product_code && <p className="text-xs text-muted">{k.kit.product_code}</p>}
+                      </div>
+                      <p className="num text-sm"><span className="font-semibold">{k.quantity}</span> <span className="text-muted"><Tr>por kit</Tr></span></p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <section className="card overflow-hidden">
               <div className="card-header"><h2 className="card-title"><Tr>Precios por lista</Tr></h2></div>
               <ul className="divide-y divide-[var(--border)]">

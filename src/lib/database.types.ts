@@ -3116,6 +3116,58 @@ export type Database = {
         Relationships: [
         ]
       }
+      product_kit_components: {
+        Row: {
+          component_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kit_id: string
+          quantity: number
+          sort_order: number
+        }
+        Insert: {
+          component_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kit_id: string
+          quantity?: number
+          sort_order?: number
+        }
+        Update: {
+          component_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kit_id?: string
+          quantity?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_kit_components_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kit_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kit_components_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string
@@ -3126,6 +3178,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_demo: boolean
+          is_kit: boolean
           item_group: string | null
           name: string
           plant: string | null
@@ -3142,6 +3195,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_demo?: boolean
+          is_kit?: boolean
           item_group?: string | null
           name: string
           plant?: string | null
@@ -3158,6 +3212,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_demo?: boolean
+          is_kit?: boolean
           item_group?: string | null
           name?: string
           plant?: string | null

@@ -116,6 +116,33 @@ export async function removeProductPrice(entryId: string, _prev?: FormState, _fd
   return { ok: true };
 }
 
+// Componentes de un kit: un producto por línea con su cantidad por kit. Agregar uno que ya está cambia su cantidad.
+export async function addKitComponent(kitId: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const componentId = str(fd, "component_id");
+  if (!isUuid(componentId)) return { errors: { component_id: "Elige un producto" } };
+  if (componentId === kitId) return { errors: { component_id: "Un kit no puede ser componente de sí mismo." } };
+  const quantity = parseAmount(str(fd, "quantity")) ?? 1;
+  if (quantity <= 0) return { errors: { quantity: "Cantidad no válida" } };
+  const supabase = await createClient();
+  const { count } = await supabase.from("product_kit_components").select("id", { count: "exact", head: true }).eq("kit_id", kitId);
+  const { error } = await supabase.from("product_kit_components").upsert(
+    { kit_id: kitId, component_id: componentId, quantity, sort_order: (count ?? 0) + 1 },
+    { onConflict: "kit_id,component_id" },
+  );
+  if (error) return { message: friendly(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true, values: { nonce: crypto.randomUUID() } };
+}
+
+export async function removeKitComponent(rowId: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("product_kit_components").delete().eq("id", rowId).select("id");
+  if (error) return { message: friendly(error.message) };
+  if (!data?.length) return { message: "No tienes permiso para quitar este componente." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function savePriceBook(id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
   const name = str(fd, "name");
   if (!name) return { message: "Escribe el nombre de la lista" };

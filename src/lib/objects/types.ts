@@ -44,6 +44,8 @@ export type FieldDef = {
    * lista. Un valor se puede elegir si corresponde a lo elegido en todas.
    */
   dependsOn?: { field: string; optionsByController: Record<string, string[]> }[];
+  /** Casilla del mismo formulario que, marcada, deja la lista sin dependencias (p. ej. «Kit» en productos). */
+  dependencyOffWhen?: string;
   /** Moneda fija del valor (p. ej. «USD»), o columna del registro que la indica (`currencyField`). */
   currencyCode?: string;
   currencyField?: string;
