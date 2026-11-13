@@ -1,3 +1,5 @@
+import { FondoAnimado } from "./FondoAnimado";
+
 const MARK = "M201.54 27.3L304.51 27.3L469.37 472.5L384.51 472.5L253.02 117.45L121.56 472.5L36.69 472.5ZM253.03 340.92L301.75 472.5L204.3 472.5Z";
 
 /** El logo en vector y del color del texto: no pide ninguna imagen, así que se ve sin conexión. */
@@ -28,6 +30,7 @@ export function BrandMark({ gradientId, className }: { gradientId: string; class
 export function BrandBackdrop() {
   return (
     <div className="brand-backdrop" aria-hidden="true">
+      <FondoAnimado />
       <BrandMark gradientId="brand-backdrop-azul" className="brand-backdrop-logo" />
     </div>
   );

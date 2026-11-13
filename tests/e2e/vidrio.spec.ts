@@ -35,6 +35,7 @@ test("la barra de efecto de vidrio cambia el nivel, y solo queda al guardar", as
   expect(await nivel(page)).toBe("solid");
   await expect.poll(() => page.locator("main .glass").first().evaluate((e) => getComputedStyle(e).backdropFilter)).toBe("none");
   await expect.poll(() => page.locator(".brand-backdrop-logo").evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+  await expect(page.locator(".fondo-animado")).toHaveAttribute("data-movimiento", "no");
 
   // Con el teclado hasta Transparente: el logo se mueve de nuevo y el blur es menor.
   await page.goto("/preferencias");
@@ -47,6 +48,7 @@ test("la barra de efecto de vidrio cambia el nivel, y solo queda al guardar", as
   expect(await nivel(page)).toBe("clear");
   await expect.poll(() => page.locator("main .glass").first().evaluate((e) => getComputedStyle(e).backdropFilter)).toContain("blur(16px)");
   await expect.poll(() => page.locator(".brand-backdrop-logo").evaluate((e) => getComputedStyle(e).animationName)).toBe("logo-deriva");
+  await expect(page.locator(".fondo-animado")).toHaveAttribute("data-movimiento", "si");
 
   // Queda como estaba para las demás pruebas.
   await page.goto("/preferencias");

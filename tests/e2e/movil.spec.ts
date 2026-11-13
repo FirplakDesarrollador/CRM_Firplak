@@ -142,10 +142,12 @@ test("el embudo usa todo el ancho y sus detalles aparecen al enfocar", async ({ 
   expect(caja.x + caja.width).toBeLessThanOrEqual(page.viewportSize()!.width);
 });
 
-test("en el celular el logo de fondo queda quieto", async ({ page }) => {
+test("en el celular el logo y las manchas de luz del fondo quedan quietos", async ({ page }) => {
   await page.goto("/inicio");
   await expect(page.locator(".brand-backdrop-logo")).toHaveCount(1);
   await expect.poll(() => page.locator(".brand-backdrop-logo").evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+  await expect(page.locator(".fondo-mancha")).toHaveCount(6);
+  await expect(page.locator(".fondo-animado")).toHaveAttribute("data-movimiento", "no");
 });
 
 test("la app es instalable: manifiesto, íconos y página sin conexión", async ({ page, request }) => {

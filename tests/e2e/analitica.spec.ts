@@ -97,8 +97,16 @@ test("las tarjetas tienen blur real y el logo de fondo se mueve despacio", async
   await expect.poll(() => page.locator("main .card").first().evaluate((e) => getComputedStyle(e).backdropFilter)).toContain("blur");
   const logo = page.locator(".brand-backdrop-logo");
   await expect.poll(() => logo.evaluate((e) => getComputedStyle(e).animationName)).toBe("logo-deriva");
+  // Las manchas de luz del fondo también se mueven: seis, y su posición cambia sola.
+  const fondo = page.locator(".fondo-animado");
+  await expect(page.locator(".fondo-mancha")).toHaveCount(6);
+  await expect(fondo).toHaveAttribute("data-movimiento", "si");
+  const mancha = page.locator('[data-pieza="azul"]');
+  const antes = await mancha.evaluate((e) => e.style.transform);
+  await expect.poll(() => mancha.evaluate((e) => e.style.transform)).not.toBe(antes);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect.poll(() => logo.evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+  await expect(fondo).toHaveAttribute("data-movimiento", "no");
 });
 
 test("cifras y textos claros: totales en «$X M», sustantivos que concuerdan, fechas legibles y aviso de tareas vencidas", async ({ page }) => {

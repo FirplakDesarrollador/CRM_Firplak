@@ -1,6 +1,6 @@
 ---
 name: Firplak CRM
-description: CRM comercial de Firplak con paneles de vidrio y blur real sobre blanco o negro puros, y el logo azul de Firplak moviéndose despacio detrás.
+description: CRM comercial de Firplak con paneles de vidrio y blur real sobre blanco o negro, con manchas de luz muy lentas y el logo azul de Firplak moviéndose despacio detrás.
 colors:
   navy-900: "#0a1826"
   navy-800: "#10263a"
@@ -268,14 +268,15 @@ components:
 
 **Creative North Star: "Vidrio sobre la marca"**
 
-Paneles de vidrio con blur real flotan sobre un suelo blanco o negro puros, y detrás de todos pasa una sola marca azul de Firplak, grande y lenta. La persona entra, lee sus cifras sobre vidrio y encuentra módulos y controles donde los espera. El logo acompaña y nunca tapa un dato: cuando cruza detrás de una tarjeta se difumina, y ese paso del blur de una tarjeta a otra es el movimiento característico del sistema. El sistema rechaza el panel gris de tarjetas planas típico de un CRM.
+Paneles de vidrio con blur real flotan sobre un suelo blanco o negro, y detrás de todos pasan manchas de luz muy lentas y una sola marca azul de Firplak, grande y lenta. La persona entra, lee sus cifras sobre vidrio y encuentra módulos y controles donde los espera. El logo acompaña y nunca tapa un dato: cuando cruza detrás de una tarjeta se difumina, y ese paso del blur de una tarjeta a otra es el movimiento característico del sistema. El sistema rechaza el panel gris de tarjetas planas típico de un CRM.
 
-La dirección la fijó Luis tras varias rondas de muestras sobre la app real (`.impeccable/mocks/fondo7` con barra navy, aprobada el 3 nov 2026), y la construcción fue por código. Las bolas, el crema, la foto de producto y el logo en cada tarjeta se probaron y se descartaron. La marca de fondo es un vector redibujado a partir del PNG oficial, no el archivo del manual de marca.
+La dirección la fijó Luis tras varias rondas de muestras sobre la app real (`.impeccable/mocks/fondo7` con barra navy, aprobada el 3 nov 2026), y la construcción fue por código. Las bolas, el crema como suelo, la foto de producto y el logo en cada tarjeta se probaron y se descartaron. El 13 nov 2026 Luis aprobó, sobre una demo en la app, las manchas de luz del fondo (ver «Luz de fondo»): el vidrio necesitaba algo que difuminar. La marca de fondo es un vector redibujado a partir del PNG oficial, no el archivo del manual de marca.
 
 La densidad es de herramienta de trabajo: texto base de 14 px, tablas compactas y una opción de densidad reducida. El tema por defecto sigue el dispositivo, y cada persona puede fijar claro u oscuro. La paleta es navy, azul, verde oliva, blanco y negro, sin atarse a los valores exactos del manual de Firplak (decisión de Luis). Los efectos son Glassmorphism y el Liquid Morph de las esquinas al pasar el cursor, que Luis pidió desde el inicio.
 
 **Key Characteristics:**
 - Suelo blanco puro en claro y negro puro en oscuro, sin tinte.
+- Manchas de luz grandes y difusas detrás de todo: navy con blanco crema en claro, navy con un poco de oliva en oscuro; ciclo de 90 s desde 768 px.
 - Una sola marca azul fija detrás de todo, en deriva de 40 s desde 768 px.
 - Vidrio con blur real, y relleno más denso donde hay tabla, gráfico o formulario.
 - Barra navy en claro y negra en oscuro, con pestaña activa y botón «Nuevo» en oliva.
@@ -313,7 +314,7 @@ Blanco y negro puros de suelo, navy y azul para la marca y los datos, oliva para
 ### Named Rules
 **Título Sin Etiqueta.** Ninguna página lleva una etiqueta encima del título; si el título por sí solo no dice qué es la página, el nombre entra al título (decisión de Luis, 3 nov 2026).
 
-**La Regla del Suelo Puro.** El suelo es #ffffff o #000000, sin tinte ni degradado. El color del fondo lo pone la marca azul, no el suelo.
+**La Regla del Suelo Puro.** El suelo es #ffffff o #000000, sin tinte ni degradado. El color del fondo lo ponen la luz de fondo y la marca azul, no el suelo.
 
 **La Regla del Cromo por Tema.** La barra, los módulos, el dock y el panel lateral del acceso usan siempre los valores oscuros, aunque la página esté en claro. Su fondo es navy en claro y negro en oscuro.
 
@@ -445,12 +446,15 @@ Barra de tres posiciones en Mis preferencias (Transparente, Medio, Sólido), con
 ### Marca de fondo
 Un solo vector azul de la marca Firplak, redibujado a partir del PNG oficial (no es el archivo del manual de marca), fijo detrás de todo el contenido, decorativo y sin interacción. Mide 88 vmin y parte de la esquina inferior derecha, con parte de la forma fuera de la pantalla. Desde 768 px recorre el fondo en un ciclo de 40 s, con desplazamiento de hasta 26 vmin, giro de hasta 6 grados y escala de 0.97 a 1.04. En celular y con menos movimiento queda quieta.
 
+### Luz de fondo
+Seis manchas de luz grandes y difusas y dos franjas diagonales, detrás de la marca y de todo el contenido (`FondoAnimado.tsx`; colores `--fondo-*` en `globals.css`). Existen para que el blur de las tarjetas tenga algo que difuminar. En claro son navy, azul y blanco crema, sin verde; en oscuro, navy con un matiz de verde oliva a baja intensidad (decisiones de Luis, 13 nov 2026). Desde 768 px se mueven en un ciclo de 90 s; en celular, con menos movimiento y con el vidrio en Sólido quedan quietas, y con menos transparencia no se muestran. Se dibujan en vivo, sin video ni imágenes. La composición original está en HyperFrames (carpeta `fondo-hyperframes`, fuera del repositorio).
+
 ### Named Rules
 **La Regla del Dato Primero.** La información se lee antes que el efecto. Lo que necesita lectura sostenida va en relleno denso, y la marca nunca pasa por encima del contenido.
 
 **La Regla de la Marca Única.** Hay una sola marca de fondo por pantalla, detrás de todo. El logo no entra en las tarjetas. La barra y el acceso llevan el logotipo normal de Firplak.
 
-**La Regla de la Lentitud.** La marca de fondo tarda 40 s por ciclo y nunca se acelera. En celular y con menos movimiento no se anima, y dos pruebas de navegador lo vigilan.
+**La Regla de la Lentitud.** La marca de fondo tarda 40 s por ciclo y la luz de fondo 90 s, y nunca se aceleran: acompañan, no llaman la atención. En celular y con menos movimiento no se animan, y las pruebas de navegador lo vigilan.
 
 ## Do's and Don'ts
 
@@ -466,13 +470,13 @@ Un solo vector azul de la marca Firplak, redibujado a partir del PNG oficial (no
 - **Conserva** contraste de 4.5:1 en texto, foco visible y las respuestas a menos movimiento y menos transparencia.
 
 ### Don't:
-- **No vuelvas** a poner bolas ni manchas de color, ni en las tarjetas ni en el fondo: Luis las probó y las descartó.
+- **No pongas** bolas ni manchas de color en las tarjetas, ni otras en el fondo además de la luz de fondo aprobada. No le subas la intensidad ni la velocidad, y no metas verde en el tema claro.
 - **No vuelvas** al crema como suelo o superficie: Luis lo descartó. El suelo es blanco o negro puro.
 - **No uses** la foto de producto como fondo: Luis la descartó.
 - **No pongas** el logo dentro de cada tarjeta: Luis lo descartó. La marca va una sola vez, detrás de todo.
 - **No inviertas** el orden de `-webkit-backdrop-filter` y `backdrop-filter`.
 - **No pongas** un borde superior de color en una columna redondeada.
-- **No animes** la marca de fondo bajo 768 px, ni con la preferencia de menos movimiento.
+- **No animes** la marca ni la luz de fondo bajo 768 px, ni con la preferencia de menos movimiento.
 - **No uses** azul en los botones primarios del contenido en tema oscuro: ahí van en oliva.
 - **No anides** vidrio dentro de vidrio.
 - **No uses** una segunda familia tipográfica.
