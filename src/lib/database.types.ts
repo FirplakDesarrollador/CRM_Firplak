@@ -3126,7 +3126,9 @@ export type Database = {
           id: string
           is_active: boolean
           is_demo: boolean
+          item_group: string | null
           name: string
+          plant: string | null
           product_code: string | null
           unit: string
           updated_at: string
@@ -3140,7 +3142,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_demo?: boolean
+          item_group?: string | null
           name: string
+          plant?: string | null
           product_code?: string | null
           unit?: string
           updated_at?: string
@@ -3154,7 +3158,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_demo?: boolean
+          item_group?: string | null
           name?: string
+          plant?: string | null
           product_code?: string | null
           unit?: string
           updated_at?: string

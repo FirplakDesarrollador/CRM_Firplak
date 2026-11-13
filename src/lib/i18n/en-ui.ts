@@ -64,7 +64,7 @@ export const UI_EN: Record<string, string> = {
   "Enviar invitación": "Send invitation", Equipo: "Team", "Escribe al menos 2 caracteres en la barra de búsqueda.": "Type at least 2 characters in the search bar.",
   Estado: "Status", "Estado de la campaña": "Campaign status", "Estado del miembro": "Member status", Estándar: "Standard", Etapa: "Stage",
   Etapas: "Stages", "Etapas abiertas: oportunidades actuales. Ganada: cerradas en el periodo.": "Open stages: current opportunities. Won: closed in the period.",
-  Etiqueta: "Label", "Etiqueta ·": "Label ·", "Facturar a": "Bill to", Familia: "Product family", Fecha: "Date", "Fecha de cierre": "Close date",
+  Etiqueta: "Label", "Etiqueta ·": "Label ·", "Facturar a": "Bill to", Familia: "Product family", Planta: "Plant", "Grupo de Artículo": "Item group", "Esta lista todavía no tiene valores. Agrega el primero.": "This list has no values yet. Add the first one.", "Sin valores": "No values", Fecha: "Date", "Fecha de cierre": "Close date",
   "Fecha de fin": "End date", "Fecha de hoy": "Today's date", "Fecha de inicio": "Start date", "Fecha de nacimiento": "Birthdate",
   "Fecha límite": "Due date", Filas: "Rows", Fin: "End", Flete: "Shipping", "Fusionando…": "Merging…", Fusionar: "Merge", Ganada: "Won",
   Ganadas: "Won", Ganado: "Won", "Ganado en el periodo": "Won in period", "Ganado histórico:": "Lifetime won:", "Gestionar plantillas": "Manage templates",

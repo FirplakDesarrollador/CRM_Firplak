@@ -39,5 +39,6 @@ export const HEADER_ALIASES: Partial<Record<ObjectKey, Record<string, string>>> 
   products: {
     ItemCode: "product_code", "Número de artículo": "product_code", "Código de artículo": "product_code",
     ItemName: "name", "Descripción del artículo": "name",
+    ItmsGrpNam: "item_group", "Grupo de artículos": "item_group", "Nombre de grupo": "item_group",
   },
 };

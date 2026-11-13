@@ -25,7 +25,7 @@ export const FIELDS_EN: Record<string, string> = {
   delivery_terms: "Delivery terms", department: "Department", description: "Description", discount_total: "Discounts",
   do_not_call: "Do not call", due_date: "Due date", duration_minutes: "Duration (min)", email_opt_out: "Email opt out",
   email: "Email", employees: "Employees", end_at: "End", end_date: "End date", expected_response: "Expected response",
-  expected_revenue: "Expected revenue", expiration_date: "Expiration date", family: "Product family", first_name: "First name",
+  expected_revenue: "Expected revenue", expiration_date: "Expiration date", family: "Product family", plant: "Plant", item_group: "Item group", first_name: "First name",
   full_name: "Name", grand_total: "Grand total", industry: "Channel", market: "Market", is_active: "Active", is_closed: "Closed",
   is_converted: "Converted", is_synced: "Synced with opportunity", is_won: "Won", last_name: "Last name", lead_id: "Lead",
   lead_source: "Lead source", location: "Location", loss_reason: "Loss reason", mailing_city: "City", mailing_country: "Country",

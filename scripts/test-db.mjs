@@ -1223,6 +1223,25 @@ await check('entrega y condiciones de pago manuales se conservan; en Borrador lo
   [r] = await q(`select billing_address, payment_terms from quotes where id = $1`, [qt.id]);
   assert.deepEqual(r, { billing_address: 'Cra. 50 # 1-2, Medellín, Antioquia, Colombia', payment_terms: '30 días' });
 });
+await check('productos: Planta y Grupo de Artículo se guardan y sus listas las define solo quien administra', async () => {
+  await as(admin, async () => {
+    await q(`insert into picklist_values (object, field, value, sort_order) values
+      ('products', 'plant', 'Planta Demo Norte', 10), ('products', 'plant', 'Planta Demo Sur', 20), ('products', 'item_group', 'Grupo Demo A', 10)`);
+    const [p] = await q(`insert into products (name, product_code, plant, item_group) values ('Producto con planta', 'PR-PLANTA', 'Planta Demo Norte', 'Grupo Demo A')
+      returning plant, item_group`);
+    assert.deepEqual(p, { plant: 'Planta Demo Norte', item_group: 'Grupo Demo A' });
+    // Son opcionales: un producto sin ellos sigue siendo válido.
+    const [sin] = await q(`insert into products (name, product_code) values ('Producto sin planta', 'PR-SIN-PLANTA') returning plant, item_group`);
+    assert.deepEqual(sin, { plant: null, item_group: null });
+  });
+  // Un asesor ve el dato, pero no puede cambiar las listas.
+  await as(rep, async () => {
+    const [p] = await q(`select plant, item_group from products where product_code = 'PR-PLANTA'`);
+    assert.deepEqual(p, { plant: 'Planta Demo Norte', item_group: 'Grupo Demo A' });
+    await assert.rejects(q(`insert into picklist_values (object, field, value) values ('products', 'plant', 'Planta del asesor')`));
+  });
+  await as(admin, () => q(`delete from picklist_values where object = 'products' and field in ('plant', 'item_group')`));
+});
 await check('lista propia del cliente: sus productos con su precio; los no codificados con el precio del canal y marcados', async () => {
   await as(admin, async () => {
     await q(`insert into products (name, product_code) values ('Mueble codificado', 'PR-COD'), ('Cocina nueva', 'PR-NUEVA')`);

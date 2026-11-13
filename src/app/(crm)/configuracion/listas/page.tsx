@@ -64,7 +64,9 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
         const customized = values.length > 0;
         const stdOptions = standard.fields.find((f) => f.name === fieldName)?.options ?? extra?.options ?? [];
         // La edición se abre por lista y vive en la URL; el enlace lleva de vuelta a la misma tarjeta.
-        const editing = customized && sp.editar === fieldName;
+        // Una lista sin valores de fábrica (Planta, Grupo de Artículo) no tiene qué «personalizar»: se llena directamente.
+        const empty = !customized && stdOptions.length === 0;
+        const editing = empty || (customized && sp.editar === fieldName);
         const summaryHref = `/configuracion/listas?objeto=${object}#lista-${fieldName}`;
         const editHref = `/configuracion/listas?objeto=${object}&editar=${fieldName}#lista-${fieldName}`;
         // Lista dependiente: de qué listas depende y cuáles pueden controlarla (del mismo objeto, sin ciclos).
@@ -78,12 +80,12 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
           <section key={fieldName} id={`lista-${fieldName}`} className="card scroll-mt-28 overflow-hidden">
             <div className="card-header">
               <h2 className="card-title">
-                {field.label} {customized ? <span className="badge badge-brand"><Tr>Personalizada</Tr></span> : <span className="badge"><Tr>Estándar</Tr></span>}
+                {field.label} {customized ? <span className="badge badge-brand"><Tr>Personalizada</Tr></span> : empty ? <span className="badge"><Tr>Sin valores</Tr></span> : <span className="badge"><Tr>Estándar</Tr></span>}
                 {customized && fieldDeps.length > 0 && (
                   <span className="badge">{fieldDeps.length > 1 ? <Tr>Depende de las listas</Tr> : <Tr>Depende de la lista</Tr>} {fieldDeps.map((d) => labelOf(d.controlling_field)).join(" + ")}</span>
                 )}
               </h2>
-              {editing && (
+              {editing && !empty && (
                 <div className="flex flex-wrap items-center gap-2">
                   <Link href={summaryHref} className="btn btn-sm"><ArrowLeft size={14} /> <Tr>Volver al resumen</Tr></Link>
                   <ActionForm action={resetPicklist.bind(null, object, fieldName)}>
@@ -92,7 +94,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                 </div>
               )}
             </div>
-            {!customized ? (
+            {!customized && !empty ? (
               <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                 <p className="flex flex-wrap gap-1.5">
                   {stdOptions.map((o) => (
@@ -125,6 +127,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
               </div>
             ) : (
               <>
+                {empty && <p className="px-4 pt-4 text-sm text-muted"><Tr>Esta lista todavía no tiene valores. Agrega el primero.</Tr></p>}
                 <ul className="divide-y divide-[var(--border)]">
                   {values.map((v) => (
                     <li key={v.id} className="flex flex-wrap items-center gap-3 px-4 py-2">
@@ -155,7 +158,7 @@ export default async function PicklistsPage({ searchParams }: PageProps<"/config
                   </div>
                   <SubmitButton className="btn btn-primary" pendingText="…"><Tr>Agregar</Tr></SubmitButton>
                 </ActionForm>
-                {controllerCandidates.length > 0 && (
+                {!empty && controllerCandidates.length > 0 && (
                   <div className="space-y-4 border-t border-line p-4">
                     <div className="space-y-2">
                       <p className="label"><Tr>Depende de la lista</Tr></p>

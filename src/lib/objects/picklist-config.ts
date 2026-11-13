@@ -13,7 +13,7 @@ export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
   opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role"],
   cases: ["case_type", "origin"],
   campaigns: ["campaign_type"],
-  products: ["family", "unit"],
+  products: ["family", "plant", "item_group", "unit"],
   activities: ["call_result"],
 };
 
