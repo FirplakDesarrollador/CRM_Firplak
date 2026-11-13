@@ -132,8 +132,10 @@ test("Pronóstico por asesor muestra las cifras en tarjetas, sin desplazarse a l
 test("el embudo usa todo el ancho y sus detalles aparecen al enfocar", async ({ page }) => {
   await page.goto("/indicadores");
   await expect(page.locator("main ol > li").first()).toBeVisible();
-  const barras = await page.locator("main ol > li").evaluateAll((filas) => filas.map((f) => f.children[1].firstElementChild!.getBoundingClientRect().width));
-  expect(Math.max(...barras)).toBeGreaterThan(200);
+  // Las barras entran animadas al llegar al embudo: se mide cuando ya terminaron de abrirse.
+  await page.locator("main ol > li").first().scrollIntoViewIfNeeded();
+  const barras = () => page.locator("main ol > li").evaluateAll((filas) => filas.map((f) => f.children[1].firstElementChild!.getBoundingClientRect().width));
+  await expect.poll(async () => Math.max(...(await barras()))).toBeGreaterThan(200);
   const etapa = page.locator("main ol > li").first();
   await etapa.focus();
   const detalle = etapa.getByRole("tooltip");

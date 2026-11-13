@@ -1321,3 +1321,45 @@ dialog::backdrop {
 .fondo-franja { left: -600px; top: -900px; width: 3200px; height: 260px; }
 .fondo-franja-1 { background: linear-gradient(180deg, transparent, var(--fondo-luz) 50%, transparent); opacity: 0.55; }
 .fondo-franja-2 { height: 140px; background: linear-gradient(180deg, transparent, var(--fondo-cielo) 50%, transparent); opacity: 0.5; }
+
+/* ---------- Gráficos: entrada animada, carriles y leyenda en pastillas (aprobado por Luis, 13 nov 2026) ----------
+   Las barras crecen desde su base, las líneas se dibujan y los puntos aparecen, una sola vez al abrir. Detrás de cada
+   columna va un carril tenue que muestra el tope de la escala. Sin animación para quien pide menos movimiento. */
+.chart-carril {
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 100%;
+  max-width: 1.5rem;
+  transform: translateX(-50%);
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+.chart-pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+@keyframes chart-sube { from { transform: scaleY(0); } }
+@keyframes chart-avanza { from { transform: scaleX(0); } }
+@keyframes chart-dibuja { from { stroke-dashoffset: 1; } }
+@keyframes chart-aparece { from { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .chart-crece-y,
+  .chart-crece-x,
+  .chart-crece-centro {
+    animation: 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 45ms) backwards;
+  }
+  .chart-crece-y { transform-origin: bottom; animation-name: chart-sube; }
+  .chart-crece-x { transform-origin: left; animation-name: chart-avanza; }
+  .chart-crece-centro { transform-origin: center; animation-name: chart-avanza; }
+  .chart-traza {
+    stroke-dasharray: 1;
+    animation: chart-dibuja 0.9s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  }
+  .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
+  .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
+}

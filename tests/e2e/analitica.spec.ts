@@ -72,6 +72,38 @@ test("el pronóstico final se ve con formato y el ajuste agrupa miles al escribi
   await expect(fila.getByRole("status")).toHaveText("Ajuste eliminado");
 });
 
+test("los gráficos entran animados al llegar a ellos, con carriles, leyenda con valores y sombra bajo Cerrado", async ({ page }) => {
+  // Pronóstico: las líneas se dibujan, la leyenda dice cuánto vale cada serie y «Cerrado» lleva su sombra.
+  await page.goto("/pronostico");
+  const pastilla = (serie: string) => page.locator("li.chart-pastilla").filter({ hasText: serie });
+  await expect(pastilla("Cerrado")).toContainText(/\$[\d,.]+ M/);
+  await expect(pastilla("Pronóstico")).toContainText(/\$[\d,.]+ M/);
+  const grafico = page.getByRole("group", { name: "Tendencia del pronóstico" });
+  await expect(grafico.locator("path.chart-area")).toHaveCount(1);
+  await expect(grafico.locator("polyline.chart-traza")).toHaveCount(3);
+  await expect.poll(() => grafico.locator("polyline.chart-traza").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("chart-dibuja");
+
+  // Indicadores: cada columna tiene su carril; las de más abajo esperan en el primer cuadro y arrancan al llegar.
+  await page.goto("/indicadores");
+  await page.waitForLoadState("networkidle");
+  const columna = page.locator(".chart-crece-y").first();
+  await expect(page.locator(".chart-carril")).toHaveCount(await page.locator(".chart-crece-y").count());
+  const estado = () => columna.evaluate((e) => e.getAnimations()[0]?.playState ?? "terminada");
+  await expect.poll(estado).toBe("paused");
+  await page.getByRole("heading", { name: "Ventas ganadas por mes" }).scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 400);
+  await expect.poll(estado).not.toBe("paused");
+  // Al terminar, la barra queda en su tamaño real (sin transformación pendiente).
+  await expect.poll(estado).toBe("terminada");
+
+  // Con menos movimiento no hay animación: los gráficos se ven completos de una vez.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/indicadores");
+  await expect.poll(() => page.locator(".chart-crece-y").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+  await page.goto("/pronostico");
+  await expect.poll(() => grafico.locator("polyline.chart-traza").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+});
+
 test("los datos de los gráficos de Indicadores se pueden leer con teclado", async ({ page }) => {
   await page.goto("/indicadores");
   const descritos = await page.getByRole("tooltip").evaluateAll((t) => t.every((x) => { const d = x.closest("[tabindex='0']"); return d?.getAttribute("aria-describedby") === x.id; }));

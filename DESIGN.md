@@ -449,6 +449,9 @@ Un solo vector azul de la marca Firplak, redibujado a partir del PNG oficial (no
 ### Luz de fondo
 Seis manchas de luz grandes y difusas y dos franjas diagonales, detrás de la marca y de todo el contenido (`FondoAnimado.tsx`; colores `--fondo-*` en `globals.css`). Existen para que el blur de las tarjetas tenga algo que difuminar. En claro son navy, azul y blanco crema, sin verde; en oscuro, navy con un matiz de verde oliva a baja intensidad (decisiones de Luis, 13 nov 2026). Desde 768 px se mueven en un ciclo de 90 s; en celular, con menos movimiento y con el vidrio en Sólido quedan quietas, y con menos transparencia no se muestran. Se dibujan en vivo, sin video ni imágenes. La composición original está en HyperFrames (carpeta `fondo-hyperframes`, fuera del repositorio).
 
+### Gráficos
+Los gráficos entran animados una sola vez (aprobado por Luis el 13 nov 2026, a partir de un tablero de referencia): las columnas suben desde su base, las barras horizontales avanzan desde la izquierda, las del embudo se abren desde el centro y las líneas se dibujan de izquierda a derecha, seguidas de sus puntos. Dura 0.7 s por barra (0.9 s la línea), con 45 ms de escalonado entre barras. Los gráficos que no están a la vista esperan en su primer cuadro y arrancan al entrar en pantalla (`AlVer.tsx`). Detrás de cada columna va un carril tenue (7 % del color del texto) que marca el tope de la escala. La leyenda del gráfico de líneas son pastillas con el valor actual de cada serie. Solo la serie principal lleva sombra bajo la línea: «Cerrado» en Tendencia del pronóstico, un degradado de su color de 34 % a 0. Con menos movimiento no hay animación. Los colores de los datos no cambian. Las clases están al final de `globals.css` (`chart-*`).
+
 ### Named Rules
 **La Regla del Dato Primero.** La información se lee antes que el efecto. Lo que necesita lectura sostenida va en relleno denso, y la marca nunca pasa por encima del contenido.
 
@@ -476,6 +479,8 @@ Seis manchas de luz grandes y difusas y dos franjas diagonales, detrás de la ma
 - **No pongas** el logo dentro de cada tarjeta: Luis lo descartó. La marca va una sola vez, detrás de todo.
 - **No inviertas** el orden de `-webkit-backdrop-filter` y `backdrop-filter`.
 - **No pongas** un borde superior de color en una columna redondeada.
+- **No cuentes** las cifras hacia arriba al animar un gráfico: durante el conteo se leen valores que no son reales.
+- **No pongas** sombra bajo más de una línea por gráfico.
 - **No animes** la marca ni la luz de fondo bajo 768 px, ni con la preferencia de menos movimiento.
 - **No uses** azul en los botones primarios del contenido en tema oscuro: ahí van en oliva.
 - **No anides** vidrio dentro de vidrio.

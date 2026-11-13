@@ -5,6 +5,7 @@ import { formatCompactCurrency, formatCurrency, plural } from "@/lib/format";
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
 import { Val } from "@/components/ui/Val";
+import { AlVer } from "./AlVer";
 export function KpiTile({ label, value, unit, sub, tone }: {
   label: string; value: string; unit?: string; sub?: React.ReactNode; tone?: "success" | "danger" | "warning";
 }) {
@@ -58,15 +59,15 @@ export function BarList({
   const max = Math.max(1, ...items.map((i) => i.value));
   if (!items.length) return <p className="py-6 text-center text-sm text-muted">{emptyText}</p>;
   return (
-    <ul className="space-y-2.5">
-      {items.map((item) => (
+    <AlVer><ul className="space-y-2.5">
+      {items.map((item, i) => (
         <li key={item.key} className="group relative grid grid-cols-[minmax(6rem,11rem)_1fr] items-center gap-3"
           tabIndex={item.detail ? 0 : undefined} aria-describedby={item.detail ? `${uid}-${item.key}` : undefined}>
           <span className="truncate text-sm font-medium text-ink-2"><Val>{item.label}</Val></span>
           <span className="flex items-center gap-2">
             <span
-              className="h-[18px] rounded-r-[4px] transition-opacity group-hover:opacity-80"
-              style={{ width: `${Math.max(item.value > 0 ? 1.5 : 0, (item.value / max) * 82)}%`, background: item.color ?? "var(--brand)" }}
+              className="chart-crece-x h-[18px] rounded-r-[4px] transition-opacity group-hover:opacity-80"
+              style={{ width: `${Math.max(item.value > 0 ? 1.5 : 0, (item.value / max) * 82)}%`, background: item.color ?? "var(--brand)", "--i": i } as React.CSSProperties}
             />
             <span className="num whitespace-nowrap text-xs font-semibold text-ink">{format(item.value)}</span>
           </span>
@@ -77,7 +78,7 @@ export function BarList({
           )}
         </li>
       ))}
-    </ul>
+    </ul></AlVer>
   );
 }
 
@@ -95,7 +96,7 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
   const max = niceMax(Math.max(0, ...data.map((d) => Number(d.won_amount))));
   const ticks = [max, max / 2, 0];
   return (
-    <div>
+    <AlVer>
       <div className="flex gap-2">
         <div className="flex h-48 flex-col justify-between pb-5 text-right text-[0.72rem] text-muted num">
           {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none">{formatCompactCurrency(t)}</span>)}
@@ -110,7 +111,8 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
               const side = i < 3 ? "left-0" : i >= data.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2";
               return (
                 <div key={d.month} tabIndex={0} aria-describedby={`${uid}-${d.month}`} className="group relative flex h-full flex-1 items-end justify-center">
-                  <div className="w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${h}%` }} />
+                  <div className="chart-carril" aria-hidden />
+                  <div className="chart-crece-y relative w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${h}%`, "--i": i } as React.CSSProperties} />
                   <div role="tooltip" id={`${uid}-${d.month}`} className={`pointer-events-none absolute bottom-full z-10 mb-1 hidden w-max max-w-[70vw] rounded-md bg-ink px-2 py-1 text-xs font-semibold text-[var(--surface)] shadow group-hover:block group-focus:block ${side}`}>
                     <Fmt month={d.month} />: {formatCurrency(d.won_amount)} · {d.won_count} {plural(d.won_count, "ganada", "ganadas")}
                   </div>
@@ -143,7 +145,7 @@ export function MonthlyColumns({ data }: { data: { month: string; won_amount: nu
           </tbody>
         </table>
       </details>
-    </div>
+    </AlVer>
   );
 }
 
@@ -153,15 +155,15 @@ export function Funnel({ stages }: { stages: { id: string; name: string; color: 
   const max = Math.max(1, ...stages.map((s) => Number(s.amount)));
   if (!stages.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin etapas.</Tr></p>;
   return (
-    <ol className="space-y-2">
-      {stages.map((s) => {
+    <AlVer><ol className="space-y-2">
+      {stages.map((s, i) => {
         const w = Math.max(6, (Number(s.amount) / max) * 100);
         return (
           <li key={s.id} tabIndex={0} aria-describedby={`${uid}-${s.id}`} className="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[minmax(6rem,10rem)_1fr_auto]">
             <span className="truncate text-sm font-medium text-ink-2"><Val>{s.name}</Val></span>
             <span className="order-last col-span-2 flex justify-center sm:order-none sm:col-span-1">
-              <span className="h-6 rounded-[4px] transition-opacity group-hover:opacity-80"
-                style={{ width: `${w}%`, background: s.category === "won" ? "var(--success)" : s.color }} />
+              <span className="chart-crece-centro h-6 rounded-[4px] transition-opacity group-hover:opacity-80"
+                style={{ width: `${w}%`, background: s.category === "won" ? "var(--success)" : s.color, "--i": i } as React.CSSProperties} />
             </span>
             <span className="text-right text-xs sm:w-28">
               <span className="num block font-semibold text-ink">{formatCompactCurrency(s.amount)}</span>
@@ -173,7 +175,7 @@ export function Funnel({ stages }: { stages: { id: string; name: string; color: 
           </li>
         );
       })}
-    </ol>
+    </ol></AlVer>
   );
 }
 
@@ -183,7 +185,7 @@ export function ColumnChart({ items, format }: { items: { key: string; label: st
   const ticks = [max, max / 2, 0];
   if (!items.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin datos.</Tr></p>;
   return (
-    <div className="flex gap-2">
+    <AlVer className="flex gap-2">
       <div className="num flex h-56 flex-col justify-between pb-10 text-right text-[0.72rem] text-muted">
         {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none">{format(t)}</span>)}
       </div>
@@ -192,9 +194,10 @@ export function ColumnChart({ items, format }: { items: { key: string; label: st
           {ticks.map((t) => <span key={t} className="border-t border-line" />)}
         </div>
         <div className="absolute inset-x-0 top-0 bottom-10 flex items-end justify-around gap-[2px]">
-          {items.map((d) => (
+          {items.map((d, i) => (
             <div key={d.key} className="group relative flex h-full flex-1 items-end justify-center">
-              <div className="w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${(d.value / max) * 100}%` }} />
+              <div className="chart-carril" aria-hidden />
+              <div className="chart-crece-y relative w-full max-w-6 rounded-t-[4px] bg-brand transition-opacity group-hover:opacity-80" style={{ height: `${(d.value / max) * 100}%`, "--i": i } as React.CSSProperties} />
               <div role="tooltip" className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-medium text-[var(--surface)] shadow group-hover:block">
                 {d.label}: {format(d.value)}
               </div>
@@ -205,6 +208,6 @@ export function ColumnChart({ items, format }: { items: { key: string; label: st
           {items.map((d) => <span key={d.key} className="line-clamp-2 flex-1 px-0.5 pt-1 text-center leading-tight"><Val>{d.label}</Val></span>)}
         </div>
       </div>
-    </div>
+    </AlVer>
   );
 }

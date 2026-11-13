@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { AlVer } from "@/components/dashboard/AlVer";
 
 export type TrendPoint = { date: string; closed: number; forecast: number; potential: number; quota: number | null; live?: boolean };
 
@@ -22,6 +23,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   const box = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(720);
   const [hover, setHover] = useState<number | null>(null);
+  const sombra = useId();
 
   useEffect(() => {
     if (!box.current) return;
@@ -61,12 +63,14 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   const band = points.length > 1 ? innerW / last : innerW;
 
   return (
-    <div>
-      <ul className="mb-2 flex flex-wrap gap-3 text-xs text-ink-2" aria-label={t("Leyenda")}>
+    <AlVer>
+      <ul className="mb-3 flex flex-wrap gap-2 text-xs text-ink-2" aria-label={t("Leyenda")}>
         {SERIES.map((s) => (
-          <li key={s.key} className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: s.color }} />{t(s.label)}</li>
+          <li key={s.key} className="chart-pastilla"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} />{t(s.label)}
+            {points.length > 0 && <span className="num font-semibold text-ink">{formatCompactCurrency(points[last][s.key])}</span>}</li>
         ))}
-        {quota > 0 && <li className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-ink" />{t("Meta")}</li>}
+        {quota > 0 && <li className="chart-pastilla"><span className="w-4 border-t-2 border-dashed border-ink" />{t("Meta")}
+          <span className="num font-semibold text-ink">{formatCompactCurrency(quota)}</span></li>}
       </ul>
       <div className="relative" ref={box}>
         <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="group" aria-label={t("Tendencia del pronóstico")} tabIndex={0}
@@ -93,15 +97,26 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           {quota > 0 && (
             <line x1={PAD.left} x2={W - PAD.right} y1={y(quota)} y2={y(quota)} stroke="var(--text)" strokeWidth={1.5} strokeDasharray="5 4" />
           )}
+          {/* Sombra bajo «Cerrado», la cifra principal: un degradado de su mismo color que se apaga hacia la base. */}
+          <defs>
+            <linearGradient id={sombra} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="var(--success)" stopOpacity={0.34} />
+              <stop offset="1" stopColor="var(--success)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {points.length > 1 && (
+            <path className="chart-area" fill={`url(#${sombra})`}
+              d={`M${x(0)},${y(0)} ${points.map((p, i) => `L${x(i)},${y(p.closed)}`).join(" ")} L${x(last)},${y(0)} Z`} />
+          )}
           {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--border-strong)" strokeWidth={1} />}
           {SERIES.map((s) => (
             <g key={s.key}>
               {points.length > 1 && (
-                <polyline fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"
+                <polyline className="chart-traza" pathLength={1} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"
                   points={points.map((p, i) => `${x(i)},${y(p[s.key])}`).join(" ")} />
               )}
               {points.map((p, i) => (
-                <circle key={p.date} cx={x(i)} cy={y(p[s.key])} r={hover === i ? 5 : 4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
+                <circle key={p.date} className="chart-punto" style={{ "--i": i } as React.CSSProperties} cx={x(i)} cy={y(p[s.key])} r={hover === i ? 5 : 4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
               ))}
             </g>
           ))}
@@ -152,6 +167,6 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           </table>
         </div>
       </details>
-    </div>
+    </AlVer>
   );
 }
