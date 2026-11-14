@@ -2282,12 +2282,20 @@ await check('ventas reales de SAP: carga por meses, dos años, visibilidad, sucu
   assert.deepEqual([anual.compare.available, anual.total_prev, anual.top[0].prev, anual.top[1].prev], [true, 750, 750, 0]);
   assert.deepEqual((await as(admin, () => q(`select card_code, amount::float a, prev::float p from sap_sales_group('CN900100200', $1, $2)`, [`${y}-01-01`, `${y}-12-31`]))),
     [{ card_code: 'CN900100200-01', a: 1000, p: 750 }, { card_code: 'CN900100200-02', a: 500, p: 0 }]);
-  // Un solo mes: contra el promedio mensual de ese mismo año (aquí, enero y marzo cargados: 400 y 1.500 → 950).
+  // Un solo mes: contra el promedio de los meses ANTERIORES de ese año (aquí solo enero, con 400); marzo no entra en su propio promedio.
   await as(agent, () => q(`select sap_agent_sales_load($1, 'e1', $2::jsonb, true, true)`, [`${y}-01-01`,
     JSON.stringify([[`${y}-01-10`, '601', 'Nacional', 'ANTIOQUIA', 'Medellín', 'Canal Distribución', 'ROSA MARIA VENDEDORA', 'CN900100200-01', 'MAXI S A S ACACIAS', 400]])]));
   const [{ s: marzo }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-03-01`, `${y}-03-31`]));
-  assert.deepEqual([marzo.compare.mode, marzo.compare.months], ['average', 2]);
-  assert.deepEqual(marzo.top.map((t) => [t.key, t.amount, t.prev]), [['CN900100200', 1500, 950], ['CN800', 200, 100]]);
+  assert.deepEqual([marzo.compare.mode, marzo.compare.months, marzo.compare.to, marzo.compare.day_to], ['average', 1, `${y}-02-${new Date(y, 2, 0).getDate()}`, 31]);
+  assert.deepEqual(marzo.top.map((t) => [t.key, t.amount, t.prev]), [['CN900100200', 1500, 400], ['CN800', 200, 0]]);
+  // Parte de un mes: se compara con los mismos días de los meses anteriores. Del 1 al 5, enero no tiene ventas (la suya es del día 10).
+  const [{ s: dias }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-03-01`, `${y}-03-05`]));
+  assert.deepEqual([dias.compare.day_from, dias.compare.day_to, dias.top[0].amount, dias.top[0].prev], [1, 5, 1500, 0]);
+  const [{ s: diez }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-03-01`, `${y}-03-10`]));
+  assert.deepEqual([diez.compare.day_to, diez.top[0].prev], [10, 400]);
+  // Enero no tiene meses anteriores en el año: sin comparación.
+  const [{ s: enero }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-01-31`]));
+  assert.deepEqual([enero.compare.available, enero.top[0].prev], [false, null]);
   await q(`delete from sap_sales where sale_date < $1 or invoice = '601'`, [`${y}-01-01`]);
 
   // El nombre del grupo sale de la cuenta principal del CRM, y la cuenta principal suma sus sucursales.

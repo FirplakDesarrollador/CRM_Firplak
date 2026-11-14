@@ -4925,6 +4925,8 @@ export type Database = {
           r_to: string
           months: number
           available: boolean
+          d_from: number
+          d_to: number
         }[]
       }
       sap_sales_sees_all: {

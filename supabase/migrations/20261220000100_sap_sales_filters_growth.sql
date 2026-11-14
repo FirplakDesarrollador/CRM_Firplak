@@ -2,8 +2,8 @@
 -- (1) El resumen admite una selección de canales y de zonas. Cada gráfico se filtra por la selección de
 --     los otros, no por la propia: así se sigue viendo contra qué se compara lo elegido.
 -- (2) Cada cliente (y el total) trae su venta del periodo de comparación, para mostrar cuánto creció:
---     · si el periodo cabe en un solo mes, se compara con el promedio mensual de ese mismo año (los
---       meses ya cargados; el mes en curso, que está incompleto, no cuenta salvo que sea el elegido);
+--     · si el periodo cabe en un solo mes, se compara con el promedio de los meses anteriores de ese
+--       mismo año, tomando en cada uno los mismos días del mes (en el mes en curso, hasta hoy);
 --     · si no, con las mismas fechas del año anterior.
 --     Sin datos para comparar (por ejemplo, el año anterior ya no está guardado), no hay porcentaje.
 -- La visibilidad no cambia: cada quien ve lo de su vendedor y lo de quienes le reportan.
@@ -12,8 +12,11 @@ drop function public.sap_sales_summary(date, date, int, uuid);
 drop function public.sap_sales_group(text, date, date, uuid);
 
 -- Periodo de comparación de un rango de fechas.
+-- Un solo mes: los meses ANTERIORES de ese mismo año (el mes elegido no entra en su propio promedio) y,
+-- dentro de cada uno, los mismos días del mes. Si el mes elegido es el que está en curso, los días van
+-- hasta hoy: así se sabe si, a esta altura del mes, va mejor o peor que el promedio del año.
 create or replace function public.sap_sales_reference(p_from date, p_to date)
-returns table (mode text, r_from date, r_to date, months int, available boolean)
+returns table (mode text, r_from date, r_to date, months int, available boolean, d_from int, d_to int)
 language sql
 stable
 security definer
@@ -21,26 +24,30 @@ set search_path = ''
 as $$
   with x as (
     select date_trunc('month', p_from) = date_trunc('month', p_to) as one_month,
-           date_trunc('month', (now() at time zone 'America/Bogota'))::date as this_month
+           date_trunc('month', p_from)::date as sel_month,
+           (now() at time zone 'America/Bogota')::date as today
+  ), y as (
+    select x.*,
+           -- Hasta dónde llega el periodo dentro del mes: hoy, si el mes está en curso.
+           case when x.sel_month = date_trunc('month', x.today)::date then least(p_to, x.today) else p_to end as eff_to,
+           (select count(*)::int from public.sap_sales_months m
+             where m.row_count > 0 and m.month < x.sel_month and date_trunc('year', m.month) = date_trunc('year', p_from)) as prev_months
+    from x
   )
-  select case when x.one_month then 'average' else 'year' end,
-         case when x.one_month then date_trunc('year', p_from)::date else (p_from - interval '1 year')::date end,
-         case when x.one_month then (date_trunc('year', p_from) + interval '1 year' - interval '1 day')::date else (p_to - interval '1 year')::date end,
-         case when x.one_month then (
-           select count(*)::int from public.sap_sales_months m
-           where m.row_count > 0 and date_trunc('year', m.month) = date_trunc('year', p_from)
-             and (m.month < x.this_month or m.month = date_trunc('month', p_from)::date))
-         else 1 end,
-         case when x.one_month then exists (
-           select 1 from public.sap_sales_months m
-           where m.row_count > 0 and date_trunc('year', m.month) = date_trunc('year', p_from)
-             and (m.month < x.this_month or m.month = date_trunc('month', p_from)::date))
+  select case when y.one_month then 'average' else 'year' end,
+         case when y.one_month then date_trunc('year', p_from)::date else (p_from - interval '1 year')::date end,
+         case when y.one_month then (y.sel_month - 1) else (p_to - interval '1 year')::date end,
+         case when y.one_month then y.prev_months else 1 end,
+         case when y.one_month then y.prev_months > 0
          -- Año anterior: basta con que haya algún mes cargado dentro de esas fechas.
          else exists (
            select 1 from public.sap_sales_months m
            where m.row_count > 0 and m.month <= (p_to - interval '1 year')::date
-             and (m.month + interval '1 month' - interval '1 day')::date >= (p_from - interval '1 year')::date) end
-  from x;
+             and (m.month + interval '1 month' - interval '1 day')::date >= (p_from - interval '1 year')::date) end,
+         extract(day from p_from)::int,
+         -- Mes completo (hasta su último día): cuenta hasta el final de cada mes anterior, tenga los días que tenga.
+         case when y.eff_to = (y.sel_month + interval '1 month' - interval '1 day')::date then 31 else extract(day from y.eff_to)::int end
+  from y;
 $$;
 revoke execute on function public.sap_sales_reference(date, date) from public, anon, authenticated;
 
@@ -59,16 +66,15 @@ as $$
            coalesce((select array_agg(x.seller) from public.sap_sellers x where x.user_id is not null and public.can_access_owner(x.user_id)), '{}'::text[]) as mine,
            case when p_owner is null then null
                 else coalesce((select array_agg(x.seller) from public.sap_sellers x where x.user_id = p_owner), '{}'::text[]) end as of_owner,
-           date_trunc('month', (now() at time zone 'America/Bogota'))::date as this_month,
-           r.mode, r.r_from, r.r_to, greatest(r.months, 1) as months, r.available
+           r.mode, r.r_from, r.r_to, greatest(r.months, 1) as months, r.available, r.d_from, r.d_to
     from public.sap_sales_reference(p_from, p_to) r
   ), v as materialized (
     select s.amount, s.invoice, s.card_code, s.customer_name, s.sale_date,
            coalesce(s.channel, 'Sin canal') as channel, coalesce(s.zone, 'Sin zona') as zone,
            s.sale_date between p_from and p_to as is_cur,
-           -- En el promedio del año solo cuentan los meses cerrados (y el elegido).
+           -- En el promedio de los meses anteriores cuentan los mismos días del mes que abarca el periodo.
            ctx.available and s.sale_date between ctx.r_from and ctx.r_to
-             and (ctx.mode = 'year' or s.sale_date < ctx.this_month or date_trunc('month', s.sale_date) = date_trunc('month', p_from)) as is_ref
+             and (ctx.mode = 'year' or extract(day from s.sale_date) between ctx.d_from and ctx.d_to) as is_ref
     from public.sap_sales s cross join ctx
     where (s.sale_date between p_from and p_to or (ctx.available and s.sale_date between ctx.r_from and ctx.r_to))
       and (ctx.of_owner is null or s.seller = any (ctx.of_owner))
@@ -99,7 +105,8 @@ as $$
     'total_prev', (select case when ctx.available then coalesce((select sum(amount) from f where is_ref), 0) / ctx.months end from ctx),
     'invoices', (select count(distinct invoice) from f where is_cur),
     'customers', (select count(*) from grupos),
-    'compare', (select jsonb_build_object('mode', ctx.mode, 'from', ctx.r_from, 'to', ctx.r_to, 'months', ctx.months, 'available', ctx.available) from ctx),
+    'compare', (select jsonb_build_object('mode', ctx.mode, 'from', ctx.r_from, 'to', ctx.r_to, 'months', ctx.months, 'available', ctx.available,
+                                           'day_from', ctx.d_from, 'day_to', ctx.d_to) from ctx),
     'by_month', coalesce((select jsonb_agg(jsonb_build_object('month', m.month, 'amount', m.amount) order by m.month)
                           from (select to_char(date_trunc('month', sale_date), 'YYYY-MM') as month, sum(amount) as amount from f where is_cur group by 1) m), '[]'::jsonb),
     -- Cada gráfico se filtra por la selección del otro, no por la suya.
@@ -131,8 +138,7 @@ as $$
            coalesce((select array_agg(x.seller) from public.sap_sellers x where x.user_id is not null and public.can_access_owner(x.user_id)), '{}'::text[]) as mine,
            case when p_owner is null then null
                 else coalesce((select array_agg(x.seller) from public.sap_sellers x where x.user_id = p_owner), '{}'::text[]) end as of_owner,
-           date_trunc('month', (now() at time zone 'America/Bogota'))::date as this_month,
-           r.mode, r.r_from, r.r_to, greatest(r.months, 1) as months, r.available
+           r.mode, r.r_from, r.r_to, greatest(r.months, 1) as months, r.available, r.d_from, r.d_to
     from public.sap_sales_reference(p_from, p_to) r
   ), b as (
     select s.card_code,
@@ -140,7 +146,7 @@ as $$
            max(s.seller) filter (where s.sale_date between p_from and p_to) as seller,
            sum(s.amount) filter (where s.sale_date between p_from and p_to) as amount,
            sum(s.amount) filter (where ctx.available and s.sale_date between ctx.r_from and ctx.r_to
-             and (ctx.mode = 'year' or s.sale_date < ctx.this_month or date_trunc('month', s.sale_date) = date_trunc('month', p_from))) as ref_amount
+             and (ctx.mode = 'year' or extract(day from s.sale_date) between ctx.d_from and ctx.d_to)) as ref_amount
     from public.sap_sales s cross join ctx
     where public.sap_customer_root(s.card_code) = p_key
       and (s.sale_date between p_from and p_to or (ctx.available and s.sale_date between ctx.r_from and ctx.r_to))

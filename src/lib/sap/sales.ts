@@ -10,8 +10,11 @@ export type SalesBranch = { card_code: string; customer_name: string | null; sel
 export type SalesFilters = { channels: string[]; zones: string[] };
 export type SalesSummary = {
   total: number; total_prev: number | null; invoices: number; customers: number; loaded_at: string | null;
-  /** Contra qué se compara: mismas fechas del año anterior, o el promedio mensual del año cuando el periodo es un solo mes. */
-  compare: { mode: "year" | "average"; from: string; to: string; months: number; available: boolean };
+  /**
+   * Contra qué se compara: las mismas fechas del año anterior o, cuando el periodo es un solo mes, el promedio de
+   * los meses anteriores de ese año en los mismos días del mes (`day_to` 31 = mes completo).
+   */
+  compare: { mode: "year" | "average"; from: string; to: string; months: number; available: boolean; day_from: number; day_to: number };
   by_month: { month: string; amount: number }[];
   by_channel: { key: string; amount: number }[];
   by_zone: { key: string; amount: number }[];

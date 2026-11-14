@@ -76,8 +76,14 @@ export function SapSalesExplorer({ initial, from, to, owner }: { initial: SalesS
 
   const c = data.compare;
   // Contra qué se compara el crecimiento, dicho en una línea.
-  const basis = !c.available ? t("Sin datos del periodo de comparación")
-    : c.mode === "average" ? `${t("Frente al promedio mensual de")} ${c.from.slice(0, 4)}`
+  const monthName = (iso: string) => new Intl.DateTimeFormat(locale === "en" ? "en" : "es", { month: "long", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+  // Meses anteriores del año contra los que se promedia: «enero a septiembre de 2026» (o solo «enero de 2026»).
+  const months = c.from.slice(0, 7) === c.to.slice(0, 7) ? monthName(c.from) : `${monthName(c.from)} ${t("a")} ${monthName(c.to)}`;
+  const wholeMonth = c.day_from === 1 && c.day_to >= 31;
+  const basis = !c.available ? t(c.mode === "average" ? "Sin meses anteriores en el año para comparar" : "Sin datos del periodo de comparación")
+    : c.mode === "average"
+      ? wholeMonth ? `${t("Frente al promedio mensual de")} ${months} ${t("de")} ${c.from.slice(0, 4)}`
+        : `${t("Frente al promedio de los días")} ${c.day_from} ${t("a")} ${Math.min(c.day_to, 31)} ${t("de")} ${months} ${t("de")} ${c.from.slice(0, 4)}`
       : `${t("Frente al mismo periodo del año anterior")} (${formatDate(c.from, locale)} – ${formatDate(c.to, locale)})`;
   const groups: SalesGroup[] = data.top.map((g) => ({
     key: g.key, amount: Number(g.amount), prev: g.prev === null ? null : Number(g.prev), branches: g.branches,
