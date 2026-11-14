@@ -139,7 +139,13 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
             <Alert tone="warning">
               <p>{t(state.message ?? "")}</p>
               <ul className="mt-1 list-disc pl-5">
-                {state.duplicates.map((d) => <li key={d.id}><Link href={d.href} target="_blank" className="link">{d.label}</Link></li>)}
+                {state.duplicates.map((d) => (
+                  <li key={d.id}>
+                    {d.href ? <Link href={d.href} target="_blank" className="link">{d.label}</Link> : <span className="font-medium">{d.label}</span>}
+                    {/* Lo que no puede abrir: solo que existe y quién lo atiende. */}
+                    {!d.href && <span> — {t("ya existe y está a cargo de")} {d.owner ?? t("otra persona")}</span>}
+                  </li>
+                ))}
               </ul>
               <button type="submit" name="_ignore_duplicates" value="1" className="btn btn-sm mt-2">{t("Guardar de todas formas")}</button>
             </Alert>

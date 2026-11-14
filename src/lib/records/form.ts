@@ -8,7 +8,8 @@ export type FormState = {
   /** No se intentó o no se pudo guardar por falta de conexión (lo escrito queda como borrador en el dispositivo). */
   offline?: boolean;
   /** Posibles duplicados encontrados al crear (se puede guardar de todas formas). */
-  duplicates?: { id: string; label: string; href: string }[];
+  /** Sin `href`, el registro existe pero quien crea no puede abrirlo: solo se dice a cargo de quién está. */
+  duplicates?: { id: string; label: string; href?: string; owner?: string | null }[];
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

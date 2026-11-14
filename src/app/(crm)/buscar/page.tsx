@@ -15,6 +15,8 @@ export default async function SearchPage({ searchParams }: PageProps<"/buscar">)
   const q = (typeof sp.q === "string" ? sp.q : "").trim();
   const supabase = await createClient();
   const { data } = q.length >= 2 ? await supabase.rpc("global_search", { p_query: q, p_limit: 15 }) : { data: [] };
+  // Clientes que existen y esta persona no puede abrir: se dice que existen y quién los atiende, nada más.
+  const { data: others } = q.length >= 3 ? await supabase.rpc("account_directory", { p_query: q }) : { data: [] };
   const groups = ["leads", "accounts", "contacts", "opportunities", "quotes", "orders", "cases", "products"].map((key) => ({
     key,
     def: OBJECTS[key as "accounts"],
@@ -25,7 +27,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/buscar">)
     <div className="mx-auto max-w-4xl space-y-4">
       <h1 className="text-xl font-medium">{q ? <>Resultados para “{q}”</> : "Búsqueda"}</h1>
       {q.length < 2 && <p className="text-muted"><Tr>Escribe al menos 2 caracteres en la barra de búsqueda.</Tr></p>}
-      {q.length >= 2 && (data ?? []).length === 0 && <p className="text-muted"><Tr>No encontramos registros que coincidan.</Tr></p>}
+      {q.length >= 2 && (data ?? []).length === 0 && (others ?? []).length === 0 && <p className="text-muted"><Tr>No encontramos registros que coincidan.</Tr></p>}
       {groups.filter((g) => g.items.length).map((g) => (
         <section key={g.key} className="card">
           <div className="card-header">
@@ -42,6 +44,25 @@ export default async function SearchPage({ searchParams }: PageProps<"/buscar">)
           </ul>
         </section>
       ))}
+      {(others ?? []).length > 0 && (
+        <section className="card" aria-labelledby="clientes-de-otros">
+          <div className="card-header">
+            <h2 id="clientes-de-otros" className="card-title"><ObjectIcon object="accounts" size={14} /> <Tr>Clientes a cargo de otras personas</Tr> <span className="badge">{others!.length}</span></h2>
+          </div>
+          <p className="px-4 pt-3 text-xs text-muted"><Tr>Ya existen en el CRM. No puedes abrirlos; si necesitas trabajar con uno, pide que te agreguen a su equipo.</Tr></p>
+          <ul className="divide-y divide-[var(--border)]">
+            {others!.map((r, i) => (
+              <li key={`${r.name}-${i}`} className="px-4 py-2.5">
+                <p className="font-medium">{r.name}</p>
+                <p className="text-xs text-muted">
+                  {[r.tax_id ? `NIT ${r.tax_id}` : null, r.city].filter(Boolean).join(" · ")}
+                  {(r.tax_id || r.city) && " · "}<Tr>A cargo de</Tr> {r.owner_name ?? "—"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

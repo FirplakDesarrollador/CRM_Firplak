@@ -1242,6 +1242,60 @@ await check('productos: Planta y Grupo de Artículo se guardan y sus listas las 
   });
   await as(admin, () => q(`delete from picklist_values where object = 'products' and field in ('plant', 'item_group')`));
 });
+await check('rama de roles que comparte clientes (B2C) y aviso «existe, pero no es tuyo»', async () => {
+  // Como quedará producción: cuentas, contactos y prospectos privados.
+  const antes = await q(`select object, access from sharing_settings where object in ('accounts', 'contacts', 'leads')`);
+  await q(`update sharing_settings set access = 'private' where object in ('accounts', 'contacts', 'leads')`);
+  const [tienda] = await q(`insert into auth.users (email, raw_user_meta_data) values ('tienda@firplak.com', '{"full_name":"Tania Tienda"}') returning id`);
+  const [web] = await q(`insert into auth.users (email, raw_user_meta_data) values ('web@firplak.com', '{"full_name":"Wilson Web"}') returning id`);
+  await db.exec(`
+    insert into roles (name, parent_id, share_within) values ('Coordinación B2C prueba', (select id from roles where name = 'Dirección Comercial'), true);
+    insert into roles (name, parent_id) values ('Tienda prueba', (select id from roles where name = 'Coordinación B2C prueba')), ('Ecommerce prueba', (select id from roles where name = 'Coordinación B2C prueba'));
+    update profiles set role_id = (select id from roles where name = 'Tienda prueba') where email = 'tienda@firplak.com';
+    update profiles set role_id = (select id from roles where name = 'Ecommerce prueba') where email = 'web@firplak.com';`);
+
+  const [cuenta] = await as(tienda, () => q(`insert into accounts (name, tax_id, billing_city, industry, market) values ('Cliente de la tienda', '900555111-2', 'Medellín', 'Canal Distribución', 'Nacional') returning id, owner_id`));
+  assert.equal(cuenta.owner_id, tienda.id);
+  const [contacto] = await as(tienda, () => q(`insert into contacts (first_name, last_name, email, account_id) values ('Carla', 'Compradora', 'carla@cliente-tienda.example', $1) returning id`, [cuenta.id]));
+  const ve = (quien, tabla, id) => as(quien, async () => (await q(`select count(*)::int n from ${tabla} where id = $1`, [id]))[0].n);
+
+  // El compañero de otra tienda (misma rama) ve el cliente y su contacto, pero no los modifica.
+  assert.equal(await ve(web, 'accounts', cuenta.id), 1);
+  assert.equal(await ve(web, 'contacts', contacto.id), 1);
+  assert.equal((await as(web, () => q(`update accounts set phone = '300' where id = $1 returning id`, [cuenta.id]))).length, 0);
+  // Un asesor B2B, fuera de la rama, no lo ve.
+  assert.equal(await ve(rep, 'accounts', cuenta.id), 0);
+  assert.equal(await ve(rep, 'contacts', contacto.id), 0);
+  // Sin la marca, la rama deja de compartir.
+  await q(`update roles set share_within = false where name = 'Coordinación B2C prueba'`);
+  assert.equal(await ve(web, 'accounts', cuenta.id), 0);
+  await q(`update roles set share_within = true where name = 'Coordinación B2C prueba'`);
+
+  // Sobre el cliente de un compañero se crea una oportunidad, que es de quien la crea; el dueño del cliente no la ve.
+  const [opp] = await as(web, () => q(`insert into opportunities (name, account_id, amount, close_date, stage_id)
+    select 'Venta web al cliente de la tienda', $1, 1000000, current_date + 10, s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+    where s.category = 'open' order by p.is_default desc, s.sort_order limit 1 returning id, owner_id`, [cuenta.id]));
+  assert.equal(opp.owner_id, web.id);
+  assert.equal(await ve(tienda, 'opportunities', opp.id), 0);
+
+  // Aviso de duplicados: quien no puede abrir el cliente se entera de que existe y de quién es, sin su id.
+  const dup = (quien) => as(quien, () => q(`select id, label, owner_name, can_open from possible_duplicates('accounts', 'cliente de la TIENDA', null, null)`));
+  assert.deepEqual(await dup(rep), [{ id: null, label: 'Cliente de la Tienda · NIT 900555111-2 · Medellín', owner_name: 'Tania Tienda', can_open: false }]);
+  assert.deepEqual(await dup(web), [{ id: cuenta.id, label: 'Cliente de la Tienda · NIT 900555111-2 · Medellín', owner_name: 'Tania Tienda', can_open: true }]);
+  // También por NIT, aunque el nombre sea otro.
+  assert.equal((await as(rep, () => q(`select can_open from possible_duplicates('accounts', 'Otro nombre', null, '900.555.111-2')`))).length, 1);
+  // Búsqueda: el directorio solo trae lo que no se puede abrir, con lo mínimo, y exige tres letras.
+  assert.deepEqual(await as(rep, () => q(`select * from account_directory('de la tienda')`)), [{ name: 'Cliente de la Tienda', tax_id: '900555111-2', city: 'Medellín', owner_name: 'Tania Tienda' }]);
+  assert.equal((await as(web, () => q(`select * from account_directory('de la tienda')`))).length, 0);
+  assert.equal((await as(rep, () => q(`select * from account_directory('de')`))).length, 0);
+  // La regla interna no se puede llamar por la API; las otras dos, solo con sesión.
+  const [permisos] = await q(`select has_function_privilege('authenticated', 'public.shares_branch_with(uuid)', 'execute') a,
+    has_function_privilege('anon', 'public.possible_duplicates(text, text, text, text)', 'execute') b, has_function_privilege('anon', 'public.account_directory(text, int)', 'execute') c`);
+  assert.deepEqual(permisos, { a: false, b: false, c: false });
+
+  await as(admin, () => q(`delete from accounts where id = $1`, [cuenta.id]));
+  for (const fila of antes) await q(`update sharing_settings set access = $2 where object = $1`, [fila.object, fila.access]);
+});
 await check('kits: planta KIT, componentes que no son kit y Planta/Grupo sin depender de Familia', async () => {
   const uno = async (sql, params) => (await as(admin, () => q(sql, params)))[0];
   // Un kit toma la planta «KIT» aunque se guarde con otra o sin ninguna; un producto suelto no puede usarla.

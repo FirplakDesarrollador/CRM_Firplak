@@ -122,7 +122,12 @@ export async function persistRecord(
         state: {
           values: echo,
           message: "Encontramos registros que podrían ser el mismo. Revísalos o guarda de todas formas.",
-          duplicates: dups.map((d) => ({ id: d.id, label: d.label, href: `${def.path}/${d.id}` })),
+          duplicates: dups.map((d, i) => ({
+            id: d.id ?? `sin-acceso-${i}`,
+            label: d.label,
+            href: d.can_open && d.id ? `${def.path}/${d.id}` : undefined,
+            owner: d.owner_name,
+          })),
         },
       };
     }

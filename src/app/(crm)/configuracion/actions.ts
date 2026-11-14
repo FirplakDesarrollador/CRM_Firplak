@@ -85,7 +85,7 @@ export async function saveRole(id: string | null, _prev: FormState, fd: FormData
   if (!name) return { message: "Escribe el nombre del rol" };
   const parent = nullable(fd, "parent_id");
   if (id && parent === id) return { message: "Un rol no puede depender de sí mismo." };
-  const payload = { name, parent_id: parent, description: nullable(fd, "description") };
+  const payload = { name, parent_id: parent, description: nullable(fd, "description"), share_within: fd.get("share_within") === "on" };
   const { error } = id
     ? await supabase.from("roles").update(payload).eq("id", id)
     : await supabase.from("roles").insert(payload);

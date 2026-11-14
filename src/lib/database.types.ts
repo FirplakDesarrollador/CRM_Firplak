@@ -3653,6 +3653,7 @@ export type Database = {
           id: string
           name: string
           parent_id: string | null
+          share_within: boolean
           sort_order: number
           updated_at: string
         }
@@ -3662,6 +3663,7 @@ export type Database = {
           id?: string
           name: string
           parent_id?: string | null
+          share_within?: boolean
           sort_order?: number
           updated_at?: string
         }
@@ -3671,6 +3673,7 @@ export type Database = {
           id?: string
           name?: string
           parent_id?: string | null
+          share_within?: boolean
           sort_order?: number
           updated_at?: string
         }
@@ -3821,6 +3824,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_directory: {
+        Args: {
+          p_query: string
+          p_limit?: number
+        }
+        Returns: {
+          name: string
+          tax_id: string
+          city: string
+          owner_name: string
+        }[]
+      }
       add_default_team: {
         Args: {
           p_object: string
@@ -4384,6 +4399,8 @@ export type Database = {
         Returns: {
           id: string
           label: string
+          owner_name: string
+          can_open: boolean
         }[]
       }
       price_book_problem: {
@@ -4510,6 +4527,12 @@ export type Database = {
           p_splits: Json
         }
         Returns: undefined
+      }
+      shares_branch_with: {
+        Args: {
+          p_owner: string
+        }
+        Returns: boolean
       }
       sharing_access: {
         Args: {
