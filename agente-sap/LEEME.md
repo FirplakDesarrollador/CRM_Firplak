@@ -6,8 +6,8 @@ lectura en el CRM. **Nunca escribe en SAP.**
 
 Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
 
-- De cada cuenta del CRM que tiene **Código SAP**: saldo de cartera, cupo, pedidos de venta abiertos y
-  las diez facturas más recientes.
+- De cada cuenta del CRM que tiene **Código SAP**: saldo de cartera, cupo, todos los pedidos de venta
+  abiertos, todas las facturas abiertas y las diez facturas más recientes.
 - De cada producto activo del CRM (por su Referencia): inventario por bodega y listas de precios.
 
 Si a esa hora el equipo está apagado, dormido o fuera de la red, la corrida se salta o falla, y el CRM

@@ -50,7 +50,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
       <Header title={`${t("SAP Business One")} · ${p.CardCode}`} subtitle={[p.CardName, t("Solo lectura"), sapCompany()].filter(Boolean).join(" · ")} syncedAt={data.syncedAt} />
       <div className="grid gap-2 p-4 sm:grid-cols-2 2xl:grid-cols-5">
         <Kpi label={t("Saldo de cartera")} value={formatCurrency(p.CurrentAccountBalance)} />
-        <Kpi label={t("Vencido (facturas recientes)")} value={formatCurrency(overdue)} tone={overdue > 0 ? "text-danger" : undefined} />
+        <Kpi label={t("Cartera vencida")} value={formatCurrency(overdue)} tone={overdue > 0 ? "text-danger" : undefined} />
         <Kpi label={t("Cupo de crédito")} value={formatCurrency(p.CreditLimit)} />
         <Kpi label={t("Cupo disponible")} value={formatCurrency(available)} tone={available < 0 ? "text-danger" : "text-success"} />
         <Kpi label={t("Pedidos y entregas abiertos")} value={formatCurrency(p.OpenOrdersBalance + p.OpenDeliveryNotesBalance)} />
@@ -79,7 +79,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
           )}
         </div>
         <div className="overflow-x-auto">
-          <h3 className="mb-2 text-sm font-semibold"><Tr>Facturas recientes</Tr> <span className="badge">{invoices.length}</span></h3>
+          <h3 className="mb-2 text-sm font-semibold"><Tr>Facturas abiertas y recientes</Tr> <span className="badge">{invoices.length}</span></h3>
           {invoices.length === 0 ? <p className="text-sm text-muted"><Tr>Sin facturas.</Tr></p> : (
             <table className="table">
               <thead><tr><th>N.º</th><th><Tr>Fecha</Tr></th><th><Tr>Vence</Tr></th><th className="text-right"><Tr>Pendiente</Tr></th><th><Tr>Estado</Tr></th></tr></thead>

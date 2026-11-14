@@ -354,7 +354,7 @@ export function buildMcpServer(identity: McpIdentity) {
 
   server.registerTool("sap_cliente", {
     title: "Cliente en SAP Business One",
-    description: "Cartera, cupo de crédito, pedidos de venta abiertos y facturas recientes de una cuenta en SAP (por su Código SAP). Solo lectura; requiere el permiso «Ver información de SAP».",
+    description: "Cartera, cupo de crédito, pedidos de venta abiertos, facturas abiertas y las diez más recientes de una cuenta en SAP (por su Código SAP). Solo lectura; requiere el permiso «Ver información de SAP».",
     inputSchema: { cuenta_id: z.string().uuid().optional(), codigo_sap: z.string().optional().describe("CardCode, si no se da la cuenta") },
     annotations: readOnly,
   }, run("sap_cliente", async ({ cuenta_id, codigo_sap }: { cuenta_id?: string; codigo_sap?: string }) => {

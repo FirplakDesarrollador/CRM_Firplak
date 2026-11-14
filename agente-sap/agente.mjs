@@ -136,6 +136,7 @@ const q = (path, params) => `${path}?${Object.entries(params).map(([k, v]) => `$
 const SOCIO = "CardCode,CardName,FederalTaxID,Phone1,EmailAddress,CurrentAccountBalance,OpenOrdersBalance,OpenDeliveryNotesBalance,CreditLimit";
 // «PaidToDate» solo existe en las facturas: SAP rechaza la consulta de pedidos si se le pide.
 const CAMPOS_DOC = "DocEntry,DocNum,DocDate,DocDueDate,DocTotal,DocCurrency,DocumentStatus,Cancelled,NumAtCard";
+const MAX_DOCS = 500;
 const documento = (extra = "") => ({ $select: CAMPOS_DOC + extra, $orderby: "DocDate desc", $top: "10" });
 const ARTICULO = "ItemCode,ItemName,QuantityOnStock,QuantityOrderedByCustomers,QuantityOrderedFromVendors,SalesUnit,ItemPrices,ItemWarehouseInfoCollection";
 
@@ -144,9 +145,14 @@ async function cliente(sap, codigo) {
   const partner = await sap.get(`BusinessPartners(${encodeURIComponent(comillas(codigo))})?$select=${SOCIO}`);
   if (!partner) return null;
   const c = comillas(codigo);
-  const orders = await sap.get(q("Orders", { $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open'`, ...documento() }));
-  const invoices = await sap.get(q("Invoices", { $filter: `CardCode eq ${c} and Cancelled eq 'tNO'`, ...documento(",PaidToDate") }));
-  return { partner, orders: orders?.value ?? [], invoices: invoices?.value ?? [] };
+  const todos = { $select: CAMPOS_DOC, $orderby: "DocDate desc" };
+  // Todos los pedidos abiertos; todas las facturas abiertas (para que el vencido sea exacto) y las diez más recientes.
+  const orders = await sap.lista(q("Orders", { ...todos, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open'` }));
+  const abiertas = await sap.lista(q("Invoices", { ...todos, $select: `${CAMPOS_DOC},PaidToDate`, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'` }));
+  const recientes = await sap.get(q("Invoices", { $filter: `CardCode eq ${c} and Cancelled eq 'tNO'`, ...documento(",PaidToDate") }));
+  const porEntrada = new Map([...abiertas, ...(recientes?.value ?? [])].map((d) => [d.DocEntry, d]));
+  const invoices = [...porEntrada.values()].sort((a, b) => String(b.DocDate).localeCompare(String(a.DocDate)));
+  return { partner, orders: orders.slice(0, MAX_DOCS), invoices: invoices.slice(0, MAX_DOCS) };
 }
 
 /** Inventario y precios de un lote de artículos (hasta 20 por consulta: las URL largas fallan). */

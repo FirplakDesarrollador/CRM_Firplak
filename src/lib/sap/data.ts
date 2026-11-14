@@ -24,7 +24,7 @@ export class SapPending extends Error {
 }
 export type SapCustomerSummary = { partner: SapPartner; orders: SapDocument[]; invoices: SapDocument[]; syncedAt?: string };
 
-/** Resumen de un cliente en SAP: socio de negocio, pedidos abiertos y facturas recientes. */
+/** Resumen de un cliente en SAP: socio de negocio, pedidos abiertos, facturas abiertas y las diez más recientes. */
 export async function getCustomerSummary(cardCode: string): Promise<SapCustomerSummary | null> {
   if ((await getSapSource()) === "agent") {
     const supabase = await createClient();
@@ -43,11 +43,17 @@ export async function getCustomerSummary(cardCode: string): Promise<SapCustomerS
   }
   // «PaidToDate» solo existe en las facturas: SAP rechaza la consulta de pedidos si se le pide.
   const docSelect = (extra = "") => `$select=DocEntry,DocNum,DocDate,DocDueDate,DocTotal,DocCurrency,DocumentStatus,Cancelled,NumAtCard${extra}&$orderby=DocDate desc&$top=10`;
-  const [orders, invoices] = await Promise.all([
-    sapGet<{ value: SapDocument[] }>(`/Orders?$filter=CardCode eq ${code} and DocumentStatus eq 'bost_Open'&${docSelect()}`),
+  // Todos los pedidos abiertos; todas las facturas abiertas (para que el vencido sea exacto) y las diez más recientes.
+  const all = docSelect().replace("&$top=10", "&$top=200");
+  const allInvoices = docSelect(",PaidToDate").replace("&$top=10", "&$top=200");
+  const [orders, open, recent] = await Promise.all([
+    sapGet<{ value: SapDocument[] }>(`/Orders?$filter=CardCode eq ${code} and DocumentStatus eq 'bost_Open'&${all}`),
+    sapGet<{ value: SapDocument[] }>(`/Invoices?$filter=CardCode eq ${code} and DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'&${allInvoices}`),
     sapGet<{ value: SapDocument[] }>(`/Invoices?$filter=CardCode eq ${code} and Cancelled eq 'tNO'&${docSelect(",PaidToDate")}`),
   ]);
-  return { partner, orders: orders.value, invoices: invoices.value };
+  const byEntry = new Map([...open.value, ...recent.value].map((d) => [d.DocEntry, d]));
+  const invoices = [...byEntry.values()].sort((a, b) => b.DocDate.localeCompare(a.DocDate));
+  return { partner, orders: orders.value, invoices };
 }
 
 export async function getItem(itemCode: string): Promise<(SapItem & { syncedAt?: string }) | null> {
