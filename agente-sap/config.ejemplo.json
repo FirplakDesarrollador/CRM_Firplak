@@ -1,0 +1,9 @@
+{
+  "sapUrl": "https://SERVIDOR-SAP:50000/b1s/v1",
+  "sapCompanyDb": "BASE_DE_SAP",
+  "sapUser": "USUARIO_DE_SAP",
+  "sapCertificadoAutofirmado": true,
+  "crmUrl": "https://PROYECTO.supabase.co",
+  "crmAnonKey": "CLAVE_PUBLICA_ANON_DEL_CRM",
+  "crmUser": "CORREO_DEL_USUARIO_TECNICO_DEL_AGENTE"
+}

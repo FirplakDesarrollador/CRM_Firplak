@@ -5,7 +5,7 @@ import { Tr } from "@/components/ui/Tr";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
 import { sapCompany } from "@/lib/sap/client";
-import { getCustomerSummary, getItem, invoiceStatus } from "@/lib/sap/data";
+import { getCustomerSummary, getItem, invoiceStatus, SapPending } from "@/lib/sap/data";
 
 const Kpi = ({ label, value, tone }: { label: string; value: string; tone?: string }) => (
   <div className="rounded-[10px] border border-line p-3">
@@ -14,14 +14,18 @@ const Kpi = ({ label, value, tone }: { label: string; value: string; tone?: stri
   </div>
 );
 
-function Header({ title, subtitle }: { title: string; subtitle: string }) {
+function Header({ title, subtitle, syncedAt }: { title: string; subtitle: string; syncedAt?: string }) {
   return (
     <div className="card-header flex-wrap gap-1">
       <h2 className="card-title"><Database size={16} /> {title}</h2>
-      <span className="text-xs text-muted">{subtitle}</span>
+      <span className="text-xs text-muted">{subtitle}{syncedAt && <> · <Tr>Actualizado</Tr> <Fmt datetime={syncedAt} /></>}</span>
     </div>
   );
 }
+
+const Pending = () => (
+  <section className="card p-4 text-sm text-muted"><Tr>Todavía no se ha traído de SAP. Llegará con la próxima sincronización (lunes a viernes, cada dos horas).</Tr></section>
+);
 
 /** Cliente en SAP Business One: cartera, cupo, pedidos abiertos y facturas (solo lectura). */
 export async function SapAccountCard({ cardCode }: { cardCode: string | null }) {
@@ -33,6 +37,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
   try {
     data = await getCustomerSummary(cardCode);
   } catch (e) {
+    if (e instanceof SapPending) return <Pending />;
     return <section className="card p-4"><Alert tone="error">{t("No se pudo consultar SAP:")} {(e as Error).message}</Alert></section>;
   }
   if (!data) return <section className="card p-4 text-sm text-muted">{t("No existe un socio de negocio con el código")} <code>{cardCode}</code> {t("en SAP.")}</section>;
@@ -42,7 +47,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
 
   return (
     <section className="card overflow-hidden">
-      <Header title={`${t("SAP Business One")} · ${p.CardCode}`} subtitle={`${p.CardName} · ${t("Solo lectura")} · ${sapCompany()}`} />
+      <Header title={`${t("SAP Business One")} · ${p.CardCode}`} subtitle={[p.CardName, t("Solo lectura"), sapCompany()].filter(Boolean).join(" · ")} syncedAt={data.syncedAt} />
       <div className="grid gap-2 p-4 sm:grid-cols-2 2xl:grid-cols-5">
         <Kpi label={t("Saldo de cartera")} value={formatCurrency(p.CurrentAccountBalance)} />
         <Kpi label={t("Vencido (facturas recientes)")} value={formatCurrency(overdue)} tone={overdue > 0 ? "text-danger" : undefined} />
@@ -108,6 +113,7 @@ export async function SapProductCard({ itemCode }: { itemCode: string | null }) 
   try {
     item = await getItem(itemCode);
   } catch (e) {
+    if (e instanceof SapPending) return <Pending />;
     return <section className="card p-4"><Alert tone="error">{t("No se pudo consultar SAP:")} {(e as Error).message}</Alert></section>;
   }
   if (!item) return <section className="card p-4 text-sm text-muted">{t("No existe un artículo con el código")} <code>{itemCode}</code> {t("en SAP.")}</section>;
@@ -115,7 +121,7 @@ export async function SapProductCard({ itemCode }: { itemCode: string | null }) 
 
   return (
     <section className="card overflow-hidden">
-      <Header title={`${t("SAP Business One")} · ${item.ItemCode}`} subtitle={`${item.ItemName} · ${t("Solo lectura")}`} />
+      <Header title={`${t("SAP Business One")} · ${item.ItemCode}`} subtitle={`${item.ItemName} · ${t("Solo lectura")}`} syncedAt={item.syncedAt} />
       <div className="grid gap-2 p-4 sm:grid-cols-3">
         <Kpi label={t("En inventario")} value={formatNumber(item.QuantityOnStock)} />
         <Kpi label={t("Comprometido con clientes")} value={formatNumber(item.QuantityOrderedByCustomers ?? 0)} />

@@ -12,7 +12,7 @@ import { removeProductPrice, saveProductPrice } from "@/lib/records/phase2-actio
 import { formatCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { canSystem } from "@/lib/permissions";
-import { sapConfigured } from "@/lib/sap/client";
+import { sapAvailable } from "@/lib/sap/data";
 import { SapProductCard } from "@/components/sap/SapCards";
 
 import { Tr } from "@/components/ui/Tr";
@@ -24,6 +24,7 @@ export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
   const [user, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
+  const showSap = canSystem(user.access, "view_sap") && (await sapAvailable());
   const def = await getObjectDef("products");
   const row = await getRecord(def, id);
   if (!row) notFound();
@@ -137,7 +138,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             </section>
           </>
         ),
-      }, ...(sapConfigured() && canSystem(user.access, "view_sap") ? [{
+      }, ...(showSap ? [{
         key: "sap",
         label: "SAP",
         content: <SapProductCard itemCode={(row.product_code as string | null) ?? null} />,

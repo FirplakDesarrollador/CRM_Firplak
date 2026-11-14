@@ -46,6 +46,17 @@ export async function saveSapQuotationSetting(_prev: FormState, fd: FormData): P
   return { ok: true, message: "Preferencias guardadas" };
 }
 
+/** De dónde se lee la cartera y el inventario: la copia del agente o SAP en vivo. */
+export async function saveSapSource(_prev: FormState, fd: FormData): Promise<FormState> {
+  if (!(await adminUser())) return { message: "No tienes permiso para esta configuración." };
+  const source = fd.get("source") === "direct" ? "direct" : "agent";
+  const supabase = await createClient();
+  const { error } = await supabase.from("integration_settings").upsert({ key: "sap", value: { ...(await getSapSettings()), source }, updated_at: new Date().toISOString() });
+  if (error) return { message: error.message };
+  revalidatePath("/configuracion/sap");
+  return { ok: true, message: "Preferencias guardadas" };
+}
+
 export async function testSapConnection(_prev?: FormState, _fd?: FormData): Promise<FormState> {
   if (!(await adminUser())) return { message: "No tienes permiso para esta configuración." };
   try {

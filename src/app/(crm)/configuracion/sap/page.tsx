@@ -10,8 +10,9 @@ import { canSystem } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
 import { sapCompany, sapConfigured } from "@/lib/sap/client";
-import { getSapSettings } from "@/lib/sap/settings";
-import { saveSapQuotationSetting, testSapConnection } from "@/lib/sap/actions";
+import { getSapSettings, sapSourceOf } from "@/lib/sap/settings";
+import { saveSapQuotationSetting, saveSapSource, testSapConnection } from "@/lib/sap/actions";
+import { Fmt } from "@/components/ui/Fmt";
 
 export const metadata: Metadata = { title: "SAP Business One" };
 
@@ -20,11 +21,14 @@ export default async function SapAdminPage() {
   const [me, t] = await Promise.all([requireUser(), getT()]);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const supabase = await createClient();
-  const [settings, { data: fields }] = await Promise.all([
+  const [settings, { data: runs }, { data: fields }] = await Promise.all([
     getSapSettings(),
+    supabase.from("sap_sync_runs").select("id, started_at, finished_at, host, partners, items, errors, ok").order("started_at", { ascending: false }).limit(8),
     supabase.from("custom_field_definitions").select("api_name, label").eq("object", "products").eq("is_active", true).order("sort_order"),
   ]);
   const configured = sapConfigured();
+  const source = sapSourceOf(settings);
+  const last = runs?.[0];
 
   return (
     <>
@@ -34,10 +38,50 @@ export default async function SapAdminPage() {
       </div>
 
       <section className="card space-y-3 p-4">
-        <h2 className="card-title"><Tr>Conexión</Tr> {configured ? <span className="badge badge-success"><Tr>Lista</Tr></span> : <span className="badge badge-warning"><Tr>Pendiente</Tr></span>}</h2>
+        <h2 className="card-title"><Tr>Cartera e inventario</Tr></h2>
+        <p className="text-sm text-muted"><Tr>SAP solo responde dentro de la red de Firplak. Un agente instalado en un equipo de la red trae la información de lunes a viernes, cada dos horas entre las 7:00 y las 17:30, y el CRM muestra esa copia con su hora.</Tr></p>
+        <ActionForm action={saveSapSource} className="space-y-2">
+          <label className="flex items-start gap-2 text-sm">
+            <input type="radio" name="source" value="agent" defaultChecked={source === "agent"} className="mt-0.5 accent-[var(--brand)]" />
+            {t("Copia del agente dentro de la red (recomendado)")}
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="radio" name="source" value="direct" defaultChecked={source === "direct"} disabled={!configured} className="mt-0.5 accent-[var(--brand)]" />
+            {t("Consulta en vivo desde el servidor del CRM (solo si el servidor alcanza a SAP)")}
+          </label>
+          <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Guardar origen</Tr></SubmitButton>
+        </ActionForm>
+        <div className="border-t border-line pt-3">
+          <h3 className="mb-2 text-sm font-semibold"><Tr>Sincronizaciones del agente</Tr> {last && <span className={`badge ${last.ok ? "badge-success" : last.finished_at ? "badge-danger" : "badge-warning"}`}>{t(last.ok ? "Última correcta" : last.finished_at ? "Última con errores" : "En curso")}</span>}</h3>
+          {!runs?.length ? <p className="text-sm text-muted"><Tr>El agente todavía no ha corrido.</Tr></p> : (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead><tr><th><Tr>Inicio</Tr></th><th><Tr>Computador</Tr></th><th className="text-right"><Tr>Clientes</Tr></th><th className="text-right"><Tr>Productos</Tr></th><th><Tr>Resultado</Tr></th></tr></thead>
+                <tbody>
+                  {runs.map((r) => {
+                    const errors = (r.errors ?? []) as { donde?: string; error?: string }[];
+                    return (
+                      <tr key={r.id}>
+                        <td className="whitespace-nowrap"><Fmt datetime={r.started_at} /></td>
+                        <td>{r.host ?? "—"}</td>
+                        <td className="num text-right">{r.partners}</td>
+                        <td className="num text-right">{r.items}</td>
+                        <td>{!r.finished_at ? t("En curso") : r.ok ? t("Correcta") : `${errors.length} ${t("errores")}: ${errors.slice(0, 2).map((e) => `${e.donde ?? ""} · ${e.error ?? ""}`).join(" | ")}`}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="card space-y-3 p-4">
+        <h2 className="card-title"><Tr>Conexión directa del servidor</Tr> {configured ? <span className="badge badge-success"><Tr>Lista</Tr></span> : <span className="badge badge-warning"><Tr>Pendiente</Tr></span>}</h2>
         <p className="flex items-center gap-2 text-sm">
           {configured ? <CheckCircle2 size={15} className="text-success" /> : <XCircle size={15} className="text-danger" />}
-          {configured ? <>{t("Service Layer configurado · compañía")} <code>{sapCompany()}</code></> : t("Faltan las variables SAP_SL_URL, SAP_COMPANY_DB, SAP_USER y SAP_PASSWORD en el servidor.")}
+          {configured ? <>{t("Service Layer configurado · compañía")} <code>{sapCompany()}</code></> : t("El servidor del CRM no tiene credenciales de SAP. No hacen falta para la copia del agente; sí para crear ofertas de venta e importar productos, que por ahora solo funcionan con conexión directa.")}
         </p>
         {configured && (
           <ActionForm action={testSapConnection} className="flex flex-col items-start gap-1">

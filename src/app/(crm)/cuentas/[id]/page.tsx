@@ -15,7 +15,7 @@ import { ActivityJump } from "@/components/activities/ActivityJump";
 import { TeamCard } from "@/components/teams/TeamCard";
 import { DocumentsCard } from "@/components/ms365/DocumentsCard";
 import { SapAccountCard } from "@/components/sap/SapCards";
-import { sapConfigured } from "@/lib/sap/client";
+import { sapAvailable } from "@/lib/sap/data";
 import { canSystem } from "@/lib/permissions";
 import { getActivitiesFor } from "@/components/activities/data";
 import { getObjectDef, getRecord, getRecordAccess, getUsers, untypedClient, type Row } from "@/lib/records/data";
@@ -62,8 +62,8 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
   const staleOpps = oppRows.filter((o) => !o.is_closed && o.currency !== marketCurrency);
   const openAmount = oppRows.filter((o) => !o.is_closed).reduce((s, o) => s + Number(o.amount), 0);
   const wonAmount = oppRows.filter((o) => o.is_won).reduce((s, o) => s + Number(o.amount), 0);
-  // SAP: solo con el permiso «Ver información de SAP» y el Service Layer configurado.
-  const showSap = sapConfigured() && canSystem(user.access, "view_sap");
+  // SAP: solo con el permiso «Ver información de SAP» y con SAP disponible (en vivo o por el agente).
+  const showSap = canSystem(user.access, "view_sap") && (await sapAvailable());
   const tab = (["detalles", "equipo", "documentos", "historial", ...(showSap ? ["sap" as const] : [])] as const).find((k) => k === sp.tab) ?? "relacionado";
   const owner = row.owner as { full_name?: string; email?: string } | null;
   const path = `/cuentas/${id}`;

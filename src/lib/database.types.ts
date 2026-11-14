@@ -3750,6 +3750,78 @@ export type Database = {
           },
         ]
       }
+      sap_items: {
+        Row: {
+          data: Json | null
+          item_code: string
+          synced_at: string
+        }
+        Insert: {
+          data?: Json | null
+          item_code: string
+          synced_at?: string
+        }
+        Update: {
+          data?: Json | null
+          item_code?: string
+          synced_at?: string
+        }
+        Relationships: [
+        ]
+      }
+      sap_partners: {
+        Row: {
+          card_code: string
+          data: Json | null
+          synced_at: string
+        }
+        Insert: {
+          card_code: string
+          data?: Json | null
+          synced_at?: string
+        }
+        Update: {
+          card_code?: string
+          data?: Json | null
+          synced_at?: string
+        }
+        Relationships: [
+        ]
+      }
+      sap_sync_runs: {
+        Row: {
+          errors: Json
+          finished_at: string | null
+          host: string | null
+          id: string
+          items: number
+          ok: boolean | null
+          partners: number
+          started_at: string
+        }
+        Insert: {
+          errors?: Json
+          finished_at?: string | null
+          host?: string | null
+          id?: string
+          items?: number
+          ok?: boolean | null
+          partners?: number
+          started_at?: string
+        }
+        Update: {
+          errors?: Json
+          finished_at?: string | null
+          host?: string | null
+          id?: string
+          items?: number
+          ok?: boolean | null
+          partners?: number
+          started_at?: string
+        }
+        Relationships: [
+        ]
+      }
       sharing_settings: {
         Row: {
           access: string
@@ -4282,6 +4354,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_sap_agent: {
+        Args: never
+        Returns: boolean
+      }
       jsonb_to_date: {
         Args: {
           p: Json
@@ -4593,6 +4669,32 @@ export type Database = {
       run_scheduled_automations: {
         Args: never
         Returns: number
+      }
+      sap_agent_finish: {
+        Args: {
+          p_run: string
+          p_partners: number
+          p_items: number
+          p_errors: Json
+        }
+        Returns: undefined
+      }
+      sap_agent_save: {
+        Args: {
+          p_kind: string
+          p_rows: Json
+        }
+        Returns: number
+      }
+      sap_agent_start: {
+        Args: {
+          p_host: string
+        }
+        Returns: string
+      }
+      sap_agent_targets: {
+        Args: never
+        Returns: Json
       }
       save_exchange_rate: {
         Args: {

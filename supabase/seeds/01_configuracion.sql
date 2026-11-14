@@ -22,6 +22,7 @@ $$;
 -- ---------------------------------------------------------------------------
 insert into public.permission_profiles (name, description, is_admin, is_default, permissions) values
 ('Administrador del sistema', 'Acceso total, configuración y usuarios.', true, false, '{}'),
+('Integración SAP', 'Solo para el agente de sincronización con SAP. No da acceso a la aplicación.', false, false, '{"system": {"sap_agent": true}}'),
 ('Gerente comercial', 'Ve y gestiona todo el comercial; sin configuración del sistema.', false, false, '{
   "accounts":      {"read":true,"create":true,"edit":true,"delete":true,"view_all":true,"modify_all":true},
   "contacts":      {"read":true,"create":true,"edit":true,"delete":true,"view_all":true,"modify_all":true},

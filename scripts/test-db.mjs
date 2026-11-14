@@ -688,6 +688,59 @@ await check('el código SAP de las cuentas se normaliza y no se repite', async (
   assert.equal((await q(`select sap_card_code from accounts where id = $1`, [a.id]))[0].sap_card_code, null);
 });
 
+await check('el agente de SAP guarda la copia de cartera e inventario y nadie más puede escribirla', async () => {
+  const [agent] = await q(`insert into auth.users (email) values ('agente.sap@firplak.com') returning id`);
+  await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integración SAP') where id = $1`, [agent.id]);
+  const [mine] = await q(`select id from accounts where owner_id = $1 order by name limit 1`, [admin.id]);
+  await q(`update accounts set sap_card_code = 'CN900' where id = $1`, [mine.id]);
+  const [prod] = await q(`select product_code from products where is_active and product_code is not null and not is_kit order by product_code limit 1`);
+
+  // Ni un asesor ni la administración pueden usar las funciones del agente ni escribir las tablas.
+  for (const u of [rep, admin]) {
+    await assert.rejects(as(u, () => q(`select sap_agent_targets()`)), /Solo el agente de SAP/);
+    await assert.rejects(as(u, () => q(`select sap_agent_save('partners', '[{"code":"CN900","data":{}}]')`)), /Solo el agente de SAP/);
+    await assert.rejects(as(u, () => q(`insert into sap_partners (card_code, data) values ('CN900', '{}')`)));
+  }
+  // El agente no ve cuentas ni negocios: solo los códigos por sincronizar.
+  assert.equal(await as(agent, () => count(`select count(*) n from accounts`)), 0);
+  assert.equal(await as(agent, () => count(`select count(*) n from opportunities`)), 0);
+  const [{ t }] = await as(agent, () => q(`select sap_agent_targets() t`));
+  assert.deepEqual(t.card_codes, ['CN900']);
+  assert.ok(t.item_codes.includes(prod.product_code));
+
+  const [{ run }] = await as(agent, () => q(`select sap_agent_start('equipo-de-prueba') run`));
+  const partner = { partner: { CardCode: 'CN900', CardName: 'CLIENTE', CurrentAccountBalance: 10, OpenOrdersBalance: 0, OpenDeliveryNotesBalance: 0, CreditLimit: 100 }, orders: [], invoices: [] };
+  const [{ n }] = await as(agent, () => q(`select sap_agent_save('partners', $1::jsonb) n`,
+    [JSON.stringify([{ code: 'CN900', data: partner }, { code: 'CNVIEJO', data: partner }])]));
+  assert.equal(n, 2);
+  await as(agent, () => q(`select sap_agent_save('items', $1::jsonb)`, [JSON.stringify([{ code: prod.product_code, data: null }])]));
+  await assert.rejects(as(agent, () => q(`select sap_agent_save('otra', '[]')`)), /Tipo no válido/);
+  await as(agent, () => q(`select sap_agent_finish($1, 2, 1, '[]')`, [run]));
+
+  // Al cerrar se borra lo que ya no está vinculado; un artículo que no existe en SAP queda con datos nulos.
+  assert.equal(await count(`select count(*) n from sap_partners`), 1);
+  assert.equal((await q(`select data from sap_items where item_code = $1`, [prod.product_code]))[0].data, null);
+  const [r] = await q(`select ok, partners, items, host, finished_at from sap_sync_runs where id = $1`, [run]);
+  assert.deepEqual([r.ok, r.partners, r.items, r.host], [true, 2, 1, 'equipo-de-prueba']);
+  assert.ok(r.finished_at);
+
+  // Lectura: con «Ver información de SAP» y solo de cuentas que la persona puede ver.
+  await q(`update permission_profiles set permissions = jsonb_set(permissions, '{system,view_sap}', 'true') where name = 'Asesor comercial'`);
+  await q(`update sharing_settings set access = 'private' where object = 'accounts'`);
+  assert.equal(await as(admin, () => count(`select count(*) n from sap_partners`)), 1);
+  assert.equal(await as(rep, () => count(`select count(*) n from sap_partners`)), 0);
+  await q(`update sharing_settings set access = 'read' where object = 'accounts'`);
+  assert.equal(await as(rep, () => count(`select count(*) n from sap_partners`)), 1);
+  await q(`update permission_profiles set permissions = jsonb_set(permissions, '{system,view_sap}', 'false') where name = 'Asesor comercial'`);
+  assert.equal(await as(rep, () => count(`select count(*) n from sap_partners`)), 0);
+  assert.equal(await as(rep, () => count(`select count(*) n from sap_sync_runs`)), 0);
+  assert.equal(await as(admin, () => count(`select count(*) n from sap_sync_runs`)), 1);
+
+  await q(`update accounts set sap_card_code = null where id = $1`, [mine.id]);
+  await db.exec(`delete from sap_partners; delete from sap_items; delete from sap_sync_runs`);
+  await q(`delete from auth.users where id = $1`, [agent.id]);
+});
+
 console.log('Fase 18');
 await check('borrar los datos de ejemplo deja la configuración y solo lo puede hacer administración', async () => {
   const configBefore = await q(`select (select count(*) from pipelines) p, (select count(*) from custom_field_definitions) f,
@@ -1994,7 +2047,7 @@ const configSummary = async (fresh) => (await fresh.query(`select
     (select count(*)::int from public.email_templates) plantillas, (select count(*)::int from public.custom_field_definitions) campos,
     (select count(*)::int from public.sales_goals) metas, (select count(*)::int from public.exchange_rates where source = 'Ejemplo') trm_ejemplo,
     (select count(*)::int from public.countries) paises, (select count(*)::int from public.co_municipalities) municipios`)).rows[0];
-const CONFIG_ESPERADA = { perfiles: 5, roles: 12, pipelines: 2, etapas: 13, listas_precios: 3, procesos: 1, pasos: 2, reglas: 4,
+const CONFIG_ESPERADA = { perfiles: 6, roles: 12, pipelines: 2, etapas: 13, listas_precios: 3, procesos: 1, pasos: 2, reglas: 4,
   automatizaciones: 5, informes: 6, plantillas: 3, campos: 8, metas: 0, trm_ejemplo: 0, paises: 249, municipios: 1122 };
 
 await check('una base nueva con migraciones y configuración inicial queda configurada y sin ningún registro ficticio', async () => {

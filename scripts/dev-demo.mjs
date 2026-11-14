@@ -18,7 +18,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 import { createDecipheriv, createECDH, createHash, createHmac, createPublicKey, createVerify, hkdfSync, randomBytes, randomUUID } from 'node:crypto';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import http from 'node:http';
 import net from 'node:net';
@@ -99,6 +99,12 @@ for (const u of USERS) {
   await db.query(`insert into auth.users (email, encrypted_password, raw_user_meta_data) values ($1, $2, $3)`,
     [u.email, PASSWORD, { full_name: u.name }]);
 }
+// Usuario técnico del agente de SAP (agente-sap/agente.mjs): solo tiene el perfil «Integración SAP».
+const SAP_AGENT = { email: 'agente.sap@firplak.com', password: randomBytes(12).toString('hex') };
+await db.query(`insert into auth.users (email, encrypted_password, raw_user_meta_data) values ($1, $2, $3)`,
+  [SAP_AGENT.email, SAP_AGENT.password, { full_name: 'Agente SAP' }]);
+await db.query(`update public.profiles set title = 'Usuario técnico',
+  permission_profile_id = (select id from public.permission_profiles where name = 'Integración SAP') where email = $1`, [SAP_AGENT.email]);
 await db.exec(`
   update public.profiles set role_id = (select id from public.roles where name = 'Gerencia Regional Centro'), title = 'Gerente regional',
     permission_profile_id = (select id from public.permission_profiles where name = 'Gerente comercial'),
@@ -538,9 +544,11 @@ const sapServer = http.createServer(async (req, res) => {
     const select = (url.searchParams.get('$select') ?? 'ItemCode,ItemName').split(',');
     const filter = url.searchParams.get('$filter') ?? '';
     const prefix = filter.match(/startswith\(ItemCode,'([^']*)'\)/)?.[1];
+    // Lote de códigos (el agente): ItemCode eq 'A' or ItemCode eq 'B' …
+    const codes = [...filter.matchAll(/ItemCode eq '((?:[^']|'')*)'/g)].map((m) => m[1].replace(/''/g, "'"));
     const top = Number(url.searchParams.get('$top') ?? 0) || undefined;
     const skip = Number(url.searchParams.get('$skip') ?? 0);
-    const all = Object.values(sapItems).filter((it) => (!filter.includes("SalesItem eq 'tYES'") || it.SalesItem === 'tYES') && (!prefix || it.ItemCode.startsWith(prefix)))
+    const all = Object.values(sapItems).filter((it) => (!filter.includes("SalesItem eq 'tYES'") || it.SalesItem === 'tYES') && (!prefix || it.ItemCode.startsWith(prefix)) && (!codes.length || codes.includes(it.ItemCode)))
       .sort((a, b) => a.ItemCode.localeCompare(b.ItemCode));
     const size = Math.min(top ?? 20, 20);
     const page = all.slice(skip, skip + size).map((it) => Object.fromEntries(select.map((f) => [f, it[f] ?? null])));
@@ -579,6 +587,13 @@ const sapServer = http.createServer(async (req, res) => {
   sapError(res, 404, `No simulado: ${path}`);
 });
 await new Promise((r) => sapServer.listen(SAP_PORT, '127.0.0.1', r));
+// Configuración del agente de SAP contra esta demo (la usan las pruebas; las claves son de esta corrida).
+mkdirSync(join(root, 'test-results'), { recursive: true });
+writeFileSync(join(root, 'test-results', 'agente-sap-demo.json'), JSON.stringify({
+  sapUrl: `http://127.0.0.1:${SAP_PORT}/b1s/v1`, sapCompanyDb: SAP.company, sapUser: SAP.user,
+  crmUrl: `http://127.0.0.1:${API_PORT}`, crmAnonKey: anonKey, crmUser: SAP_AGENT.email,
+  demoSapPassword: SAP.password, demoCrmPassword: SAP_AGENT.password,
+}, null, 2));
 
 // ---------------------------------------------------------------- Push simulado
 // Servicio de push de prueba, para probar sin un navegador real: entrega suscripciones, comprueba la

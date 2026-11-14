@@ -14,8 +14,7 @@ import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { periodStart } from "@/lib/goals/periods";
 import type { McpIdentity } from "./auth";
 import { canSystem } from "@/lib/permissions";
-import { sapConfigured } from "@/lib/sap/client";
-import { getCustomerSummary, invoiceStatus } from "@/lib/sap/data";
+import { getCustomerSummary, invoiceStatus, sapAvailable } from "@/lib/sap/data";
 
 const READ_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "quotes", "orders", "cases", "campaigns", "products", "activities"] as const;
 const WRITE_OBJECTS = ["accounts", "contacts", "opportunities", "leads", "cases", "activities"] as const;
@@ -360,7 +359,7 @@ export function buildMcpServer(identity: McpIdentity) {
     annotations: readOnly,
   }, run("sap_cliente", async ({ cuenta_id, codigo_sap }: { cuenta_id?: string; codigo_sap?: string }) => {
     const user = await getCurrentUser();
-    if (!sapConfigured()) return fail("SAP Business One no está configurado en el CRM.");
+    if (!(await sapAvailable())) return fail("SAP Business One no está configurado en el CRM.");
     if (!user || !canSystem(user.access, "view_sap")) return fail("Tu perfil no tiene el permiso «Ver información de SAP».");
     let code = codigo_sap?.trim().toUpperCase() ?? "";
     if (cuenta_id) {
@@ -375,6 +374,7 @@ export function buildMcpServer(identity: McpIdentity) {
     if (!summary) return fail(`No existe un socio de negocio ${code} en SAP.`);
     const p = summary.partner;
     return text({
+      ...(summary.syncedAt ? { actualizado: summary.syncedAt } : {}),
       codigo: p.CardCode, nombre: p.CardName, saldo_cartera: p.CurrentAccountBalance, cupo_credito: p.CreditLimit,
       cupo_disponible: p.CreditLimit - p.CurrentAccountBalance - p.OpenDeliveryNotesBalance - p.OpenOrdersBalance,
       pedidos_abiertos: summary.orders.map((o) => ({ numero: o.DocNum, fecha: o.DocDate.slice(0, 10), entrega: o.DocDueDate.slice(0, 10), oc_cliente: o.NumAtCard, total: o.DocTotal })),
