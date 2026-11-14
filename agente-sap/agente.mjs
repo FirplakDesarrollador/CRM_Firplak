@@ -6,10 +6,11 @@
 // en el CRM por su Código SAP, y el inventario de los productos activos; lo deja en las tablas sap_*
 // del CRM con un usuario técnico que solo puede hacer eso. Nunca escribe en SAP.
 //
-// Uso:  node agente-sap/agente.mjs <correr|atender|probar|muestra|instalar|desinstalar|estado> [--ahora]
+// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import https from "node:https";
 import { homedir, hostname } from "node:os";
@@ -283,6 +284,11 @@ async function correr({ ahora }) {
         nArticulos += await destino.rpc("sap_agent_save", { p_kind: "items", p_rows: await articulos(sap, lote) });
       } catch (e) { anotar(`artículos ${lote[0]}…`, e); }
     }
+    // Ventas reales: los CSV mensuales que hayan cambiado (si la carpeta está configurada).
+    try {
+      const v = await subirVentas(cfg, destino);
+      if (v.meses) log(`Ventas: ${v.meses} meses actualizados, ${v.filas} líneas`);
+    } catch (e) { anotar("ventas", e); }
   } catch (e) {
     anotar("corrida", e);
   } finally {
@@ -331,6 +337,73 @@ async function muestra([codigo, articulo]) {
     else log(`Artículo ${item}: campos ${Object.keys(a.data).join(", ")} · bodegas ${a.data.ItemWarehouseInfoCollection?.length ?? 0} · listas de precios ${a.data.ItemPrices?.length ?? 0}`);
   } finally {
     await sap.logout();
+  }
+  return 0;
+}
+
+// ---------------------------------------------------------------- Ventas reales (CSV mensuales)
+/** Una línea de CSV en sus campos (admite comillas y comas dentro de comillas). */
+function camposCsv(linea) {
+  const campos = [];
+  let actual = "", entreComillas = false;
+  for (let i = 0; i < linea.length; i++) {
+    const c = linea[i];
+    if (entreComillas) {
+      if (c === '"' && linea[i + 1] === '"') { actual += '"'; i++; }
+      else if (c === '"') entreComillas = false;
+      else actual += c;
+    } else if (c === '"') entreComillas = true;
+    else if (c === ",") { campos.push(actual); actual = ""; }
+    else actual += c;
+  }
+  campos.push(actual);
+  return campos;
+}
+
+const COLUMNAS_VENTAS = ["Fecha", "# Factura", "TipoVentas", "Zona", "Territorio", "Grupo de Cliente", "Vendedor Senior", "Código Cliente", "Nombre cliente", "Valor Total"];
+
+/**
+ * Sube al CRM las ventas netas de los CSV mensuales («Ventas SAP AAAA-MM.csv», generados por el script
+ * de ventas). Solo el año en curso y el anterior, y solo los meses cuyo archivo cambió desde la última vez.
+ */
+async function subirVentas(cfg, destino) {
+  if (!cfg.ventasCsvDir) return { meses: 0, filas: 0, omitido: true };
+  const desde = new Date().getFullYear() - 1;
+  const archivos = readdirSync(cfg.ventasCsvDir).map((f) => ({ f, m: f.match(/^Ventas SAP (\d{4})-(\d{2})\.csv$/) }))
+    .filter((x) => x.m && Number(x.m[1]) >= desde).sort((a, b) => a.f.localeCompare(b.f));
+  const cargados = await destino.rpc("sap_agent_sales_months");
+  let meses = 0, filas = 0;
+  for (const { f, m } of archivos) {
+    const texto = readFileSync(join(cfg.ventasCsvDir, f), "utf8").replace(/^\uFEFF/, "");
+    const hash = createHash("sha1").update(texto).digest("hex");
+    const mes = `${m[1]}-${m[2]}`;
+    if (cargados[mes] === hash) continue;
+    const lineas = texto.split(/\r?\n/).filter((l) => l.trim() !== "");
+    const encabezado = camposCsv(lineas[0] ?? "");
+    const pos = COLUMNAS_VENTAS.map((c) => encabezado.indexOf(c));
+    if (pos.some((i) => i < 0)) throw new Error(`${f}: faltan columnas (${COLUMNAS_VENTAS.filter((_, i) => pos[i] < 0).join(", ")})`);
+    const datos = lineas.slice(1).map(camposCsv).map((c) => pos.map((i, n) => (n === 9 ? Number(c[i]) || 0 : (c[i] ?? "").trim())));
+    const partes = lotes(datos, 1000);
+    if (partes.length === 0) partes.push([]);
+    for (let i = 0; i < partes.length; i++) {
+      filas += await destino.rpc("sap_agent_sales_load", { p_month: `${mes}-01`, p_hash: hash, p_rows: partes[i], p_first: i === 0, p_last: i === partes.length - 1 });
+    }
+    meses++;
+    log(`Ventas ${mes}: ${datos.length} líneas`);
+  }
+  return { meses, filas };
+}
+
+/** Sube ahora las ventas de los CSV (también corre al final de cada sincronización). */
+async function ventas() {
+  const cfg = leerConfig();
+  if (!cfg.ventasCsvDir) throw new Error(`Falta «ventasCsvDir» en ${CONFIG_PATH}: la carpeta de los CSV mensuales de ventas.`);
+  const destino = await crm(cfg);
+  try {
+    const r = await subirVentas(cfg, destino);
+    log(r.meses ? `Ventas: ${r.meses} meses actualizados, ${r.filas} líneas` : "Ventas: sin cambios");
+  } finally {
+    await destino.salir();
   }
   return 0;
 }
@@ -556,9 +629,9 @@ function estado() {
 }
 
 const [comando = "", ...resto] = process.argv.slice(2);
-const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), atender, instalar, desinstalar, estado };
+const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), atender, ventas, instalar, desinstalar, estado };
 if (!comandos[comando]) {
-  console.log("Uso: node agente-sap/agente.mjs <correr|atender|probar|muestra|instalar|desinstalar|estado> [--ahora]");
+  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
 try {

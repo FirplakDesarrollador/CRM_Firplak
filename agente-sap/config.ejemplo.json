@@ -5,5 +5,6 @@
   "sapCertificadoAutofirmado": true,
   "crmUrl": "https://PROYECTO.supabase.co",
   "crmAnonKey": "CLAVE_PUBLICA_ANON_DEL_CRM",
-  "crmUser": "CORREO_DEL_USUARIO_TECNICO_DEL_AGENTE"
+  "crmUser": "CORREO_DEL_USUARIO_TECNICO_DEL_AGENTE",
+  "ventasCsvDir": ""
 }

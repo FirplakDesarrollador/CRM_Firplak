@@ -18,6 +18,11 @@ elegidos, con la Familia y la Planta que se eligieron en el CRM y el Grupo de Ar
 Los kits de SAP (listas de materiales de venta) llegan con sus componentes: al importar un kit entran
 también sus componentes, enlazados con su cantidad. La planta nunca se toma de SAP: la elige la persona.
 
+Al final de cada sincronización sube también las **ventas reales**: los CSV mensuales de ventas netas
+(`Ventas SAP AAAA-MM.csv`) de la carpeta indicada en `ventasCsvDir` de la configuración. Solo el año en
+curso y el anterior, y solo los meses cuyo archivo cambió. `node agente-sap/agente.mjs ventas` las sube
+en el momento. Si `ventasCsvDir` está vacío, no hace nada.
+
 Si a esa hora el equipo está apagado, dormido o fuera de la red, la corrida se salta o falla, y el CRM
 sigue mostrando la copia anterior con su hora. Cada corrida queda registrada en Configuración → SAP.
 
@@ -64,8 +69,8 @@ Registro: `~/Library/Logs/Firplak CRM agente SAP.log`.
 
 - Las contraseñas solo viven en el Llavero del equipo. No van en archivos, en el repositorio ni en el CRM.
 - El usuario técnico del agente tiene el perfil «Integración SAP»: no ve clientes ni negocios. Solo
-  puede pedir la lista de códigos por sincronizar, guardar la copia, tomar las solicitudes y crear o
-  actualizar productos, por siete funciones de la base.
+  puede pedir la lista de códigos por sincronizar, guardar la copia, tomar las solicitudes, crear o
+  actualizar productos y cargar las ventas, por nueve funciones de la base.
 - El agente solo hace `GET` contra SAP (además del inicio y cierre de sesión), con una sola sesión por
   corrida.
 - Lo ideal es un usuario de SAP de solo lectura dedicado al CRM.

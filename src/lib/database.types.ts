@@ -3835,6 +3835,97 @@ export type Database = {
           },
         ]
       }
+      sap_sales: {
+        Row: {
+          amount: number
+          card_code: string
+          channel: string | null
+          customer_name: string | null
+          id: number
+          invoice: string | null
+          sale_date: string
+          sale_type: string | null
+          seller: string | null
+          territory: string | null
+          zone: string | null
+        }
+        Insert: {
+          amount: number
+          card_code: string
+          channel?: string | null
+          customer_name?: string | null
+          id?: number
+          invoice?: string | null
+          sale_date: string
+          sale_type?: string | null
+          seller?: string | null
+          territory?: string | null
+          zone?: string | null
+        }
+        Update: {
+          amount?: number
+          card_code?: string
+          channel?: string | null
+          customer_name?: string | null
+          id?: number
+          invoice?: string | null
+          sale_date?: string
+          sale_type?: string | null
+          seller?: string | null
+          territory?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+        ]
+      }
+      sap_sales_months: {
+        Row: {
+          file_hash: string
+          loaded_at: string
+          month: string
+          row_count: number
+        }
+        Insert: {
+          file_hash: string
+          loaded_at?: string
+          month: string
+          row_count?: number
+        }
+        Update: {
+          file_hash?: string
+          loaded_at?: string
+          month?: string
+          row_count?: number
+        }
+        Relationships: [
+        ]
+      }
+      sap_sellers: {
+        Row: {
+          created_at: string
+          seller: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          seller: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          seller?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sap_sellers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sap_sync_runs: {
         Row: {
           errors: Json
@@ -4717,6 +4808,16 @@ export type Database = {
         Args: never
         Returns: number
       }
+      sap_account_sales: {
+        Args: {
+          p_account: string
+        }
+        Returns: {
+          month: string
+          amount: number
+          branches: number
+        }[]
+      }
       sap_agent_finish: {
         Args: {
           p_run: string
@@ -4746,6 +4847,20 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      sap_agent_sales_load: {
+        Args: {
+          p_month: string
+          p_hash: string
+          p_rows: Json
+          p_first: boolean
+          p_last: boolean
+        }
+        Returns: number
+      }
+      sap_agent_sales_months: {
+        Args: never
+        Returns: Json
+      }
       sap_agent_save: {
         Args: {
           p_kind: string
@@ -4761,6 +4876,52 @@ export type Database = {
       }
       sap_agent_targets: {
         Args: never
+        Returns: Json
+      }
+      sap_customer_root: {
+        Args: {
+          p_card_code: string
+        }
+        Returns: string
+      }
+      sap_match_seller: {
+        Args: {
+          p_seller: string
+        }
+        Returns: string
+      }
+      sap_norm: {
+        Args: {
+          p_text: string
+        }
+        Returns: string
+      }
+      sap_sales_group: {
+        Args: {
+          p_key: string
+          p_from: string
+          p_to: string
+          p_owner?: string
+        }
+        Returns: {
+          card_code: string
+          customer_name: string
+          seller: string
+          amount: number
+          account_id: string
+        }[]
+      }
+      sap_sales_sees_all: {
+        Args: never
+        Returns: boolean
+      }
+      sap_sales_summary: {
+        Args: {
+          p_from: string
+          p_to: string
+          p_top?: number
+          p_owner?: string
+        }
         Returns: Json
       }
       save_exchange_rate: {

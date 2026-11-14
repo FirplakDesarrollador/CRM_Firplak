@@ -518,10 +518,10 @@ for (let i = 1; i <= 56; i++) {
     ItemsGroupCode: 110 + (i % lines.length),
     U_Linea: linea, U_Color: colors[i % colors.length], QuantityOnStock: (i * 7) % 90, ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 150000 + i * 10000 }], ItemWarehouseInfoCollection: [] };
 }
-// Un kit de venta (lista de materiales de venta): un lavamanos y dos muebles.
+// Un kit de venta (lista de materiales de venta): un lavamanos y dos duchas.
 sapItems['FP-CO-KIT1'] = { ItemCode: 'FP-CO-KIT1', ItemName: 'KIT COCINA CON LAVAMANOS', SalesItem: 'tYES', ItemsGroupCode: 112, TreeType: 'iSalesTree',
   QuantityOnStock: 0, ItemPrices: [], ItemWarehouseInfoCollection: [] };
-const sapTrees = { 'FP-CO-KIT1': [{ ItemCode: 'FP-LV-101', ItemName: 'LAVAMANOS REF 101', Quantity: 1, ItemType: 'pit_Item' }, { ItemCode: 'FP-MB-104', ItemName: 'MUEBLE BAÑO REF 104', Quantity: 2, ItemType: 'pit_Item' }] };
+const sapTrees = { 'FP-CO-KIT1': [{ ItemCode: 'FP-LV-101', ItemName: 'LAVAMANOS REF 101', Quantity: 1, ItemType: 'pit_Item' }, { ItemCode: 'FP-DU-103', ItemName: 'DUCHA REF 103', Quantity: 2, ItemType: 'pit_Item' }] };
 // Todos los productos de ejemplo del CRM existen en SAP (para crear ofertas con los pedidos de la demo).
 for (const p of demoProducts) {
   sapItems[p.product_code] ??= { ItemCode: p.product_code, ItemName: p.name.toUpperCase(), SalesItem: 'tYES', QuantityOnStock: 50,
@@ -621,8 +621,12 @@ mkdirSync(join(root, 'test-results'), { recursive: true });
 writeFileSync(join(root, 'test-results', 'agente-sap-demo.json'), JSON.stringify({
   sapUrl: `http://127.0.0.1:${SAP_PORT}/b1s/v1`, sapCompanyDb: SAP.company, sapUser: SAP.user,
   crmUrl: `http://127.0.0.1:${API_PORT}`, crmAnonKey: anonKey, crmUser: SAP_AGENT.email,
+  ventasCsvDir: join(root, 'test-results', 'ventas-demo'),
   demoSapPassword: SAP.password, demoCrmPassword: SAP_AGENT.password,
 }, null, 2));
+// Carpeta de los CSV de ventas del agente: vacía hasta que una prueba deje archivos.
+rmSync(join(root, 'test-results', 'ventas-demo'), { recursive: true, force: true });
+mkdirSync(join(root, 'test-results', 'ventas-demo'), { recursive: true });
 
 // ---------------------------------------------------------------- Push simulado
 // Servicio de push de prueba, para probar sin un navegador real: entrega suscripciones, comprueba la

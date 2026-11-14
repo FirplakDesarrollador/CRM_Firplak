@@ -2225,6 +2225,65 @@ await check('la revisión detecta pendientes y frena si el historial remoto no c
   const json = `Initialising login role...\nConnecting to remote database...\n{"migrations":[{"local":"20261129000100","remote":"20261129000100","time":"x"},{"local":"20261130000100","remote":"","time":"x"},{"local":"","remote":"20261107173033","time":"x"}],"message":"Migrations listed"}`;
   assert.deepEqual(parseMigrationList(json), { synced: ['20261129000100'], pending: ['20261130000100'], remoteOnly: ['20261107173033'] });
 });
+await check('ventas reales de SAP: carga por meses, dos años, visibilidad, sucursales agrupadas y meta de facturación', async () => {
+  const [agent] = await q(`insert into auth.users (email) values ('agente.ventas@firplak.com') returning id`);
+  await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integración SAP') where id = $1`, [agent.id]);
+  await q(`update profiles set full_name = 'Rosa Vendedora' where id = $1`, [rep.id]);
+  const y = new Date().getFullYear();
+  const mes = `${y}-03-01`;
+  const filas = [
+    [`${y}-03-02`, '801', 'Nacional', 'ANTIOQUIA', 'Medellín', 'Canal Distribución', 'ROSA MARIA VENDEDORA', 'CN900100200-01', 'MAXI S A S ACACIAS', 1000],
+    [`${y}-03-05`, '802', 'Nacional', 'TOLIMA GRANDE', 'Ibagué', 'Canal Distribución', 'OTRO VENDEDOR', 'CN900100200-02', 'MAXI S A S IBAGUE', 500],
+    [`${y}-03-09`, '803', 'Excluido', 'ANTIOQUIA', 'Medellín', 'Canal Constructores', 'ROSA MARIA VENDEDORA', 'CN800-01', 'OBRA UNO', 300],
+    [`${y}-03-10`, '804', 'Nacional', 'ANTIOQUIA', 'Medellín', 'Canal Constructores', 'ROSA MARIA VENDEDORA', 'CN800-01', 'OBRA UNO', -100],
+    [`${y}-04-01`, '805', 'Nacional', 'ANTIOQUIA', 'Medellín', 'Canal B2C', 'OTRO VENDEDOR', 'CN1-01', 'FUERA DEL MES', 999],
+  ];
+  // Solo el agente carga; nadie lee la tabla directamente.
+  await assert.rejects(as(admin, () => q(`select sap_agent_sales_load($1, 'h1', $2::jsonb, true, true)`, [mes, JSON.stringify(filas)])), /Solo el agente de SAP/);
+  await assert.rejects(as(agent, () => q(`select sap_agent_sales_load($1, 'h0', '[]', true, true)`, [`${y - 2}-12-01`])), /año en curso y el anterior/);
+  const [{ n }] = await as(agent, () => q(`select sap_agent_sales_load($1, 'h1', $2::jsonb, true, true) n`, [mes, JSON.stringify(filas)]));
+  assert.equal(n, 4); // la fila de otro mes no entra
+  assert.deepEqual((await as(agent, () => q(`select sap_agent_sales_months() m`)))[0].m, { [`${y}-03`]: 'h1' });
+  assert.equal(await as(admin, () => count(`select count(*) n from sap_sales`)), 0);
+  // El vendedor de SAP se relaciona solo con el usuario del mismo nombre; el otro queda sin relacionar.
+  assert.deepEqual(await q(`select seller, user_id from sap_sellers order by seller`),
+    [{ seller: 'OTRO VENDEDOR', user_id: null }, { seller: 'ROSA MARIA VENDEDORA', user_id: rep.id }]);
+  // Volver a cargar el mes lo reemplaza (no duplica).
+  await as(agent, () => q(`select sap_agent_sales_load($1, 'h2', $2::jsonb, true, true)`, [mes, JSON.stringify(filas)]));
+  assert.equal(await count(`select count(*) n from sap_sales`), 4);
+
+  // La dirección ve todo, con las sucursales agrupadas; «Excluido» y las notas crédito cuentan.
+  const [{ s: todo }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`]));
+  assert.equal(todo.total, 1700);
+  assert.deepEqual(todo.top.map((t) => [t.key, t.amount, t.branches]), [['CN900100200', 1500, 2], ['CN800', 200, 1]]);
+  assert.deepEqual(todo.by_channel.map((c) => [c.key, c.amount]), [['Canal Distribución', 1500], ['Canal Constructores', 200]]);
+  assert.deepEqual(todo.by_month, [{ month: `${y}-03`, amount: 1700 }]);
+  // El asesor ve solo lo de su vendedor de SAP; su jefe, lo del asesor.
+  const [{ s: suyo }] = await as(rep, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`]));
+  assert.equal(suyo.total, 1200);
+  assert.deepEqual(await as(rep, () => q(`select card_code, amount::float from sap_sales_group('CN900100200', $1, $2)`, [`${y}-01-01`, `${y}-12-31`])), [{ card_code: 'CN900100200-01', amount: 1000 }]);
+  assert.equal((await as(mgr, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`])))[0].s.total, 1200);
+
+  // El nombre del grupo sale de la cuenta principal del CRM, y la cuenta principal suma sus sucursales.
+  const [main] = await q(`insert into accounts (name, owner_id) values ('Maxi S.A.S.', $1) returning id`, [admin.id]);
+  const [branch] = await q(`insert into accounts (name, owner_id, parent_account_id, sap_card_code) values ('Maxi Acacias', $1, $2, 'CN900100200-01') returning id`, [admin.id, main.id]);
+  await q(`insert into accounts (name, owner_id, parent_account_id, sap_card_code) values ('Maxi Ibagué', $1, $2, 'CN900100200-02')`, [admin.id, main.id]);
+  assert.equal((await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`])))[0].s.top[0].crm_name, 'Maxi S.A.S.');
+  await q(`update sap_sales set sale_date = (now() at time zone 'America/Bogota')::date`);
+  assert.deepEqual((await as(admin, () => q(`select amount::float a, branches::int b from sap_account_sales($1)`, [main.id]))), [{ a: 1500, b: 2 }]);
+  assert.deepEqual((await as(admin, () => q(`select amount::float a, branches::int b from sap_account_sales($1)`, [branch.id]))), [{ a: 1000, b: 1 }]);
+  assert.equal((await as(rep, () => q(`select count(*)::int n from sap_account_sales($1)`, [main.id])))[0].n, await as(rep, () => count(`select count(*) n from accounts where id = $1`, [main.id])));
+
+  // Meta de facturación: la del asesor suma lo de su vendedor; la de la compañía, todo.
+  const hoy = (await q(`select date_trunc('year', (now() at time zone 'America/Bogota'))::date::text d`))[0].d;
+  await q(`insert into sales_goals (user_id, metric, period_type, period_start, target) values ($1, 'invoiced_amount', 'year', $2, 5000), (null, 'invoiced_amount', 'year', $2, 9000)`, [rep.id, hoy]);
+  const avance = await as(admin, () => q(`select user_id, actual::float from goal_progress('year', $1) where metric = 'invoiced_amount' order by user_id nulls first`, [hoy]));
+  assert.deepEqual(avance, [{ user_id: null, actual: 1700 }, { user_id: rep.id, actual: 1200 }]);
+
+  await db.exec(`delete from sales_goals where metric = 'invoiced_amount'; delete from accounts where name like 'Maxi %'; delete from sap_sales; delete from sap_sales_months; delete from sap_sellers`);
+  await q(`update profiles set full_name = '' where id = $1`, [rep.id]);
+  await q(`delete from auth.users where id = $1`, [agent.id]);
+});
 await check('publicar exige un proyecto de destino explícito y enlazado', async () => {
   const { spawnSync } = await import('node:child_process');
   const run = (...args) => spawnSync(process.execPath, [join(root, 'scripts/db-publicar.mjs'), ...args], { cwd: root, encoding: 'utf8' });

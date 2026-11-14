@@ -14,6 +14,7 @@ import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
 import { DashboardFilters } from "./DashboardFilters";
 import { GoalSummary } from "@/components/goals/GoalSummary";
+import { SapSalesSection } from "@/components/sap/SapSales";
 import type { GoalPeriodType } from "@/lib/goals/periods";
 
 import { Tr } from "@/components/ui/Tr";
@@ -161,6 +162,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
         <div className="card-header"><h2 className="card-title"><Tr>Ventas ganadas por mes</Tr></h2></div>
         <div className="p-4"><MonthlyColumns data={d?.by_month ?? []} /></div>
       </section>
+
+      {/* Ventas reales de SAP (si el agente ya las cargó): lo facturado, frente a lo que el CRM da por ganado. */}
+      <SapSalesSection from={from} to={to} owner={owner} />
 
       <section className="card overflow-hidden">
         <div className="card-header"><h2 className="card-title"><Tr>Ventas por asesor</Tr></h2></div>

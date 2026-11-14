@@ -1,10 +1,12 @@
 import { todayISO } from "@/lib/format";
 
 export type GoalPeriodType = "month" | "quarter" | "year";
-export type GoalMetric = "won_amount" | "won_count" | "new_opportunities" | "new_leads" | "activities_completed";
+export type GoalMetric = "won_amount" | "won_count" | "new_opportunities" | "new_leads" | "activities_completed" | "invoiced_amount";
 
 export const GOAL_METRICS: { key: GoalMetric; label: string; money?: boolean }[] = [
   { key: "won_amount", label: "Ventas ganadas", money: true },
+  // Facturación neta que trae el agente de SAP (facturas menos notas crédito).
+  { key: "invoiced_amount", label: "Ventas facturadas (SAP)", money: true },
   { key: "won_count", label: "Negocios ganados" },
   { key: "new_opportunities", label: "Oportunidades nuevas" },
   { key: "new_leads", label: "Prospectos nuevos" },

@@ -15,6 +15,7 @@ import { ActivityJump } from "@/components/activities/ActivityJump";
 import { TeamCard } from "@/components/teams/TeamCard";
 import { DocumentsCard } from "@/components/ms365/DocumentsCard";
 import { SapAccountCard } from "@/components/sap/SapCards";
+import { SapAccountSales } from "@/components/sap/SapSales";
 import { sapAvailable } from "@/lib/sap/data";
 import { canSystem } from "@/lib/permissions";
 import { getActivitiesFor } from "@/components/activities/data";
@@ -127,7 +128,11 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
           {tab === "historial" ? (
             <FieldHistory object="accounts" recordId={id} />
           ) : tab === "sap" ? (
-            <SapAccountCard cardCode={(row.sap_card_code as string | null) ?? null} />
+            <div className="space-y-4">
+              {/* Ventas facturadas: las de la cuenta o, en una cuenta principal, la suma de sus sucursales. */}
+              <SapAccountSales accountId={id} />
+              <SapAccountCard cardCode={(row.sap_card_code as string | null) ?? null} />
+            </div>
           ) : tab === "documentos" ? (
             <DocumentsCard object="accounts" recordId={id} recordName={String(row.name)} userId={user.id} />
           ) : tab === "equipo" ? (

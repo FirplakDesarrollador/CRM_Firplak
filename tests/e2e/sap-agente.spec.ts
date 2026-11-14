@@ -169,7 +169,7 @@ test.describe("SAP por agente", () => {
       await expect(page.getByRole("cell", { name: /FP-LV-101/ })).toHaveCount(0);
       await page.getByRole("checkbox", { name: "Elegir FP-CO-KIT1" }).check();
       await expect(page.getByRole("row", { name: /FP-LV-101/ })).toContainText("× 1");
-      await expect(page.getByRole("row", { name: /FP-MB-104/ })).toContainText("× 2");
+      await expect(page.getByRole("row", { name: /FP-DU-103/ })).toContainText("× 2");
       await page.locator("#sap-family").selectOption("Cocinas");
       const plantaLavamanos = page.getByLabel("Planta de FP-LV-101");
       if (await plantaLavamanos.count()) {
@@ -177,7 +177,7 @@ test.describe("SAP por agente", () => {
         await page.getByRole("button", { name: "Importar seleccionados (1)" }).click();
         await expect(page.getByRole("alert").filter({ hasText: "Falta elegir" })).toContainText("FP-LV-101");
         await elegirPlanta(plantaLavamanos);
-        await elegirPlanta(page.getByLabel("Planta de FP-MB-104"));
+        await elegirPlanta(page.getByLabel("Planta de FP-DU-103"));
       }
       await page.getByRole("button", { name: "Importar seleccionados (1)" }).click();
       await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
@@ -188,7 +188,7 @@ test.describe("SAP por agente", () => {
       await page.getByRole("link", { name: /KIT COCINA CON LAVAMANOS/ }).first().click();
       await expect(page.getByText("KIT", { exact: true }).first()).toBeVisible();
       await expect(page.getByRole("link", { name: /LAVAMANOS REF 101/ })).toBeVisible();
-      await expect(page.getByRole("link", { name: /MUEBLE BAÑO REF 104/ })).toBeVisible();
+      await expect(page.getByRole("link", { name: /DUCHA REF 103/ })).toBeVisible();
 
       // Al volver a listar, la lista dice cuáles ya están en el CRM.
       await page.goto("/configuracion/sap");

@@ -13,6 +13,8 @@ import { sapCompany, sapConfigured } from "@/lib/sap/client";
 import { getSapSettings, sapSourceOf } from "@/lib/sap/settings";
 import { saveSapQuotationSetting, saveSapSource, testSapConnection } from "@/lib/sap/actions";
 import { Fmt } from "@/components/ui/Fmt";
+import { getUsers } from "@/lib/records/data";
+import { saveSapSeller } from "@/lib/sap/sales";
 import { PRODUCT_FAMILIES } from "@/lib/objects/picklists";
 import { KIT_PLANT } from "@/lib/objects/products";
 
@@ -23,11 +25,14 @@ export default async function SapAdminPage() {
   const [me, t] = await Promise.all([requireUser(), getT()]);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const supabase = await createClient();
-  const [settings, { data: runs }, { data: lists }, { data: plantDeps }, { data: fields }] = await Promise.all([
+  const [settings, { data: runs }, { data: lists }, { data: plantDeps }, { data: sellers }, { data: months }, users, { data: fields }] = await Promise.all([
     getSapSettings(),
     supabase.from("sap_sync_runs").select("id, started_at, finished_at, host, partners, items, errors, ok").order("started_at", { ascending: false }).limit(8),
     supabase.from("picklist_values").select("field, value, controlling_map").eq("object", "products").in("field", ["family", "plant"]).eq("is_active", true).order("sort_order"),
     supabase.from("picklist_dependencies").select("field").eq("object", "products").eq("field", "plant").eq("controlling_field", "family"),
+    supabase.from("sap_sellers").select("seller, user_id").order("seller"),
+    supabase.from("sap_sales_months").select("month, row_count, loaded_at").order("month", { ascending: false }),
+    getUsers(),
     supabase.from("custom_field_definitions").select("api_name, label").eq("object", "products").eq("is_active", true).order("sort_order"),
   ]);
   const configured = sapConfigured();
@@ -81,6 +86,38 @@ export default async function SapAdminPage() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="card space-y-3 p-4">
+        <h2 className="card-title"><Tr>Ventas reales y vendedores</Tr></h2>
+        <p className="text-sm text-muted"><Tr>El agente sube las ventas netas de SAP del año en curso y del anterior. Cada venta se le cuenta al usuario del CRM relacionado con su vendedor de SAP: revisa aquí esa relación.</Tr></p>
+        {!months?.length ? <p className="text-sm text-muted"><Tr>Todavía no se han cargado ventas.</Tr></p> : (
+          <p className="text-sm">{months.length} {t("meses cargados")} · {months.reduce((n, m) => n + m.row_count, 0).toLocaleString("es-CO")} {t("líneas")} · {t("Actualizado")} <Fmt datetime={months.map((m) => m.loaded_at).sort().at(-1)!} /></p>
+        )}
+        {Boolean(sellers?.length) && (
+          <div className="max-h-[26rem] overflow-auto rounded-[10px] border border-line">
+            <table className="table">
+              <thead><tr><th><Tr>Vendedor en SAP</Tr></th><th><Tr>Usuario del CRM</Tr></th></tr></thead>
+              <tbody>
+                {sellers!.map((s) => (
+                  <tr key={s.seller}>
+                    <td>{s.seller}</td>
+                    <td>
+                      <ActionForm action={saveSapSeller} className="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="seller" value={s.seller} />
+                        <select name="user_id" defaultValue={s.user_id ?? ""} className="select h-8 min-w-[12rem]" aria-label={`${t("Usuario del CRM para")} ${s.seller}`}>
+                          <option value="">{t("Sin relacionar")}</option>
+                          {users.filter((u) => u.is_active || u.id === s.user_id).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+                        </select>
+                        <SubmitButton className="btn btn-sm" pendingText="…"><Tr>Relacionar</Tr></SubmitButton>
+                      </ActionForm>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="card space-y-3 p-4">
