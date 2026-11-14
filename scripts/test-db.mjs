@@ -1277,6 +1277,18 @@ await check('rama de roles que comparte clientes (B2C) y aviso «existe, pero no
     where s.category = 'open' order by p.is_default desc, s.sort_order limit 1 returning id, owner_id`, [cuenta.id]));
   assert.equal(opp.owner_id, web.id);
   assert.equal(await ve(tienda, 'opportunities', opp.id), 0);
+  // Con «y negocios» (ejecutivo y sus promotores) la rama ve también oportunidades, cotizaciones y actividades, sin modificarlas.
+  const [tarea] = await as(web, () => q(`insert into activities (activity_type, subject) values ('task', 'Tarea propia del promotor') returning id`));
+  assert.equal(await ve(tienda, 'activities', tarea.id), 0);
+  await q(`update roles set share_business = true where name = 'Coordinación B2C prueba'`);
+  assert.equal(await ve(tienda, 'opportunities', opp.id), 1);
+  assert.equal(await ve(tienda, 'activities', tarea.id), 1);
+  assert.equal((await as(tienda, () => q(`update opportunities set amount = 1 where id = $1 returning id`, [opp.id]))).length, 0);
+  assert.equal(await ve(rep, 'opportunities', opp.id), 0);
+  // «Y negocios» exige «Comparten clientes».
+  await assert.rejects(q(`update roles set share_within = false where name = 'Coordinación B2C prueba'`));
+  await q(`update roles set share_business = false where name = 'Coordinación B2C prueba'`);
+  assert.equal(await ve(tienda, 'opportunities', opp.id), 0);
 
   // Aviso de duplicados: quien no puede abrir el cliente se entera de que existe y de quién es, sin su id.
   const dup = (quien) => as(quien, () => q(`select id, label, owner_name, can_open from possible_duplicates('accounts', 'cliente de la TIENDA', null, null)`));
@@ -1289,7 +1301,7 @@ await check('rama de roles que comparte clientes (B2C) y aviso «existe, pero no
   assert.equal((await as(web, () => q(`select * from account_directory('de la tienda')`))).length, 0);
   assert.equal((await as(rep, () => q(`select * from account_directory('de')`))).length, 0);
   // La regla interna no se puede llamar por la API; las otras dos, solo con sesión.
-  const [permisos] = await q(`select has_function_privilege('authenticated', 'public.shares_branch_with(uuid)', 'execute') a,
+  const [permisos] = await q(`select has_function_privilege('authenticated', 'public.shares_branch_with(uuid, text)', 'execute') a,
     has_function_privilege('anon', 'public.possible_duplicates(text, text, text, text)', 'execute') b, has_function_privilege('anon', 'public.account_directory(text, int)', 'execute') c`);
   assert.deepEqual(permisos, { a: false, b: false, c: false });
 

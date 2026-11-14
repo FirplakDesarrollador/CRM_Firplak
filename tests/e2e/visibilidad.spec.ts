@@ -74,9 +74,12 @@ test("un rol se puede marcar para que su rama comparta clientes", async ({ brows
   await expect(fila).toBeVisible();
   const casilla = fila.getByLabel("Comparten clientes");
   await expect(casilla).not.toBeChecked();
-  await casilla.check();
+  // «y negocios» por sí sola marca también «Comparten clientes» al guardar.
+  await fila.getByLabel("y negocios").check();
   await fila.getByRole("button", { name: "Guardar" }).click();
   await expect(admin.getByText("Rol actualizado")).toBeVisible();
   await admin.reload();
-  await expect(admin.getByRole("listitem").filter({ has: admin.locator(`input[value="${rol}"]`) }).getByLabel("Comparten clientes")).toBeChecked();
+  const guardada = admin.getByRole("listitem").filter({ has: admin.locator(`input[value="${rol}"]`) });
+  await expect(guardada.getByLabel("Comparten clientes")).toBeChecked();
+  await expect(guardada.getByLabel("y negocios")).toBeChecked();
 });

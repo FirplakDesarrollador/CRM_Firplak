@@ -3662,6 +3662,7 @@ export type Database = {
           id: string
           name: string
           parent_id: string | null
+          share_business: boolean
           share_within: boolean
           sort_order: number
           updated_at: string
@@ -3672,6 +3673,7 @@ export type Database = {
           id?: string
           name: string
           parent_id?: string | null
+          share_business?: boolean
           share_within?: boolean
           sort_order?: number
           updated_at?: string
@@ -3682,6 +3684,7 @@ export type Database = {
           id?: string
           name?: string
           parent_id?: string | null
+          share_business?: boolean
           share_within?: boolean
           sort_order?: number
           updated_at?: string
@@ -4619,6 +4622,7 @@ export type Database = {
       shares_branch_with: {
         Args: {
           p_owner: string
+          p_object: string
         }
         Returns: boolean
       }
