@@ -5,6 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { canSystem } from "@/lib/permissions";
 import type { FormState } from "@/lib/records/form";
+import { todayISO } from "@/lib/format";
+
+/**
+ * Un periodo que llega más allá de hoy («este año», «este trimestre») se corta en hoy: así el crecimiento
+ * compara lo que va del periodo con esas mismas fechas del año anterior, y no con el periodo anterior completo.
+ */
+const upToToday = (to: string) => { const today = todayISO(); return to > today ? today : to; };
 
 export type SalesBranch = { card_code: string; customer_name: string | null; seller: string | null; amount: number; prev: number | null; account_id: string | null };
 export type SalesFilters = { channels: string[]; zones: string[] };
@@ -25,7 +32,7 @@ export type SalesSummary = {
 export async function loadSalesSummary(from: string, to: string, owner: string | null, filters: SalesFilters): Promise<SalesSummary | null> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("sap_sales_summary", {
-    p_from: from, p_to: to, p_top: 15, p_owner: owner ?? undefined,
+    p_from: from, p_to: upToToday(to), p_top: 15, p_owner: owner ?? undefined,
     p_channels: filters.channels.length ? filters.channels : undefined, p_zones: filters.zones.length ? filters.zones : undefined,
   });
   return (data as unknown as SalesSummary | null) ?? null;
@@ -35,7 +42,7 @@ export async function loadSalesSummary(from: string, to: string, owner: string |
 export async function loadSalesGroup(key: string, from: string, to: string, owner: string | null, filters: SalesFilters): Promise<SalesBranch[]> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("sap_sales_group", {
-    p_key: key, p_from: from, p_to: to, p_owner: owner ?? undefined,
+    p_key: key, p_from: from, p_to: upToToday(to), p_owner: owner ?? undefined,
     p_channels: filters.channels.length ? filters.channels : undefined, p_zones: filters.zones.length ? filters.zones : undefined,
   });
   return (data ?? []).map((r) => ({ ...r, amount: Number(r.amount), prev: r.prev === null ? null : Number(r.prev) }));
