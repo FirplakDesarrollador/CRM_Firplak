@@ -59,13 +59,31 @@ test.describe("SAP por agente", () => {
       await expect(ventana.getByRole("row")).toHaveCount(4);
       const pendiente = ventana.getByRole("row").nth(2);
       // 60 pedidas, 0 facturadas, 25 en despacho (producción terminada) y 35 por producir.
-      await expect(pendiente.getByRole("cell").nth(2)).toHaveText("60");
-      await expect(pendiente.getByRole("cell").nth(3)).toHaveText("0");
-      await expect(pendiente.getByRole("cell").nth(4)).toHaveText("25");
-      await expect(pendiente.getByRole("cell").nth(5)).toHaveText("35");
+      await expect(pendiente.getByRole("cell").nth(0)).toContainText("MUEBLE DE BAÑO FLOTANTE 60 CM");
+      await expect(pendiente.getByRole("cell").nth(0)).toContainText("DEMO-MB-060");
+      await expect(pendiente.getByRole("cell").nth(1)).toHaveText("60");
+      await expect(pendiente.getByRole("cell").nth(2)).toHaveText("0");
+      await expect(pendiente.getByRole("cell").nth(3)).toHaveText("25");
+      await expect(pendiente.getByRole("cell").nth(4)).toHaveText("35");
+      await expect(pendiente.getByRole("cell").nth(5)).toContainText("Abierta");
       await expect(ventana.getByRole("row").nth(1)).toContainText("Entregada");
+      // En un pedido corto no hay resumen: repetiría lo que ya se ve.
+      await expect(ventana.getByRole("definition")).toHaveCount(0);
+      // La ventana usa el ancho disponible (hasta 76rem).
+      expect((await ventana.boundingBox())!.width).toBeGreaterThan(1100);
       await ventana.getByRole("button", { name: "Cerrar" }).click();
       await expect(ventana).toBeHidden();
+
+      // Un pedido de muchas líneas sí lleva el resumen arriba.
+      await page.goto("/cuentas?q=Altos%20del%20Valle");
+      await page.getByRole("link", { name: /Constructora Altos del Valle/ }).first().click();
+      await page.getByRole("tab", { name: "SAP" }).click();
+      await page.getByRole("button", { name: "41188" }).click();
+      const larga = page.getByRole("dialog");
+      await expect(larga.getByRole("row")).toHaveCount(7);
+      // 60 pedidas, 20 facturadas, 40 en despacho (sale de bodega) y 0 por producir.
+      await expect(larga.getByRole("definition")).toHaveText(["60", "20", "40", "0"]);
+      await larga.getByRole("button", { name: "Cerrar" }).click();
 
       // El inventario de un producto también sale de la copia.
       await page.goto("/productos?q=DEMO-MB-060");

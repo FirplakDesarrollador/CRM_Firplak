@@ -737,6 +737,7 @@ export const UI_EN: Record<string, string> = {
   "Entrega": "Delivery",
   "OC cliente": "Customer PO",
   "Facturas abiertas y recientes": "Open and recent invoices",
+  "Artículo": "Item",
   "Próximo despacho": "Next dispatch",
   "Total sin IVA": "Total excl. VAT",
   "Entregas sin facturar": "Unbilled deliveries",

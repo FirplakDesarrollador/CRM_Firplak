@@ -487,6 +487,8 @@ const sapLine = (n, qty, open, ship, whs = 'PT-02') => ({ LineNum: n, VisualOrde
   Quantity: qty, RemainingOpenQuantity: open, ShipDate: sapDay(ship), LineStatus: open ? 'bost_Open' : 'bost_Close', LineTotal: qty * 1250000,
   WarehouseCode: whs, U_TipoTOC: 'MTOSTD', U_Fecha_Plan_Ent_Cli_Linea: sapDay(ship + 3) });
 sapOrders[0].DocumentLines = [sapLine(0, 40, 0, -5), sapLine(1, 60, 60, 18), sapLine(2, 96, 96, 45)];
+// Un pedido largo (seis líneas), para ver el resumen que solo aparece en pedidos de muchas líneas.
+sapOrders[1].DocumentLines = [0, 1, 2, 3, 4, 5].map((n) => sapLine(n, 10, n < 2 ? 0 : 10, 10 + n * 7, 'PT-01'));
 const sapProductionOrders = [
   { ItemNo: 'DEMO-MB-060', ProductionOrderStatus: 'boposReleased', CompletedQuantity: 25, ProductionOrderOriginNumber: 41210, U_NumLote: '41210-2-1' },
 ];
