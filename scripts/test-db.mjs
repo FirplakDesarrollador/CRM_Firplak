@@ -741,6 +741,50 @@ await check('el agente de SAP guarda la copia de cartera e inventario y nadie m�
   await q(`delete from auth.users where id = $1`, [agent.id]);
 });
 
+await check('las solicitudes a SAP las crea la administraci처n y solo el agente las atiende e importa productos', async () => {
+  const [agent] = await q(`insert into auth.users (email) values ('agente.sap@firplak.com') returning id`);
+  await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integraci처n SAP') where id = $1`, [agent.id]);
+
+  // Un asesor no puede pedir nada; la administraci처n crea la solicitud, pero no puede darla por atendida.
+  await assert.rejects(as(rep, () => q(`insert into sap_requests (kind) values ('product_preview')`)));
+  const [req] = await as(admin, () => q(`insert into sap_requests (kind, params) values ('product_import', '{"prefix":"ZZ-"}') returning id`));
+  await assert.rejects(as(admin, () => q(`insert into sap_requests (kind, status) values ('product_import', 'done')`)));
+  assert.equal((await as(admin, () => q(`update sap_requests set status = 'done' where id = $1 returning id`, [req.id]))).length, 0);
+  await assert.rejects(as(admin, () => q(`select sap_agent_next_request()`)), /Solo el agente de SAP/);
+  await assert.rejects(as(admin, () => q(`select sap_agent_import_products('[]')`)), /Solo el agente de SAP/);
+  assert.equal(await as(rep, () => count(`select count(*) n from sap_requests`)), 0);
+
+  // El agente la toma (queda en curso), importa por lotes y la cierra con el resultado.
+  const [{ next }] = await as(agent, () => q(`select sap_agent_next_request() next`));
+  assert.deepEqual([next.id, next.kind, next.params.prefix], [req.id, 'product_import', 'ZZ-']);
+  assert.equal((await as(agent, () => q(`select sap_agent_next_request() next`)))[0].next, null);
+  const filas = [{ code: 'ZZ-001', name: 'LAVAMANOS ZZ', custom: { linea: 'Prueba' } }, { code: 'ZZ-002', name: '' }];
+  const [{ r1 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb) r1`, [JSON.stringify(filas)]));
+  assert.deepEqual(r1, { created: 2, updated: 0 });
+  // Repetir actualiza nombre y campos mapeados, sin duplicar ni borrar otros campos.
+  await q(`update products set custom_fields = custom_fields || '{"otro":"se conserva"}', family = 'Lavamanos y superficies' where product_code = 'ZZ-001'`);
+  const [{ r2 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb) r2`,
+    [JSON.stringify([{ code: 'ZZ-001', name: 'LAVAMANOS ZZ NUEVO', custom: { linea: 'Otra' } }])]));
+  assert.deepEqual(r2, { created: 0, updated: 1 });
+  const [p1] = await q(`select name, family, unit, is_active, custom_fields from products where product_code = 'ZZ-001'`);
+  assert.deepEqual([p1.name, p1.family, p1.unit, p1.is_active], ['LAVAMANOS ZZ NUEVO', 'Lavamanos y superficies', 'Unidad', true]);
+  assert.deepEqual(p1.custom_fields, { linea: 'Otra', otro: 'se conserva' });
+  assert.equal((await q(`select name from products where product_code = 'ZZ-002'`))[0].name, 'ZZ-002');
+  await as(agent, () => q(`select sap_agent_finish_request($1, '{"total":2,"created":2,"updated":0}', null)`, [req.id]));
+  const [done] = await as(admin, () => q(`select status, result, finished_at from sap_requests where id = $1`, [req.id]));
+  assert.deepEqual([done.status, done.result.created], ['done', 2]);
+  assert.ok(done.finished_at);
+
+  // Una solicitud que nadie atiende en 15 minutos queda con error y su explicaci처n.
+  const [old] = await as(admin, () => q(`insert into sap_requests (kind) values ('product_preview') returning id`));
+  await q(`update sap_requests set created_at = now() - interval '20 minutes' where id = $1`, [old.id]);
+  assert.equal((await as(agent, () => q(`select sap_agent_next_request() next`)))[0].next, null);
+  assert.match((await q(`select error from sap_requests where id = $1 and status = 'error'`, [old.id]))[0].error, /no atendi처 la solicitud a tiempo/);
+
+  await db.exec(`delete from sap_requests; delete from products where product_code like 'ZZ-%'`);
+  await q(`delete from auth.users where id = $1`, [agent.id]);
+});
+
 console.log('Fase 18');
 await check('borrar los datos de ejemplo deja la configuraci처n y solo lo puede hacer administraci처n', async () => {
   const configBefore = await q(`select (select count(*) from pipelines) p, (select count(*) from custom_field_definitions) f,

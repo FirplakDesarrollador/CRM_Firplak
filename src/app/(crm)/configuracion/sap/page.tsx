@@ -81,7 +81,7 @@ export default async function SapAdminPage() {
         <h2 className="card-title"><Tr>Conexión directa del servidor</Tr> {configured ? <span className="badge badge-success"><Tr>Lista</Tr></span> : <span className="badge badge-warning"><Tr>Pendiente</Tr></span>}</h2>
         <p className="flex items-center gap-2 text-sm">
           {configured ? <CheckCircle2 size={15} className="text-success" /> : <XCircle size={15} className="text-danger" />}
-          {configured ? <>{t("Service Layer configurado · compañía")} <code>{sapCompany()}</code></> : t("El servidor del CRM no tiene credenciales de SAP. No hacen falta para la copia del agente; sí para crear ofertas de venta e importar productos, que por ahora solo funcionan con conexión directa.")}
+          {configured ? <>{t("Service Layer configurado · compañía")} <code>{sapCompany()}</code></> : t("El servidor del CRM no tiene credenciales de SAP. No hacen falta para la copia del agente ni para importar productos; sí para crear ofertas de venta, que por ahora solo funcionan con conexión directa.")}
         </p>
         {configured && (
           <ActionForm action={testSapConnection} className="flex flex-col items-start gap-1">
@@ -105,7 +105,8 @@ export default async function SapAdminPage() {
       <section className="card space-y-3 p-4">
         <h2 className="card-title"><Tr>Importar productos desde SAP</Tr></h2>
         <p className="text-sm text-muted"><Tr>Tú decides cuándo importar. Se traen el código y la descripción de cada artículo, y los campos personalizados que relaciones con un campo de SAP.</Tr></p>
-        {configured ? (
+        {source === "agent" && <p className="text-xs text-muted"><Tr>La consulta la hace el agente dentro de la red: tarda hasta un minuto en empezar.</Tr></p>}
+        {configured || source === "agent" ? (
           <SapImportPanel fields={(fields ?? []).map((f) => ({ api_name: f.api_name, label: f.label }))}
             prefix={settings.product_import.prefix} salesOnly={settings.product_import.sales_only} mappings={settings.product_import.mappings} />
         ) : <p className="text-sm text-muted"><Tr>Disponible cuando la conexión esté configurada.</Tr></p>}

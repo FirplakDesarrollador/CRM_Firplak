@@ -3788,6 +3788,53 @@ export type Database = {
         Relationships: [
         ]
       }
+      sap_requests: {
+        Row: {
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          params: Json
+          requested_by: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          params?: Json
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          params?: Json
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sap_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sap_sync_runs: {
         Row: {
           errors: Json
@@ -4678,6 +4725,24 @@ export type Database = {
           p_errors: Json
         }
         Returns: undefined
+      }
+      sap_agent_finish_request: {
+        Args: {
+          p_id: string
+          p_result: Json
+          p_error: string
+        }
+        Returns: undefined
+      }
+      sap_agent_import_products: {
+        Args: {
+          p_rows: Json
+        }
+        Returns: Json
+      }
+      sap_agent_next_request: {
+        Args: never
+        Returns: Json
       }
       sap_agent_save: {
         Args: {

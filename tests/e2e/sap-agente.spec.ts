@@ -5,9 +5,9 @@ import { sesion } from "./ayuda";
 
 // El agente de SAP (agente-sap/agente.mjs) corre de verdad contra el SAP simulado y la base de la demo;
 // el CRM muestra la copia que dejó, con su hora, en vez de consultar SAP en vivo.
-const correrAgente = () => {
+const correrAgente = (...comando: string[]) => {
   const cfg = JSON.parse(readFileSync("test-results/agente-sap-demo.json", "utf8"));
-  return execFileSync(process.execPath, ["agente-sap/agente.mjs", "correr", "--ahora"], {
+  return execFileSync(process.execPath, ["agente-sap/agente.mjs", ...(comando.length ? comando : ["correr", "--ahora"])], {
     encoding: "utf8",
     env: { ...process.env, AGENTE_SAP_CONFIG: "test-results/agente-sap-demo.json", AGENTE_SAP_PASSWORD: cfg.demoSapPassword, AGENTE_CRM_PASSWORD: cfg.demoCrmPassword },
   });
@@ -97,6 +97,30 @@ test.describe("SAP por agente", () => {
       await expect(page.getByRole("cell", { name: "Correcta" }).first()).toBeVisible();
     } finally {
       // Las demás pruebas usan la consulta en vivo contra el SAP simulado.
+      await elegirOrigen(page, /Consulta en vivo/);
+    }
+  });
+
+  test("importa productos de SAP por medio del agente: vista previa y luego la importación", async ({ page }) => {
+    try {
+      await elegirOrigen(page, /Copia del agente/);
+      await page.getByLabel(/Solo códigos que empiezan por/).fill("FP-CO-");
+      await page.getByRole("button", { name: /Guardar y ver vista previa/ }).click();
+      // La solicitud queda esperando al agente; nada más pasa hasta que él la atienda.
+      await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
+      expect(correrAgente("atender")).toMatch(/1 solicitudes atendidas/);
+      await expect(page.getByText("Vista previa (primeros 10 artículos)")).toBeVisible();
+      await expect(page.getByRole("cell", { name: "FP-CO-102", exact: true })).toBeVisible();
+
+      await page.getByRole("button", { name: "Importar ahora" }).click();
+      await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
+      expect(correrAgente("atender")).toMatch(/1 solicitudes atendidas/);
+      // 14 artículos FP-CO-, dos no son de venta.
+      await expect(page.getByText("12 artículos leídos de SAP: 12 productos creados y 0 actualizados.")).toBeVisible();
+
+      await page.goto("/productos?q=FP-CO-102");
+      await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 102/ }).first()).toBeVisible();
+    } finally {
       await elegirOrigen(page, /Consulta en vivo/);
     }
   });

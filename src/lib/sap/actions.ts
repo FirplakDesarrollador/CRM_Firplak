@@ -7,7 +7,7 @@ import { can, canSystem } from "@/lib/permissions";
 import type { FormState } from "@/lib/records/form";
 import { sapGet } from "./client";
 import { sendOrderToSap } from "./quotations";
-import { getSapSettings, validSapField, type SapSettings } from "./settings";
+import { getSapSettings, sapSourceOf, validSapField, type SapSettings } from "./settings";
 import { fetchSapItems, importSapItems } from "./products";
 
 export async function sendOrderToSapNow(orderId: string): Promise<FormState> {
@@ -67,14 +67,49 @@ export async function testSapConnection(_prev?: FormState, _fd?: FormData): Prom
   }
 }
 
-export type ImportState = FormState & { preview?: Record<string, unknown>[]; columns?: string[] };
+/** `requestId`: la pidió al agente de SAP; el panel consulta su estado hasta que termine. */
+export type ImportState = FormState & { preview?: Record<string, unknown>[]; columns?: string[]; requestId?: string };
+
+/** Deja una solicitud para el agente de SAP (vista previa o importación) con el filtro y el mapeo vigentes. */
+async function requestFromAgent(kind: "product_preview" | "product_import", opts: SapSettings["product_import"]): Promise<ImportState> {
+  const supabase = await createClient();
+  const { data: defs } = await supabase.from("custom_field_definitions").select("api_name, field_type").eq("object", "products").eq("is_active", true);
+  const types = new Map((defs ?? []).map((d) => [d.api_name, d.field_type]));
+  const mappings = opts.mappings.filter((m) => types.has(m.field) && validSapField(m.sap_field)).map((m) => ({ ...m, type: types.get(m.field)! }));
+  const { data, error } = await supabase.from("sap_requests")
+    .insert({ kind, params: { prefix: opts.prefix, sales_only: opts.sales_only, mappings } }).select("id").single();
+  if (error) return { message: error.message };
+  return { ok: true, message: "Enviado al agente de SAP: lo atiende en menos de un minuto…", requestId: data.id };
+}
+
+/** Estado de una solicitud al agente, ya convertido en lo que muestra el panel. */
+export async function checkSapRequest(id: string): Promise<ImportState & { pending?: boolean }> {
+  if (!(await adminUser())) return { message: "No tienes permiso para esta configuración." };
+  const supabase = await createClient();
+  const { data: r } = await supabase.from("sap_requests").select("kind, status, result, error").eq("id", id).maybeSingle();
+  if (!r) return { message: "La solicitud ya no existe." };
+  if (r.status === "pending" || r.status === "running") return { ok: true, pending: true, requestId: id, message: r.status === "running" ? "El agente está consultando SAP…" : "Enviado al agente de SAP: lo atiende en menos de un minuto…" };
+  if (r.status === "error") return { message: `SAP no respondió: ${r.error ?? "error desconocido"}` };
+  if (r.kind === "product_preview") {
+    const res = (r.result ?? {}) as { rows?: Record<string, unknown>[]; columns?: string[] };
+    const rows = res.rows ?? [];
+    return { ok: true, message: rows.length ? "Vista previa (primeros 10 artículos)" : "No hay artículos de SAP con ese filtro.", preview: rows, columns: res.columns ?? [] };
+  }
+  const res = (r.result ?? {}) as { total?: number; created?: number; updated?: number; errors?: string[] };
+  revalidatePath("/productos");
+  const base = `${res.total ?? 0} artículos leídos de SAP: ${res.created ?? 0} productos creados y ${res.updated ?? 0} actualizados.`;
+  return res.errors?.length ? { message: `${base} Errores: ${res.errors.slice(0, 3).join(" · ")}` } : { ok: true, message: base };
+}
 
 /** Guarda filtro y mapeo, y muestra los primeros artículos que se importarían. */
 export async function previewSapImport(_prev: ImportState, fd: FormData): Promise<ImportState> {
   if (!(await adminUser())) return { message: "No tienes permiso para esta configuración." };
   const settings = readSettings(fd, await getSapSettings());
   const supabase = await createClient();
-  await supabase.from("integration_settings").upsert({ key: "sap", value: { ...settings, create_quotations: (await getSapSettings()).create_quotations }, updated_at: new Date().toISOString() });
+  const stored = await getSapSettings();
+  await supabase.from("integration_settings").upsert({ key: "sap", value: { ...stored, product_import: settings.product_import }, updated_at: new Date().toISOString() });
+  revalidatePath("/configuracion/sap");
+  if (sapSourceOf(stored) === "agent") return requestFromAgent("product_preview", settings.product_import);
   try {
     const rows = await fetchSapItems(settings.product_import, 10);
     revalidatePath("/configuracion/sap");
@@ -91,6 +126,8 @@ export async function runSapImport(_prev: ImportState, _fd: FormData): Promise<I
   const user = await adminUser();
   if (!user) return { message: "No tienes permiso para esta configuración." };
   if (!can(user.access, "products", "create") || !can(user.access, "products", "edit")) return { message: "Necesitas permiso para crear y editar productos." };
+  const stored = await getSapSettings();
+  if (sapSourceOf(stored) === "agent") return requestFromAgent("product_import", stored.product_import);
   try {
     const r = await importSapItems((await getSapSettings()).product_import);
     revalidatePath("/productos");

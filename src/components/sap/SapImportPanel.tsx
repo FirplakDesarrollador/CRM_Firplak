@@ -1,20 +1,47 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Download, Eye } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
-import { previewSapImport, runSapImport, type ImportState } from "@/lib/sap/actions";
+import { checkSapRequest, previewSapImport, runSapImport, type ImportState } from "@/lib/sap/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
 type Field = { api_name: string; label: string };
+
+/**
+ * Resultado de una acción: si la atendió el servidor, es el estado tal cual; si la pidió al agente de
+ * SAP (`requestId`), consulta la solicitud cada tres segundos hasta que termine o pasen tres minutos.
+ */
+function useAgentResult(state: ImportState) {
+  const [done, setDone] = useState<{ id: string; state: ImportState } | null>(null);
+  const id = state.requestId;
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    const started = Date.now();
+    const tick = async () => {
+      const next = await checkSapRequest(id).catch(() => null);
+      if (!active) return;
+      if (next && !next.pending) return setDone({ id, state: next });
+      if (Date.now() - started > 180_000) return setDone({ id, state: { message: "El agente de SAP no respondió. Revisa que su equipo esté encendido y dentro de la red de Firplak." } });
+      timer = setTimeout(tick, 3000);
+    };
+    let timer = setTimeout(tick, 1500);
+    return () => { active = false; clearTimeout(timer); };
+  }, [id]);
+  if (!id) return { state, waiting: false };
+  return done?.id === id ? { state: done.state, waiting: false } : { state, waiting: true };
+}
 
 /** Importación de productos desde SAP: filtro, mapeo de campos personalizados, vista previa e importar. */
 export function SapImportPanel({ fields, prefix, salesOnly, mappings }: {
   fields: Field[]; prefix: string; salesOnly: boolean; mappings: { field: string; sap_field: string }[];
 }) {
   const t = useT();
-  const [preview, previewAction] = useActionState<ImportState, FormData>(previewSapImport, {});
-  const [result, importAction] = useActionState<ImportState, FormData>(runSapImport, {});
+  const [previewState, previewAction] = useActionState<ImportState, FormData>(previewSapImport, {});
+  const [resultState, importAction] = useActionState<ImportState, FormData>(runSapImport, {});
+  const { state: preview, waiting: previewWaiting } = useAgentResult(previewState);
+  const { state: result, waiting: importWaiting } = useAgentResult(resultState);
   const mapped = new Map(mappings.map((m) => [m.field, m.sap_field]));
 
   return (
@@ -45,7 +72,7 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings }: {
           {fields.length === 0 && <p className="mt-1 text-xs text-muted">{t("Para traer más datos de SAP, crea campos personalizados de Productos en Configuración → Campos personalizados y relaciónalos aquí con su campo de SAP.")}</p>}
         </div>
         <SubmitButton className="btn" pendingText="Consultando SAP…"><Eye size={14} /> {t("Guardar y ver vista previa")}</SubmitButton>
-        {preview.message && <p role="status" className={`text-xs font-semibold ${preview.ok ? "text-success" : "text-danger"}`}>{t(preview.message)}</p>}
+        {preview.message && <p role="status" aria-busy={previewWaiting} className={`text-xs font-semibold ${previewWaiting ? "text-muted" : preview.ok ? "text-success" : "text-danger"}`}>{t(preview.message)}</p>}
       </form>
 
       {preview.preview && preview.preview.length > 0 && (
@@ -64,7 +91,7 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings }: {
       <form action={importAction} className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
         <SubmitButton className="btn btn-primary" pendingText="Importando…"><Download size={14} /> {t("Importar ahora")}</SubmitButton>
         <span className="text-xs text-muted">{t("Crea los productos nuevos y actualiza nombre y campos mapeados de los existentes (por Referencia). No cambia precios ni familia.")}</span>
-        {result.message && <p role="status" className={`basis-full text-sm font-semibold ${result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
+        {result.message && <p role="status" aria-busy={importWaiting} className={`basis-full text-sm font-semibold ${importWaiting ? "text-muted" : result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
       </form>
     </div>
   );

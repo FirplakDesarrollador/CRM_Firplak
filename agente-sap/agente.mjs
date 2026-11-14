@@ -6,7 +6,7 @@
 // en el CRM por su Código SAP, y el inventario de los productos activos; lo deja en las tablas sap_*
 // del CRM con un usuario técnico que solo puede hacer eso. Nunca escribe en SAP.
 //
-// Uso:  node agente-sap/agente.mjs <correr|probar|muestra|instalar|desinstalar|estado> [--ahora]
+// Uso:  node agente-sap/agente.mjs <correr|atender|probar|muestra|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -21,7 +21,6 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = process.env.AGENTE_SAP_CONFIG ?? join(homedir(), ".firplak-crm", "agente-sap.json");
 const LLAVERO = "firplak-crm-agente-sap";
 const ETIQUETA = "com.firplak.crm.agente-sap";
-const PLIST = join(homedir(), "Library", "LaunchAgents", `${ETIQUETA}.plist`);
 const REGISTRO = join(homedir(), "Library", "Logs", "Firplak CRM agente SAP.log");
 // Lunes a viernes, cada dos horas dentro del horario laboral (7:00 a 17:30, hora del equipo).
 const HORAS = [7, 9, 11, 13, 15, 17];
@@ -336,62 +335,156 @@ async function muestra([codigo, articulo]) {
   return 0;
 }
 
+// ---------------------------------------------------------------- Solicitudes a demanda
+const CAMPO_SAP = /^[A-Za-z][A-Za-z0-9_]{0,49}$/;
+const MAX_IMPORTAR = 5000;
+
+/** Valor de SAP convertido al tipo del campo personalizado del CRM. */
+function convertir(valor, tipo) {
+  if (valor === null || valor === undefined || valor === "") return null;
+  if (["number", "currency", "percent"].includes(tipo)) return Number.isFinite(Number(valor)) ? Number(valor) : null;
+  if (tipo === "checkbox") return valor === true || valor === "tYES" || valor === "Y" || valor === 1;
+  return String(valor);
+}
+
+/** Artículos de SAP según el filtro de la solicitud (prefijo, solo de venta) con los campos mapeados. */
+async function articulosParaImportar(sap, params, limite) {
+  const mapeos = (params.mappings ?? []).filter((m) => m?.field && CAMPO_SAP.test(m.sap_field ?? ""));
+  const filtros = [
+    params.sales_only ? "SalesItem eq 'tYES'" : null,
+    String(params.prefix ?? "").trim() ? `startswith(ItemCode,${comillas(String(params.prefix).trim())})` : null,
+  ].filter(Boolean);
+  const consulta = {
+    $select: [...new Set(["ItemCode", "ItemName", ...mapeos.map((m) => m.sap_field)])].join(","),
+    ...(filtros.length ? { $filter: filtros.join(" and ") } : {}),
+    $orderby: "ItemCode",
+    ...(limite < 50 ? { $top: String(limite) } : {}),
+  };
+  const filas = [];
+  let siguiente = q("Items", consulta);
+  while (siguiente && filas.length < limite) {
+    const pagina = await sap.get(siguiente);
+    filas.push(...(pagina?.value ?? []));
+    siguiente = pagina?.["odata.nextLink"] ?? null;
+  }
+  return { filas: filas.slice(0, limite), mapeos };
+}
+
+async function atenderUna(sap, destino, solicitud) {
+  const { kind, params = {} } = solicitud;
+  if (kind === "product_preview") {
+    const { filas, mapeos } = await articulosParaImportar(sap, params, 10);
+    const columns = ["ItemCode", "ItemName", ...mapeos.map((m) => m.sap_field)];
+    return { columns, rows: filas.map((f) => Object.fromEntries(columns.map((c) => [c, f[c] ?? null]))) };
+  }
+  if (kind === "product_import") {
+    const { filas, mapeos } = await articulosParaImportar(sap, params, MAX_IMPORTAR);
+    let created = 0, updated = 0;
+    const errors = [];
+    for (const lote of lotes(filas, 200)) {
+      const rows = lote.map((f) => ({ code: f.ItemCode, name: f.ItemName ?? "", custom: Object.fromEntries(mapeos.map((m) => [m.field, convertir(f[m.sap_field], m.type)])) }));
+      try {
+        const r = await destino.rpc("sap_agent_import_products", { p_rows: rows });
+        created += r.created; updated += r.updated;
+      } catch (e) { errors.push(`${lote[0].ItemCode}…: ${String(e.message).slice(0, 200)}`); }
+    }
+    return { total: filas.length, created, updated, errors: errors.slice(0, 10) };
+  }
+  throw new Error(`Solicitud desconocida: ${kind}`);
+}
+
+/** Atiende las solicitudes pendientes del CRM (vista previa e importación de productos) y termina. */
+async function atender() {
+  const cfg = leerConfig();
+  const destino = await crm(cfg);
+  const sap = new Sap(cfg);
+  let n = 0;
+  try {
+    for (;;) {
+      const solicitud = await destino.rpc("sap_agent_next_request");
+      if (!solicitud) break;
+      n++;
+      log(`Solicitud ${solicitud.id} (${solicitud.kind})`);
+      let resultado = null, error = null;
+      try { resultado = await atenderUna(sap, destino, solicitud); } catch (e) { error = String(e?.message ?? e); log("ERROR", error); }
+      await destino.rpc("sap_agent_finish_request", { p_id: solicitud.id, p_result: resultado, p_error: error });
+    }
+  } finally {
+    await sap.logout();
+    await destino.salir();
+  }
+  if (n) log(`${n} solicitudes atendidas`);
+  return 0;
+}
+
 const xml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const launchctl = (...args) => execFileSync("/bin/launchctl", args, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
 const dominio = () => `gui/${process.getuid()}`;
 
-function instalar() {
-  if (process.platform !== "darwin") throw new Error("La instalación automática es para macOS.");
-  leerConfig();
-  const horarios = [1, 2, 3, 4, 5].flatMap((dia) => HORAS.map((hora) => `      <dict><key>Weekday</key><integer>${dia}</integer><key>Hour</key><integer>${hora}</integer><key>Minute</key><integer>0</integer></dict>`)).join("\n");
-  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+const SOLICITUDES = `${ETIQUETA}.solicitudes`;
+const plistDe = (etiqueta) => join(homedir(), "Library", "LaunchAgents", `${etiqueta}.plist`);
+
+function plist(etiqueta, comando, programacion) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>${ETIQUETA}</string>
+  <key>Label</key><string>${etiqueta}</string>
   <key>ProgramArguments</key>
   <array>
     <string>${xml(process.execPath)}</string>
     <string>${xml(resolve(AQUI, "agente.mjs"))}</string>
-    <string>correr</string>
+    <string>${comando}</string>
   </array>
   <key>WorkingDirectory</key><string>${xml(resolve(AQUI, ".."))}</string>
-  <key>StartCalendarInterval</key>
-  <array>
-${horarios}
-  </array>
+${programacion}
   <key>StandardOutPath</key><string>${xml(REGISTRO)}</string>
   <key>StandardErrorPath</key><string>${xml(REGISTRO)}</string>
 </dict>
 </plist>
 `;
-  mkdirSync(dirname(PLIST), { recursive: true });
-  writeFileSync(PLIST, plist);
-  try { launchctl("bootout", `${dominio()}/${ETIQUETA}`); } catch { /* no estaba cargado */ }
-  launchctl("bootstrap", dominio(), PLIST);
-  log(`Instalado: correrá de lunes a viernes a las ${HORAS.join(", ")} horas. Registro: ${REGISTRO}`);
+}
+
+function cargar(etiqueta, contenido) {
+  mkdirSync(dirname(plistDe(etiqueta)), { recursive: true });
+  writeFileSync(plistDe(etiqueta), contenido);
+  try { launchctl("bootout", `${dominio()}/${etiqueta}`); } catch { /* no estaba cargado */ }
+  launchctl("bootstrap", dominio(), plistDe(etiqueta));
+}
+
+function instalar() {
+  if (process.platform !== "darwin") throw new Error("La instalación automática es para macOS.");
+  leerConfig();
+  const horarios = [1, 2, 3, 4, 5].flatMap((dia) => HORAS.map((hora) => `      <dict><key>Weekday</key><integer>${dia}</integer><key>Hour</key><integer>${hora}</integer><key>Minute</key><integer>0</integer></dict>`)).join("\n");
+  // Sincronización de cartera, pedidos e inventario: lunes a viernes, cada dos horas.
+  cargar(ETIQUETA, plist(ETIQUETA, "correr", `  <key>StartCalendarInterval</key>\n  <array>\n${horarios}\n  </array>`));
+  // Solicitudes del CRM (importar productos): se revisan cada minuto, todos los días.
+  cargar(SOLICITUDES, plist(SOLICITUDES, "atender", "  <key>StartInterval</key><integer>60</integer>"));
+  log(`Instalado: sincroniza de lunes a viernes a las ${HORAS.join(", ")} horas y revisa las solicitudes del CRM cada minuto. Registro: ${REGISTRO}`);
   return 0;
 }
 
 function desinstalar() {
-  try { launchctl("bootout", `${dominio()}/${ETIQUETA}`); } catch { /* no estaba cargado */ }
-  rmSync(PLIST, { force: true });
+  for (const etiqueta of [ETIQUETA, SOLICITUDES]) {
+    try { launchctl("bootout", `${dominio()}/${etiqueta}`); } catch { /* no estaba cargado */ }
+    rmSync(plistDe(etiqueta), { force: true });
+  }
   log("Desinstalado: ya no corre solo.");
   return 0;
 }
 
 function estado() {
-  let cargado = false;
-  try { launchctl("print", `${dominio()}/${ETIQUETA}`); cargado = true; } catch { /* no cargado */ }
-  log(cargado ? `Instalado: lunes a viernes a las ${HORAS.join(", ")} horas.` : "No está instalado para correr solo.");
+  const cargado = (etiqueta) => { try { launchctl("print", `${dominio()}/${etiqueta}`); return true; } catch { return false; } };
+  log(cargado(ETIQUETA) ? `Sincronización instalada: lunes a viernes a las ${HORAS.join(", ")} horas.` : "La sincronización no está instalada para correr sola.");
+  log(cargado(SOLICITUDES) ? "Solicitudes del CRM: se revisan cada minuto." : "Las solicitudes del CRM no se están revisando (falta instalar).");
   log(`Configuración: ${CONFIG_PATH} ${existsSync(CONFIG_PATH) ? "(existe)" : "(falta)"} · Registro: ${REGISTRO}`);
   return 0;
 }
 
 const [comando = "", ...resto] = process.argv.slice(2);
-const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), instalar, desinstalar, estado };
+const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), atender, instalar, desinstalar, estado };
 if (!comandos[comando]) {
-  console.log("Uso: node agente-sap/agente.mjs <correr|probar|muestra|instalar|desinstalar|estado> [--ahora]");
+  console.log("Uso: node agente-sap/agente.mjs <correr|atender|probar|muestra|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
 try {

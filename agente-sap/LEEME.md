@@ -10,6 +10,11 @@ Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
   abiertos, todas las facturas abiertas y las diez facturas más recientes.
 - De cada producto activo del CRM (por su Referencia): inventario por bodega y listas de precios.
 
+Además revisa **cada minuto, todos los días**, si el CRM le dejó una solicitud (Configuración → SAP →
+«Importar productos desde SAP»): la vista previa o la importación de artículos. La atiende, deja el
+resultado en el CRM y termina. Al importar crea los productos nuevos y actualiza el nombre y los campos
+mapeados de los que ya existen, por Referencia; no cambia precios ni familia.
+
 Si a esa hora el equipo está apagado, dormido o fuera de la red, la corrida se salta o falla, y el CRM
 sigue mostrando la copia anterior con su hora. Cada corrida queda registrada en Configuración → SAP.
 
@@ -46,14 +51,18 @@ sigue mostrando la copia anterior con su hora. Cada corrida queda registrada en 
    node agente-sap/agente.mjs instalar
    ```
 
-Otros comandos: `muestra` (lee de SAP un cliente y un artículo y dice qué campos llegan, sin guardar nada ni mostrar valores; acepta un código de cliente y uno de artículo), `estado` (si está instalado) y `desinstalar` (deja de correr solo).
+Si ya estaba instalado antes de la fase 2, vuelve a correr `instalar` para que también revise las
+solicitudes cada minuto.
+
+Otros comandos: `atender` (atiende ahora las solicitudes pendientes), `muestra` (lee de SAP un cliente y un artículo y dice qué campos llegan, sin guardar nada ni mostrar valores; acepta un código de cliente y uno de artículo), `estado` (si está instalado) y `desinstalar` (deja de correr solo).
 Registro: `~/Library/Logs/Firplak CRM agente SAP.log`.
 
 ## Seguridad
 
 - Las contraseñas solo viven en el Llavero del equipo. No van en archivos, en el repositorio ni en el CRM.
 - El usuario técnico del agente tiene el perfil «Integración SAP»: no ve clientes ni negocios. Solo
-  puede pedir la lista de códigos por sincronizar y guardar la copia, por cuatro funciones de la base.
+  puede pedir la lista de códigos por sincronizar, guardar la copia, tomar las solicitudes y crear o
+  actualizar productos, por siete funciones de la base.
 - El agente solo hace `GET` contra SAP (además del inicio y cierre de sesión), con una sola sesión por
   corrida.
 - Lo ideal es un usuario de SAP de solo lectura dedicado al CRM.
