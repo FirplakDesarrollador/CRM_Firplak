@@ -928,7 +928,7 @@ export const UI_EN: Record<string, string> = {
   "Actualiza antes de salir.": "Update before you head out.",
   "Descarga tus clientes, agenda y precios para consultarlos sin señal.": "Download your customers, agenda and prices to look them up without signal.",
   "Necesitas conexión para descargar.": "You need a connection to download.",
-  "Modo Offline": "Offline mode", "Lo descargado": "Downloaded data",
+  "Modo Offline": "Offline mode", Completar: "Complete", Reprogramar: "Reschedule", Deshacer: "Undo", "Nueva fecha": "New date", "Nueva fecha y hora": "New date and time", "Reprogramar para": "Reschedule to", "No se pudo guardar en este dispositivo.": "It couldn't be saved on this device.", "La actividad ya no existe en el CRM o ya no tienes acceso a ella.": "The activity no longer exists in the CRM or you no longer have access to it.", "Lo descargado": "Downloaded data",
   "Tu sesión venció.": "Your session expired.", "Inicia sesión": "Sign in", "para preparar el día.": "to prepare the day.",
   "No se pudo descargar. Revisa tu conexión e inténtalo de nuevo.": "The download failed. Check your connection and try again.",
   "Los datos quedaron en este dispositivo, pero la pantalla para verlos sin señal no se guardó. Vuelve a intentarlo.":

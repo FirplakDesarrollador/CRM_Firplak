@@ -1,12 +1,16 @@
 "use client";
 
-import { Clock, MapPin, Plus } from "lucide-react";
+import { useContext, useState, type FormEvent } from "react";
+import { CalendarClock, Check, Clock, MapPin, Plus, Undo2 } from "lucide-react";
 import { ACTIVITY_ICONS } from "@/components/ui/icons";
 import { ACTIVITY_STATUSES, ACTIVITY_TYPES, PRIORITIES } from "@/lib/objects/picklists";
 import { addDaysISO, dayISO, formatDate, formatDateTime, formatTime, relativeDays, todayISO, type DateLocale } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { saveActivityChange, undoActivityChange } from "@/lib/offline/outbox";
 import type { OfflineActivity, OutboxItem } from "@/lib/offline/types";
-import { LocalActivityList } from "./OfflineOutbox";
+import { ActivityActions } from "./activityActions";
+import { LocalActivityList, UnsentBadge } from "./OfflineOutbox";
+import { showNotice } from "./useOutbox";
 import { ClientLink, EmptyRow, Section, TYPE_TONE } from "./parts";
 import { go } from "./route";
 
@@ -17,6 +21,9 @@ const WEEKDAYS: Record<DateLocale, string[]> = {
 
 /** Día (en Colombia) en que cae la actividad: el de su hora de inicio o, si no tiene, el de vencimiento. */
 const dayOf = (a: OfflineActivity) => (a.start_at ? dayISO(a.start_at) : a.due_date);
+
+/** Un instante como lo escribe un campo de fecha y hora, en hora de Colombia («2026-11-20T09:30»). */
+const localBogota = (iso: string) => new Date(Date.parse(iso) - 5 * 3600000).toISOString().slice(0, 16);
 
 export type AgendaGroup = { key: string; day: string | null; overdue: boolean; items: OfflineActivity[] };
 
@@ -30,7 +37,8 @@ export function agendaGroups(activities: OfflineActivity[], today = todayISO()):
   const byDay = new Map<string, OfflineActivity[]>();
   for (const a of activities) {
     const day = dayOf(a);
-    const open = a.status === "pending" || a.status === "in_progress";
+    // Lo que se acaba de completar aquí sigue a la vista mientras no se envíe, para poder deshacerlo.
+    const open = a.status === "pending" || a.status === "in_progress" || (a.local_change !== undefined && a.local_change !== "sent");
     if (!day) {
       if (open) undated.push(a);
     } else if (day < today) {
@@ -51,6 +59,26 @@ function ActivityRow({ activity, overdue, known, showClient }: { activity: Offli
   const locale = useLocale();
   const Icon = ACTIVITY_ICONS[activity.activity_type];
   const done = activity.status === "completed";
+  const { userId, changes } = useContext(ActivityActions);
+  const change = changes.get(activity.id);
+  const unsentChange = change && change.status !== "sent" ? change : undefined;
+  const [rescheduling, setRescheduling] = useState(false);
+  // Una reunión se reprograma con día y hora; una tarea o una llamada, con el día.
+  const timed = Boolean(activity.start_at);
+  const save = async (patch: Parameters<typeof saveActivityChange>[2]) => {
+    if (!userId) return;
+    try {
+      await saveActivityChange(userId, activity, patch, unsentChange);
+      setRescheduling(false);
+    } catch {
+      showNotice(t("No se pudo guardar en este dispositivo."));
+    }
+  };
+  const reschedule = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = String(new FormData(event.currentTarget).get("fecha") ?? "");
+    if (value) void save(timed ? { start_at: value } : { due_date: value });
+  };
   let when = "";
   if (activity.start_at) {
     when = `${overdue ? formatDateTime(activity.start_at, locale) : formatTime(activity.start_at, locale)}${activity.end_at ? ` – ${formatTime(activity.end_at, locale)}` : ""}`;
@@ -78,10 +106,41 @@ function ActivityRow({ activity, overdue, known, showClient }: { activity: Offli
             {related && <span>{related}</span>}
           </p>
         )}
+        {userId && (!done || unsentChange) && !rescheduling && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {!done && (
+              <button type="button" className="btn btn-sm" onClick={() => void save({ complete: true })} aria-label={`${t("Completar")}: ${activity.subject}`}>
+                <Check size={13} aria-hidden="true" /> {t("Completar")}
+              </button>
+            )}
+            {!done && (
+              <button type="button" className="btn btn-sm" onClick={() => setRescheduling(true)} aria-label={`${t("Reprogramar")}: ${activity.subject}`}>
+                <CalendarClock size={13} aria-hidden="true" /> {t("Reprogramar")}
+              </button>
+            )}
+            {unsentChange && (
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => void undoActivityChange(unsentChange)} aria-label={`${t("Deshacer")}: ${activity.subject}`}>
+                <Undo2 size={13} aria-hidden="true" /> {t("Deshacer")}
+              </button>
+            )}
+          </div>
+        )}
+        {rescheduling && (
+          <form onSubmit={reschedule} className="mt-2 flex flex-wrap items-end gap-2">
+            <div className="min-w-0">
+              <label className="label" htmlFor={`rp-${activity.id}`}>{t(timed ? "Nueva fecha y hora" : "Nueva fecha")}</label>
+              <input id={`rp-${activity.id}`} name="fecha" required className="input" type={timed ? "datetime-local" : "date"}
+                defaultValue={timed ? localBogota(activity.start_at!) : activity.due_date ?? todayISO()} />
+            </div>
+            <button type="submit" className="btn btn-sm btn-primary">{t("Guardar")}</button>
+            <button type="button" className="btn btn-sm" onClick={() => setRescheduling(false)}>{t("Cancelar")}</button>
+          </form>
+        )}
       </div>
       <div className="flex flex-none flex-col items-end gap-1">
         {activity.priority === "high" && !done && <span className="badge badge-danger">{t(PRIORITIES.high)}</span>}
         {done && <span className="badge badge-success">{t(ACTIVITY_STATUSES.completed)}</span>}
+        <UnsentBadge item={unsentChange} />
       </div>
     </li>
   );

@@ -95,7 +95,14 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
     ? [t("Cliente nuevo"), item.values.industry ? label(item.values.industry) : null]
     : item.kind === "quote"
       ? [`${t("Cotización")} ${quoteNumber(item)}`, client, formatCurrency(outboxQuoteTotals(item).total, item.currency ?? "COP")]
-      : [t(ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES] ?? type), client, when(item)];
+      : item.kind === "change"
+        // Un cambio a una actividad del CRM: qué se pidió, no cuándo se registró.
+        ? [
+          item.values.complete === "true" ? t("Completar") : null,
+          item.values.start_at || item.values.due_date ? `${t("Reprogramar para")} ${when(item)}` : null,
+          client,
+        ]
+        : [t(ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES] ?? type), client, when(item)];
   const parent = item.dependsOn ? items.find((other) => other.id === item.dependsOn && other.status !== "sent") : undefined;
   const children = item.kind === "account" ? items.filter((other) => other.dependsOn === item.id && other.status !== "sent").length : 0;
 
@@ -140,7 +147,9 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
 
       {item.status !== "sent" && !confirming && (
         <div className="mt-2.5 flex flex-wrap gap-2">
-          <button type="button" className="btn btn-sm" onClick={() => edit(item)}><Pencil size={13} aria-hidden="true" /> {t(item.status === "rejected" ? "Corregir" : "Editar")}</button>
+          {item.kind !== "change" && (
+            <button type="button" className="btn btn-sm" onClick={() => edit(item)}><Pencil size={13} aria-hidden="true" /> {t(item.status === "rejected" ? "Corregir" : "Editar")}</button>
+          )}
           {item.status === "rejected" && item.duplicates && item.duplicates.length > 0 && (
             <button type="button" className="btn btn-sm" onClick={() => void retry({ ignoreDuplicates: true })}><Send size={13} aria-hidden="true" /> {t("Enviar de todas formas")}</button>
           )}
@@ -164,7 +173,7 @@ function Row({ item, items, names, online }: { item: OutboxItem; items: OutboxIt
           </div>
         </div>
       )}
-      {item.status === "sent" && item.kind !== "activity" && online && (
+      {item.status === "sent" && item.kind !== "activity" && item.kind !== "change" && online && (
         <a className="link mt-2 inline-flex items-center gap-1 text-xs" href={`/${item.kind === "quote" ? "cotizaciones" : "cuentas"}/${item.id}`}><ExternalLink size={12} aria-hidden="true" /> {t("Ver en el CRM")}</a>
       )}
       {item.status === "sent" && item.kind === "quote" && (item.result?.changed.length ?? 0) > 0 && (

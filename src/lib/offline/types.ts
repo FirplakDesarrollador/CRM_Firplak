@@ -73,6 +73,8 @@ export type OfflineActivity = {
   contact_name: string | null;
   opportunity_name: string | null;
   lead_name: string | null;
+  /** Se completó o reprogramó sin señal en este dispositivo: estado de ese cambio en la bandeja de salida. */
+  local_change?: OutboxStatus;
 };
 
 export type OfflineProduct = {
@@ -129,7 +131,8 @@ export type OfflineOptions = { account_type: string[]; industry: string[]; marke
 
 // ── Bandeja de salida: lo que se crea sin señal y espera a enviarse ─────────────────────────────────────────
 
-export type OutboxKind = "account" | "activity" | "quote";
+/** `change` no crea nada: completa o reprograma una actividad que ya está en el CRM (`values.activity_id`). */
+export type OutboxKind = "account" | "activity" | "quote" | "change";
 /** Pendiente de enviar, enviado al CRM o rechazado por el CRM (con el motivo). */
 export type OutboxStatus = "pending" | "sent" | "rejected";
 

@@ -5,6 +5,7 @@ import { getObjectDef, untypedClient } from "@/lib/records/data";
 import { insertActivity } from "@/lib/records/activities";
 import { friendlyError, persistRecord } from "@/lib/records/persist";
 import type { FormState } from "@/lib/records/form";
+import { syncActivityToMicrosoft } from "@/lib/ms365/sync";
 
 /**
  * Recibe un registro creado sin señal (un cliente, una actividad o una cotización) y lo guarda con las mismas
@@ -13,6 +14,9 @@ import type { FormState } from "@/lib/records/form";
  *
  * El resultado va en el cuerpo: `sent` (guardado) o `rejected` (el CRM no lo aceptó, con el motivo). Un 4xx o
  * 5xx es un problema del envío, no del registro: el dispositivo lo conserva.
+ *
+ * Un cambio (`change`) no crea nada: completa o reprograma una actividad que ya existe, con los permisos de quien lo
+ * envía. Repetirlo no hace daño; si la actividad ya no existe o ya no es suya, queda rechazado con el motivo.
  *
  * Una cotización llega con sus líneas y con el precio que vio el cliente: ese precio se respeta. Si la lista
  * ya trae otro, la línea queda marcada (`offline_list_price`) y la respuesta lo cuenta en `changed`.
@@ -37,8 +41,13 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Body | null;
   const id = typeof body?.id === "string" ? body.id.toLowerCase() : "";
-  const kind = typeof body?.kind === "string" && body.kind in KINDS ? (body.kind as keyof typeof KINDS) : null;
   const raw = body?.values;
+  if (body?.kind === "change") {
+    if (!UUID.test(id) || !raw || typeof raw !== "object" || Array.isArray(raw)) return json({ error: "Envío no válido" }, 400);
+    if (body?.userId !== user.id) return json({ status: "other-user" }, 403);
+    return changeActivity(raw as Record<string, unknown>);
+  }
+  const kind = typeof body?.kind === "string" && body.kind in KINDS ? (body.kind as keyof typeof KINDS) : null;
   if (!UUID.test(id) || !kind || !raw || typeof raw !== "object" || Array.isArray(raw)) {
     return json({ error: "Envío no válido" }, 400);
   }
@@ -109,6 +118,45 @@ export async function POST(request: Request) {
 function sent(id: string, extra: Record<string, unknown> = {}) {
   revalidatePath("/", "layout");
   return json({ status: "sent", id, ...extra });
+}
+
+/** Completa o reprograma una actividad del CRM. Solo acepta esos dos cambios; el resto de la actividad no se toca. */
+async function changeActivity(values: Record<string, unknown>) {
+  const text = (name: string) => (typeof values[name] === "string" ? (values[name] as string) : "");
+  const activityId = text("activity_id").toLowerCase();
+  const due = text("due_date");
+  const start = text("start_at");
+  const complete = text("complete") === "true";
+  const validDue = !due || /^\d{4}-\d{2}-\d{2}$/.test(due);
+  const validStart = !start || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(start);
+  if (!UUID.test(activityId) || !validDue || !validStart || (!complete && !due && !start)) return json({ error: "Envío no válido" }, 400);
+
+  const db = await untypedClient();
+  const { data: current, error: readError } = await db.from("activities").select("id, start_at, end_at").eq("id", activityId).maybeSingle();
+  if (readError) return json({ error: "No se pudo leer la actividad" }, 500);
+  if (!current) return json({ status: "rejected", reason: "La actividad ya no existe en el CRM o ya no tienes acceso a ella." });
+
+  const patch: Record<string, string> = {};
+  if (complete) patch.status = "completed";
+  if (due) patch.due_date = due;
+  if (start) {
+    // La hora viene como se escribió, en hora de Colombia. La reunión conserva su duración.
+    const startAt = new Date(`${start.length === 16 ? `${start}:00` : start}-05:00`);
+    if (Number.isNaN(startAt.getTime())) return json({ error: "Envío no válido" }, 400);
+    const before = current as { start_at: string | null; end_at: string | null };
+    patch.start_at = startAt.toISOString();
+    if (before.start_at && before.end_at) {
+      patch.end_at = new Date(startAt.getTime() + (Date.parse(before.end_at) - Date.parse(before.start_at))).toISOString();
+    }
+  }
+  const { data, error } = await db.from("activities").update(patch).eq("id", activityId).select("id");
+  if (error) {
+    if (/^(22|23|42501|P0001)/.test(error.code ?? "")) return json({ status: "rejected", reason: friendlyError(error.message) });
+    return json({ error: "No se pudo guardar el cambio" }, 500);
+  }
+  if (!data?.length) return json({ status: "rejected", reason: "No tienes permiso para modificar esta actividad." });
+  await syncActivityToMicrosoft(activityId);
+  return sent(activityId);
 }
 
 const amount = (value: unknown, max: number) =>

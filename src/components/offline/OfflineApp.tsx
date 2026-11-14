@@ -7,10 +7,11 @@ import { Alert } from "@/components/ui/Alert";
 import type { Locale } from "@/lib/i18n";
 import { I18nProvider, useT } from "@/lib/i18n/client";
 import { isSignedOut } from "@/lib/offline/download";
-import { accountFromOutbox, unsent } from "@/lib/offline/outbox";
+import { accountFromOutbox, activityChanges, applyActivityChanges, unsent } from "@/lib/offline/outbox";
 import type { SyncResult } from "@/lib/offline/sync";
 import { clearOffline, sweepOffline } from "@/lib/offline/store";
 import type { OfflineAccount, OfflineMeta, OfflineSnapshot, OutboxItem } from "@/lib/offline/types";
+import { ActivityActions } from "./activityActions";
 import { agendaGroups, OfflineAgenda } from "./OfflineAgenda";
 import { OfflineClient, OfflineClients } from "./OfflineClients";
 import { OfflineActivityForm, OfflineClientForm } from "./OfflineForms";
@@ -157,7 +158,13 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
     const created = items.filter((item) => item.kind === "account" && !ids.has(item.id)).map(accountFromOutbox);
     return created.length > 0 ? [...created, ...downloaded] : downloaded;
   }, [snapshot, items]);
-  const merged = useMemo(() => (snapshot ? { ...snapshot, accounts } : null), [snapshot, accounts]);
+  // Lo completado o reprogramado sin señal se ve de una vez, aunque todavía no haya llegado al CRM.
+  const changes = useMemo(() => activityChanges(items, meta?.savedAt ?? 0), [items, meta]);
+  const merged = useMemo(
+    () => (snapshot ? { ...snapshot, accounts, activities: applyActivityChanges(snapshot.activities, changes) } : null),
+    [snapshot, accounts, changes],
+  );
+  const activityActions = useMemo(() => ({ userId, changes }), [userId, changes]);
   const names = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts]);
   const outbox: Outbox = { items, names, online, sessionUserId: session.userId };
 
@@ -276,7 +283,11 @@ function Screen({ meta, snapshot, ready }: { meta: OfflineMeta | null; snapshot:
                 {items.length > 0 && <OfflineOutbox {...outbox} />}
               </>
             )}
-            {ready && merged && <Downloaded snapshot={merged} route={route} outbox={outbox} />}
+            {ready && merged && (
+              <ActivityActions.Provider value={activityActions}>
+                <Downloaded snapshot={merged} route={route} outbox={outbox} />
+              </ActivityActions.Provider>
+            )}
           </>
         )}
       </main>

@@ -50,7 +50,7 @@ const FORMS = ["cliente", "actividad", "cotizacion"] as const;
 export type Form = (typeof FORMS)[number];
 
 /** Con qué formulario se corrige cada tipo de registro de la bandeja de salida. */
-export const FORM_OF: Record<OutboxKind, Form> = { account: "cliente", activity: "actividad", quote: "cotizacion" };
+export const FORM_OF: Record<OutboxKind, Form> = { account: "cliente", activity: "actividad", quote: "cotizacion", change: "actividad" };
 
 export function useRoute(): Route {
   const hash = useSyncExternalStore(subscribe, () => window.location.hash, () => "");
