@@ -46,7 +46,7 @@ sigue mostrando la copia anterior con su hora. Cada corrida queda registrada en 
    node agente-sap/agente.mjs instalar
    ```
 
-Otros comandos: `estado` (si está instalado) y `desinstalar` (deja de correr solo).
+Otros comandos: `muestra` (lee de SAP un cliente y un artículo y dice qué campos llegan, sin guardar nada ni mostrar valores; acepta un código de cliente y uno de artículo), `estado` (si está instalado) y `desinstalar` (deja de correr solo).
 Registro: `~/Library/Logs/Firplak CRM agente SAP.log`.
 
 ## Seguridad

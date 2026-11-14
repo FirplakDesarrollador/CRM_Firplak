@@ -6,7 +6,7 @@
 // en el CRM por su Código SAP, y el inventario de los productos activos; lo deja en las tablas sap_*
 // del CRM con un usuario técnico que solo puede hacer eso. Nunca escribe en SAP.
 //
-// Uso:  node agente-sap/agente.mjs <correr|probar|instalar|desinstalar|estado> [--ahora]
+// Uso:  node agente-sap/agente.mjs <correr|probar|muestra|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -134,7 +134,9 @@ const lotes = (lista, n) => Array.from({ length: Math.ceil(lista.length / n) }, 
 const q = (path, params) => `${path}?${Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
 
 const SOCIO = "CardCode,CardName,FederalTaxID,Phone1,EmailAddress,CurrentAccountBalance,OpenOrdersBalance,OpenDeliveryNotesBalance,CreditLimit";
-const DOCUMENTO = { $select: "DocEntry,DocNum,DocDate,DocDueDate,DocTotal,PaidToDate,DocCurrency,DocumentStatus,Cancelled,NumAtCard", $orderby: "DocDate desc", $top: "10" };
+// «PaidToDate» solo existe en las facturas: SAP rechaza la consulta de pedidos si se le pide.
+const CAMPOS_DOC = "DocEntry,DocNum,DocDate,DocDueDate,DocTotal,DocCurrency,DocumentStatus,Cancelled,NumAtCard";
+const documento = (extra = "") => ({ $select: CAMPOS_DOC + extra, $orderby: "DocDate desc", $top: "10" });
 const ARTICULO = "ItemCode,ItemName,QuantityOnStock,QuantityOrderedByCustomers,QuantityOrderedFromVendors,SalesUnit,ItemPrices,ItemWarehouseInfoCollection";
 
 /** Cartera, pedidos abiertos y facturas recientes de un cliente. Nulo si el código no existe en SAP. */
@@ -142,8 +144,8 @@ async function cliente(sap, codigo) {
   const partner = await sap.get(`BusinessPartners(${encodeURIComponent(comillas(codigo))})?$select=${SOCIO}`);
   if (!partner) return null;
   const c = comillas(codigo);
-  const orders = await sap.get(q("Orders", { $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open'`, ...DOCUMENTO }));
-  const invoices = await sap.get(q("Invoices", { $filter: `CardCode eq ${c} and Cancelled eq 'tNO'`, ...DOCUMENTO }));
+  const orders = await sap.get(q("Orders", { $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open'`, ...documento() }));
+  const invoices = await sap.get(q("Invoices", { $filter: `CardCode eq ${c} and Cancelled eq 'tNO'`, ...documento(",PaidToDate") }));
   return { partner, orders: orders?.value ?? [], invoices: invoices?.value ?? [] };
 }
 
@@ -151,7 +153,14 @@ async function cliente(sap, codigo) {
 async function articulos(sap, codigos) {
   const filas = await sap.lista(q("Items", { $filter: codigos.map((c) => `ItemCode eq ${comillas(c)}`).join(" or "), $select: ARTICULO }));
   const porCodigo = new Map(filas.map((f) => [f.ItemCode, f]));
-  return codigos.map((code) => ({ code, data: porCodigo.get(code) ?? null }));
+  // SAP trae todas las bodegas y listas de precios (decenas, casi todas en cero): se guardan solo las que tienen algo.
+  const liviano = (f) => ({
+    ...f,
+    ItemPrices: (f.ItemPrices ?? []).filter((p) => p.Price > 0).map(({ PriceList, PriceListName, Price, Currency }) => ({ PriceList, PriceListName, Price, Currency })),
+    ItemWarehouseInfoCollection: (f.ItemWarehouseInfoCollection ?? []).filter((w) => w.InStock || w.Committed || w.Ordered)
+      .map(({ WarehouseCode, InStock, Committed, Ordered }) => ({ WarehouseCode, InStock, Committed, Ordered })),
+  });
+  return codigos.map((code) => ({ code, data: porCodigo.has(code) ? liviano(porCodigo.get(code)) : null }));
 }
 
 // ---------------------------------------------------------------- CRM (Supabase)
@@ -229,6 +238,30 @@ async function probar() {
   return 0;
 }
 
+/** Lee de SAP un cliente y un artículo y dice qué campos llegaron, sin guardar nada ni mostrar valores. */
+async function muestra([codigo, articulo]) {
+  const sap = new Sap(leerConfig());
+  await sap.login();
+  try {
+    // Sin código: un cliente que tenga un pedido abierto, para ver también los documentos.
+    const code = codigo ?? (await sap.get("Orders?$select=CardCode&$filter=DocumentStatus eq 'bost_Open'&$orderby=DocEntry desc&$top=1"))?.value?.[0]?.CardCode;
+    const c = code ? await cliente(sap, code) : null;
+    if (!c) log(`Cliente ${code ?? "(ninguno)"}: no existe en SAP`);
+    else {
+      log(`Cliente ${code}: campos ${Object.keys(c.partner).join(", ")}`);
+      log(`  pedidos abiertos: ${c.orders.length}${c.orders[0] ? ` (campos ${Object.keys(c.orders[0]).join(", ")})` : ""}`);
+      log(`  facturas: ${c.invoices.length}${c.invoices[0] ? ` (campos ${Object.keys(c.invoices[0]).join(", ")})` : ""}`);
+    }
+    const item = articulo ?? (await sap.get("Items?$select=ItemCode&$filter=SalesItem eq 'tYES'&$top=1"))?.value?.[0]?.ItemCode;
+    const [a] = item ? await articulos(sap, [item]) : [];
+    if (!a?.data) log(`Artículo ${item ?? "(ninguno)"}: no existe en SAP`);
+    else log(`Artículo ${item}: campos ${Object.keys(a.data).join(", ")} · bodegas ${a.data.ItemWarehouseInfoCollection?.length ?? 0} · listas de precios ${a.data.ItemPrices?.length ?? 0}`);
+  } finally {
+    await sap.logout();
+  }
+  return 0;
+}
+
 const xml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const launchctl = (...args) => execFileSync("/bin/launchctl", args, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
 const dominio = () => `gui/${process.getuid()}`;
@@ -282,9 +315,9 @@ function estado() {
 }
 
 const [comando = "", ...resto] = process.argv.slice(2);
-const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, instalar, desinstalar, estado };
+const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), instalar, desinstalar, estado };
 if (!comandos[comando]) {
-  console.log("Uso: node agente-sap/agente.mjs <correr|probar|instalar|desinstalar|estado> [--ahora]");
+  console.log("Uso: node agente-sap/agente.mjs <correr|probar|muestra|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
 try {

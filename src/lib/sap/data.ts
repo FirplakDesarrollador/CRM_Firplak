@@ -41,10 +41,11 @@ export async function getCustomerSummary(cardCode: string): Promise<SapCustomerS
     if (e instanceof SapError && e.status === 404) return null;
     throw e;
   }
-  const docSelect = "$select=DocEntry,DocNum,DocDate,DocDueDate,DocTotal,PaidToDate,DocCurrency,DocumentStatus,Cancelled,NumAtCard&$orderby=DocDate desc&$top=10";
+  // «PaidToDate» solo existe en las facturas: SAP rechaza la consulta de pedidos si se le pide.
+  const docSelect = (extra = "") => `$select=DocEntry,DocNum,DocDate,DocDueDate,DocTotal,DocCurrency,DocumentStatus,Cancelled,NumAtCard${extra}&$orderby=DocDate desc&$top=10`;
   const [orders, invoices] = await Promise.all([
-    sapGet<{ value: SapDocument[] }>(`/Orders?$filter=CardCode eq ${code} and DocumentStatus eq 'bost_Open'&${docSelect}`),
-    sapGet<{ value: SapDocument[] }>(`/Invoices?$filter=CardCode eq ${code} and Cancelled eq 'tNO'&${docSelect}`),
+    sapGet<{ value: SapDocument[] }>(`/Orders?$filter=CardCode eq ${code} and DocumentStatus eq 'bost_Open'&${docSelect()}`),
+    sapGet<{ value: SapDocument[] }>(`/Invoices?$filter=CardCode eq ${code} and Cancelled eq 'tNO'&${docSelect(",PaidToDate")}`),
   ]);
   return { partner, orders: orders.value, invoices: invoices.value };
 }
