@@ -113,15 +113,18 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 
 ## 5. Producción (Supabase)
 
-- **Pendiente de aplicar en producción (3; la CLI las aplica por número):** `20261210000100_role_sharing_and_directory`,
-  `20261212000100_role_sharing_business` (columna `roles.share_business`; `shares_branch_with` pasa a recibir el objeto) y
-  `20261211000100_zones_and_territories` (columnas `accounts.zone`, `accounts.destination_port`, `leads.zone`; tablas
-  `zone_places` y `territories`; disparador `place_and_territory` en cuentas y prospectos; **mueve** el valor del campo
-  configurable «Zona comercial» al campo propio y deja esa definición inactiva). La primera trae (columna `roles.share_within`,
-  función `shares_branch_with`, `can_read_record` con la rama que comparte, `possible_duplicates` rehecha y
-  `account_directory`). **No publicar en `main` estos commits antes de aplicarlas**: la página de roles, la de territorios y el
-  aviso de duplicados usan lo nuevo.
-- **44 migraciones aplicadas** (de 47). La última, `20261209000100_product_kits`, el 2026-11-13 con `db:publicar`
+- **47 migraciones aplicadas, 0 pendientes.** Las tres últimas el 2026-11-13 con `db:publicar` (revisión por Claude,
+  confirmación escrita por Luis en el panel Terminal): `20261210000100_role_sharing_and_directory`,
+  `20261211000100_zones_and_territories` y `20261212000100_role_sharing_business`. Comprobado después: columnas
+  `roles.share_within` y `share_business`, `accounts.zone` y `destination_port`, `leads.zone`; tablas `territories` y
+  `zone_places` con RLS y dos políticas cada una; disparadores `accounts_place_and_territory` y `leads_place_and_territory`;
+  una sola versión de `shares_branch_with`, sin permiso de ejecución para `authenticated`; 48 lugares en 8 zonas (33
+  departamentos y 15 excepciones por ciudad), ningún departamento sin zona; la cuenta que tenía «Zona comercial» quedó
+  con zona «Centro del País» y el campo configurable, inactivo. Asesor de seguridad: los mismos avisos de antes más
+  **cuatro esperados** en «funciones definer que puede ejecutar un usuario con sesión» (pasa de 63 a 67):
+  `possible_duplicates`, `account_directory`, `territory_owners` y `zone_for_place`, que la app llama con sesión y que
+  devuelven solo lo mínimo. Ninguna la puede ejecutar `anon`. **El código de estas tres fases sigue sin publicar.**
+- Antes de esas: 44 de 44. La última, `20261209000100_product_kits`, el 2026-11-13 con `db:publicar`
   (revisión por Claude, confirmación escrita por Luis en el panel Terminal). Comprobado después: `products.is_kit`
   (booleano, por defecto falso), tabla `product_kit_components` con RLS y sus dos políticas, disparadores
   `products_kit_rules` y `product_kit_components_rules`, las dos funciones nuevas sin permiso de ejecución para `anon` ni
