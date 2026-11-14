@@ -8,7 +8,7 @@ import type { FormState } from "@/lib/records/form";
 import { sapGet } from "./client";
 import { sendOrderToSap } from "./quotations";
 import { getSapSettings, sapSourceOf, validSapField, type SapSettings } from "./settings";
-import { fetchSapItems, importSapItems } from "./products";
+import { fetchSapItems, importSapItems, MAX_PICK } from "./products";
 
 export async function sendOrderToSapNow(orderId: string): Promise<FormState> {
   const r = await sendOrderToSap(orderId);
@@ -68,16 +68,34 @@ export async function testSapConnection(_prev?: FormState, _fd?: FormData): Prom
 }
 
 /** `requestId`: la pidió al agente de SAP; el panel consulta su estado hasta que termine. */
-export type ImportState = FormState & { preview?: Record<string, unknown>[]; columns?: string[]; requestId?: string };
+export type ImportState = FormState & {
+  preview?: Record<string, unknown>[]; columns?: string[]; requestId?: string;
+  /** Referencias de la lista que ya existen en el CRM, y si SAP tiene más artículos de los que se muestran. */
+  existing?: string[]; truncated?: boolean;
+};
+
+/** Cuáles de estos códigos ya son productos del CRM. */
+async function existingCodes(codes: string[]) {
+  const supabase = await createClient();
+  const found: string[] = [];
+  for (let i = 0; i < codes.length; i += 200) {
+    const { data } = await supabase.from("products").select("product_code").in("product_code", codes.slice(i, i + 200));
+    found.push(...(data ?? []).map((p) => p.product_code!).filter(Boolean));
+  }
+  return found;
+}
+const previewMessage = (n: number, truncated: boolean) => !n ? "No hay artículos de SAP con ese filtro."
+  : truncated ? `SAP tiene más de ${n} artículos con ese filtro: se muestran los primeros ${n}. Usa un código más específico para ver el resto.`
+    : `${n} artículos de SAP con ese filtro. Elige los que quieres importar.`;
 
 /** Deja una solicitud para el agente de SAP (vista previa o importación) con el filtro y el mapeo vigentes. */
-async function requestFromAgent(kind: "product_preview" | "product_import", opts: SapSettings["product_import"]): Promise<ImportState> {
+async function requestFromAgent(kind: "product_preview" | "product_import", opts: SapSettings["product_import"], codes?: string[]): Promise<ImportState> {
   const supabase = await createClient();
   const { data: defs } = await supabase.from("custom_field_definitions").select("api_name, field_type").eq("object", "products").eq("is_active", true);
   const types = new Map((defs ?? []).map((d) => [d.api_name, d.field_type]));
   const mappings = opts.mappings.filter((m) => types.has(m.field) && validSapField(m.sap_field)).map((m) => ({ ...m, type: types.get(m.field)! }));
   const { data, error } = await supabase.from("sap_requests")
-    .insert({ kind, params: { prefix: opts.prefix, sales_only: opts.sales_only, mappings } }).select("id").single();
+    .insert({ kind, params: { prefix: opts.prefix, sales_only: opts.sales_only, mappings, ...(kind === "product_preview" ? { limit: MAX_PICK } : { codes }) } }).select("id").single();
   if (error) return { message: error.message };
   return { ok: true, message: "Enviado al agente de SAP: lo atiende en menos de un minuto…", requestId: data.id };
 }
@@ -91,9 +109,12 @@ export async function checkSapRequest(id: string): Promise<ImportState & { pendi
   if (r.status === "pending" || r.status === "running") return { ok: true, pending: true, requestId: id, message: r.status === "running" ? "El agente está consultando SAP…" : "Enviado al agente de SAP: lo atiende en menos de un minuto…" };
   if (r.status === "error") return { message: `SAP no respondió: ${r.error ?? "error desconocido"}` };
   if (r.kind === "product_preview") {
-    const res = (r.result ?? {}) as { rows?: Record<string, unknown>[]; columns?: string[] };
+    const res = (r.result ?? {}) as { rows?: Record<string, unknown>[]; columns?: string[]; truncated?: boolean };
     const rows = res.rows ?? [];
-    return { ok: true, message: rows.length ? "Vista previa (primeros 10 artículos)" : "No hay artículos de SAP con ese filtro.", preview: rows, columns: res.columns ?? [] };
+    return {
+      ok: true, message: previewMessage(rows.length, Boolean(res.truncated)), preview: rows, columns: res.columns ?? [],
+      truncated: Boolean(res.truncated), existing: await existingCodes(rows.map((x) => String(x.ItemCode))),
+    };
   }
   const res = (r.result ?? {}) as { total?: number; created?: number; updated?: number; errors?: string[] };
   revalidatePath("/productos");
@@ -111,25 +132,29 @@ export async function previewSapImport(_prev: ImportState, fd: FormData): Promis
   revalidatePath("/configuracion/sap");
   if (sapSourceOf(stored) === "agent") return requestFromAgent("product_preview", settings.product_import);
   try {
-    const rows = await fetchSapItems(settings.product_import, 10);
-    revalidatePath("/configuracion/sap");
+    const all = await fetchSapItems(settings.product_import, MAX_PICK + 1);
+    const rows = all.slice(0, MAX_PICK);
     return {
-      ok: true, message: rows.length ? "Vista previa (primeros 10 artículos)" : "No hay artículos de SAP con ese filtro.",
+      ok: true, message: previewMessage(rows.length, all.length > MAX_PICK),
       preview: rows, columns: ["ItemCode", "ItemName", ...settings.product_import.mappings.map((m) => m.sap_field)],
+      truncated: all.length > MAX_PICK, existing: await existingCodes(rows.map((x) => x.ItemCode)),
     };
   } catch (e) {
     return { message: `SAP no respondió: ${(e as Error).message}` };
   }
 }
 
-export async function runSapImport(_prev: ImportState, _fd: FormData): Promise<ImportState> {
+export async function runSapImport(_prev: ImportState, fd: FormData): Promise<ImportState> {
   const user = await adminUser();
   if (!user) return { message: "No tienes permiso para esta configuración." };
   if (!can(user.access, "products", "create") || !can(user.access, "products", "edit")) return { message: "Necesitas permiso para crear y editar productos." };
+  // Solo se importa lo que la persona marcó en la lista.
+  const codes = [...new Set(fd.getAll("code").map((c) => String(c).trim()).filter((c) => c && c.length <= 50))].slice(0, MAX_PICK);
+  if (!codes.length) return { message: "Marca al menos un artículo de la lista para importarlo." };
   const stored = await getSapSettings();
-  if (sapSourceOf(stored) === "agent") return requestFromAgent("product_import", stored.product_import);
+  if (sapSourceOf(stored) === "agent") return requestFromAgent("product_import", stored.product_import, codes);
   try {
-    const r = await importSapItems((await getSapSettings()).product_import);
+    const r = await importSapItems(stored.product_import, codes);
     revalidatePath("/productos");
     const base = `${r.total} artículos leídos de SAP: ${r.created} productos creados y ${r.updated} actualizados.`;
     return r.errors.length ? { message: `${base} Errores: ${r.errors.slice(0, 3).join(" · ")}` } : { ok: true, message: base };

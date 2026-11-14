@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { checkSapRequest, previewSapImport, runSapImport, type ImportState } from "@/lib/sap/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -71,28 +71,85 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings }: {
           </ul>
           {fields.length === 0 && <p className="mt-1 text-xs text-muted">{t("Para traer más datos de SAP, crea campos personalizados de Productos en Configuración → Campos personalizados y relaciónalos aquí con su campo de SAP.")}</p>}
         </div>
-        <SubmitButton className="btn" pendingText="Consultando SAP…"><Eye size={14} /> {t("Guardar y ver vista previa")}</SubmitButton>
+        <SubmitButton className="btn" pendingText="Consultando SAP…"><Eye size={14} /> {t("Guardar y ver artículos")}</SubmitButton>
         {preview.message && <p role="status" aria-busy={previewWaiting} className={`text-xs font-semibold ${previewWaiting ? "text-muted" : preview.ok ? "text-success" : "text-danger"}`}>{t(preview.message)}</p>}
       </form>
 
       {preview.preview && preview.preview.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead><tr>{preview.columns!.map((c) => <th key={c}>{c}</th>)}</tr></thead>
-            <tbody>
-              {preview.preview.map((r) => (
-                <tr key={String(r.ItemCode)}>{preview.columns!.map((c) => <td key={c}>{r[c] === null || r[c] === undefined ? "—" : String(r[c])}</td>)}</tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PickAndImport key={previewState.requestId ?? preview.preview.length} rows={preview.preview} columns={preview.columns ?? []}
+          existing={preview.existing ?? []} action={importAction} waiting={importWaiting} result={result} />
       )}
-
-      <form action={importAction} className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
-        <SubmitButton className="btn btn-primary" pendingText="Importando…"><Download size={14} /> {t("Importar ahora")}</SubmitButton>
-        <span className="text-xs text-muted">{t("Crea los productos nuevos y actualiza nombre y campos mapeados de los existentes (por Referencia). No cambia precios ni familia.")}</span>
-        {result.message && <p role="status" aria-busy={importWaiting} className={`basis-full text-sm font-semibold ${importWaiting ? "text-muted" : result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
-      </form>
     </div>
+  );
+}
+
+/** Lista de artículos de SAP para marcar cuáles se importan: solo entra al CRM lo que la persona elige. */
+function PickAndImport({ rows, columns, existing, action, waiting, result }: {
+  rows: Record<string, unknown>[]; columns: string[]; existing: string[];
+  action: (fd: FormData) => void; waiting: boolean; result: ImportState;
+}) {
+  const t = useT();
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const inCrm = new Set(existing);
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = rows.filter((r) => {
+    const text = columns.map((c) => String(r[c] ?? "")).join(" ").toLowerCase();
+    return words.every((w) => text.includes(w));
+  });
+  const shownCodes = shown.map((r) => String(r.ItemCode));
+  const allShown = shownCodes.length > 0 && shownCodes.every((c) => picked.has(c));
+  const toggle = (code: string) => setPicked((prev) => {
+    const next = new Set(prev);
+    if (next.has(code)) next.delete(code); else next.add(code);
+    return next;
+  });
+  const toggleShown = () => setPicked((prev) => {
+    const next = new Set(prev);
+    for (const c of shownCodes) { if (allShown) next.delete(c); else next.add(c); }
+    return next;
+  });
+
+  return (
+    <form action={action} className="space-y-3 border-t border-line pt-3">
+      {[...picked].map((c) => <input key={c} type="hidden" name="code" value={c} />)}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="relative min-w-[14rem] flex-1">
+          <span className="sr-only">{t("Buscar en la lista")}</span>
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} className="input pl-8" placeholder={t("Buscar en la lista")} />
+        </label>
+        <span className="text-sm text-muted" aria-live="polite">{picked.size} {t("de")} {rows.length} {t("elegidos")}</span>
+      </div>
+      <div className="max-h-[28rem] overflow-auto rounded-[10px] border border-line">
+        <table className="table">
+          <thead>
+            <tr>
+              <th className="w-10"><input type="checkbox" checked={allShown} onChange={toggleShown} aria-label={t("Elegir todos los de la lista")} className="accent-[var(--brand)]" /></th>
+              {columns.map((c) => <th key={c}>{c === "ItemCode" ? t("Código") : c === "ItemName" ? t("Descripción") : c}</th>)}
+              <th>{t("En el CRM")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((r) => {
+              const code = String(r.ItemCode);
+              return (
+                <tr key={code}>
+                  <td><input type="checkbox" checked={picked.has(code)} onChange={() => toggle(code)} aria-label={`${t("Elegir")} ${code}`} className="accent-[var(--brand)]" /></td>
+                  {columns.map((c) => <td key={c} className={c === "ItemCode" ? "num whitespace-nowrap" : undefined}>{r[c] === null || r[c] === undefined ? "—" : String(r[c])}</td>)}
+                  <td>{inCrm.has(code) ? <span className="badge badge-success">{t("Ya está")}</span> : <span className="text-muted">—</span>}</td>
+                </tr>
+              );
+            })}
+            {shown.length === 0 && <tr><td colSpan={columns.length + 2} className="text-sm text-muted">{t("Nada en la lista coincide con la búsqueda.")}</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <SubmitButton className="btn btn-primary" pendingText="Importando…"><Download size={14} /> {t("Importar seleccionados")} ({picked.size})</SubmitButton>
+        <span className="text-xs text-muted">{t("Crea los productos nuevos y actualiza nombre y campos mapeados de los que ya están (por Referencia). No cambia precios ni familia.")}</span>
+        {result.message && <p role="status" aria-busy={waiting} className={`basis-full text-sm font-semibold ${waiting ? "text-muted" : result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
+      </div>
+    </form>
   );
 }

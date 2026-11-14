@@ -101,25 +101,48 @@ test.describe("SAP por agente", () => {
     }
   });
 
-  test("importa productos de SAP por medio del agente: vista previa y luego la importación", async ({ page }) => {
+  test("importa de SAP por medio del agente solo los artículos que se eligen de la lista", async ({ page }) => {
     try {
       await elegirOrigen(page, /Copia del agente/);
       await page.getByLabel(/Solo códigos que empiezan por/).fill("FP-CO-");
-      await page.getByRole("button", { name: /Guardar y ver vista previa/ }).click();
+      await page.getByRole("button", { name: /Guardar y ver artículos/ }).click();
       // La solicitud queda esperando al agente; nada más pasa hasta que él la atienda.
       await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
       expect(correrAgente("atender")).toMatch(/1 solicitudes atendidas/);
-      await expect(page.getByText("Vista previa (primeros 10 artículos)")).toBeVisible();
+      // Llega la lista completa del filtro: 14 artículos FP-CO-, dos no son de venta.
+      await expect(page.getByText("12 artículos de SAP con ese filtro. Elige los que quieres importar.")).toBeVisible();
       await expect(page.getByRole("cell", { name: "FP-CO-102", exact: true })).toBeVisible();
+      await expect(page.getByText("0 de 12 elegidos")).toBeVisible();
 
-      await page.getByRole("button", { name: "Importar ahora" }).click();
+      // Sin marcar nada no se importa nada.
+      await page.getByRole("button", { name: /Importar seleccionados/ }).click();
+      await expect(page.getByText("Marca al menos un artículo de la lista para importarlo.")).toBeVisible();
+
+      // Buscar en la lista y marcar dos.
+      await page.getByPlaceholder("Buscar en la lista").fill("ref 102");
+      await expect(page.getByRole("checkbox", { name: /^Elegir FP-CO-/ })).toHaveCount(1);
+      await page.getByRole("checkbox", { name: "Elegir FP-CO-102" }).check();
+      await page.getByPlaceholder("Buscar en la lista").fill("");
+      await page.getByRole("checkbox", { name: "Elegir FP-CO-106" }).check();
+      await expect(page.getByText("2 de 12 elegidos")).toBeVisible();
+      await page.getByRole("button", { name: "Importar seleccionados (2)" }).click();
       await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
       expect(correrAgente("atender")).toMatch(/1 solicitudes atendidas/);
-      // 14 artículos FP-CO-, dos no son de venta.
-      await expect(page.getByText("12 artículos leídos de SAP: 12 productos creados y 0 actualizados.")).toBeVisible();
+      await expect(page.getByText("2 artículos leídos de SAP: 2 productos creados y 0 actualizados.")).toBeVisible();
 
-      await page.goto("/productos?q=FP-CO-102");
+      // Entraron esos dos y ninguno más.
+      await page.goto("/productos?q=FP-CO-");
       await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 102/ }).first()).toBeVisible();
+      await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 106/ }).first()).toBeVisible();
+      await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 110/ })).toHaveCount(0);
+
+      // Al volver a listar, la lista dice cuáles ya están en el CRM.
+      await page.goto("/configuracion/sap");
+      await page.getByRole("button", { name: /Guardar y ver artículos/ }).click();
+      await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
+      correrAgente("atender");
+      await expect(page.getByRole("row", { name: /FP-CO-102/ })).toContainText("Ya está");
+      await expect(page.getByRole("row", { name: /FP-CO-110/ })).not.toContainText("Ya está");
     } finally {
       await elegirOrigen(page, /Consulta en vivo/);
     }

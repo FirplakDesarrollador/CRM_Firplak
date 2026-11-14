@@ -7,6 +7,8 @@ type SapItemRow = Record<string, unknown> & { ItemCode: string; ItemName: string
 type Page = { value: SapItemRow[]; "odata.nextLink"?: string; "@odata.nextLink"?: string };
 
 export const MAX_IMPORT = 5000;
+/** Tope de la lista para elegir y de los artículos elegidos en una importación. */
+export const MAX_PICK = 1000;
 
 function itemsQuery(opts: SapSettings["product_import"], top?: number) {
   const fields = ["ItemCode", "ItemName", ...opts.mappings.map((m) => m.sap_field).filter(validSapField)];
@@ -42,8 +44,10 @@ function convert(value: unknown, type: string) {
  * Crea o actualiza productos por Referencia = ItemCode: solo nombre (descripción de SAP) y los
  * campos personalizados mapeados. No toca precios, familia ni el resto del producto.
  */
-export async function importSapItems(opts: SapSettings["product_import"]) {
-  const items = await fetchSapItems(opts);
+export async function importSapItems(opts: SapSettings["product_import"], codes?: string[]) {
+  // Con una lista de códigos se importan solo esos (los que la persona eligió en la lista).
+  const wanted = codes ? new Set(codes) : null;
+  const items = (await fetchSapItems(opts)).filter((it) => !wanted || wanted.has(it.ItemCode));
   const supabase = await createClient();
   const { data: defs } = await supabase.from("custom_field_definitions").select("api_name, field_type").eq("object", "products").eq("is_active", true);
   const types = new Map((defs ?? []).map((d) => [d.api_name, d.field_type]));

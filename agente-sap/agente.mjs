@@ -338,6 +338,8 @@ async function muestra([codigo, articulo]) {
 // ---------------------------------------------------------------- Solicitudes a demanda
 const CAMPO_SAP = /^[A-Za-z][A-Za-z0-9_]{0,49}$/;
 const MAX_IMPORTAR = 5000;
+/** Tope de la lista para elegir y de los artículos elegidos en una importación. */
+const MAX_ELEGIDOS = 1000;
 
 /** Valor de SAP convertido al tipo del campo personalizado del CRM. */
 function convertir(valor, tipo) {
@@ -361,21 +363,30 @@ async function articulosParaImportar(sap, params, limite) {
     ...(limite < 50 ? { $top: String(limite) } : {}),
   };
   const filas = [];
+  // Con una lista de códigos (los que la persona eligió) se leen esos, en lotes; si no, todo el filtro.
+  const codigos = Array.isArray(params.codes) ? [...new Set(params.codes.map(String))].slice(0, MAX_ELEGIDOS) : null;
+  if (codigos) {
+    for (const lote of lotes(codigos, 20)) {
+      filas.push(...await sap.lista(q("Items", { $select: consulta.$select, $filter: lote.map((c) => `ItemCode eq ${comillas(c)}`).join(" or ") })));
+    }
+    return { filas, mapeos, hayMas: false };
+  }
   let siguiente = q("Items", consulta);
-  while (siguiente && filas.length < limite) {
+  while (siguiente && filas.length <= limite) {
     const pagina = await sap.get(siguiente);
     filas.push(...(pagina?.value ?? []));
     siguiente = pagina?.["odata.nextLink"] ?? null;
   }
-  return { filas: filas.slice(0, limite), mapeos };
+  return { filas: filas.slice(0, limite), mapeos, hayMas: filas.length > limite || Boolean(siguiente) };
 }
 
 async function atenderUna(sap, destino, solicitud) {
   const { kind, params = {} } = solicitud;
   if (kind === "product_preview") {
-    const { filas, mapeos } = await articulosParaImportar(sap, params, 10);
+    // La lista completa del filtro (hasta el tope), para que la persona elija qué importar.
+    const { filas, mapeos, hayMas } = await articulosParaImportar(sap, params, Math.min(Number(params.limit) || 10, MAX_ELEGIDOS));
     const columns = ["ItemCode", "ItemName", ...mapeos.map((m) => m.sap_field)];
-    return { columns, rows: filas.map((f) => Object.fromEntries(columns.map((c) => [c, f[c] ?? null]))) };
+    return { columns, rows: filas.map((f) => Object.fromEntries(columns.map((c) => [c, f[c] ?? null]))), truncated: hayMas };
   }
   if (kind === "product_import") {
     const { filas, mapeos } = await articulosParaImportar(sap, params, MAX_IMPORTAR);
