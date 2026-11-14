@@ -82,7 +82,7 @@ test.describe("asesora", () => {
     expect((await descargado(page))?.clientes).toBeGreaterThanOrEqual(3);
     await expect.poll(() => pantallaGuardada(page)).toBeGreaterThan(1);
 
-    await tarjeta(page).getByRole("link", { name: "Ver lo descargado" }).click();
+    await tarjeta(page).getByRole("link", { name: "Modo Offline" }).click();
     await expect(page).toHaveURL(/\/sin-conexion/);
     await expect(page.getByRole("heading", { level: 1, name: "Consulta sin señal" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Volver al CRM" })).toHaveAttribute("href", "/inicio");
@@ -196,7 +196,7 @@ test.describe("administrador", () => {
     expect((await descargado(page))?.userId).toBe("otra-persona");
     await page.goto("/inicio");
     await expect(tarjeta(page).getByRole("button", { name: "Preparar el día" })).toBeVisible();
-    await expect(tarjeta(page).getByRole("link", { name: "Ver lo descargado" })).toHaveCount(0);
+    await expect(tarjeta(page).getByRole("link", { name: "Modo Offline" })).toHaveCount(0);
     await expect.poll(() => descargado(page)).toBeNull();
   });
 });

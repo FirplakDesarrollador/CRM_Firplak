@@ -564,6 +564,19 @@ svg.lucide {
     border-color: transparent;
     color: var(--primary-text);
   }
+  /* Entrada al modo sin señal: ámbar, el color de aviso, para que se vea sin leerse como error (el rojo es de fallos y
+     de eliminar). Decisión de Luis, 13 nov 2026. El mismo ámbar en claro y en oscuro. */
+  .btn-offline,
+  .btn-offline:hover {
+    background: linear-gradient(180deg, #f0b84a, #d99a25);
+    border-color: #b98112;
+    color: #2a1c00;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 18px -8px rgba(217, 154, 37, 0.7);
+  }
+  .btn-offline:hover {
+    background: linear-gradient(180deg, #f5c463, #e0a530);
+  }
   .btn-danger {
     color: var(--danger);
     border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
@@ -1391,5 +1404,6 @@ dialog::backdrop {
   .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
   .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
 }
+
 
 

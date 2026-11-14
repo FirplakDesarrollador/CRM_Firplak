@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CloudDownload, RefreshCw } from "lucide-react";
+import { CloudDownload, RefreshCw, WifiOff } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { addDaysISO, dayISO, formatDate, formatTime, plural, todayISO } from "@/lib/format";
@@ -84,7 +84,7 @@ export function PrepareDayCard({ linkToOffline = false }: { linkToOffline?: bool
       <div className="flex flex-wrap items-center gap-2">
         {linkToOffline && meta && (
           // Enlace normal, no <Link>: la navegación completa es la que el service worker puede atender sin red.
-          <a href={OFFLINE_PATH} className="btn btn-sm">{t("Ver lo descargado")}</a>
+          <a href={OFFLINE_PATH} className="btn btn-sm btn-offline"><WifiOff size={14} aria-hidden="true" />{t("Modo Offline")}</a>
         )}
         <button type="button" className={`btn btn-sm ${fresh ? "" : "btn-primary"}`} onClick={download} disabled={busy || !online}>
           {fresh ? <RefreshCw size={14} aria-hidden="true" /> : <CloudDownload size={14} aria-hidden="true" />}

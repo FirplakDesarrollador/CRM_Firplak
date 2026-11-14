@@ -44,7 +44,7 @@ export function PwaRegister() {
       <span>Sin conexión: no se puede guardar. Lo que escribas en un registro o una actividad queda como borrador en este dispositivo.</span>
       {meta && (
         // Enlace normal, no <Link>: la navegación completa es la que el service worker puede atender sin red.
-        <a href={OFFLINE_PATH} className="rounded-sm text-white underline underline-offset-2">Ver lo descargado</a>
+        <a href={OFFLINE_PATH} className="rounded-sm text-white underline underline-offset-2">Modo Offline</a>
       )}
     </div>
   );

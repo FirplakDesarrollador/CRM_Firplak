@@ -405,6 +405,7 @@ Los controles son directos y táctiles; el vidrio y el movimiento quedan en las 
 - **Shape:** esquinas de 14 px, alto de 2.25rem. La versión pequeña mide 1.9rem con esquinas de 11 px.
 - **Primary:** degradado a 160 grados con brillo interno superior y sombra del mismo tono. Azul en el contenido en claro; oliva en el contenido en oscuro y en la barra.
 - **Hover / Focus:** el fondo se aclara y las esquinas se deforman; al presionar, escala a 0.98. Foco con el anillo del sistema.
+- **Modo Offline:** el botón que abre el modo sin señal (tarjeta de descarga en Inicio) es ámbar (#f0b84a a #d99a25, texto #2a1c00), igual en claro y en oscuro, con el ícono de wifi tachado. Es el único botón ámbar; el rojo se descartó porque se lee como error o eliminar (decisión de Luis, 13 nov 2026).
 - **Secondary / Ghost / Danger:** el secundario es blanco o gris muy oscuro translúcido con línea fina. El fantasma no tiene fondo hasta el hover. El de peligro usa texto y borde terracota, y se llena de terracota suave al pasar el cursor.
 
 ### Chips

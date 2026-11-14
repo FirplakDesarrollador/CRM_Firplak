@@ -928,7 +928,7 @@ export const UI_EN: Record<string, string> = {
   "Actualiza antes de salir.": "Update before you head out.",
   "Descarga tus clientes, agenda y precios para consultarlos sin señal.": "Download your customers, agenda and prices to look them up without signal.",
   "Necesitas conexión para descargar.": "You need a connection to download.",
-  "Ver lo descargado": "View downloaded data", "Lo descargado": "Downloaded data",
+  "Modo Offline": "Offline mode", "Lo descargado": "Downloaded data",
   "Tu sesión venció.": "Your session expired.", "Inicia sesión": "Sign in", "para preparar el día.": "to prepare the day.",
   "No se pudo descargar. Revisa tu conexión e inténtalo de nuevo.": "The download failed. Check your connection and try again.",
   "Los datos quedaron en este dispositivo, pero la pantalla para verlos sin señal no se guardó. Vuelve a intentarlo.":
