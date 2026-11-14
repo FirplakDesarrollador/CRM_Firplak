@@ -477,11 +477,20 @@ const partners = {
     CurrentAccountBalance: 512000000, OpenOrdersBalance: 120000000, OpenDeliveryNotesBalance: 0, CreditLimit: 500000000 },
 };
 const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
-  PaidToDate: paid, DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
+  PaidToDate: paid, VatSum: Math.round(total - total / 1.19), DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
 const sapOrders = [
   doc(41210, 'C20001', -12, 18, 245000000, 0, 'bost_Open', 'OC-CV-2231'),
   doc(41188, 'C20002', -20, 10, 120000000, 0, 'bost_Open', 'ADV-T2-07'),
 ];
+// El pedido 41210 se despacha en tres fechas: una línea ya entregada y dos pendientes (una con producción terminada).
+const sapLine = (n, qty, open, ship, whs = 'PT-02') => ({ LineNum: n, VisualOrder: n, ItemCode: 'DEMO-MB-060', ItemDescription: 'MUEBLE DE BAÑO FLOTANTE 60 CM',
+  Quantity: qty, RemainingOpenQuantity: open, ShipDate: sapDay(ship), LineStatus: open ? 'bost_Open' : 'bost_Close', LineTotal: qty * 1250000,
+  WarehouseCode: whs, U_TipoTOC: 'MTOSTD', U_Fecha_Plan_Ent_Cli_Linea: sapDay(ship + 3) });
+sapOrders[0].DocumentLines = [sapLine(0, 40, 0, -5), sapLine(1, 60, 60, 18), sapLine(2, 96, 96, 45)];
+const sapProductionOrders = [
+  { ItemNo: 'DEMO-MB-060', ProductionOrderStatus: 'boposReleased', CompletedQuantity: 25, ProductionOrderOriginNumber: 41210, U_NumLote: '41210-2-1' },
+];
+const sapDeliveries = [doc(52301, 'C20001', -3, -3, 38000000, 0, 'bost_Open', 'OC-CV-2204')];
 const sapInvoices = [
   doc(87105, 'C20001', -40, -10, 92000000, 0, 'bost_Open', 'OC-CV-2190'),
   doc(87240, 'C20001', -10, 20, 94400000, 0, 'bost_Open', 'OC-CV-2204'),
@@ -577,11 +586,15 @@ const sapServer = http.createServer(async (req, res) => {
     const doc = quotations.get(Number(qMatch[1]));
     return doc ? json(res, 200, doc) : sapError(res, 404, 'No matching records found (ODBC -2028)');
   }
-  if (path === '/Orders' || path === '/Invoices') {
+  if (path === '/ProductionOrders') {
+    const origins = [...(url.searchParams.get('$filter') ?? '').matchAll(/ProductionOrderOriginNumber eq (\d+)/g)].map((m) => Number(m[1]));
+    return json(res, 200, { value: sapProductionOrders.filter((o) => origins.includes(o.ProductionOrderOriginNumber)) });
+  }
+  if (path === '/Orders' || path === '/Invoices' || path === '/DeliveryNotes') {
     const filter = url.searchParams.get('$filter') ?? '';
     const card = filter.match(/CardCode eq '([^']+)'/)?.[1];
     const openOnly = filter.includes("DocumentStatus eq 'bost_Open'");
-    const list = (path === '/Orders' ? sapOrders : sapInvoices).filter((d) => d.CardCode === card && (!openOnly || d.DocumentStatus === 'bost_Open'));
+    const list = (path === '/Orders' ? sapOrders : path === '/DeliveryNotes' ? sapDeliveries : sapInvoices).filter((d) => d.CardCode === card && (!openOnly || d.DocumentStatus === 'bost_Open'));
     return json(res, 200, { value: list.sort((a, b) => b.DocDate.localeCompare(a.DocDate)) });
   }
   sapError(res, 404, `No simulado: ${path}`);

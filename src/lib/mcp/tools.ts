@@ -354,7 +354,7 @@ export function buildMcpServer(identity: McpIdentity) {
 
   server.registerTool("sap_cliente", {
     title: "Cliente en SAP Business One",
-    description: "Cartera, cupo de crédito, pedidos de venta abiertos, facturas abiertas y las diez más recientes de una cuenta en SAP (por su Código SAP). Solo lectura; requiere el permiso «Ver información de SAP».",
+    description: "Cartera, cupo de crédito, pedidos de venta abiertos con sus líneas, entregas sin facturar, facturas abiertas y las diez más recientes de una cuenta en SAP (por su Código SAP). Solo lectura; requiere el permiso «Ver información de SAP».",
     inputSchema: { cuenta_id: z.string().uuid().optional(), codigo_sap: z.string().optional().describe("CardCode, si no se da la cuenta") },
     annotations: readOnly,
   }, run("sap_cliente", async ({ cuenta_id, codigo_sap }: { cuenta_id?: string; codigo_sap?: string }) => {
@@ -377,7 +377,14 @@ export function buildMcpServer(identity: McpIdentity) {
       ...(summary.syncedAt ? { actualizado: summary.syncedAt } : {}),
       codigo: p.CardCode, nombre: p.CardName, saldo_cartera: p.CurrentAccountBalance, cupo_credito: p.CreditLimit,
       cupo_disponible: p.CreditLimit - p.CurrentAccountBalance - p.OpenDeliveryNotesBalance - p.OpenOrdersBalance,
-      pedidos_abiertos: summary.orders.map((o) => ({ numero: o.DocNum, fecha: o.DocDate.slice(0, 10), entrega: o.DocDueDate.slice(0, 10), oc_cliente: o.NumAtCard, total: o.DocTotal })),
+      pedidos_abiertos: summary.orders.map((o) => ({
+        numero: o.DocNum, fecha: o.DocDate.slice(0, 10), proximo_despacho: (o.NextShipDate ?? o.DocDueDate).slice(0, 10), oc_cliente: o.NumAtCard,
+        total_con_iva: o.DocTotal, ...(o.VatSum !== undefined ? { total_sin_iva: o.DocTotal - o.VatSum } : {}),
+        ...(o.Lines ? { lineas: o.Lines.map((l) => ({ articulo: l.ItemCode, descripcion: l.ItemDescription, pedida: l.Quantity, facturada: l.Invoiced, en_despacho: l.InDispatch, fecha_plan_despacho: l.ShipDate, abierta: l.Open })) } : {}),
+      })),
+      entregas_sin_facturar: summary.deliveries.map((d) => ({
+        numero: d.DocNum, fecha: d.DocDate.slice(0, 10), oc_cliente: d.NumAtCard, total_con_iva: d.DocTotal, ...(d.VatSum !== undefined ? { total_sin_iva: d.DocTotal - d.VatSum } : {}),
+      })),
       facturas: summary.invoices.map((i) => {
         const st = invoiceStatus(i);
         return { numero: i.DocNum, fecha: i.DocDate.slice(0, 10), vence: i.DocDueDate.slice(0, 10), total: i.DocTotal, pendiente: st.pending, abierta: st.open, vencida: st.overdue };

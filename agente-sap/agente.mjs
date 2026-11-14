@@ -140,19 +140,85 @@ const MAX_DOCS = 500;
 const documento = (extra = "") => ({ $select: CAMPOS_DOC + extra, $orderby: "DocDate desc", $top: "10" });
 const ARTICULO = "ItemCode,ItemName,QuantityOnStock,QuantityOrderedByCustomers,QuantityOrderedFromVendors,SalesUnit,ItemPrices,ItemWarehouseInfoCollection";
 
-/** Cartera, pedidos abiertos y facturas recientes de un cliente. Nulo si el código no existe en SAP. */
+const num = (v) => Number(v) || 0;
+const dia = (v) => (v ? String(v).slice(0, 10) : null);
+
+/** Posición de la línea del pedido escrita en el lote de la orden de fabricación (número entre el 1.º y el 2.º guion, menos 1). */
+function posicionDeLote(lote) {
+  if (!lote) return 0;
+  const texto = String(lote);
+  const p1 = texto.indexOf("-");
+  const n = texto.split("-").length - 1 >= 2
+    ? parseInt(texto.slice(p1 + 1, texto.indexOf("-", p1 + 1)), 10)
+    : parseInt(texto.slice(p1 >= 0 ? p1 + 1 : 0).slice(0, 2), 10);
+  return Number.isFinite(n) ? n - 1 : 0;
+}
+
+/**
+ * Lo que producción ya entregó a despacho por línea de pedido, como el «Visor OV» de SAP: suma de lo
+ * terminado en las órdenes de fabricación del pedido (se emparejan por artículo y posición del lote).
+ */
+async function terminadoPorLinea(sap, pedidos) {
+  const terminado = new Map();
+  for (const lote of lotes(pedidos.map((p) => p.DocNum), 20)) {
+    const ofs = await sap.lista(q("ProductionOrders", {
+      $select: "ItemNo,ProductionOrderStatus,CompletedQuantity,ProductionOrderOriginNumber,U_NumLote",
+      $filter: lote.map((n) => `ProductionOrderOriginNumber eq ${n}`).join(" or "),
+    }));
+    for (const o of ofs) {
+      if (o.ProductionOrderStatus === "boposCancelled") continue;
+      const clave = `${o.ProductionOrderOriginNumber}|${o.ItemNo}|${posicionDeLote(o.U_NumLote)}`;
+      terminado.set(clave, (terminado.get(clave) ?? 0) + num(o.CompletedQuantity));
+    }
+  }
+  return terminado;
+}
+
+/** Líneas de un pedido: pedida, facturada, en despacho y fecha plan de despacho. */
+function lineasDePedido(pedido, terminado) {
+  return (pedido.DocumentLines ?? []).map((ln) => {
+    const pos = ln.VisualOrder ?? ln.LineNum ?? 0;
+    const pedida = num(ln.Quantity);
+    const facturada = pedida - num(ln.RemainingOpenQuantity);
+    const bodega = ln.WarehouseCode ?? "";
+    const toc = String(ln.U_TipoTOC ?? "").toUpperCase();
+    // Igual que el Visor OV: lo fabricado sale de las órdenes de fabricación; lo que no se fabrica contra pedido
+    // (otras bodegas) ya está en despacho. Los artículos de compra (PTO) no se calculan aquí.
+    let disponible = facturada;
+    let calculado = true;
+    if (bodega === "PT-02" && (toc.includes("MTO") || toc.includes("MTS"))) disponible = terminado.get(`${pedido.DocNum}|${ln.ItemCode}|${pos}`) ?? facturada;
+    else if (bodega === "PT-02" && toc.includes("PTO")) calculado = false;
+    else if (bodega !== "PT-02") disponible = pedida;
+    return {
+      Line: pos + 1, ItemCode: ln.ItemCode, ItemDescription: ln.ItemDescription, Quantity: pedida, Invoiced: facturada,
+      InDispatch: calculado ? Math.max(0, disponible - facturada) : null,
+      ShipDate: dia(ln.ShipDate), ClientDate: dia(ln.U_Fecha_Plan_Ent_Cli_Linea), Open: ln.LineStatus === "bost_Open", LineTotal: num(ln.LineTotal),
+    };
+  }).sort((a, b) => a.Line - b.Line);
+}
+
+/** Cartera, pedidos abiertos con sus líneas, entregas sin facturar y facturas de un cliente. Nulo si el código no existe en SAP. */
 async function cliente(sap, codigo) {
   const partner = await sap.get(`BusinessPartners(${encodeURIComponent(comillas(codigo))})?$select=${SOCIO}`);
   if (!partner) return null;
   const c = comillas(codigo);
-  const todos = { $select: CAMPOS_DOC, $orderby: "DocDate desc" };
-  // Todos los pedidos abiertos; todas las facturas abiertas (para que el vencido sea exacto) y las diez más recientes.
-  const orders = await sap.lista(q("Orders", { ...todos, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open'` }));
-  const abiertas = await sap.lista(q("Invoices", { ...todos, $select: `${CAMPOS_DOC},PaidToDate`, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'` }));
-  const recientes = await sap.get(q("Invoices", { $filter: `CardCode eq ${c} and Cancelled eq 'tNO'`, ...documento(",PaidToDate") }));
+  const todos = { $select: `${CAMPOS_DOC},VatSum`, $orderby: "DocDate desc" };
+  // Todos los pedidos abiertos, con sus líneas (cada pedido puede despacharse en varias fechas).
+  const pedidos = (await sap.lista(q("Orders", { ...todos, $select: `${CAMPOS_DOC},VatSum,DocumentLines`, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open'` }))).slice(0, MAX_DOCS);
+  const terminado = await terminadoPorLinea(sap, pedidos);
+  const orders = pedidos.map(({ DocumentLines, ...p }) => {
+    const Lines = lineasDePedido({ ...p, DocumentLines }, terminado);
+    const pendientes = Lines.filter((l) => l.Open && l.ShipDate).map((l) => l.ShipDate).sort();
+    return { ...p, NextShipDate: pendientes[0] ?? null, Lines };
+  });
+  // Entregas hechas que todavía no se facturan.
+  const deliveries = await sap.lista(q("DeliveryNotes", { ...todos, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'` }));
+  // Todas las facturas abiertas (para que el vencido sea exacto) y las diez más recientes.
+  const abiertas = await sap.lista(q("Invoices", { ...todos, $select: `${CAMPOS_DOC},VatSum,PaidToDate`, $filter: `CardCode eq ${c} and DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'` }));
+  const recientes = await sap.get(q("Invoices", { $filter: `CardCode eq ${c} and Cancelled eq 'tNO'`, ...documento(",VatSum,PaidToDate") }));
   const porEntrada = new Map([...abiertas, ...(recientes?.value ?? [])].map((d) => [d.DocEntry, d]));
   const invoices = [...porEntrada.values()].sort((a, b) => String(b.DocDate).localeCompare(String(a.DocDate)));
-  return { partner, orders: orders.slice(0, MAX_DOCS), invoices: invoices.slice(0, MAX_DOCS) };
+  return { partner, orders, deliveries: deliveries.slice(0, MAX_DOCS), invoices: invoices.slice(0, MAX_DOCS) };
 }
 
 /** Inventario y precios de un lote de artículos (hasta 20 por consulta: las URL largas fallan). */
@@ -256,6 +322,8 @@ async function muestra([codigo, articulo]) {
     else {
       log(`Cliente ${code}: campos ${Object.keys(c.partner).join(", ")}`);
       log(`  pedidos abiertos: ${c.orders.length}${c.orders[0] ? ` (campos ${Object.keys(c.orders[0]).join(", ")})` : ""}`);
+      log(`  líneas del primer pedido: ${c.orders[0]?.Lines?.length ?? 0}${c.orders[0]?.Lines?.[0] ? ` (campos ${Object.keys(c.orders[0].Lines[0]).join(", ")})` : ""}`);
+      log(`  entregas sin facturar: ${c.deliveries.length}`);
       log(`  facturas: ${c.invoices.length}${c.invoices[0] ? ` (campos ${Object.keys(c.invoices[0]).join(", ")})` : ""}`);
     }
     const item = articulo ?? (await sap.get("Items?$select=ItemCode&$filter=SalesItem eq 'tYES'&$top=1"))?.value?.[0]?.ItemCode;

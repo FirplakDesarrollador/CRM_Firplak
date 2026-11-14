@@ -46,6 +46,27 @@ test.describe("SAP por agente", () => {
       await expect(page.getByRole("cell", { name: "41210" })).toBeVisible();
       await expect(page.getByRole("cell", { name: "OC-CV-2231" })).toBeVisible();
 
+      // Totales sin y con IVA, y las entregas que aún no se facturan.
+      await expect(page.getByRole("columnheader", { name: "Total sin IVA" }).first()).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "Total con IVA" }).first()).toBeVisible();
+      await expect(page.getByRole("heading", { name: /Entregas sin facturar/ })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "52301" })).toBeVisible();
+
+      // El número del pedido abre sus líneas: cada una con su fecha de despacho y lo que ya está en despacho.
+      await page.getByRole("button", { name: "41210" }).click();
+      const ventana = page.getByRole("dialog");
+      await expect(ventana.getByRole("heading", { name: /Pedido 41210/ })).toBeVisible();
+      await expect(ventana.getByRole("row")).toHaveCount(4);
+      const pendiente = ventana.getByRole("row").nth(2);
+      // 60 pedidas, 0 facturadas, 25 en despacho (producción terminada) y 35 por producir.
+      await expect(pendiente.getByRole("cell").nth(2)).toHaveText("60");
+      await expect(pendiente.getByRole("cell").nth(3)).toHaveText("0");
+      await expect(pendiente.getByRole("cell").nth(4)).toHaveText("25");
+      await expect(pendiente.getByRole("cell").nth(5)).toHaveText("35");
+      await expect(ventana.getByRole("row").nth(1)).toContainText("Entregada");
+      await ventana.getByRole("button", { name: "Cerrar" }).click();
+      await expect(ventana).toBeHidden();
+
       // El inventario de un producto también sale de la copia.
       await page.goto("/productos?q=DEMO-MB-060");
       await page.getByRole("link", { name: /Mueble/i }).first().click();

@@ -6,6 +6,8 @@ import { formatCurrency, formatNumber } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
 import { sapCompany } from "@/lib/sap/client";
 import { getCustomerSummary, getItem, invoiceStatus, SapPending } from "@/lib/sap/data";
+import type { SapDocument } from "@/lib/sap/types";
+import { SapOrderLines } from "./SapOrderLines";
 
 const Kpi = ({ label, value, tone }: { label: string; value: string; tone?: string }) => (
   <div className="rounded-[10px] border border-line p-3">
@@ -22,6 +24,14 @@ function Header({ title, subtitle, syncedAt }: { title: string; subtitle: string
     </div>
   );
 }
+
+/** Total sin IVA y con IVA de un documento: al cliente se le habla con IVA; el asesor cuenta su venta sin IVA. */
+const Totals = ({ doc }: { doc: SapDocument }) => (
+  <>
+    <td className="num text-right">{doc.VatSum === undefined ? "—" : formatCurrency(doc.DocTotal - doc.VatSum)}</td>
+    <td className="num text-right">{formatCurrency(doc.DocTotal)}</td>
+  </>
+);
 
 const Pending = () => (
   <section className="card p-4 text-sm text-muted"><Tr>Todavía no se ha traído de SAP. Llegará con la próxima sincronización (lunes a viernes, cada dos horas).</Tr></section>
@@ -41,7 +51,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
     return <section className="card p-4"><Alert tone="error">{t("No se pudo consultar SAP:")} {(e as Error).message}</Alert></section>;
   }
   if (!data) return <section className="card p-4 text-sm text-muted">{t("No existe un socio de negocio con el código")} <code>{cardCode}</code> {t("en SAP.")}</section>;
-  const { partner: p, orders, invoices } = data;
+  const { partner: p, orders, deliveries, invoices } = data;
   const available = p.CreditLimit - p.CurrentAccountBalance - p.OpenDeliveryNotesBalance - p.OpenOrdersBalance;
   const overdue = invoices.map((i) => invoiceStatus(i)).filter((s) => s.overdue).reduce((sum, s) => sum + s.pending, 0);
 
@@ -63,15 +73,33 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
           <h3 className="mb-2 text-sm font-semibold"><Tr>Pedidos de venta abiertos</Tr> <span className="badge">{orders.length}</span></h3>
           {orders.length === 0 ? <p className="text-sm text-muted"><Tr>Sin pedidos abiertos.</Tr></p> : (
             <table className="table">
-              <thead><tr><th>N.º</th><th><Tr>Fecha</Tr></th><th><Tr>Entrega</Tr></th><th><Tr>OC cliente</Tr></th><th className="text-right"><Tr>Total</Tr></th></tr></thead>
+              <thead><tr><th>N.º</th><th><Tr>Fecha</Tr></th><th><Tr>Próximo despacho</Tr></th><th><Tr>OC cliente</Tr></th><th className="text-right"><Tr>Total sin IVA</Tr></th><th className="text-right"><Tr>Total con IVA</Tr></th></tr></thead>
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.DocEntry}>
-                    <td className="num">{o.DocNum}</td>
+                    <td className="num"><SapOrderLines docNum={o.DocNum} lines={o.Lines ?? []} /></td>
                     <td className="whitespace-nowrap"><Fmt date={o.DocDate.slice(0, 10)} /></td>
-                    <td className="whitespace-nowrap"><Fmt date={o.DocDueDate.slice(0, 10)} /></td>
+                    <td className="whitespace-nowrap"><Fmt date={(o.NextShipDate ?? o.DocDueDate).slice(0, 10)} /></td>
                     <td>{o.NumAtCard ?? "—"}</td>
-                    <td className="num text-right">{formatCurrency(o.DocTotal)}</td>
+                    <Totals doc={o} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <h3 className="mb-2 text-sm font-semibold"><Tr>Entregas sin facturar</Tr> <span className="badge">{deliveries.length}</span></h3>
+          {deliveries.length === 0 ? <p className="text-sm text-muted"><Tr>Sin entregas pendientes de facturar.</Tr></p> : (
+            <table className="table">
+              <thead><tr><th>N.º</th><th><Tr>Fecha</Tr></th><th><Tr>OC cliente</Tr></th><th className="text-right"><Tr>Total sin IVA</Tr></th><th className="text-right"><Tr>Total con IVA</Tr></th></tr></thead>
+              <tbody>
+                {deliveries.map((d) => (
+                  <tr key={d.DocEntry}>
+                    <td className="num">{d.DocNum}</td>
+                    <td className="whitespace-nowrap"><Fmt date={d.DocDate.slice(0, 10)} /></td>
+                    <td>{d.NumAtCard ?? "—"}</td>
+                    <Totals doc={d} />
                   </tr>
                 ))}
               </tbody>
@@ -82,7 +110,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
           <h3 className="mb-2 text-sm font-semibold"><Tr>Facturas abiertas y recientes</Tr> <span className="badge">{invoices.length}</span></h3>
           {invoices.length === 0 ? <p className="text-sm text-muted"><Tr>Sin facturas.</Tr></p> : (
             <table className="table">
-              <thead><tr><th>N.º</th><th><Tr>Fecha</Tr></th><th><Tr>Vence</Tr></th><th className="text-right"><Tr>Pendiente</Tr></th><th><Tr>Estado</Tr></th></tr></thead>
+              <thead><tr><th>N.º</th><th><Tr>Fecha</Tr></th><th><Tr>Vence</Tr></th><th className="text-right"><Tr>Total sin IVA</Tr></th><th className="text-right"><Tr>Total con IVA</Tr></th><th className="text-right"><Tr>Pendiente</Tr></th><th><Tr>Estado</Tr></th></tr></thead>
               <tbody>
                 {invoices.map((i) => {
                   const s = invoiceStatus(i);
@@ -91,6 +119,7 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
                       <td className="num">{i.DocNum}</td>
                       <td className="whitespace-nowrap"><Fmt date={i.DocDate.slice(0, 10)} /></td>
                       <td className="whitespace-nowrap"><Fmt date={i.DocDueDate.slice(0, 10)} /></td>
+                      <Totals doc={i} />
                       <td className="num text-right">{formatCurrency(s.pending)}</td>
                       <td><span className={`badge ${s.overdue ? "badge-danger" : s.open ? "badge-warning" : "badge-success"}`}>{t(s.overdue ? "Vencida" : s.open ? "Pendiente" : "Pagada")}</span></td>
                     </tr>
