@@ -34,8 +34,10 @@ function useAgentResult(state: ImportState) {
 }
 
 /** Importación de productos desde SAP: filtro, mapeo de campos personalizados, vista previa e importar. */
-export function SapImportPanel({ fields, prefix, salesOnly, mappings }: {
+export function SapImportPanel({ fields, prefix, salesOnly, mappings, families, plants, canBringGroup }: {
   fields: Field[]; prefix: string; salesOnly: boolean; mappings: { field: string; sap_field: string }[];
+  /** Valores de las listas Familia y Planta de Productos; el grupo de artículo solo lo trae el agente. */
+  families: string[]; plants: string[]; canBringGroup: boolean;
 }) {
   const t = useT();
   const [previewState, previewAction] = useActionState<ImportState, FormData>(previewSapImport, {});
@@ -77,16 +79,18 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings }: {
 
       {preview.preview && preview.preview.length > 0 && (
         <PickAndImport key={previewState.requestId ?? preview.preview.length} rows={preview.preview} columns={preview.columns ?? []}
-          existing={preview.existing ?? []} action={importAction} waiting={importWaiting} result={result} />
+          existing={preview.existing ?? []} action={importAction} waiting={importWaiting} result={result}
+          families={families} plants={plants} canBringGroup={canBringGroup} />
       )}
     </div>
   );
 }
 
 /** Lista de artículos de SAP para marcar cuáles se importan: solo entra al CRM lo que la persona elige. */
-function PickAndImport({ rows, columns, existing, action, waiting, result }: {
+function PickAndImport({ rows, columns, existing, action, waiting, result, families, plants, canBringGroup }: {
   rows: Record<string, unknown>[]; columns: string[]; existing: string[];
   action: (fd: FormData) => void; waiting: boolean; result: ImportState;
+  families: string[]; plants: string[]; canBringGroup: boolean;
 }) {
   const t = useT();
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -145,9 +149,33 @@ function PickAndImport({ rows, columns, existing, action, waiting, result }: {
           </tbody>
         </table>
       </div>
+      <fieldset className="grid gap-3 rounded-[10px] border border-line p-3 sm:grid-cols-2">
+        <legend className="px-1 text-sm font-semibold">{t("Datos para los artículos elegidos")}</legend>
+        <div>
+          <label className="label" htmlFor="sap-family">{t("Familia")}</label>
+          <select id="sap-family" name="family" className="select" defaultValue="">
+            <option value="">{t("Sin familia")}</option>
+            {families.map((f) => <option key={f}>{f}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="sap-plant">{t("Planta")}</label>
+          <select id="sap-plant" name="plant" className="select" defaultValue="">
+            <option value="">{t("Sin planta")}</option>
+            {plants.map((p) => <option key={p}>{p}</option>)}
+          </select>
+          {plants.length === 0 && <p className="mt-1 text-xs text-muted">{t("La lista de Plantas está vacía: créalas en Configuración → Listas de valores → Productos.")}</p>}
+        </div>
+        {canBringGroup && (
+          <label className="flex items-start gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" name="with_group" defaultChecked className="mt-0.5 accent-[var(--brand)]" />
+            <span>{t("Traer de SAP el Grupo de Artículo")} <span className="block text-xs text-muted">{t("Si un grupo no está en la lista de valores, se crea solo y queda atado a la familia elegida.")}</span></span>
+          </label>
+        )}
+      </fieldset>
       <div className="flex flex-wrap items-center gap-3">
         <SubmitButton className="btn btn-primary" pendingText="Importando…"><Download size={14} /> {t("Importar seleccionados")} ({picked.size})</SubmitButton>
-        <span className="text-xs text-muted">{t("Crea los productos nuevos y actualiza nombre y campos mapeados de los que ya están (por Referencia). No cambia precios ni familia.")}</span>
+        <span className="text-xs text-muted">{t("Crea los productos nuevos y actualiza los que ya están (por Referencia): nombre, campos mapeados y lo que elijas aquí. No cambia precios.")}</span>
         {result.message && <p role="status" aria-busy={waiting} className={`basis-full text-sm font-semibold ${waiting ? "text-muted" : result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
       </div>
     </form>

@@ -760,16 +760,38 @@ await check('las solicitudes a SAP las crea la administración y solo el agente 
   assert.equal((await as(agent, () => q(`select sap_agent_next_request() next`)))[0].next, null);
   const filas = [{ code: 'ZZ-001', name: 'LAVAMANOS ZZ', custom: { linea: 'Prueba' } }, { code: 'ZZ-002', name: '' }];
   const [{ r1 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb) r1`, [JSON.stringify(filas)]));
-  assert.deepEqual(r1, { created: 2, updated: 0 });
+  assert.deepEqual(r1, { created: 2, updated: 0, groups_created: 0 });
   // Repetir actualiza nombre y campos mapeados, sin duplicar ni borrar otros campos.
   await q(`update products set custom_fields = custom_fields || '{"otro":"se conserva"}', family = 'Lavamanos y superficies' where product_code = 'ZZ-001'`);
   const [{ r2 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb) r2`,
     [JSON.stringify([{ code: 'ZZ-001', name: 'LAVAMANOS ZZ NUEVO', custom: { linea: 'Otra' } }])]));
-  assert.deepEqual(r2, { created: 0, updated: 1 });
+  assert.deepEqual(r2, { created: 0, updated: 1, groups_created: 0 });
   const [p1] = await q(`select name, family, unit, is_active, custom_fields from products where product_code = 'ZZ-001'`);
   assert.deepEqual([p1.name, p1.family, p1.unit, p1.is_active], ['LAVAMANOS ZZ NUEVO', 'Lavamanos y superficies', 'Unidad', true]);
   assert.deepEqual(p1.custom_fields, { linea: 'Otra', otro: 'se conserva' });
   assert.equal((await q(`select name from products where product_code = 'ZZ-002'`))[0].name, 'ZZ-002');
+  // Con Familia y Planta elegidas y el Grupo de Artículo de SAP: el grupo que falta se crea en la lista, atado a la familia.
+  await q(`insert into picklist_values (object, field, value) values ('products', 'plant', 'Planta Uno')`);
+  const conGrupo = [{ code: 'ZZ-003', name: 'LAVAMANOS ECO', item_group: 'BAN02-Lavamanos ECO' }, { code: 'ZZ-001', name: 'LAVAMANOS ZZ NUEVO', item_group: 'BAN02-Lavamanos ECO' }];
+  await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb)`, [JSON.stringify(conGrupo)])), /hay que elegir la Familia/);
+  await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Lavamanos y superficies', 'No existe')`, [JSON.stringify(conGrupo)])), /La planta «No existe» no está en la lista de valores/);
+  const [{ r3 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Lavamanos y superficies', 'Planta Uno') r3`, [JSON.stringify(conGrupo)]));
+  assert.deepEqual(r3, { created: 1, updated: 1, groups_created: 1 });
+  const [p3] = await q(`select family, plant, item_group from products where product_code = 'ZZ-003'`);
+  assert.deepEqual([p3.family, p3.plant, p3.item_group], ['Lavamanos y superficies', 'Planta Uno', 'BAN02-Lavamanos ECO']);
+  assert.deepEqual((await q(`select controlling_map from picklist_values where object = 'products' and field = 'item_group' and value = 'BAN02-Lavamanos ECO'`))[0].controlling_map,
+    { family: ['Lavamanos y superficies'] });
+  assert.equal(await count(`select count(*) n from picklist_dependencies where object = 'products' and field = 'item_group' and controlling_field = 'family'`), 1);
+  // El mismo grupo con otra familia se habilita para las dos; sin familia ni planta, lo que ya tenía el producto se conserva.
+  await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Muebles de baño')`, [JSON.stringify([{ code: 'ZZ-004', name: 'OTRO', item_group: 'BAN02-Lavamanos ECO' }])]));
+  assert.deepEqual((await q(`select controlling_map -> 'family' f from picklist_values where object = 'products' and field = 'item_group' and value = 'BAN02-Lavamanos ECO'`))[0].f,
+    ['Lavamanos y superficies', 'Muebles de baño']);
+  await as(agent, () => q(`select sap_agent_import_products($1::jsonb)`, [JSON.stringify([{ code: 'ZZ-003', name: 'LAVAMANOS ECO 2' }])]));
+  const [p4] = await q(`select name, family, plant, item_group from products where product_code = 'ZZ-003'`);
+  assert.deepEqual([p4.name, p4.family, p4.plant, p4.item_group], ['LAVAMANOS ECO 2', 'Lavamanos y superficies', 'Planta Uno', 'BAN02-Lavamanos ECO']);
+  // Ya con la dependencia creada, la base rechaza un grupo que no corresponde a la familia del producto.
+  await assert.rejects(q(`update products set family = 'Cocinas' where product_code = 'ZZ-003'`), /no corresponde/);
+
   await as(agent, () => q(`select sap_agent_finish_request($1, '{"total":2,"created":2,"updated":0}', null)`, [req.id]));
   const [done] = await as(admin, () => q(`select status, result, finished_at from sap_requests where id = $1`, [req.id]));
   assert.deepEqual([done.status, done.result.created], ['done', 2]);
@@ -781,7 +803,9 @@ await check('las solicitudes a SAP las crea la administración y solo el agente 
   assert.equal((await as(agent, () => q(`select sap_agent_next_request() next`)))[0].next, null);
   assert.match((await q(`select error from sap_requests where id = $1 and status = 'error'`, [old.id]))[0].error, /no atendió la solicitud a tiempo/);
 
-  await db.exec(`delete from sap_requests; delete from products where product_code like 'ZZ-%'`);
+  await db.exec(`delete from sap_requests; delete from products where product_code like 'ZZ-%';
+    delete from picklist_values where object = 'products' and field in ('plant', 'item_group');
+    delete from picklist_dependencies where object = 'products' and field = 'item_group'`);
   await q(`delete from auth.users where id = $1`, [agent.id]);
 });
 

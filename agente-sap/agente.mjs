@@ -357,7 +357,7 @@ async function articulosParaImportar(sap, params, limite) {
     String(params.prefix ?? "").trim() ? `startswith(ItemCode,${comillas(String(params.prefix).trim())})` : null,
   ].filter(Boolean);
   const consulta = {
-    $select: [...new Set(["ItemCode", "ItemName", ...mapeos.map((m) => m.sap_field)])].join(","),
+    $select: [...new Set(["ItemCode", "ItemName", "ItemsGroupCode", ...mapeos.map((m) => m.sap_field)])].join(","),
     ...(filtros.length ? { $filter: filtros.join(" and ") } : {}),
     $orderby: "ItemCode",
     ...(limite < 50 ? { $top: String(limite) } : {}),
@@ -380,26 +380,39 @@ async function articulosParaImportar(sap, params, limite) {
   return { filas: filas.slice(0, limite), mapeos, hayMas: filas.length > limite || Boolean(siguiente) };
 }
 
+/** Nombre de cada grupo de artículos de SAP, por su número. */
+async function gruposDeArticulos(sap) {
+  const grupos = await sap.lista(q("ItemGroups", { $select: "Number,GroupName" }));
+  return new Map(grupos.map((g) => [g.Number, String(g.GroupName ?? "").trim()]));
+}
+const COLUMNA_GRUPO = "Grupo de artículo";
+
 async function atenderUna(sap, destino, solicitud) {
   const { kind, params = {} } = solicitud;
   if (kind === "product_preview") {
     // La lista completa del filtro (hasta el tope), para que la persona elija qué importar.
     const { filas, mapeos, hayMas } = await articulosParaImportar(sap, params, Math.min(Number(params.limit) || 10, MAX_ELEGIDOS));
-    const columns = ["ItemCode", "ItemName", ...mapeos.map((m) => m.sap_field)];
-    return { columns, rows: filas.map((f) => Object.fromEntries(columns.map((c) => [c, f[c] ?? null]))), truncated: hayMas };
+    const grupos = await gruposDeArticulos(sap);
+    const columns = ["ItemCode", "ItemName", COLUMNA_GRUPO, ...mapeos.map((m) => m.sap_field)];
+    return { columns, rows: filas.map((f) => Object.fromEntries(columns.map((c) => [c, c === COLUMNA_GRUPO ? grupos.get(f.ItemsGroupCode) || null : f[c] ?? null]))), truncated: hayMas };
   }
   if (kind === "product_import") {
     const { filas, mapeos } = await articulosParaImportar(sap, params, MAX_IMPORTAR);
-    let created = 0, updated = 0;
+    // El Grupo de Artículo viene de SAP (si se pidió); la Familia y la Planta las eligió la persona en el CRM.
+    const grupos = params.with_group ? await gruposDeArticulos(sap) : null;
+    let created = 0, updated = 0, groups_created = 0;
     const errors = [];
     for (const lote of lotes(filas, 200)) {
-      const rows = lote.map((f) => ({ code: f.ItemCode, name: f.ItemName ?? "", custom: Object.fromEntries(mapeos.map((m) => [m.field, convertir(f[m.sap_field], m.type)])) }));
+      const rows = lote.map((f) => ({
+        code: f.ItemCode, name: f.ItemName ?? "", item_group: grupos?.get(f.ItemsGroupCode) || null,
+        custom: Object.fromEntries(mapeos.map((m) => [m.field, convertir(f[m.sap_field], m.type)])),
+      }));
       try {
-        const r = await destino.rpc("sap_agent_import_products", { p_rows: rows });
-        created += r.created; updated += r.updated;
-      } catch (e) { errors.push(`${lote[0].ItemCode}…: ${String(e.message).slice(0, 200)}`); }
+        const r = await destino.rpc("sap_agent_import_products", { p_rows: rows, p_family: params.family ?? null, p_plant: params.plant ?? null });
+        created += r.created; updated += r.updated; groups_created += r.groups_created ?? 0;
+      } catch (e) { errors.push(`${lote[0].ItemCode}…: ${String(e.message).replace(/^CRM \(sap_agent_import_products\): /, "").slice(0, 200)}`); }
     }
-    return { total: filas.length, created, updated, errors: errors.slice(0, 10) };
+    return { total: filas.length, created, updated, groups_created, errors: errors.slice(0, 10) };
   }
   throw new Error(`Solicitud desconocida: ${kind}`);
 }

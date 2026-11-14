@@ -44,7 +44,9 @@ function convert(value: unknown, type: string) {
  * Crea o actualiza productos por Referencia = ItemCode: solo nombre (descripción de SAP) y los
  * campos personalizados mapeados. No toca precios, familia ni el resto del producto.
  */
-export async function importSapItems(opts: SapSettings["product_import"], codes?: string[]) {
+export async function importSapItems(opts: SapSettings["product_import"], codes?: string[], extra: { family?: string | null; plant?: string | null } = {}) {
+  // Familia y Planta elegidas en el CRM (el Grupo de Artículo solo lo trae el agente).
+  const chosen = { ...(extra.family ? { family: extra.family } : {}), ...(extra.plant ? { plant: extra.plant } : {}) };
   // Con una lista de códigos se importan solo esos (los que la persona eligió en la lista).
   const wanted = codes ? new Set(codes) : null;
   const items = (await fetchSapItems(opts)).filter((it) => !wanted || wanted.has(it.ItemCode));
@@ -66,11 +68,11 @@ export async function importSapItems(opts: SapSettings["product_import"], codes?
       const current = byCode.get(it.ItemCode);
       if (current) {
         const { error } = await supabase.from("products").update({
-          name, custom_fields: { ...((current.custom_fields ?? {}) as object), ...mapped },
+          name, custom_fields: { ...((current.custom_fields ?? {}) as object), ...mapped }, ...chosen,
         }).eq("id", current.id);
         if (error) errors.push(`${it.ItemCode}: ${error.message}`); else updated++;
       } else {
-        inserts.push({ name, product_code: it.ItemCode, unit: "Unidad", is_active: true, custom_fields: mapped });
+        inserts.push({ name, product_code: it.ItemCode, unit: "Unidad", is_active: true, custom_fields: mapped, ...chosen });
       }
     }
     if (inserts.length) {

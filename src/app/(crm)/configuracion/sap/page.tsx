@@ -13,6 +13,8 @@ import { sapCompany, sapConfigured } from "@/lib/sap/client";
 import { getSapSettings, sapSourceOf } from "@/lib/sap/settings";
 import { saveSapQuotationSetting, saveSapSource, testSapConnection } from "@/lib/sap/actions";
 import { Fmt } from "@/components/ui/Fmt";
+import { PRODUCT_FAMILIES } from "@/lib/objects/picklists";
+import { KIT_PLANT } from "@/lib/objects/products";
 
 export const metadata: Metadata = { title: "SAP Business One" };
 
@@ -21,14 +23,17 @@ export default async function SapAdminPage() {
   const [me, t] = await Promise.all([requireUser(), getT()]);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const supabase = await createClient();
-  const [settings, { data: runs }, { data: fields }] = await Promise.all([
+  const [settings, { data: runs }, { data: lists }, { data: fields }] = await Promise.all([
     getSapSettings(),
     supabase.from("sap_sync_runs").select("id, started_at, finished_at, host, partners, items, errors, ok").order("started_at", { ascending: false }).limit(8),
+    supabase.from("picklist_values").select("field, value").eq("object", "products").in("field", ["family", "plant"]).eq("is_active", true).order("sort_order"),
     supabase.from("custom_field_definitions").select("api_name, label").eq("object", "products").eq("is_active", true).order("sort_order"),
   ]);
   const configured = sapConfigured();
   const source = sapSourceOf(settings);
   const last = runs?.[0];
+  // Familia sin filas propias usa los valores de fábrica; la planta «KIT» es solo para kits.
+  const families = (lists ?? []).filter((l) => l.field === "family").map((l) => l.value);
 
   return (
     <>
@@ -108,7 +113,9 @@ export default async function SapAdminPage() {
         {source === "agent" && <p className="text-xs text-muted"><Tr>La consulta la hace el agente dentro de la red: tarda hasta un minuto en empezar.</Tr></p>}
         {configured || source === "agent" ? (
           <SapImportPanel fields={(fields ?? []).map((f) => ({ api_name: f.api_name, label: f.label }))}
-            prefix={settings.product_import.prefix} salesOnly={settings.product_import.sales_only} mappings={settings.product_import.mappings} />
+            prefix={settings.product_import.prefix} salesOnly={settings.product_import.sales_only} mappings={settings.product_import.mappings}
+            families={families.length ? families : [...PRODUCT_FAMILIES]} plants={(lists ?? []).filter((l) => l.field === "plant" && l.value !== KIT_PLANT).map((l) => l.value)}
+            canBringGroup={source === "agent"} />
         ) : <p className="text-sm text-muted"><Tr>Disponible cuando la conexión esté configurada.</Tr></p>}
       </section>
     </>

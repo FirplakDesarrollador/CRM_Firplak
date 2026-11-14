@@ -12,8 +12,9 @@ Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
 
 Además revisa **cada minuto, todos los días**, si el CRM le dejó una solicitud (Configuración → SAP →
 «Importar productos desde SAP»): la vista previa o la importación de artículos. La atiende, deja el
-resultado en el CRM y termina. Al importar crea los productos nuevos y actualiza el nombre y los campos
-mapeados de los que ya existen, por Referencia; no cambia precios ni familia.
+resultado en el CRM y termina. Trae la lista completa del filtro (hasta 1.000 artículos, con su grupo de
+artículo) para que la persona elija; al importar crea o actualiza, por Referencia, solo los artículos
+elegidos, con la Familia y la Planta que se eligieron en el CRM y el Grupo de Artículo de SAP. No cambia precios.
 
 Si a esa hora el equipo está apagado, dormido o fuera de la red, la corrida se salta o falla, y el CRM
 sigue mostrando la copia anterior con su hora. Cada corrida queda registrada en Configuración → SAP.

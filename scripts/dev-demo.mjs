@@ -515,6 +515,7 @@ for (let i = 1; i <= 56; i++) {
   const [code, name, linea] = lines[i % lines.length];
   const itemCode = `FP-${code}-${String(100 + i)}`;
   sapItems[itemCode] = { ItemCode: itemCode, ItemName: `${name} REF ${100 + i} ${colors[i % colors.length].toUpperCase()}`, SalesItem: i % 9 === 0 ? 'tNO' : 'tYES',
+    ItemsGroupCode: 110 + (i % lines.length),
     U_Linea: linea, U_Color: colors[i % colors.length], QuantityOnStock: (i * 7) % 90, ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 150000 + i * 10000 }], ItemWarehouseInfoCollection: [] };
 }
 // Todos los productos de ejemplo del CRM existen en SAP (para crear ofertas con los pedidos de la demo).
@@ -587,6 +588,10 @@ const sapServer = http.createServer(async (req, res) => {
   if (qMatch) {
     const doc = quotations.get(Number(qMatch[1]));
     return doc ? json(res, 200, doc) : sapError(res, 404, 'No matching records found (ODBC -2028)');
+  }
+  // Grupos de artículos (ItemsGroupCode de cada artículo).
+  if (path === '/ItemGroups') {
+    return json(res, 200, { value: [[110, 'BAN05-Muebles Lavam'], [111, 'BAN02-Lavamanos ECO'], [112, 'COC03-Kit de cocinas'], [113, 'BAN08-Cabinas ducha']].map(([Number, GroupName]) => ({ Number, GroupName })) });
   }
   if (path === '/ProductionOrders') {
     const origins = [...(url.searchParams.get('$filter') ?? '').matchAll(/ProductionOrderOriginNumber eq (\d+)/g)].map((m) => Number(m[1]));

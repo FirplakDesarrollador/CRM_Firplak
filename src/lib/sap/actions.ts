@@ -89,13 +89,14 @@ const previewMessage = (n: number, truncated: boolean) => !n ? "No hay artículo
     : `${n} artículos de SAP con ese filtro. Elige los que quieres importar.`;
 
 /** Deja una solicitud para el agente de SAP (vista previa o importación) con el filtro y el mapeo vigentes. */
-async function requestFromAgent(kind: "product_preview" | "product_import", opts: SapSettings["product_import"], codes?: string[]): Promise<ImportState> {
+type ImportExtra = { family: string | null; plant: string | null; with_group: boolean };
+async function requestFromAgent(kind: "product_preview" | "product_import", opts: SapSettings["product_import"], codes?: string[], extra?: ImportExtra): Promise<ImportState> {
   const supabase = await createClient();
   const { data: defs } = await supabase.from("custom_field_definitions").select("api_name, field_type").eq("object", "products").eq("is_active", true);
   const types = new Map((defs ?? []).map((d) => [d.api_name, d.field_type]));
   const mappings = opts.mappings.filter((m) => types.has(m.field) && validSapField(m.sap_field)).map((m) => ({ ...m, type: types.get(m.field)! }));
   const { data, error } = await supabase.from("sap_requests")
-    .insert({ kind, params: { prefix: opts.prefix, sales_only: opts.sales_only, mappings, ...(kind === "product_preview" ? { limit: MAX_PICK } : { codes }) } }).select("id").single();
+    .insert({ kind, params: { prefix: opts.prefix, sales_only: opts.sales_only, mappings, ...(kind === "product_preview" ? { limit: MAX_PICK } : { codes, ...extra }) } }).select("id").single();
   if (error) return { message: error.message };
   return { ok: true, message: "Enviado al agente de SAP: lo atiende en menos de un minuto…", requestId: data.id };
 }
@@ -116,9 +117,10 @@ export async function checkSapRequest(id: string): Promise<ImportState & { pendi
       truncated: Boolean(res.truncated), existing: await existingCodes(rows.map((x) => String(x.ItemCode))),
     };
   }
-  const res = (r.result ?? {}) as { total?: number; created?: number; updated?: number; errors?: string[] };
+  const res = (r.result ?? {}) as { total?: number; created?: number; updated?: number; groups_created?: number; errors?: string[] };
   revalidatePath("/productos");
-  const base = `${res.total ?? 0} artículos leídos de SAP: ${res.created ?? 0} productos creados y ${res.updated ?? 0} actualizados.`;
+  const groups = !res.groups_created ? "" : res.groups_created === 1 ? " Se agregó 1 grupo de artículo a la lista de valores." : ` Se agregaron ${res.groups_created} grupos de artículo a la lista de valores.`;
+  const base = `${res.total ?? 0} artículos leídos de SAP: ${res.created ?? 0} productos creados y ${res.updated ?? 0} actualizados.${groups}`;
   return res.errors?.length ? { message: `${base} Errores: ${res.errors.slice(0, 3).join(" · ")}` } : { ok: true, message: base };
 }
 
@@ -151,10 +153,16 @@ export async function runSapImport(_prev: ImportState, fd: FormData): Promise<Im
   // Solo se importa lo que la persona marcó en la lista.
   const codes = [...new Set(fd.getAll("code").map((c) => String(c).trim()).filter((c) => c && c.length <= 50))].slice(0, MAX_PICK);
   if (!codes.length) return { message: "Marca al menos un artículo de la lista para importarlo." };
+  // Familia y Planta para todo lo marcado; el Grupo de Artículo viene de SAP y se ata a la familia.
+  const extra: ImportExtra = {
+    family: String(fd.get("family") ?? "").trim() || null, plant: String(fd.get("plant") ?? "").trim() || null,
+    with_group: fd.get("with_group") === "on",
+  };
+  if (extra.with_group && !extra.family) return { message: "Para traer el Grupo de Artículo, elige la Familia: el grupo queda atado a ella." };
   const stored = await getSapSettings();
-  if (sapSourceOf(stored) === "agent") return requestFromAgent("product_import", stored.product_import, codes);
+  if (sapSourceOf(stored) === "agent") return requestFromAgent("product_import", stored.product_import, codes, extra);
   try {
-    const r = await importSapItems(stored.product_import, codes);
+    const r = await importSapItems(stored.product_import, codes, extra);
     revalidatePath("/productos");
     const base = `${r.total} artículos leídos de SAP: ${r.created} productos creados y ${r.updated} actualizados.`;
     return r.errors.length ? { message: `${base} Errores: ${r.errors.slice(0, 3).join(" · ")}` } : { ok: true, message: base };

@@ -4737,6 +4737,8 @@ export type Database = {
       sap_agent_import_products: {
         Args: {
           p_rows: Json
+          p_family?: string
+          p_plant?: string
         }
         Returns: Json
       }

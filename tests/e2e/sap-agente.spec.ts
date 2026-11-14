@@ -125,16 +125,27 @@ test.describe("SAP por agente", () => {
       await page.getByPlaceholder("Buscar en la lista").fill("");
       await page.getByRole("checkbox", { name: "Elegir FP-CO-106" }).check();
       await expect(page.getByText("2 de 12 elegidos")).toBeVisible();
+      // La lista trae de SAP el grupo de cada artículo.
+      await expect(page.getByRole("row", { name: /FP-CO-102/ })).toContainText("COC03-Kit de cocinas");
+
+      // El grupo queda atado a la familia: sin elegirla no se importa.
+      await page.getByRole("button", { name: "Importar seleccionados (2)" }).click();
+      await expect(page.getByText("Para traer el Grupo de Artículo, elige la Familia: el grupo queda atado a ella.")).toBeVisible();
+      await page.locator("#sap-family").selectOption("Cocinas");
       await page.getByRole("button", { name: "Importar seleccionados (2)" }).click();
       await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
       expect(correrAgente("atender")).toMatch(/1 solicitudes atendidas/);
-      await expect(page.getByText("2 artículos leídos de SAP: 2 productos creados y 0 actualizados.")).toBeVisible();
+      await expect(page.getByText("2 artículos leídos de SAP: 2 productos creados y 0 actualizados. Se agregó 1 grupo de artículo a la lista de valores.")).toBeVisible();
 
       // Entraron esos dos y ninguno más.
       await page.goto("/productos?q=FP-CO-");
       await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 102/ }).first()).toBeVisible();
       await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 106/ }).first()).toBeVisible();
       await expect(page.getByRole("link", { name: /COCINA INTEGRAL REF 110/ })).toHaveCount(0);
+      // El producto entró con la familia elegida y el grupo de SAP, que ya está en la lista de valores.
+      await page.getByRole("link", { name: /COCINA INTEGRAL REF 102/ }).first().click();
+      await expect(page.getByText("COC03-Kit de cocinas").first()).toBeVisible();
+      await expect(page.getByText("Cocinas", { exact: true }).first()).toBeVisible();
 
       // Al volver a listar, la lista dice cuáles ya están en el CRM.
       await page.goto("/configuracion/sap");
