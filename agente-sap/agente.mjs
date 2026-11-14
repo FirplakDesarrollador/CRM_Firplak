@@ -10,7 +10,8 @@
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import http from "node:http";
 import https from "node:https";
 import { homedir, hostname } from "node:os";
@@ -360,6 +361,20 @@ function camposCsv(linea) {
   return campos;
 }
 
+/**
+ * Lectura con límite de tiempo. Cuando macOS no le ha dado permiso al programa para leer una carpeta
+ * (por ejemplo, OneDrive desde una tarea programada), la lectura no falla: se queda esperando para
+ * siempre. Con el límite, la corrida termina y deja el motivo escrito.
+ */
+let lecturaColgada = false;
+function conLimite(promesa, ms, queEs) {
+  let reloj;
+  const limite = new Promise((_, mal) => {
+    reloj = setTimeout(() => { lecturaColgada = true; mal(new Error(`macOS no dejó leer ${queEs} (sin respuesta en ${ms / 1000} s). Dale permiso a «node» en Ajustes del Sistema → Privacidad y seguridad → Archivos y carpetas (o Acceso total al disco).`)); }, ms);
+  });
+  return Promise.race([promesa, limite]).finally(() => clearTimeout(reloj));
+}
+
 const COLUMNAS_VENTAS = ["Fecha", "# Factura", "TipoVentas", "Zona", "Territorio", "Grupo de Cliente", "Vendedor Senior", "Código Cliente", "Nombre cliente", "Valor Total"];
 
 /**
@@ -369,12 +384,12 @@ const COLUMNAS_VENTAS = ["Fecha", "# Factura", "TipoVentas", "Zona", "Territorio
 async function subirVentas(cfg, destino) {
   if (!cfg.ventasCsvDir) return { meses: 0, filas: 0, omitido: true };
   const desde = new Date().getFullYear() - 1;
-  const archivos = readdirSync(cfg.ventasCsvDir).map((f) => ({ f, m: f.match(/^Ventas SAP (\d{4})-(\d{2})\.csv$/) }))
+  const archivos = (await conLimite(readdir(cfg.ventasCsvDir), 20_000, "la carpeta de ventas")).map((f) => ({ f, m: f.match(/^Ventas SAP (\d{4})-(\d{2})\.csv$/) }))
     .filter((x) => x.m && Number(x.m[1]) >= desde).sort((a, b) => a.f.localeCompare(b.f));
   const cargados = await destino.rpc("sap_agent_sales_months");
   let meses = 0, filas = 0;
   for (const { f, m } of archivos) {
-    const texto = readFileSync(join(cfg.ventasCsvDir, f), "utf8").replace(/^\uFEFF/, "");
+    const texto = (await conLimite(readFile(join(cfg.ventasCsvDir, f), "utf8"), 30_000, `el archivo ${f}`)).replace(/^\uFEFF/, "");
     const hash = createHash("sha1").update(texto).digest("hex");
     const mes = `${m[1]}-${m[2]}`;
     if (cargados[mes] === hash) continue;
@@ -634,9 +649,14 @@ if (!comandos[comando]) {
   console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
+/** Termina el programa. Con una lectura colgada por macOS, la salida normal también se queda esperando: se corta. */
+function terminar(codigo) {
+  if (lecturaColgada) process.kill(process.pid, "SIGKILL");
+  process.exit(codigo);
+}
 try {
-  process.exit(await comandos[comando]());
+  terminar(await comandos[comando]());
 } catch (e) {
   log("ERROR", e.message);
-  process.exit(1);
+  terminar(1);
 }
