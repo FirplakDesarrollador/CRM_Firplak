@@ -23,10 +23,11 @@ export default async function SapAdminPage() {
   const [me, t] = await Promise.all([requireUser(), getT()]);
   if (!canSystem(me.access, "customize")) redirect("/configuracion");
   const supabase = await createClient();
-  const [settings, { data: runs }, { data: lists }, { data: fields }] = await Promise.all([
+  const [settings, { data: runs }, { data: lists }, { data: plantDeps }, { data: fields }] = await Promise.all([
     getSapSettings(),
     supabase.from("sap_sync_runs").select("id, started_at, finished_at, host, partners, items, errors, ok").order("started_at", { ascending: false }).limit(8),
-    supabase.from("picklist_values").select("field, value").eq("object", "products").in("field", ["family", "plant"]).eq("is_active", true).order("sort_order"),
+    supabase.from("picklist_values").select("field, value, controlling_map").eq("object", "products").in("field", ["family", "plant"]).eq("is_active", true).order("sort_order"),
+    supabase.from("picklist_dependencies").select("field").eq("object", "products").eq("field", "plant").eq("controlling_field", "family"),
     supabase.from("custom_field_definitions").select("api_name, label").eq("object", "products").eq("is_active", true).order("sort_order"),
   ]);
   const configured = sapConfigured();
@@ -114,7 +115,11 @@ export default async function SapAdminPage() {
         {configured || source === "agent" ? (
           <SapImportPanel fields={(fields ?? []).map((f) => ({ api_name: f.api_name, label: f.label }))}
             prefix={settings.product_import.prefix} salesOnly={settings.product_import.sales_only} mappings={settings.product_import.mappings}
-            families={families.length ? families : [...PRODUCT_FAMILIES]} plants={(lists ?? []).filter((l) => l.field === "plant" && l.value !== KIT_PLANT).map((l) => l.value)}
+            families={families.length ? families : [...PRODUCT_FAMILIES]} plants={(lists ?? []).filter((l) => l.field === "plant" && l.value !== KIT_PLANT).map((l) => ({
+              value: l.value,
+              // Si Planta depende de Familia, cada planta solo se ofrece con sus familias.
+              families: plantDeps?.length ? (((l.controlling_map ?? {}) as Record<string, string[]>).family ?? []) : null,
+            }))}
             canBringGroup={source === "agent"} />
         ) : <p className="text-sm text-muted"><Tr>Disponible cuando la conexión esté configurada.</Tr></p>}
       </section>

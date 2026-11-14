@@ -7,7 +7,8 @@ import type { ObjectKey } from "@/lib/objects";
 
 import { Tr } from "@/components/ui/Tr";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-export function DeleteButton({ object, id, label }: { object: ObjectKey; id: string; label: string }) {
+/** `warning`: consecuencia propia de este registro, que se dice antes de «no se puede deshacer». */
+export function DeleteButton({ object, id, label, warning }: { object: ObjectKey; id: string; label: string; warning?: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [dialog, ask] = useConfirm();
@@ -19,7 +20,7 @@ export function DeleteButton({ object, id, label }: { object: ObjectKey; id: str
         disabled={pending}
         aria-label={`Eliminar ${label}`}
         onClick={async () => {
-          if (!(await ask({ title: `¿Eliminar ${label}?`, body: "Esta acción no se puede deshacer.", confirmLabel: "Eliminar", tone: "danger" }))) return;
+          if (!(await ask({ title: `¿Eliminar ${label}?`, body: warning ? `${warning} Esta acción no se puede deshacer.` : "Esta acción no se puede deshacer.", confirmLabel: "Eliminar", tone: "danger" }))) return;
           start(async () => {
             const res = await deleteRecord(object, id);
             if (res?.message) setError(res.message);

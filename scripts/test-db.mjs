@@ -465,10 +465,24 @@ await check('al activar un pedido sus productos quedan fijos y no vuelve a borra
   assert.ok((await q(`select delivered_at from orders where id = $1`, [id]))[0].delivered_at);
   assert.equal(await as(admin, () => count(`select count(*) n from global_search('PED-') where object = 'orders'`)), 2);
 });
-await check('un asesor no ve pedidos ajenos y no puede borrar pedidos activados', async () => {
+await check('un asesor no ve pedidos ajenos ni los borra; quien tiene «Eliminar» borra un pedido en cualquier estado', async () => {
   assert.equal(await as(rep, () => count(`select count(*) n from orders`)), 0);
-  const [{ id }] = await q(`select id from orders where is_demo`);
-  await as(admin, () => q(`delete from orders where id = $1`, [id]));
+  const [{ id, status }] = await q(`select id, status from orders where not is_demo limit 1`);
+  assert.equal(status, 'Entregado');
+  // Sin el permiso «Eliminar» en Pedidos no se borra, ni siendo el dueño.
+  await q(`update orders set owner_id = $2 where id = $1`, [id, rep.id]);
+  await as(rep, () => q(`delete from orders where id = $1`, [id]));
+  assert.equal(await count(`select count(*) n from orders where id = $1`, [id]), 1);
+  await q(`update orders set owner_id = $2 where id = $1`, [id, admin.id]);
+  // Con el permiso se borra aunque ya esté entregado, y sus productos se van con él (dentro de una transacción que se deshace).
+  await db.exec(`begin`);
+  try {
+    await as(admin, () => q(`delete from orders where id = $1`, [id]));
+    assert.equal(await count(`select count(*) n from orders where id = $1`, [id]), 0);
+    assert.equal(await count(`select count(*) n from order_items where order_id = $1`, [id]), 0);
+  } finally {
+    await db.exec(`rollback`);
+  }
   assert.equal(await count(`select count(*) n from orders where id = $1`, [id]), 1);
 });
 
@@ -760,12 +774,12 @@ await check('las solicitudes a SAP las crea la administración y solo el agente 
   assert.equal((await as(agent, () => q(`select sap_agent_next_request() next`)))[0].next, null);
   const filas = [{ code: 'ZZ-001', name: 'LAVAMANOS ZZ', custom: { linea: 'Prueba' } }, { code: 'ZZ-002', name: '' }];
   const [{ r1 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb) r1`, [JSON.stringify(filas)]));
-  assert.deepEqual(r1, { created: 2, updated: 0, groups_created: 0 });
+  assert.deepEqual(r1, { created: 2, updated: 0, groups_created: 0, kits: 0 });
   // Repetir actualiza nombre y campos mapeados, sin duplicar ni borrar otros campos.
   await q(`update products set custom_fields = custom_fields || '{"otro":"se conserva"}', family = 'Lavamanos y superficies' where product_code = 'ZZ-001'`);
   const [{ r2 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb) r2`,
     [JSON.stringify([{ code: 'ZZ-001', name: 'LAVAMANOS ZZ NUEVO', custom: { linea: 'Otra' } }])]));
-  assert.deepEqual(r2, { created: 0, updated: 1, groups_created: 0 });
+  assert.deepEqual(r2, { created: 0, updated: 1, groups_created: 0, kits: 0 });
   const [p1] = await q(`select name, family, unit, is_active, custom_fields from products where product_code = 'ZZ-001'`);
   assert.deepEqual([p1.name, p1.family, p1.unit, p1.is_active], ['LAVAMANOS ZZ NUEVO', 'Lavamanos y superficies', 'Unidad', true]);
   assert.deepEqual(p1.custom_fields, { linea: 'Otra', otro: 'se conserva' });
@@ -773,22 +787,42 @@ await check('las solicitudes a SAP las crea la administración y solo el agente 
   // Con Familia y Planta elegidas y el Grupo de Artículo de SAP: el grupo que falta se crea en la lista, atado a la familia.
   await q(`insert into picklist_values (object, field, value) values ('products', 'plant', 'Planta Uno')`);
   const conGrupo = [{ code: 'ZZ-003', name: 'LAVAMANOS ECO', item_group: 'BAN02-Lavamanos ECO' }, { code: 'ZZ-001', name: 'LAVAMANOS ZZ NUEVO', item_group: 'BAN02-Lavamanos ECO' }];
-  await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb)`, [JSON.stringify(conGrupo)])), /hay que elegir la Familia/);
+  await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb, null, 'Planta Uno')`, [JSON.stringify(conGrupo)])), /hay que elegir la Familia/);
   await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Lavamanos y superficies', 'No existe')`, [JSON.stringify(conGrupo)])), /La planta «No existe» no está en la lista de valores/);
   const [{ r3 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Lavamanos y superficies', 'Planta Uno') r3`, [JSON.stringify(conGrupo)]));
-  assert.deepEqual(r3, { created: 1, updated: 1, groups_created: 1 });
+  assert.deepEqual(r3, { created: 1, updated: 1, groups_created: 1, kits: 0 });
   const [p3] = await q(`select family, plant, item_group from products where product_code = 'ZZ-003'`);
   assert.deepEqual([p3.family, p3.plant, p3.item_group], ['Lavamanos y superficies', 'Planta Uno', 'BAN02-Lavamanos ECO']);
   assert.deepEqual((await q(`select controlling_map from picklist_values where object = 'products' and field = 'item_group' and value = 'BAN02-Lavamanos ECO'`))[0].controlling_map,
     { family: ['Lavamanos y superficies'] });
   assert.equal(await count(`select count(*) n from picklist_dependencies where object = 'products' and field = 'item_group' and controlling_field = 'family'`), 1);
   // El mismo grupo con otra familia se habilita para las dos; sin familia ni planta, lo que ya tenía el producto se conserva.
-  await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Muebles de baño')`, [JSON.stringify([{ code: 'ZZ-004', name: 'OTRO', item_group: 'BAN02-Lavamanos ECO' }])]));
+  // Con plantas en la lista, un artículo que no es kit no entra sin planta: la elige siempre la persona.
+  await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Muebles de baño')`, [JSON.stringify([{ code: 'ZZ-004', name: 'OTRO' }])])), /Falta elegir la planta de: ZZ-004/);
+  await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Muebles de baño', 'Planta Uno')`, [JSON.stringify([{ code: 'ZZ-004', name: 'OTRO', item_group: 'BAN02-Lavamanos ECO' }])]));
   assert.deepEqual((await q(`select controlling_map -> 'family' f from picklist_values where object = 'products' and field = 'item_group' and value = 'BAN02-Lavamanos ECO'`))[0].f,
     ['Lavamanos y superficies', 'Muebles de baño']);
   await as(agent, () => q(`select sap_agent_import_products($1::jsonb)`, [JSON.stringify([{ code: 'ZZ-003', name: 'LAVAMANOS ECO 2' }])]));
   const [p4] = await q(`select name, family, plant, item_group from products where product_code = 'ZZ-003'`);
   assert.deepEqual([p4.name, p4.family, p4.plant, p4.item_group], ['LAVAMANOS ECO 2', 'Lavamanos y superficies', 'Planta Uno', 'BAN02-Lavamanos ECO']);
+  // Un kit de SAP entra marcado como Kit, con planta «KIT», y con sus componentes enlazados; cada componente con su planta.
+  await q(`insert into picklist_values (object, field, value) values ('products', 'plant', 'Planta Dos')`);
+  const kit = [
+    { code: 'ZZ-C1', name: 'LAVAMANOS', plant: 'Planta Uno' }, { code: 'ZZ-C2', name: 'MUEBLE', plant: 'Planta Dos' },
+    { code: 'ZZ-KIT', name: 'KIT LAVAMANOS Y MUEBLE', is_kit: true, components: [{ code: 'ZZ-C1', quantity: 1 }, { code: 'ZZ-C2', quantity: 2 }, { code: 'ZZ-NO-EXISTE', quantity: 1 }] },
+  ];
+  await assert.rejects(as(agent, () => q(`select sap_agent_import_products($1::jsonb)`, [JSON.stringify([{ ...kit[0], plant: 'Otra' }])])), /La planta «Otra» no está en la lista/);
+  const [{ r5 }] = await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Lavamanos y superficies') r5`, [JSON.stringify(kit)]));
+  assert.deepEqual(r5, { created: 3, updated: 0, groups_created: 0, kits: 1 });
+  const [pk] = await q(`select id, is_kit, plant from products where product_code = 'ZZ-KIT'`);
+  assert.deepEqual([pk.is_kit, pk.plant], [true, 'KIT']);
+  assert.deepEqual(await q(`select p.product_code c, p.plant, kc.quantity::float q from product_kit_components kc join products p on p.id = kc.component_id where kc.kit_id = $1 order by kc.sort_order`, [pk.id]),
+    [{ c: 'ZZ-C1', plant: 'Planta Uno', q: 1 }, { c: 'ZZ-C2', plant: 'Planta Dos', q: 2 }]);
+  // Repetir con otra lista de materiales la reemplaza: cambia la cantidad y sale el componente que SAP ya no trae.
+  await as(agent, () => q(`select sap_agent_import_products($1::jsonb, 'Lavamanos y superficies')`,
+    [JSON.stringify([{ code: 'ZZ-KIT', name: 'KIT LAVAMANOS Y MUEBLE', is_kit: true, components: [{ code: 'ZZ-C2', quantity: 3 }] }])]));
+  assert.deepEqual(await q(`select p.product_code c, kc.quantity::float q from product_kit_components kc join products p on p.id = kc.component_id where kc.kit_id = $1`, [pk.id]), [{ c: 'ZZ-C2', q: 3 }]);
+
   // Ya con la dependencia creada, la base rechaza un grupo que no corresponde a la familia del producto.
   await assert.rejects(q(`update products set family = 'Cocinas' where product_code = 'ZZ-003'`), /no corresponde/);
 
@@ -803,7 +837,8 @@ await check('las solicitudes a SAP las crea la administración y solo el agente 
   assert.equal((await as(agent, () => q(`select sap_agent_next_request() next`)))[0].next, null);
   assert.match((await q(`select error from sap_requests where id = $1 and status = 'error'`, [old.id]))[0].error, /no atendió la solicitud a tiempo/);
 
-  await db.exec(`delete from sap_requests; delete from products where product_code like 'ZZ-%';
+  await db.exec(`delete from sap_requests; delete from product_kit_components where kit_id in (select id from products where product_code like 'ZZ-%');
+    delete from products where product_code like 'ZZ-%';
     delete from picklist_values where object = 'products' and field in ('plant', 'item_group');
     delete from picklist_dependencies where object = 'products' and field = 'item_group'`);
   await q(`delete from auth.users where id = $1`, [agent.id]);

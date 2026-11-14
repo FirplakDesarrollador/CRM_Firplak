@@ -7,6 +7,8 @@ import { checkSapRequest, previewSapImport, runSapImport, type ImportState } fro
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
 type Field = { api_name: string; label: string };
+/** Planta de la lista de valores; `families`: familias con las que se puede usar (nulo = no depende de la familia). */
+export type PlantOption = { value: string; families: string[] | null };
 
 /**
  * Resultado de una acción: si la atendió el servidor, es el estado tal cual; si la pidió al agente de
@@ -23,7 +25,7 @@ function useAgentResult(state: ImportState) {
       const next = await checkSapRequest(id).catch(() => null);
       if (!active) return;
       if (next && !next.pending) return setDone({ id, state: next });
-      if (Date.now() - started > 180_000) return setDone({ id, state: { message: "El agente de SAP no respondió. Revisa que su equipo esté encendido y dentro de la red de Firplak." } });
+      if (Date.now() - started > 300_000) return setDone({ id, state: { message: "El agente de SAP no respondió. Revisa que su equipo esté encendido y dentro de la red de Firplak." } });
       timer = setTimeout(tick, 3000);
     };
     let timer = setTimeout(tick, 1500);
@@ -37,7 +39,7 @@ function useAgentResult(state: ImportState) {
 export function SapImportPanel({ fields, prefix, salesOnly, mappings, families, plants, canBringGroup }: {
   fields: Field[]; prefix: string; salesOnly: boolean; mappings: { field: string; sap_field: string }[];
   /** Valores de las listas Familia y Planta de Productos; el grupo de artículo solo lo trae el agente. */
-  families: string[]; plants: string[]; canBringGroup: boolean;
+  families: string[]; plants: PlantOption[]; canBringGroup: boolean;
 }) {
   const t = useT();
   const [previewState, previewAction] = useActionState<ImportState, FormData>(previewSapImport, {});
@@ -78,7 +80,7 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings, families, 
       </form>
 
       {preview.preview && preview.preview.length > 0 && (
-        <PickAndImport key={previewState.requestId ?? preview.preview.length} rows={preview.preview} columns={preview.columns ?? []}
+        <PickAndImport key={previewState.requestId ?? preview.preview.length} rows={preview.preview as SapRow[]} columns={preview.columns ?? []}
           existing={preview.existing ?? []} action={importAction} waiting={importWaiting} result={result}
           families={families} plants={plants} canBringGroup={canBringGroup} />
       )}
@@ -86,19 +88,30 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings, families, 
   );
 }
 
-/** Lista de artículos de SAP para marcar cuáles se importan: solo entra al CRM lo que la persona elige. */
+type KitComponent = { ItemCode: string; ItemName?: string | null; Quantity: number; group?: string | null; kit?: boolean };
+type SapRow = Record<string, unknown> & { kit?: boolean; components?: KitComponent[] };
+
+/**
+ * Lista de artículos de SAP para marcar cuáles se importan: solo entra al CRM lo que la persona elige.
+ * Un kit trae sus componentes debajo; la planta la elige siempre la persona: una para lo marcado y una
+ * por cada componente de kit (el kit lleva la planta «KIT»).
+ */
 function PickAndImport({ rows, columns, existing, action, waiting, result, families, plants, canBringGroup }: {
-  rows: Record<string, unknown>[]; columns: string[]; existing: string[];
+  rows: SapRow[]; columns: string[]; existing: string[];
   action: (fd: FormData) => void; waiting: boolean; result: ImportState;
-  families: string[]; plants: string[]; canBringGroup: boolean;
+  families: string[]; plants: PlantOption[]; canBringGroup: boolean;
 }) {
   const t = useT();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [family, setFamily] = useState("");
+  const [plant, setPlant] = useState("");
+  const [componentPlant, setComponentPlant] = useState<Record<string, string>>({});
+  const [missing, setMissing] = useState("");
   const inCrm = new Set(existing);
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const shown = rows.filter((r) => {
-    const text = columns.map((c) => String(r[c] ?? "")).join(" ").toLowerCase();
+    const text = [...columns.map((c) => String(r[c] ?? "")), ...(r.components ?? []).map((c) => `${c.ItemCode} ${c.ItemName ?? ""}`)].join(" ").toLowerCase();
     return words.every((w) => text.includes(w));
   });
   const shownCodes = shown.map((r) => String(r.ItemCode));
@@ -114,9 +127,31 @@ function PickAndImport({ rows, columns, existing, action, waiting, result, famil
     return next;
   });
 
+  // Plantas que corresponden a la familia elegida (lista dependiente); sin dependencia, todas.
+  const plantOptions = plants.filter((p) => !p.families || (family !== "" && p.families.includes(family)));
+  const pickedRows = rows.filter((r) => picked.has(String(r.ItemCode)));
+  const looseCount = pickedRows.filter((r) => !r.kit).length;
+  // Componentes de los kits marcados, una vez cada uno: el mismo componente puede estar en varios kits.
+  const components = new Map<string, KitComponent>();
+  for (const r of pickedRows) for (const c of r.components ?? []) if (!c.kit && !components.has(c.ItemCode)) components.set(c.ItemCode, c);
+  const validPlant = (value: string) => plantOptions.some((p) => p.value === value);
+
+  // La planta la elige siempre la persona: antes de enviar se revisa que no falte ninguna.
+  const check = (e: React.FormEvent) => {
+    if (plants.length === 0 || picked.size === 0) return setMissing("");
+    const lacking = [
+      ...(looseCount > 0 && !validPlant(plant) ? [t("la planta de los artículos elegidos")] : []),
+      ...[...components.keys()].filter((code) => !validPlant(componentPlant[code] ?? "")),
+    ];
+    if (lacking.length === 0) return setMissing("");
+    e.preventDefault();
+    setMissing(`${t("Falta elegir")}: ${lacking.slice(0, 4).join(", ")}${lacking.length > 4 ? "…" : ""}`);
+  };
+
   return (
-    <form action={action} className="space-y-3 border-t border-line pt-3">
+    <form action={action} onSubmit={check} className="space-y-3 border-t border-line pt-3">
       {[...picked].map((c) => <input key={c} type="hidden" name="code" value={c} />)}
+      {[...components.keys()].map((c) => <input key={c} type="hidden" name={`plant:${c}`} value={componentPlant[c] ?? ""} />)}
       <div className="flex flex-wrap items-center gap-3">
         <label className="relative min-w-[14rem] flex-1">
           <span className="sr-only">{t("Buscar en la lista")}</span>
@@ -125,7 +160,35 @@ function PickAndImport({ rows, columns, existing, action, waiting, result, famil
         </label>
         <span className="text-sm text-muted" aria-live="polite">{picked.size} {t("de")} {rows.length} {t("elegidos")}</span>
       </div>
-      <div className="max-h-[28rem] overflow-auto rounded-[10px] border border-line">
+      <fieldset className="grid gap-3 rounded-[10px] border border-line p-3 sm:grid-cols-2">
+        <legend className="px-1 text-sm font-semibold">{t("Datos para los artículos elegidos")}</legend>
+        <div>
+          <label className="label" htmlFor="sap-family">{t("Familia")}</label>
+          <select id="sap-family" name="family" className="select" value={family} onChange={(e) => setFamily(e.target.value)}>
+            <option value="">{t("Sin familia")}</option>
+            {families.map((f) => <option key={f}>{f}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="sap-plant">{t("Planta")}</label>
+          <select id="sap-plant" name="plant" className="select" value={validPlant(plant) ? plant : ""} onChange={(e) => setPlant(e.target.value)}>
+            <option value="">{t(plants.length ? "Elige la planta" : "Sin planta")}</option>
+            {plantOptions.map((p) => <option key={p.value}>{p.value}</option>)}
+          </select>
+          <p className="mt-1 text-xs text-muted">
+            {plants.length === 0 ? t("La lista de Plantas está vacía: créalas en Configuración → Listas de valores → Productos.")
+              : plantOptions.length === 0 ? t("Elige primero la familia: las plantas dependen de ella.")
+                : t("Vale para los artículos sueltos. Los kits llevan la planta «KIT» y cada componente, la suya.")}
+          </p>
+        </div>
+        {canBringGroup && (
+          <label className="flex items-start gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" name="with_group" defaultChecked className="mt-0.5 accent-[var(--brand)]" />
+            <span>{t("Traer de SAP el Grupo de Artículo")} <span className="block text-xs text-muted">{t("Si un grupo no está en la lista de valores, se crea solo y queda atado a la familia elegida.")}</span></span>
+          </label>
+        )}
+      </fieldset>
+      <div className="max-h-[32rem] overflow-auto rounded-[10px] border border-line">
         <table className="table">
           <thead>
             <tr>
@@ -135,48 +198,49 @@ function PickAndImport({ rows, columns, existing, action, waiting, result, famil
             </tr>
           </thead>
           <tbody>
-            {shown.map((r) => {
+            {shown.flatMap((r) => {
               const code = String(r.ItemCode);
-              return (
+              const isPicked = picked.has(code);
+              return [
                 <tr key={code}>
-                  <td><input type="checkbox" checked={picked.has(code)} onChange={() => toggle(code)} aria-label={`${t("Elegir")} ${code}`} className="accent-[var(--brand)]" /></td>
-                  {columns.map((c) => <td key={c} className={c === "ItemCode" ? "num whitespace-nowrap" : undefined}>{r[c] === null || r[c] === undefined ? "—" : String(r[c])}</td>)}
+                  <td><input type="checkbox" checked={isPicked} onChange={() => toggle(code)} aria-label={`${t("Elegir")} ${code}`} className="accent-[var(--brand)]" /></td>
+                  {columns.map((c) => (
+                    <td key={c} className={c === "ItemCode" ? "num whitespace-nowrap" : undefined}>
+                      {r[c] === null || r[c] === undefined ? "—" : String(r[c])}
+                      {c === "ItemName" && r.kit && <> <span className="badge badge-info">{t("Kit")} · {r.components?.length ?? 0} {t("componentes")}</span></>}
+                    </td>
+                  ))}
                   <td>{inCrm.has(code) ? <span className="badge badge-success">{t("Ya está")}</span> : <span className="text-muted">—</span>}</td>
-                </tr>
-              );
+                </tr>,
+                // Al marcar un kit se ven sus componentes: entran con él y cada uno pide su planta.
+                ...(isPicked ? (r.components ?? []).map((c) => (
+                  <tr key={`${code}/${c.ItemCode}`} className="bg-[color-mix(in_srgb,var(--brand)_5%,transparent)]">
+                    <td />
+                    <td className="num whitespace-nowrap pl-6 text-sm">↳ {c.ItemCode}</td>
+                    <td className="text-sm">{c.ItemName ?? "—"} <span className="text-muted">× {c.Quantity}</span></td>
+                    <td colSpan={Math.max(1, columns.length - 2)} className="text-sm">{c.group ?? "—"}</td>
+                    <td>
+                      {c.kit ? <span className="text-xs text-muted">{t("Es un kit: no se enlaza")}</span> : plants.length === 0 ? <span className="text-muted">—</span> : (
+                        <select aria-label={`${t("Planta de")} ${c.ItemCode}`} className="select h-8 min-w-[8rem]" value={validPlant(componentPlant[c.ItemCode] ?? "") ? componentPlant[c.ItemCode] : ""}
+                          onChange={(e) => setComponentPlant((prev) => ({ ...prev, [c.ItemCode]: e.target.value }))}>
+                          <option value="">{t("Elige la planta")}</option>
+                          {plantOptions.map((p) => <option key={p.value}>{p.value}</option>)}
+                        </select>
+                      )}
+                    </td>
+                  </tr>
+                )) : []),
+              ];
             })}
             {shown.length === 0 && <tr><td colSpan={columns.length + 2} className="text-sm text-muted">{t("Nada en la lista coincide con la búsqueda.")}</td></tr>}
           </tbody>
         </table>
       </div>
-      <fieldset className="grid gap-3 rounded-[10px] border border-line p-3 sm:grid-cols-2">
-        <legend className="px-1 text-sm font-semibold">{t("Datos para los artículos elegidos")}</legend>
-        <div>
-          <label className="label" htmlFor="sap-family">{t("Familia")}</label>
-          <select id="sap-family" name="family" className="select" defaultValue="">
-            <option value="">{t("Sin familia")}</option>
-            {families.map((f) => <option key={f}>{f}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor="sap-plant">{t("Planta")}</label>
-          <select id="sap-plant" name="plant" className="select" defaultValue="">
-            <option value="">{t("Sin planta")}</option>
-            {plants.map((p) => <option key={p}>{p}</option>)}
-          </select>
-          {plants.length === 0 && <p className="mt-1 text-xs text-muted">{t("La lista de Plantas está vacía: créalas en Configuración → Listas de valores → Productos.")}</p>}
-        </div>
-        {canBringGroup && (
-          <label className="flex items-start gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" name="with_group" defaultChecked className="mt-0.5 accent-[var(--brand)]" />
-            <span>{t("Traer de SAP el Grupo de Artículo")} <span className="block text-xs text-muted">{t("Si un grupo no está en la lista de valores, se crea solo y queda atado a la familia elegida.")}</span></span>
-          </label>
-        )}
-      </fieldset>
       <div className="flex flex-wrap items-center gap-3">
         <SubmitButton className="btn btn-primary" pendingText="Importando…"><Download size={14} /> {t("Importar seleccionados")} ({picked.size})</SubmitButton>
         <span className="text-xs text-muted">{t("Crea los productos nuevos y actualiza los que ya están (por Referencia): nombre, campos mapeados y lo que elijas aquí. No cambia precios.")}</span>
-        {result.message && <p role="status" aria-busy={waiting} className={`basis-full text-sm font-semibold ${waiting ? "text-muted" : result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
+        {missing ? <p role="alert" className="basis-full text-sm font-semibold text-danger">{missing}</p>
+          : result.message && <p role="status" aria-busy={waiting} className={`basis-full text-sm font-semibold ${waiting ? "text-muted" : result.ok ? "text-success" : "text-danger"}`}>{t(result.message)}</p>}
       </div>
     </form>
   );

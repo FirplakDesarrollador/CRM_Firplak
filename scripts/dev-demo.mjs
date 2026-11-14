@@ -518,6 +518,10 @@ for (let i = 1; i <= 56; i++) {
     ItemsGroupCode: 110 + (i % lines.length),
     U_Linea: linea, U_Color: colors[i % colors.length], QuantityOnStock: (i * 7) % 90, ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 150000 + i * 10000 }], ItemWarehouseInfoCollection: [] };
 }
+// Un kit de venta (lista de materiales de venta): un lavamanos y dos muebles.
+sapItems['FP-CO-KIT1'] = { ItemCode: 'FP-CO-KIT1', ItemName: 'KIT COCINA CON LAVAMANOS', SalesItem: 'tYES', ItemsGroupCode: 112, TreeType: 'iSalesTree',
+  QuantityOnStock: 0, ItemPrices: [], ItemWarehouseInfoCollection: [] };
+const sapTrees = { 'FP-CO-KIT1': [{ ItemCode: 'FP-LV-101', ItemName: 'LAVAMANOS REF 101', Quantity: 1, ItemType: 'pit_Item' }, { ItemCode: 'FP-MB-104', ItemName: 'MUEBLE BAÑO REF 104', Quantity: 2, ItemType: 'pit_Item' }] };
 // Todos los productos de ejemplo del CRM existen en SAP (para crear ofertas con los pedidos de la demo).
 for (const p of demoProducts) {
   sapItems[p.product_code] ??= { ItemCode: p.product_code, ItemName: p.name.toUpperCase(), SalesItem: 'tYES', QuantityOnStock: 50,
@@ -592,6 +596,11 @@ const sapServer = http.createServer(async (req, res) => {
   // Grupos de artículos (ItemsGroupCode de cada artículo).
   if (path === '/ItemGroups') {
     return json(res, 200, { value: [[110, 'BAN05-Muebles Lavam'], [111, 'BAN02-Lavamanos ECO'], [112, 'COC03-Kit de cocinas'], [113, 'BAN08-Cabinas ducha']].map(([Number, GroupName]) => ({ Number, GroupName })) });
+  }
+  // Listas de materiales de los kits.
+  if (path === '/ProductTrees') {
+    const codes = [...(url.searchParams.get('$filter') ?? '').matchAll(/TreeCode eq '((?:[^']|'')*)'/g)].map((m) => m[1]);
+    return json(res, 200, { value: codes.filter((c) => sapTrees[c]).map((c) => ({ TreeCode: c, ProductTreeLines: sapTrees[c] })) });
   }
   if (path === '/ProductionOrders') {
     const origins = [...(url.searchParams.get('$filter') ?? '').matchAll(/ProductionOrderOriginNumber eq (\d+)/g)].map((m) => Number(m[1]));

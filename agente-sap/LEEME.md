@@ -15,6 +15,8 @@ Además revisa **cada minuto, todos los días**, si el CRM le dejó una solicitu
 resultado en el CRM y termina. Trae la lista completa del filtro (hasta 1.000 artículos, con su grupo de
 artículo) para que la persona elija; al importar crea o actualiza, por Referencia, solo los artículos
 elegidos, con la Familia y la Planta que se eligieron en el CRM y el Grupo de Artículo de SAP. No cambia precios.
+Los kits de SAP (listas de materiales de venta) llegan con sus componentes: al importar un kit entran
+también sus componentes, enlazados con su cantidad. La planta nunca se toma de SAP: la elige la persona.
 
 Si a esa hora el equipo está apagado, dormido o fuera de la red, la corrida se salta o falla, y el CRM
 sigue mostrando la copia anterior con su hora. Cada corrida queda registrada en Configuración → SAP.

@@ -357,7 +357,7 @@ async function articulosParaImportar(sap, params, limite) {
     String(params.prefix ?? "").trim() ? `startswith(ItemCode,${comillas(String(params.prefix).trim())})` : null,
   ].filter(Boolean);
   const consulta = {
-    $select: [...new Set(["ItemCode", "ItemName", "ItemsGroupCode", ...mapeos.map((m) => m.sap_field)])].join(","),
+    $select: [...new Set(["ItemCode", "ItemName", "ItemsGroupCode", "TreeType", ...mapeos.map((m) => m.sap_field)])].join(","),
     ...(filtros.length ? { $filter: filtros.join(" and ") } : {}),
     $orderby: "ItemCode",
     ...(limite < 50 ? { $top: String(limite) } : {}),
@@ -386,6 +386,37 @@ async function gruposDeArticulos(sap) {
   return new Map(grupos.map((g) => [g.Number, String(g.GroupName ?? "").trim()]));
 }
 const COLUMNA_GRUPO = "Grupo de artículo";
+const esKit = (articulo) => articulo.TreeType === "iSalesTree";
+
+/**
+ * Componentes de los kits (listas de materiales de venta de SAP), con su cantidad, nombre y grupo.
+ * Devuelve por cada kit [{ ItemCode, ItemName, Quantity, group }]. Un componente que a su vez es kit
+ * se marca (`kit: true`): el CRM no admite un kit dentro de otro.
+ */
+async function componentesDeKits(sap, kits, grupos) {
+  const porKit = new Map();
+  for (const lote of lotes(kits, 20)) {
+    const arboles = await sap.lista(q("ProductTrees", { $select: "TreeCode,ProductTreeLines", $filter: lote.map((c) => `TreeCode eq ${comillas(c)}`).join(" or ") }));
+    for (const a of arboles) {
+      porKit.set(a.TreeCode, (a.ProductTreeLines ?? []).filter((l) => l.ItemCode && (l.ItemType ?? "pit_Item") === "pit_Item" && num(l.Quantity) > 0)
+        .map((l) => ({ ItemCode: l.ItemCode, ItemName: l.ItemName ?? null, Quantity: num(l.Quantity) })));
+    }
+  }
+  const codigos = [...new Set([...porKit.values()].flat().map((c) => c.ItemCode))];
+  const detalle = new Map();
+  for (const lote of lotes(codigos, 20)) {
+    for (const it of await sap.lista(q("Items", { $select: "ItemCode,ItemName,ItemsGroupCode,TreeType", $filter: lote.map((c) => `ItemCode eq ${comillas(c)}`).join(" or ") }))) detalle.set(it.ItemCode, it);
+  }
+  for (const componentes of porKit.values()) {
+    for (const c of componentes) {
+      const it = detalle.get(c.ItemCode);
+      c.ItemName = it?.ItemName ?? c.ItemName ?? c.ItemCode;
+      c.group = (it && grupos?.get(it.ItemsGroupCode)) || null;
+      if (it && esKit(it)) c.kit = true;
+    }
+  }
+  return porKit;
+}
 
 async function atenderUna(sap, destino, solicitud) {
   const { kind, params = {} } = solicitud;
@@ -394,25 +425,44 @@ async function atenderUna(sap, destino, solicitud) {
     const { filas, mapeos, hayMas } = await articulosParaImportar(sap, params, Math.min(Number(params.limit) || 10, MAX_ELEGIDOS));
     const grupos = await gruposDeArticulos(sap);
     const columns = ["ItemCode", "ItemName", COLUMNA_GRUPO, ...mapeos.map((m) => m.sap_field)];
-    return { columns, rows: filas.map((f) => Object.fromEntries(columns.map((c) => [c, c === COLUMNA_GRUPO ? grupos.get(f.ItemsGroupCode) || null : f[c] ?? null]))), truncated: hayMas };
+    // Los kits traen sus componentes, para que la persona los vea y les ponga planta antes de importar.
+    const componentes = await componentesDeKits(sap, filas.filter(esKit).map((f) => f.ItemCode), grupos);
+    return {
+      columns, truncated: hayMas,
+      rows: filas.map((f) => ({
+        ...Object.fromEntries(columns.map((c) => [c, c === COLUMNA_GRUPO ? grupos.get(f.ItemsGroupCode) || null : f[c] ?? null])),
+        ...(esKit(f) ? { kit: true, components: componentes.get(f.ItemCode) ?? [] } : {}),
+      })),
+    };
   }
   if (kind === "product_import") {
     const { filas, mapeos } = await articulosParaImportar(sap, params, MAX_IMPORTAR);
     // El Grupo de Artículo viene de SAP (si se pidió); la Familia y la Planta las eligió la persona en el CRM.
     const grupos = params.with_group ? await gruposDeArticulos(sap) : null;
-    let created = 0, updated = 0, groups_created = 0;
-    const errors = [];
-    for (const lote of lotes(filas, 200)) {
-      const rows = lote.map((f) => ({
-        code: f.ItemCode, name: f.ItemName ?? "", item_group: grupos?.get(f.ItemsGroupCode) || null,
-        custom: Object.fromEntries(mapeos.map((m) => [m.field, convertir(f[m.sap_field], m.type)])),
-      }));
-      try {
-        const r = await destino.rpc("sap_agent_import_products", { p_rows: rows, p_family: params.family ?? null, p_plant: params.plant ?? null });
-        created += r.created; updated += r.updated; groups_created += r.groups_created ?? 0;
-      } catch (e) { errors.push(`${lote[0].ItemCode}…: ${String(e.message).replace(/^CRM \(sap_agent_import_products\): /, "").slice(0, 200)}`); }
+    const plantas = params.plants && typeof params.plants === "object" ? params.plants : {};
+    const fila = (codigo, nombre, grupo, extra = {}) => ({ code: codigo, name: nombre ?? "", item_group: grupo || null, plant: plantas[codigo] ?? null, custom: {}, ...extra });
+    // Los kits entran con sus componentes: los que no se eligieron en la lista se agregan aquí.
+    const kits = await componentesDeKits(sap, filas.filter(esKit).map((f) => f.ItemCode), grupos);
+    const elegidos = new Set(filas.map((f) => f.ItemCode));
+    const sueltos = new Map();
+    for (const componentes of kits.values()) {
+      for (const c of componentes) if (!c.kit && !elegidos.has(c.ItemCode)) sueltos.set(c.ItemCode, fila(c.ItemCode, c.ItemName, c.group));
     }
-    return { total: filas.length, created, updated, groups_created, errors: errors.slice(0, 10) };
+    const propias = filas.map((f) => fila(f.ItemCode, f.ItemName, grupos?.get(f.ItemsGroupCode), {
+      custom: Object.fromEntries(mapeos.map((m) => [m.field, convertir(f[m.sap_field], m.type)])),
+      ...(esKit(f) ? { is_kit: true, components: (kits.get(f.ItemCode) ?? []).filter((c) => !c.kit).map((c) => ({ code: c.ItemCode, quantity: c.Quantity })) } : {}),
+    }));
+    // Primero los componentes y los artículos sueltos; los kits al final, cuando sus componentes ya existen.
+    const todas = [...sueltos.values(), ...propias.filter((r) => !r.is_kit), ...propias.filter((r) => r.is_kit)];
+    let created = 0, updated = 0, groups_created = 0, kits_linked = 0;
+    const errors = [];
+    for (const lote of lotes(todas, 200)) {
+      try {
+        const r = await destino.rpc("sap_agent_import_products", { p_rows: lote, p_family: params.family ?? null, p_plant: params.plant ?? null });
+        created += r.created; updated += r.updated; groups_created += r.groups_created ?? 0; kits_linked += r.kits ?? 0;
+      } catch (e) { errors.push(`${lote[0].code}…: ${String(e.message).replace(/^CRM \(sap_agent_import_products\): /, "").slice(0, 200)}`); }
+    }
+    return { total: todas.length, created, updated, groups_created, kits: kits_linked, components: sueltos.size, errors: errors.slice(0, 10) };
   }
   throw new Error(`Solicitud desconocida: ${kind}`);
 }

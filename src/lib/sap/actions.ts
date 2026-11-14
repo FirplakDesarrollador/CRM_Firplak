@@ -89,7 +89,7 @@ const previewMessage = (n: number, truncated: boolean) => !n ? "No hay artículo
     : `${n} artículos de SAP con ese filtro. Elige los que quieres importar.`;
 
 /** Deja una solicitud para el agente de SAP (vista previa o importación) con el filtro y el mapeo vigentes. */
-type ImportExtra = { family: string | null; plant: string | null; with_group: boolean };
+type ImportExtra = { family: string | null; plant: string | null; with_group: boolean; plants?: Record<string, string> };
 async function requestFromAgent(kind: "product_preview" | "product_import", opts: SapSettings["product_import"], codes?: string[], extra?: ImportExtra): Promise<ImportState> {
   const supabase = await createClient();
   const { data: defs } = await supabase.from("custom_field_definitions").select("api_name, field_type").eq("object", "products").eq("is_active", true);
@@ -117,10 +117,11 @@ export async function checkSapRequest(id: string): Promise<ImportState & { pendi
       truncated: Boolean(res.truncated), existing: await existingCodes(rows.map((x) => String(x.ItemCode))),
     };
   }
-  const res = (r.result ?? {}) as { total?: number; created?: number; updated?: number; groups_created?: number; errors?: string[] };
+  const res = (r.result ?? {}) as { total?: number; created?: number; updated?: number; groups_created?: number; kits?: number; components?: number; errors?: string[] };
   revalidatePath("/productos");
   const groups = !res.groups_created ? "" : res.groups_created === 1 ? " Se agregó 1 grupo de artículo a la lista de valores." : ` Se agregaron ${res.groups_created} grupos de artículo a la lista de valores.`;
-  const base = `${res.total ?? 0} artículos leídos de SAP: ${res.created ?? 0} productos creados y ${res.updated ?? 0} actualizados.${groups}`;
+  const kits = !res.kits ? "" : ` ${res.kits === 1 ? "1 kit quedó" : `${res.kits} kits quedaron`} con sus componentes.`;
+  const base = `${res.total ?? 0} artículos leídos de SAP: ${res.created ?? 0} productos creados y ${res.updated ?? 0} actualizados.${kits}${groups}`;
   return res.errors?.length ? { message: `${base} Errores: ${res.errors.slice(0, 3).join(" · ")}` } : { ok: true, message: base };
 }
 
@@ -158,6 +159,12 @@ export async function runSapImport(_prev: ImportState, fd: FormData): Promise<Im
     family: String(fd.get("family") ?? "").trim() || null, plant: String(fd.get("plant") ?? "").trim() || null,
     with_group: fd.get("with_group") === "on",
   };
+  // Planta de cada componente de kit (campos «plant:CÓDIGO»).
+  const plants: Record<string, string> = {};
+  for (const [name, value] of fd.entries()) {
+    if (name.startsWith("plant:") && typeof value === "string" && value.trim()) plants[name.slice(6)] = value.trim();
+  }
+  extra.plants = plants;
   if (extra.with_group && !extra.family) return { message: "Para traer el Grupo de Artículo, elige la Familia: el grupo queda atado a ella." };
   const stored = await getSapSettings();
   if (sapSourceOf(stored) === "agent") return requestFromAgent("product_import", stored.product_import, codes, extra);

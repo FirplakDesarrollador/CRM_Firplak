@@ -47,7 +47,13 @@ export default async function OrderDetailPage({ params, searchParams }: PageProp
       actions={
         <>
           {access.canEdit && <Link href={`/pedidos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
-          {access.canDelete && (draft || status === "Cancelado") && <DeleteButton object="orders" id={id} label={`el pedido ${row.order_number}`} />}
+          {/* Lo decide el permiso «Eliminar» del perfil; un pedido que ya salió de borrador lo advierte antes. */}
+          {access.canDelete && (
+            <DeleteButton object="orders" id={id} label={`el pedido ${row.order_number}`}
+              warning={draft || status === "Cancelado" ? undefined
+                : row.sap_quotation_num ? `Este pedido está en estado «${status}» y tiene la oferta de venta ${row.sap_quotation_num} en SAP: se borra del CRM con sus productos, pero la oferta sigue en SAP.`
+                  : `Este pedido está en estado «${status}»: se borra del CRM con sus productos.`} />
+          )}
         </>
       }
       headerExtra={
