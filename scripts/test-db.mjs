@@ -1296,6 +1296,88 @@ await check('rama de roles que comparte clientes (B2C) y aviso «existe, pero no
   await as(admin, () => q(`delete from accounts where id = $1`, [cuenta.id]));
   for (const fila of antes) await q(`update sharing_settings set access = $2 where object = $1`, [fila.object, fila.access]);
 });
+await check('zonas: salen del departamento y la ciudad, con sus excepciones; en el exterior no hay zona', async () => {
+  const zona = async (dep, ciudad) => (await q(`select public.zone_for_place($1, $2) z`, [dep, ciudad]))[0].z;
+  assert.equal(await zona('Antioquia', 'Medellín'), 'Antioquia');
+  assert.equal(await zona('Antioquia', 'Apartadó'), 'Córdoba, Sucre y Urabá');
+  assert.equal(await zona('Chocó', 'Quibdó'), 'Antioquia');
+  assert.equal(await zona('Chocó', 'Acandí'), 'Córdoba, Sucre y Urabá');
+  assert.equal(await zona('Bogotá D.C.', 'Bogotá D.C.'), 'Centro del País');
+  assert.equal(await zona('Vichada', 'Puerto Carreño'), 'Centro del País');
+  assert.equal(await zona('San Andrés y Providencia', 'San Andrés'), 'Costa Atlántica');
+  assert.equal(await zona('Amazonas', 'Leticia'), 'Tolima Grande');
+  assert.equal(await zona('Valle del Cauca', 'Cali'), 'Sur Occidente');
+  // Los 33 departamentos tienen zona.
+  assert.equal(await count(`select count(*) n from (select distinct department from co_municipalities) d where public.zone_for_place(d.department, null) is null`), 0);
+  const crear = (extra) => as(admin, () => q(`insert into accounts (name, industry, market, billing_country, billing_state, billing_city, zone)
+    values ('Zona ' || gen_random_uuid(), 'Canal Distribución', $1, $2, $3, $4, $5) returning id, zone`, [extra.market, extra.country, extra.state ?? null, extra.city ?? null, extra.zone ?? null]));
+  // Vacía se llena sola; si alguien la elige, se respeta; en el exterior queda vacía.
+  const [tolima] = await crear({ market: 'Nacional', country: 'Colombia', state: 'Tolima', city: 'Ibagué' });
+  assert.equal(tolima.zone, 'Tolima Grande');
+  assert.equal((await crear({ market: 'Nacional', country: 'Colombia', state: 'Tolima', city: 'Ibagué', zone: 'Eje Cafetero' }))[0].zone, 'Eje Cafetero');
+  assert.equal((await crear({ market: 'Internacional', country: 'Ecuador', zone: 'Antioquia' }))[0].zone, null);
+  // Un prospecto también recibe su zona.
+  const [lead] = await as(admin, () => q(`insert into leads (first_name, last_name, company, industry, market, country, state, city)
+    values ('Zoe', 'Zona', 'Prospecto con zona', 'Canal Distribución', 'Nacional', 'Colombia', 'Caldas', 'Manizales') returning id, zone`));
+  assert.equal(lead.zone, 'Eje Cafetero');
+  await as(admin, async () => {
+    await q(`delete from accounts where name like 'Zona %'`);
+    await q(`delete from leads where id = $1`, [lead.id]);
+  });
+});
+await check('territorios: un asesor no crea clientes fuera de lo suyo; la dirección asigna sin restricción y el CRM sugiere el responsable', async () => {
+  const cuenta = (quien, extra) => as(quien, () => q(`insert into accounts (name, industry, market, billing_country, billing_state, billing_city, owner_id)
+    values ('Territorio ' || gen_random_uuid(), $1, $2, $3, $4, $5, $6) returning id, zone, owner_id`,
+    [extra.canal, extra.market ?? 'Nacional', extra.country ?? 'Colombia', extra.state ?? null, extra.city ?? null, extra.owner ?? quien.id]));
+  // Sin territorios, nadie tiene restricción.
+  assert.equal((await cuenta(rep, { canal: 'Canal Constructores', state: 'Nariño', city: 'Pasto' })).length, 1);
+
+  // El asesor: Distribución en Antioquia; ambos canales en el Centro, pero solo Meta y Boyacá; y Ecuador en el exterior.
+  await as(admin, () => q(`insert into territories (user_id, channels, market, zone, departments, countries) values
+    ($1, '{"Canal Distribución"}', 'Nacional', 'Antioquia', '{}', '{}'),
+    ($1, '{"Canal Distribución","Canal Constructores"}', 'Nacional', 'Centro del País', '{"Meta","Boyacá"}', '{}'),
+    ($1, '{"Canal Distribución","Canal Constructores"}', 'Internacional', null, '{}', '{"Ecuador"}')`, [rep.id]));
+  // Solo quien administra usuarios define territorios.
+  await assert.rejects(as(rep, () => q(`insert into territories (user_id, channels, market) values ($1, '{"Canal B2C"}', 'Nacional')`, [rep.id])));
+
+  const fuera = /fuera del territorio de su responsable/;
+  assert.equal((await cuenta(rep, { canal: 'Canal Distribución', state: 'Antioquia', city: 'Medellín' }))[0].zone, 'Antioquia');
+  await assert.rejects(cuenta(rep, { canal: 'Canal Constructores', state: 'Antioquia', city: 'Medellín' }), fuera);       // otro canal
+  await assert.rejects(cuenta(rep, { canal: 'Canal Distribución', state: 'Antioquia', city: 'Apartadó' }), fuera);        // Urabá es otra zona
+  await assert.rejects(cuenta(rep, { canal: 'Canal Distribución', state: 'Tolima', city: 'Ibagué' }), fuera);             // otra zona
+  assert.equal((await cuenta(rep, { canal: 'Canal Constructores', state: 'Meta', city: 'Villavicencio' })).length, 1);    // departamento suyo
+  await assert.rejects(cuenta(rep, { canal: 'Canal Constructores', state: 'Cundinamarca', city: 'Chía' }), fuera);        // misma zona, departamento ajeno
+  assert.equal((await cuenta(rep, { canal: 'Canal Distribución', market: 'Internacional', country: 'Ecuador' })).length, 1);
+  await assert.rejects(cuenta(rep, { canal: 'Canal Distribución', market: 'Internacional', country: 'Perú' }), fuera);
+  // Tampoco puede llevarse a su nombre un cliente de otra zona cambiándole la ciudad.
+  const [suya] = await cuenta(rep, { canal: 'Canal Distribución', state: 'Antioquia', city: 'Envigado' });
+  await assert.rejects(as(rep, () => q(`update accounts set billing_state = 'Tolima', billing_city = 'Ibagué', zone = null where id = $1`, [suya.id])), fuera);
+  // Cambios que no tocan el territorio pasan aunque el registro ya estuviera fuera.
+  assert.equal((await as(rep, () => q(`update accounts set phone = '3001112233' where name like 'Territorio %' and billing_state = 'Nariño' returning id`))).length, 1);
+  // Un prospecto sigue la misma regla.
+  await assert.rejects(as(rep, () => q(`insert into leads (first_name, last_name, company, industry, market, country, state, city)
+    values ('Pedro', 'Prospecto', 'Prospecto fuera de zona', 'Canal Distribución', 'Nacional', 'Colombia', 'Tolima', 'Ibagué')`)), fuera);
+
+  // La dirección (modifica todo) le asigna al asesor un cliente de otra zona, y otra persona sin territorios no tiene límite.
+  assert.equal((await cuenta(admin, { canal: 'Canal Distribución', state: 'Tolima', city: 'Ibagué', owner: rep.id }))[0].owner_id, rep.id);
+  assert.equal((await cuenta(mgr, { canal: 'Canal Constructores', state: 'Tolima', city: 'Ibagué' })).length, 1);
+
+  // Sugerencia de responsable: del territorio más específico al más general.
+  const sugiere = async (...p) => (await as(mgr, () => q(`select full_name from territory_owners($1, $2, $3, $4, $5)`, p))).length;
+  assert.equal(await sugiere('Canal Distribución', 'Nacional', 'Antioquia', 'Antioquia', 'Colombia'), 1);
+  assert.equal(await sugiere('Canal Constructores', 'Nacional', 'Antioquia', 'Antioquia', 'Colombia'), 0);
+  assert.equal(await sugiere('Canal Constructores', 'Nacional', 'Centro del País', 'Meta', 'Colombia'), 1);
+  assert.equal(await sugiere('Canal Constructores', 'Nacional', 'Centro del País', 'Cundinamarca', 'Colombia'), 0);
+  assert.equal(await sugiere('Canal Constructores', 'Internacional', null, null, 'Ecuador'), 1);
+
+  await as(admin, async () => {
+    await q(`delete from territories where user_id = $1`, [rep.id]);
+    await q(`delete from accounts where name like 'Territorio %'`);
+  });
+  const [permisos] = await q(`select has_function_privilege('authenticated', 'public.place_and_territory()', 'execute') a,
+    has_function_privilege('anon', 'public.territory_owners(text, text, text, text, text)', 'execute') b, has_function_privilege('anon', 'public.zone_for_place(text, text)', 'execute') c`);
+  assert.deepEqual(permisos, { a: false, b: false, c: false });
+});
 await check('kits: planta KIT, componentes que no son kit y Planta/Grupo sin depender de Familia', async () => {
   const uno = async (sql, params) => (await as(admin, () => q(sql, params)))[0];
   // Un kit toma la planta «KIT» aunque se guarde con otra o sin ninguna; un producto suelto no puede usarla.
@@ -1901,7 +1983,7 @@ const configSummary = async (fresh) => (await fresh.query(`select
     (select count(*)::int from public.sales_goals) metas, (select count(*)::int from public.exchange_rates where source = 'Ejemplo') trm_ejemplo,
     (select count(*)::int from public.countries) paises, (select count(*)::int from public.co_municipalities) municipios`)).rows[0];
 const CONFIG_ESPERADA = { perfiles: 5, roles: 12, pipelines: 2, etapas: 13, listas_precios: 3, procesos: 1, pasos: 2, reglas: 4,
-  automatizaciones: 5, informes: 6, plantillas: 3, campos: 9, metas: 0, trm_ejemplo: 0, paises: 249, municipios: 1122 };
+  automatizaciones: 5, informes: 6, plantillas: 3, campos: 8, metas: 0, trm_ejemplo: 0, paises: 249, municipios: 1122 };
 
 await check('una base nueva con migraciones y configuración inicial queda configurada y sin ningún registro ficticio', async () => {
   const fresh = await freshDb();

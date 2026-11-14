@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { INDUSTRIES, LEAD_SOURCES, LEAD_STATUSES, MARKETS, RATINGS, SALUTATIONS, SEGMENTS } from "./picklists";
+import { INDUSTRIES, LEAD_SOURCES, LEAD_STATUSES, MARKETS, RATINGS, SALUTATIONS, SEGMENTS, ZONES } from "./picklists";
 
 export const leads: ObjectDef = {
   key: "leads",
@@ -48,6 +48,7 @@ export const leads: ObjectDef = {
     { name: "market", label: "Mercado", type: "select", options: MARKETS, section: "company" },
     { name: "industry", label: "Canal", type: "select", options: INDUSTRIES, required: true, section: "company" },
     { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "company" },
+    { name: "zone", label: "Zona", type: "select", options: ZONES, section: "company", help: "Si la dejas vacía, el CRM la pone según el departamento y la ciudad." },
     { name: "website", label: "Sitio web", type: "url", section: "company" },
     { name: "annual_revenue", label: "Ingresos anuales", type: "currency", section: "company" },
     { name: "employees", label: "Empleados", type: "number", section: "company" },

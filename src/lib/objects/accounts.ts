@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { ACCOUNT_TYPES, INDUSTRIES, MARKETS, PAYMENT_TERMS, RATINGS, SEGMENTS } from "./picklists";
+import { ACCOUNT_TYPES, INDUSTRIES, MARKETS, PAYMENT_TERMS, RATINGS, SEGMENTS, ZONES } from "./picklists";
 
 export const accounts: ObjectDef = {
   key: "accounts",
@@ -14,7 +14,7 @@ export const accounts: ObjectDef = {
   searchColumns: ["name", "account_number", "tax_id", "sap_card_code", "billing_city", "email"],
   defaultColumns: ["name", "account_type", "billing_city", "phone", "owner_id"],
   defaultSort: { field: "name", dir: "asc" },
-  highlightFields: ["account_type", "industry", "phone", "billing_city", "owner_id"],
+  highlightFields: ["account_type", "industry", "zone", "phone", "billing_city", "owner_id"],
   sections: [
     { key: "info", label: "Información de la cuenta" },
     { key: "address", label: "Direcciones" },
@@ -32,6 +32,10 @@ export const accounts: ObjectDef = {
       help: "Define el pipeline de sus oportunidades y la lista de precios de sus cotizaciones.",
     },
     { name: "segment", label: "Segmento", type: "select", options: SEGMENTS, section: "info" },
+    {
+      name: "zone", label: "Zona", type: "select", options: ZONES, section: "info",
+      help: "Si la dejas vacía, el CRM la pone según el departamento y la ciudad. En clientes del exterior la zona es el país.",
+    },
     { name: "rating", label: "Calificación", type: "select", options: RATINGS, section: "info" },
     { name: "tax_id", label: "NIT", type: "text", section: "info" },
     {
@@ -55,6 +59,7 @@ export const accounts: ObjectDef = {
     { name: "billing_country", label: "País de facturación", type: "text", section: "address", geoRole: "country", geo: { country: "billing_country", state: "billing_state" } },
     { name: "billing_state", label: "Departamento de facturación", type: "text", section: "address", geoRole: "state", geo: { country: "billing_country", state: "billing_state" } },
     { name: "billing_city", label: "Ciudad de facturación", type: "text", section: "address", geoRole: "city", geo: { country: "billing_country", state: "billing_state" } },
+    { name: "destination_port", label: "Puerto destino", type: "text", section: "address", hideEmpty: true, help: "Para clientes del exterior." },
     { name: "shipping_street", label: "Dirección de entrega", type: "text", section: "address" },
     { name: "shipping_country", label: "País de entrega", type: "text", section: "address", geoRole: "country", geo: { country: "shipping_country", state: "shipping_state" } },
     { name: "shipping_state", label: "Departamento de entrega", type: "text", section: "address", geoRole: "state", geo: { country: "shipping_country", state: "shipping_state" } },

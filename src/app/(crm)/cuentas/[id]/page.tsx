@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 import { RecordHeader } from "@/components/records/RecordHeader";
 import { ApprovalStrip } from "@/components/records/RecordLayout";
+import { TerritoryHint } from "@/components/territories/TerritoryHint";
 import { DetailSections } from "@/components/records/DetailSections";
 import { RelatedList } from "@/components/records/RelatedList";
 import { DeleteButton } from "@/components/records/DeleteButton";
@@ -92,6 +93,8 @@ export default async function AccountDetailPage({ params, searchParams }: PagePr
           <span><Tr>Ganado histórico:</Tr> <span className="num text-success">{formatCompactCurrency(wonAmount)}</span></span>
           <span><Tr>N.º cuenta:</Tr> <span className="text-ink">{String(row.account_number)}</span></span>
         </div>
+        <TerritoryHint channel={(row.industry as string | null) ?? null} market={(row.market as string | null) ?? null} zone={(row.zone as string | null) ?? null}
+          department={(row.billing_state as string | null) ?? null} country={(row.billing_country as string | null) ?? null} ownerId={(row.owner_id as string | null) ?? null} />
         <ApprovalStrip def={def} row={row} basePath={path} />
       </RecordHeader>
 

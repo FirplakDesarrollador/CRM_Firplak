@@ -7,7 +7,7 @@ import { TEAM_ROLES } from "@/lib/teams/config";
  * prioridades) no se editan aquí para no romper esas reglas.
  */
 export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
-  accounts: ["account_type", "market", "industry", "segment", "payment_terms"],
+  accounts: ["account_type", "market", "industry", "segment", "zone", "payment_terms"],
   contacts: ["salutation", "lead_source"],
   leads: ["salutation", "lead_source"],
   opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role"],
@@ -22,7 +22,7 @@ export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
  * de Cuentas para que al convertir la cuenta reciba valores de su propia lista. Se editan en la pestaña de Cuentas.
  */
 export const SHARED_PICKLISTS: Partial<Record<ObjectKey, { from: ObjectKey; fields: string[] }>> = {
-  leads: { from: "accounts", fields: ["market", "industry", "segment"] },
+  leads: { from: "accounts", fields: ["market", "industry", "segment", "zone"] },
 };
 
 /** Listas que no son un campo del objeto: se guardan con el objeto de la pestaña donde aparecen. */

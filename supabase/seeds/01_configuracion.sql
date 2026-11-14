@@ -142,8 +142,6 @@ where p.id = s.pipeline_id and p.name = v.pipeline and s.name = v.stage and s.st
 insert into public.custom_field_definitions (object, api_name, label, field_type, options, show_in_list, sort_order, help_text) values
 ('accounts', 'canal', 'Canal', 'select',
   '["Constructora","Distribuidor","Retail / gran superficie","Hotelería","Institucional","Arquitecto / diseñador"]', true, 1, null),
-('accounts', 'zona_comercial', 'Zona comercial', 'select',
-  '["Antioquia","Eje Cafetero","Bogotá y Centro","Costa Atlántica","Suroccidente","Santanderes","Exportación"]', false, 2, null),
 ('accounts', 'cupo_credito', 'Cupo de crédito', 'currency', '[]', false, 3, 'Cupo aprobado por cartera, en COP.'),
 ('contacts', 'rol_compra', 'Rol en la compra', 'select',
   '["Decisor","Influenciador","Especificador","Comprador","Usuario"]', true, 1, null),
@@ -165,7 +163,6 @@ where object = 'accounts' and api_name = 'canal' and is_active;
 update public.custom_field_definitions f set label_en = v.label_en, help_text_en = v.help_en
 from (values
   ('accounts', 'canal', 'Channel', null),
-  ('accounts', 'zona_comercial', 'Sales region', null),
   ('accounts', 'cupo_credito', 'Credit limit', 'Limit approved by credit and collections, in COP.'),
   ('contacts', 'rol_compra', 'Buying role', null),
   ('contacts', 'canal_preferido', 'Preferred channel', null),

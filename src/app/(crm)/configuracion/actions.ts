@@ -102,6 +102,73 @@ export async function deleteRole(id: string, _prev?: FormState, _fd?: FormData):
   return error ? fail(error) : done("Rol eliminado");
 }
 
+// ---------------------------------------------------------------- Territorios
+const list = (fd: FormData, k: string) => [...new Set(str(fd, k).split(",").map((v) => v.trim()).filter(Boolean))];
+
+export async function saveTerritory(_prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("manage_users");
+  if ("denied" in g) return g.denied!;
+  const { supabase } = g;
+  const userId = str(fd, "user_id");
+  if (!userId) return { message: "Elige el asesor" };
+  const channels = fd.getAll("channels").map(String).filter(Boolean);
+  if (channels.length === 0) return { message: "Marca al menos un canal" };
+  const market = str(fd, "market") === "Internacional" ? "Internacional" : "Nacional";
+  const departments = market === "Nacional" ? list(fd, "departments") : [];
+  const countries = market === "Internacional" ? list(fd, "countries") : [];
+  const zone = market === "Nacional" ? nullable(fd, "zone") : null;
+  if (departments.length && !zone) return { message: "Para limitar por departamentos, elige primero la zona." };
+  // Los nombres tienen que ser los de las listas del CRM: uno mal escrito dejaría el territorio sin efecto.
+  if (departments.length) {
+    const { data } = await supabase.from("co_municipalities").select("department").in("department", departments);
+    const known = new Set((data ?? []).map((r) => r.department));
+    const unknown = departments.filter((d) => !known.has(d));
+    if (unknown.length) return { message: `No reconozco estos departamentos: ${unknown.join(", ")}. Escríbelos como aparecen en la lista.` };
+  }
+  if (countries.length) {
+    const { data } = await supabase.from("countries").select("name").in("name", countries);
+    const known = new Set((data ?? []).map((r) => r.name));
+    const unknown = countries.filter((c) => !known.has(c));
+    if (unknown.length) return { message: `No reconozco estos países: ${unknown.join(", ")}. Escríbelos como aparecen en la lista de países.` };
+  }
+  const { error } = await supabase.from("territories").insert({ user_id: userId, channels, market, zone, departments, countries });
+  return error ? fail(error) : done("Territorio agregado");
+}
+
+export async function deleteTerritory(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("manage_users");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("territories").delete().eq("id", id);
+  return error ? fail(error) : done("Territorio quitado");
+}
+
+export async function saveZonePlace(_prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("manage_users");
+  if ("denied" in g) return g.denied!;
+  const { supabase } = g;
+  const zone = str(fd, "zone");
+  const department = str(fd, "department");
+  const city = nullable(fd, "city");
+  if (!zone || !department) return { message: "Elige la zona y el departamento" };
+  let places = supabase.from("co_municipalities").select("department, city").eq("department", department).limit(1);
+  if (city) places = places.eq("city", city);
+  const { data: found } = await places;
+  if (!found?.length) return { message: city ? `No encuentro «${city}» en ${department}. Escríbela como aparece en la lista de ciudades.` : `No reconozco el departamento «${department}».` };
+  // Un lugar pertenece a una sola zona: asignarlo de nuevo lo cambia de zona.
+  let previous = supabase.from("zone_places").delete().eq("department", department);
+  previous = city ? previous.eq("city", city) : previous.is("city", null);
+  await previous;
+  const { error } = await supabase.from("zone_places").insert({ zone, department, city });
+  return error ? fail(error) : done("Zona asignada");
+}
+
+export async function deleteZonePlace(id: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const g = await guard("manage_users");
+  if ("denied" in g) return g.denied!;
+  const { error } = await g.supabase.from("zone_places").delete().eq("id", id);
+  return error ? fail(error) : done("Lugar quitado de la zona");
+}
+
 // ---------------------------------------------------------------- Perfiles de permisos
 export async function savePermissionProfile(id: string | null, _prev: FormState, fd: FormData): Promise<FormState> {
   const g = await guard("manage_users");

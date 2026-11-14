@@ -87,6 +87,7 @@ export type Database = {
           created_by: string | null
           custom_fields: Json
           description: string | null
+          destination_port: string | null
           email: string | null
           employees: number | null
           id: string
@@ -109,6 +110,7 @@ export type Database = {
           tax_id: string | null
           updated_at: string
           website: string | null
+          zone: string | null
         }
         Insert: {
           account_number?: string
@@ -122,6 +124,7 @@ export type Database = {
           created_by?: string | null
           custom_fields?: Json
           description?: string | null
+          destination_port?: string | null
           email?: string | null
           employees?: number | null
           id?: string
@@ -144,6 +147,7 @@ export type Database = {
           tax_id?: string | null
           updated_at?: string
           website?: string | null
+          zone?: string | null
         }
         Update: {
           account_number?: string
@@ -157,6 +161,7 @@ export type Database = {
           created_by?: string | null
           custom_fields?: Json
           description?: string | null
+          destination_port?: string | null
           email?: string | null
           employees?: number | null
           id?: string
@@ -179,6 +184,7 @@ export type Database = {
           tax_id?: string | null
           updated_at?: string
           website?: string | null
+          zone?: string | null
         }
         Relationships: [
           {
@@ -1645,6 +1651,7 @@ export type Database = {
           title: string | null
           updated_at: string
           website: string | null
+          zone: string | null
         }
         Insert: {
           annual_revenue?: number | null
@@ -1683,6 +1690,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           website?: string | null
+          zone?: string | null
         }
         Update: {
           annual_revenue?: number | null
@@ -1721,6 +1729,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           website?: string | null
+          zone?: string | null
         }
         Relationships: [
           {
@@ -3779,6 +3788,60 @@ export type Database = {
         Relationships: [
         ]
       }
+      territories: {
+        Row: {
+          channels: string[]
+          countries: string[]
+          created_at: string
+          created_by: string | null
+          departments: string[]
+          id: string
+          market: string
+          notes: string | null
+          user_id: string
+          zone: string | null
+        }
+        Insert: {
+          channels: string[]
+          countries?: string[]
+          created_at?: string
+          created_by?: string | null
+          departments?: string[]
+          id?: string
+          market: string
+          notes?: string | null
+          user_id: string
+          zone?: string | null
+        }
+        Update: {
+          channels?: string[]
+          countries?: string[]
+          created_at?: string
+          created_by?: string | null
+          departments?: string[]
+          id?: string
+          market?: string
+          notes?: string | null
+          user_id?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territories_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       validation_rules: {
         Row: {
           conditions: Json
@@ -3815,6 +3878,31 @@ export type Database = {
           name?: string
           object?: string
           updated_at?: string
+        }
+        Relationships: [
+        ]
+      }
+      zone_places: {
+        Row: {
+          city: string | null
+          created_at: string
+          department: string
+          id: string
+          zone: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          department: string
+          id?: string
+          zone: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          department?: string
+          id?: string
+          zone?: string
         }
         Relationships: [
         ]
@@ -4565,6 +4653,30 @@ export type Database = {
         }
         Returns: string
       }
+      territory_matches: {
+        Args: {
+          t: string
+          p_channel: string
+          p_market: string
+          p_zone: string
+          p_department: string
+          p_country: string
+        }
+        Returns: boolean
+      }
+      territory_owners: {
+        Args: {
+          p_channel: string
+          p_market: string
+          p_zone: string
+          p_department: string
+          p_country: string
+        }
+        Returns: {
+          user_id: string
+          full_name: string
+        }[]
+      }
       to_cop: {
         Args: {
           p_amount: number
@@ -4588,6 +4700,13 @@ export type Database = {
       won_stage_of: {
         Args: {
           p_pipeline: string
+        }
+        Returns: string
+      }
+      zone_for_place: {
+        Args: {
+          p_department: string
+          p_city: string
         }
         Returns: string
       }

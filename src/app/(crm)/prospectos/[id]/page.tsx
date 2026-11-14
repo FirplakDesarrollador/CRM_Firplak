@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRightLeft, Mail, Pencil, Phone } from "lucide-react";
 import { RecordLayout } from "@/components/records/RecordLayout";
+import { TerritoryHint } from "@/components/territories/TerritoryHint";
 import { StatusPath } from "@/components/records/StatusPath";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { Alert } from "@/components/ui/Alert";
@@ -58,7 +59,10 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
         </>
       }
       headerExtra={
-        converted ? (
+        !converted ? (
+          <TerritoryHint channel={(row.industry as string | null) ?? null} market={(row.market as string | null) ?? null} zone={(row.zone as string | null) ?? null}
+            department={(row.state as string | null) ?? null} country={(row.country as string | null) ?? null} ownerId={(row.owner_id as string | null) ?? null} />
+        ) : converted ? (
           <div className="border-t border-line px-5 py-3">
             <Alert tone="success">
               Convertido el <Fmt date={String(row.converted_at)} /> en{" "}

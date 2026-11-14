@@ -19,6 +19,7 @@ export default async function SetupLayout({ children }: { children: React.ReactN
     ] : []),
     ...(customize ? [
       { href: "/configuracion/compartir", label: "Compartir por defecto", group: "Usuarios y acceso" },
+      { href: "/configuracion/territorios", label: "Territorios", group: "Usuarios y acceso" },
       { href: "/configuracion/pipelines", label: "Pipelines y etapas", group: "Personalización" },
       { href: "/configuracion/campos", label: "Campos personalizados", group: "Personalización" },
       { href: "/configuracion/listas", label: "Listas de valores", group: "Personalización" },

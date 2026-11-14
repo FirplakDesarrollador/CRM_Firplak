@@ -3,6 +3,8 @@
 
 export const ACCOUNT_TYPES = ["Prospecto", "Cliente", "Distribuidor", "Partner", "Competidor", "Otro"];
 export const MARKETS = ["Nacional", "Internacional"];
+/** Zonas comerciales del mercado Nacional (en el exterior la zona es el país). Editables en Configuración → Listas de valores. */
+export const ZONES = ["Antioquia", "Centro del País", "Costa Atlántica", "Sur Occidente", "Tolima Grande", "Eje Cafetero", "Santanderes", "Córdoba, Sucre y Urabá"];
 /** Incoterms 2020: condiciones de entrega en exportación. */
 export const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 /** Canal de venta de la cuenta (columna `industry`): decide el pipeline de sus oportunidades y su lista de precios. */
