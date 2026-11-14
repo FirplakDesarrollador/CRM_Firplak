@@ -4902,13 +4902,29 @@ export type Database = {
           p_from: string
           p_to: string
           p_owner?: string
+          p_channels?: string[]
+          p_zones?: string[]
         }
         Returns: {
           card_code: string
           customer_name: string
           seller: string
           amount: number
+          prev: number
           account_id: string
+        }[]
+      }
+      sap_sales_reference: {
+        Args: {
+          p_from: string
+          p_to: string
+        }
+        Returns: {
+          mode: string
+          r_from: string
+          r_to: string
+          months: number
+          available: boolean
         }[]
       }
       sap_sales_sees_all: {
@@ -4921,6 +4937,8 @@ export type Database = {
           p_to: string
           p_top?: number
           p_owner?: string
+          p_channels?: string[]
+          p_zones?: string[]
         }
         Returns: Json
       }

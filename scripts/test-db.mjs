@@ -2264,6 +2264,32 @@ await check('ventas reales de SAP: carga por meses, dos años, visibilidad, sucu
   assert.deepEqual(await as(rep, () => q(`select card_code, amount::float from sap_sales_group('CN900100200', $1, $2)`, [`${y}-01-01`, `${y}-12-31`])), [{ card_code: 'CN900100200-01', amount: 1000 }]);
   assert.equal((await as(mgr, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`])))[0].s.total, 1200);
 
+  // Filtros que se cruzan: con un canal elegido, las zonas y los clientes son los de ese canal; el gráfico de canales sigue completo.
+  const [{ s: dist }] = await as(admin, () => q(`select sap_sales_summary($1, $2, 15, null, array['Canal Distribución']) s`, [`${y}-01-01`, `${y}-12-31`]));
+  assert.equal(dist.total, 1500);
+  assert.deepEqual(dist.by_zone.map((z) => [z.key, z.amount]), [['ANTIOQUIA', 1000], ['TOLIMA GRANDE', 500]]);
+  assert.equal(dist.by_channel.length, 2);
+  const [{ s: ant }] = await as(admin, () => q(`select sap_sales_summary($1, $2, 15, null, array['Canal Distribución'], array['ANTIOQUIA']) s`, [`${y}-01-01`, `${y}-12-31`]));
+  assert.deepEqual(ant.top.map((t) => [t.key, t.amount, t.branches]), [['CN900100200', 1000, 1]]);
+  assert.deepEqual(ant.by_channel.map((c) => [c.key, c.amount]), [['Canal Distribución', 1000], ['Canal Constructores', 200]]);
+  // Crecimiento de un año completo: contra las mismas fechas del año anterior (sin datos de ese año no hay comparación).
+  assert.equal(todo.compare.mode, 'year');
+  assert.equal(todo.compare.available, false);
+  assert.equal(todo.top[0].prev, null);
+  await as(agent, () => q(`select sap_agent_sales_load($1, 'p1', $2::jsonb, true, true)`, [`${y - 1}-03-01`,
+    JSON.stringify([[`${y - 1}-03-02`, '701', 'Nacional', 'ANTIOQUIA', 'Medellín', 'Canal Distribución', 'ROSA MARIA VENDEDORA', 'CN900100200-01', 'MAXI S A S ACACIAS', 750]])]));
+  const [{ s: anual }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`]));
+  assert.deepEqual([anual.compare.available, anual.total_prev, anual.top[0].prev, anual.top[1].prev], [true, 750, 750, 0]);
+  assert.deepEqual((await as(admin, () => q(`select card_code, amount::float a, prev::float p from sap_sales_group('CN900100200', $1, $2)`, [`${y}-01-01`, `${y}-12-31`]))),
+    [{ card_code: 'CN900100200-01', a: 1000, p: 750 }, { card_code: 'CN900100200-02', a: 500, p: 0 }]);
+  // Un solo mes: contra el promedio mensual de ese mismo año (aquí, enero y marzo cargados: 400 y 1.500 → 950).
+  await as(agent, () => q(`select sap_agent_sales_load($1, 'e1', $2::jsonb, true, true)`, [`${y}-01-01`,
+    JSON.stringify([[`${y}-01-10`, '601', 'Nacional', 'ANTIOQUIA', 'Medellín', 'Canal Distribución', 'ROSA MARIA VENDEDORA', 'CN900100200-01', 'MAXI S A S ACACIAS', 400]])]));
+  const [{ s: marzo }] = await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-03-01`, `${y}-03-31`]));
+  assert.deepEqual([marzo.compare.mode, marzo.compare.months], ['average', 2]);
+  assert.deepEqual(marzo.top.map((t) => [t.key, t.amount, t.prev]), [['CN900100200', 1500, 950], ['CN800', 200, 100]]);
+  await q(`delete from sap_sales where sale_date < $1 or invoice = '601'`, [`${y}-01-01`]);
+
   // El nombre del grupo sale de la cuenta principal del CRM, y la cuenta principal suma sus sucursales.
   const [main] = await q(`insert into accounts (name, owner_id) values ('Maxi S.A.S.', $1) returning id`, [admin.id]);
   const [branch] = await q(`insert into accounts (name, owner_id, parent_account_id, sap_card_code) values ('Maxi Acacias', $1, $2, 'CN900100200-01') returning id`, [admin.id, main.id]);
