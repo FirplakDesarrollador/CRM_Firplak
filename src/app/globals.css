@@ -1150,16 +1150,29 @@ svg.lucide {
   -webkit-backdrop-filter: blur(24px) saturate(170%);
   backdrop-filter: blur(24px) saturate(170%);
 }
-/* El módulo en el que se está: todo el bloque (ícono y nombre) con un tinte oliva, no solo el ícono. Decisión de Luis
-   sobre tres maquetas (13 nov 2026). La barra es oscura en los dos temas, así que el tinte es el mismo. */
+/* El módulo en el que se está: todo el bloque (ícono y nombre) con un tinte, no solo el ícono. Decisiones de Luis sobre
+   maquetas (13 nov 2026): en claro la barra es navy y el tinte es blanco (el oliva translúcido se veía apagado sobre el
+   azul); en oscuro la barra es casi negra y el tinte es oliva. */
 .dock li > .dock-active {
   height: calc(3.5rem - 10px);
   margin: 5px 4px;
-  border: 1px solid rgba(183, 196, 127, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 16px 12px 16px 12px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-weight: 600;
+}
+:root[data-theme="dark"] .dock li > .dock-active {
+  border-color: rgba(183, 196, 127, 0.5);
   background: rgba(164, 182, 90, 0.16);
   color: #cdd89a;
-  font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dock li > .dock-active {
+    border-color: rgba(183, 196, 127, 0.5);
+    background: rgba(164, 182, 90, 0.16);
+    color: #cdd89a;
+  }
 }
 .dock li > button.dock-active {
   width: calc(100% - 8px);
@@ -1408,6 +1421,7 @@ dialog::backdrop {
   .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
   .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
 }
+
 
 
 

@@ -428,7 +428,7 @@ Los controles son directos y táctiles; el vidrio y el movimiento quedan en las 
 ### Navigation
 - **Barra y módulos:** vidrio del cromo con blur de 26 px, buscador central y botón «Nuevo» en oliva. Las pestañas son píldoras de texto; la activa se llena con un degradado oliva, y siempre queda a la vista aunque los módulos se desplacen.
 - **Dentro de un registro:** las mismas píldoras, con tinte oliva suave y línea interior.
-- **Móvil:** dock flotante a 12 px de los bordes, con esquinas de 24 px, íconos de 20 px y etiquetas de 0.68rem. Es navy en claro y casi negro en oscuro. El módulo activo lleva todo el bloque (ícono y nombre) con un tinte oliva de 16 %, borde oliva y texto #cdd89a en seminegrita, con esquinas asimétricas de 16/12 px; antes solo se marcaba el ícono (decisión de Luis sobre tres maquetas, 13 nov 2026). «Más» abre una hoja opaca con una grilla de tres columnas.
+- **Móvil:** dock flotante a 12 px de los bordes, con esquinas de 24 px, íconos de 20 px y etiquetas de 0.68rem. Es navy en claro y casi negro en oscuro. El módulo activo lleva todo el bloque (ícono y nombre) con un tinte de 16 %, borde y texto en seminegrita, con esquinas asimétricas de 16/12 px: **blanco en claro** (sobre el navy el oliva translúcido se veía apagado) y **oliva con texto #cdd89a en oscuro**; antes solo se marcaba el ícono (decisiones de Luis sobre maquetas, 13 nov 2026). «Más» abre una hoja opaca con una grilla de tres columnas.
 
 ### Tablas
 - **Style:** texto de 0.86rem, encabezado fijo de 0.76rem en color atenuado, líneas finas entre filas y tinte oliva al pasar el cursor.
