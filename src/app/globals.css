@@ -1304,6 +1304,13 @@ dialog::backdrop {
   height: 1080px;
   transform: translate(-50%, -50%) scale(var(--fondo-escala, 1));
 }
+/* En celular no hay luz de fondo: queda como antes, suelo blanco o negro con el logo quieto (decisión de Luis, 13 nov 2026:
+   en el teléfono, el tema oscuro se veía azul). */
+@media (max-width: 767.98px) {
+  .fondo-animado {
+    display: none;
+  }
+}
 .fondo-mancha,
 .fondo-franja {
   position: absolute;
@@ -1363,3 +1370,4 @@ dialog::backdrop {
   .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
   .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
 }
+
