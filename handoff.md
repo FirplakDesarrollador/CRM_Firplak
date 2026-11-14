@@ -210,7 +210,13 @@ Fases 1 a 26 (ver la tabla de módulos del README) más los ajustes de noviembre
 ## 6. Pendientes
 
 ### SAP por agente (en curso, 2026-11-14)
-- **Fase 1 publicada el 2026-11-14** (migración y código). Para dejarla funcionando: (2) crear en producción el usuario técnico del agente con el perfil «Integración SAP» (la contraseña la
+- **Usuario técnico del agente creado en producción el 2026-11-14** (por SQL, con el visto bueno de Luis): perfil
+  «Integración SAP», sin rol, sin correo enviado. Su contraseña se generó al azar en el Mac de Luis y quedó solo en el
+  Llavero (servicio `firplak-crm-agente-sap`, cuenta `crm`); a la base solo llegó el hash. Comprobado: entra, no ve
+  cuentas, contactos ni oportunidades, y `sap_agent_targets` responde (hoy 0 clientes con Código SAP y 0 productos).
+  La configuración sin secretos está en `~/.firplak-crm/agente-sap.json`. **Falta:** que Luis escriba la contraseña
+  de SAP en el Llavero (cuenta `sap`), `probar`, `correr --ahora` e `instalar`.
+- **Fase 1 publicada el 2026-11-14** (migración y código). Pasos originales: (2) crear en producción el usuario técnico del agente con el perfil «Integración SAP» (la contraseña la
   escribe Luis; no debe pasar por el chat); (3) en el Mac de Luis: `~/.firplak-crm/agente-sap.json`, las dos
   contraseñas en el Llavero, `probar`, `correr --ahora` e `instalar` (pasos en `agente-sap/LEEME.md`); (4) poner el
   Código SAP en las cuentas y dar «Ver información de SAP» a los perfiles que deban verla.
