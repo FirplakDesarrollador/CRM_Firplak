@@ -1150,15 +1150,19 @@ svg.lucide {
   -webkit-backdrop-filter: blur(24px) saturate(170%);
   backdrop-filter: blur(24px) saturate(170%);
 }
-.dock-active {
-  color: var(--cream-50);
+/* El módulo en el que se está: todo el bloque (ícono y nombre) con un tinte oliva, no solo el ícono. Decisión de Luis
+   sobre tres maquetas (13 nov 2026). La barra es oscura en los dos temas, así que el tinte es el mismo. */
+.dock li > .dock-active {
+  height: calc(3.5rem - 10px);
+  margin: 5px 4px;
+  border: 1px solid rgba(183, 196, 127, 0.5);
+  border-radius: 16px 12px 16px 12px;
+  background: rgba(164, 182, 90, 0.16);
+  color: #cdd89a;
+  font-weight: 600;
 }
-.dock-active svg {
-  background: linear-gradient(160deg, rgba(164, 182, 90, 0.62), rgba(95, 114, 41, 0.5));
-  border-radius: 12px 9px 12px 9px;
-  padding: 3px 9px;
-  box-sizing: content-box;
-  margin-block: -3px;
+.dock li > button.dock-active {
+  width: calc(100% - 8px);
 }
 
 @keyframes glass-preview-deriva {
@@ -1404,6 +1408,7 @@ dialog::backdrop {
   .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
   .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
 }
+
 
 
 
