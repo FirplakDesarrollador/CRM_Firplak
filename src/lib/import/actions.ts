@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { OBJECTS, columnFor, isObjectKey, type ObjectKey } from "@/lib/objects";
-import { getObjectDef, getPipelines, getUsers, untypedClient } from "@/lib/records/data";
+import { fetchAllRows, getObjectDef, getPipelines, getUsers, untypedClient } from "@/lib/records/data";
 import { editableFields } from "@/lib/records/form";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { addDaysISO, todayISO } from "@/lib/format";
@@ -103,8 +103,10 @@ export async function importChunk(input: ChunkInput): Promise<ChunkResult> {
   if (matchField === "tax_id" && matchCol >= 0) {
     const wanted = new Set(input.rows.map((r) => digits(r[matchCol])).filter((d) => d.length >= 6));
     if (wanted.size) {
-      const { data: all } = await db.from(def.table).select("id, tax_id").not("tax_id", "is", null).limit(20000);
-      const ids = ((all ?? []) as { id: string; tax_id: string }[]).filter((a) => wanted.has(digits(a.tax_id))).map((a) => a.id);
+      // Todas las cuentas con NIT, por páginas: con más de 1000 la API cortaba y lo importado se duplicaba.
+      const all = await fetchAllRows<{ id: string; tax_id: string }>((from, to) =>
+        db.from(def.table).select("id, tax_id").not("tax_id", "is", null).order("id").range(from, to) as unknown as PromiseLike<{ data: { id: string; tax_id: string }[] | null; error: { message: string } | null }>);
+      const ids = all.filter((a) => wanted.has(digits(a.tax_id))).map((a) => a.id);
       if (ids.length) {
         const { data } = await db.from(def.table).select("*").in("id", ids);
         for (const row of (data ?? []) as Record<string, unknown>[]) existing.set(digits(row.tax_id), row);

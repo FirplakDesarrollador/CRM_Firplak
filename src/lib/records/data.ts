@@ -75,7 +75,10 @@ export const getGeo = cache(async (): Promise<GeoData> => {
   const supabase = await createClient();
   const [{ data: countries }, { data: places }] = await Promise.all([
     supabase.from("countries").select("name").order("name"),
-    supabase.from("co_municipalities").select("department, city").order("department").order("city").limit(2000),
+    // Son 1.122 municipios y la API corta en 1000: sin leer por páginas faltaban los últimos departamentos
+    // (parte de Sucre, Tolima, Valle del Cauca, Vaupés y Vichada).
+    fetchAllRows<{ department: string; city: string }>((from, to) =>
+      supabase.from("co_municipalities").select("department, city").order("department").order("city").range(from, to)).then((data) => ({ data }), () => ({ data: [] as { department: string; city: string }[] })),
   ]);
   const departments: Record<string, string[]> = {};
   for (const p of places ?? []) (departments[p.department] ??= []).push(p.city);
@@ -121,48 +124,84 @@ export async function getListViews(object: ObjectKey) {
   return (data ?? []).map((v) => ({ ...v, definition: (v.definition ?? {}) as ListDefinition }));
 }
 
+/** La API entrega como máximo 1000 filas por consulta (`max_rows`): lo que pide más se lee por páginas. */
+export const API_PAGE = 1000;
+/** Tope de filas de una exportación o un informe. */
+const MAX_ALL = 20000;
+
+/** Todas las filas de una consulta, leídas por páginas. `page` arma la consulta de cada tramo. */
+export async function fetchAllRows<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  max = MAX_ALL,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; from < max; from += API_PAGE) {
+    const { data, error } = await page(from, from + API_PAGE - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+    if (!data || data.length < API_PAGE) break;
+  }
+  return rows;
+}
+
 export async function listRecords(def: ObjectDef, params: ListParams, userId: string, opts: { all?: boolean } = {}) {
   const db = await untypedClient();
-  let query = db.from(def.table).select(def.select, { count: "exact" });
-
-  if (params.scope === "mine" && def.hasOwner !== false) query = query.eq("owner_id", userId);
+  const none = "00000000-0000-0000-0000-000000000000";
+  // Lo que los filtros necesitan saber de otras tablas se consulta una sola vez, antes de armar la consulta.
+  let creditIds: string[] | null = null;
   if (params.credit) {
     const { data: credited } = await db.from("opportunity_credit").select("opportunity_id").eq("user_id", params.credit);
-    const ids = ((credited ?? []) as { opportunity_id: string }[]).map((r) => r.opportunity_id);
-    query = query.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    creditIds = ((credited ?? []) as { opportunity_id: string }[]).map((r) => r.opportunity_id);
   }
+  // Cuentas de cuyo equipo hace parte; oportunidades de su equipo o de esas cuentas (si el
+  // equipo de cuenta le da acceso a sus oportunidades).
+  let accRows: { account_id: string; opportunity_access: string }[] = [];
+  let oppIds: string[] = [];
   if (params.scope === "team") {
-    // Cuentas de cuyo equipo hace parte; oportunidades de su equipo o de esas cuentas (si el
-    // equipo de cuenta le da acceso a sus oportunidades).
-    const none = "00000000-0000-0000-0000-000000000000";
     const { data: accTeams } = await db.from("account_team_members").select("account_id, opportunity_access").eq("user_id", userId);
-    const accRows = (accTeams ?? []) as { account_id: string; opportunity_access: string }[];
-    if (def.key === "accounts") {
-      query = query.in("id", accRows.length ? accRows.map((r) => r.account_id) : [none]);
-    } else {
+    accRows = (accTeams ?? []) as { account_id: string; opportunity_access: string }[];
+    if (def.key !== "accounts") {
       const { data: oppTeams } = await db.from("opportunity_team_members").select("opportunity_id").eq("user_id", userId);
-      const oppIds = ((oppTeams ?? []) as { opportunity_id: string }[]).map((r) => r.opportunity_id);
-      const accIds = accRows.filter((r) => r.opportunity_access !== "none").map((r) => r.account_id);
-      query = query.or(`id.in.(${[none, ...oppIds].join(",")}),account_id.in.(${[none, ...accIds].join(",")})`);
+      oppIds = ((oppTeams ?? []) as { opportunity_id: string }[]).map((r) => r.opportunity_id);
     }
   }
-  for (const filter of params.filters) query = applyFilter(query, def, filter, userId);
-  if (params.q) query = applySearch(query, def, params.q);
-
   const sortField = def.fields.find((f) => f.name === params.sort.field);
   const sortable = !sortField || (sortField.sortable !== false && !["lookup", "user", "stage", "multiselect"].includes(sortField.type));
   const sortColumn = sortable ? columnFor(params.sort.field) : columnFor(def.defaultSort.field);
-  query = query.order(sortColumn, { ascending: params.sort.dir === "asc", nullsFirst: false }).order("id");
+
+  const build = () => {
+    let query = db.from(def.table).select(def.select, { count: "exact" });
+    if (params.scope === "mine" && def.hasOwner !== false) query = query.eq("owner_id", userId);
+    if (creditIds) query = query.in("id", creditIds.length ? creditIds : [none]);
+    if (params.scope === "team") {
+      if (def.key === "accounts") {
+        query = query.in("id", accRows.length ? accRows.map((r) => r.account_id) : [none]);
+      } else {
+        const accIds = accRows.filter((r) => r.opportunity_access !== "none").map((r) => r.account_id);
+        query = query.or(`id.in.(${[none, ...oppIds].join(",")}),account_id.in.(${[none, ...accIds].join(",")})`);
+      }
+    }
+    for (const filter of params.filters) query = applyFilter(query, def, filter, userId);
+    if (params.q) query = applySearch(query, def, params.q);
+    return query.order(sortColumn, { ascending: params.sort.dir === "asc", nullsFirst: false }).order("id");
+  };
 
   if (!opts.all) {
     const from = (params.page - 1) * params.pageSize;
-    query = query.range(from, from + params.pageSize - 1);
-  } else {
-    query = query.limit(5000);
+    const { data, count, error } = await build().range(from, from + params.pageSize - 1);
+    return { rows: (data ?? []) as unknown as Row[], count: count ?? 0, error: error?.message ?? null };
   }
-
-  const { data, count, error } = await query;
-  return { rows: (data ?? []) as unknown as Row[], count: count ?? 0, error: error?.message ?? null };
+  // Exportaciones e informes: todas las filas, por páginas (antes se cortaban en las primeras 1000).
+  const rows: Row[] = [];
+  let total = 0;
+  for (let from = 0; from < MAX_ALL; from += API_PAGE) {
+    const { data, count, error } = await build().range(from, from + API_PAGE - 1);
+    if (error) return { rows: [] as Row[], count: 0, error: error.message };
+    rows.push(...((data ?? []) as unknown as Row[]));
+    total = count ?? rows.length;
+    if (!data || data.length < API_PAGE) break;
+  }
+  return { rows, count: total, error: null };
 }
 
 export async function getRecord(def: ObjectDef, id: string): Promise<Row | null> {

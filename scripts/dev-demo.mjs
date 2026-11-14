@@ -158,6 +158,8 @@ await sock.start();
 
 // ---------------------------------------------------------------- PostgREST
 const tmp = mkdtempSync(join(tmpdir(), 'firplak-demo-'));
+// Igual que producción (`max_rows = 1000` en supabase/config.toml): una consulta que pida más filas se corta, y
+// las pruebas lo ven. Sin este tope, la lista de municipios se probaba completa y en producción faltaban departamentos.
 const conf = join(tmp, 'postgrest.conf');
 writeFileSync(conf, `db-uri = "postgres://authenticator@127.0.0.1:${DB_PORT}/postgres"
 db-schemas = "public"
@@ -168,6 +170,7 @@ jwt-secret = "${SECRET}"
 server-host = "127.0.0.1"
 server-port = ${PGRST_PORT}
 db-prepared-statements = false
+db-max-rows = 1000
 log-level = "error"
 `);
 const children = [];

@@ -60,6 +60,13 @@ test("la dirección elige país, departamento y ciudad de las listas; fuera de C
   }).toPass();
   await expect(ciudad.locator("option", { hasText: "Medellín" })).toHaveCount(1);
   await expect(ciudad.locator("option", { hasText: "Cali" })).toHaveCount(0);
+  // Están los 33 departamentos, también los últimos de la lista: la API corta en 1000 filas y son 1.122 municipios.
+  await expect(dpto.locator("option")).toHaveCount(34);
+  for (const [departamento, capital] of [["Tolima", "Ibagué"], ["Valle del Cauca", "Cali"], ["Sucre", "Sincelejo"], ["Vichada", "Puerto Carreño"]]) {
+    await dpto.selectOption({ label: departamento });
+    await expect(ciudad.locator("option", { hasText: new RegExp(`^${capital}$`) })).toHaveCount(1);
+  }
+  await dpto.selectOption({ label: "Antioquia" });
   await ciudad.selectOption({ label: "Medellín" });
 
   // En otro país, departamento y ciudad se escriben.
