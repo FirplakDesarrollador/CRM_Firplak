@@ -794,6 +794,27 @@ svg.lucide {
     background: var(--surface);
     color: var(--text);
   }
+  /* iPhone: un campo de fecha trae su propio ancho mínimo y no se encoge con su columna: en una fila de dos campos se
+     salía y quedaba debajo del vecino (reporte de Luis, 13 nov 2026). Sin la apariencia nativa obedece el ancho. */
+  .input[type="date"],
+  .input[type="datetime-local"],
+  .input[type="time"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+  @supports (-webkit-touch-callout: none) {
+    .input[type="date"],
+    .input[type="datetime-local"],
+    .input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      display: flex;
+      align-items: center;
+    }
+    .input::-webkit-date-and-time-value {
+      text-align: left;
+    }
+  }
   .textarea {
     height: auto;
     min-height: 5.5rem;
@@ -1370,4 +1391,5 @@ dialog::backdrop {
   .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
   .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
 }
+
 

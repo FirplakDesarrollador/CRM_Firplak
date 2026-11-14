@@ -299,7 +299,7 @@ export function OfflineActivityForm({ userId, accounts, outbox, editing, client 
           </select>
         </Field>
         {tab === "meeting" && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
             <Field id="sa-start" label={t("Inicio")} error={errors.start_at}>
               <input id="sa-start" name="start_at" type="datetime-local" className="input" defaultValue={v("start_at")} {...invalid("sa-start", errors.start_at)} />
             </Field>
@@ -314,7 +314,7 @@ export function OfflineActivityForm({ userId, accounts, outbox, editing, client 
           </div>
         )}
         {tab === "call" && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
             <Field id="sa-result" label={t("Resultado")} error={errors.call_result}>
               <select id="sa-result" name="call_result" className="select" defaultValue={v("call_result")}>
                 <option value="">—</option>
@@ -327,7 +327,7 @@ export function OfflineActivityForm({ userId, accounts, outbox, editing, client 
           </div>
         )}
         {(tab === "task" || tab === "call") && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
             <Field id="sa-due" label={t(tab === "call" ? "Fecha" : "Fecha límite")} error={errors.due_date}>
               <input id="sa-due" name="due_date" type="date" className="input" defaultValue={v("due_date")} {...invalid("sa-due", errors.due_date)} />
             </Field>
