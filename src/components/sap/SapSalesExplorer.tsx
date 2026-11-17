@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
+import { AlVer } from "@/components/dashboard/AlVer";
 import { ColumnChart } from "@/components/dashboard/Charts";
 import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
@@ -29,8 +30,9 @@ function PickBars({ title, items, picked, onToggle, color }: {
   const max = Math.max(1, ...items.map((i) => Number(i.amount)));
   if (!items.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin datos en el periodo.</Tr></p>;
   return (
-    <ul className="space-y-1" aria-label={title}>
-      {items.map((item) => {
+    // Las barras entran creciendo, como los demás gráficos; al filtrar, las que siguen se deslizan a su nuevo valor.
+    <AlVer><ul className="space-y-1" aria-label={title}>
+      {items.map((item, i) => {
         const on = picked.includes(item.key);
         const dim = picked.length > 0 && !on;
         return (
@@ -39,14 +41,15 @@ function PickBars({ title, items, picked, onToggle, color }: {
               className={`grid w-full grid-cols-[minmax(6rem,11rem)_1fr] items-center gap-3 rounded-lg px-1.5 py-1 text-left transition-opacity hover:bg-[color-mix(in_srgb,var(--brand)_6%,transparent)] ${on ? "bg-[color-mix(in_srgb,var(--brand)_10%,transparent)]" : ""} ${dim ? "opacity-45" : ""}`}>
               <span className={`truncate text-sm ${on ? "font-semibold text-ink" : "font-medium text-ink-2"}`}>{item.key}</span>
               <span className="flex items-center gap-2">
-                <span className="h-[18px] rounded-r-[4px]" style={{ width: `${Math.max(Number(item.amount) > 0 ? 1.5 : 0, (Math.max(0, Number(item.amount)) / max) * 82)}%`, background: color }} />
+                <span className="chart-crece-x h-[18px] rounded-r-[4px] transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                  style={{ width: `${Math.max(Number(item.amount) > 0 ? 1.5 : 0, (Math.max(0, Number(item.amount)) / max) * 82)}%`, background: color, "--i": i } as React.CSSProperties} />
                 <span className="num whitespace-nowrap text-xs font-semibold text-ink">{formatCompactCurrency(Number(item.amount))}</span>
               </span>
             </button>
           </li>
         );
       })}
-    </ul>
+    </ul></AlVer>
   );
 }
 

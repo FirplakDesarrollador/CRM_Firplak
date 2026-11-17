@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { AlVer } from "@/components/dashboard/AlVer";
 import { Tr } from "@/components/ui/Tr";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 import { loadSalesGroup, type SalesBranch, type SalesFilters } from "@/lib/sap/sales";
@@ -45,7 +46,7 @@ export function SapSalesTop({ groups, from, to, owner, filters, basis }: {
   };
   if (!groups.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin ventas en el periodo.</Tr></p>;
   return (
-    <ul className="space-y-1.5">
+    <AlVer><ul className="space-y-1.5">
       {groups.map((g, i) => {
         const detail = open[g.key];
         return (
@@ -59,7 +60,7 @@ export function SapSalesTop({ groups, from, to, owner, filters, basis }: {
                   <span className="truncate text-sm font-medium">{g.name}</span>
                   {g.branches > 1 && <span className="badge shrink-0">{g.branches} <Tr>sucursales</Tr></span>}
                 </span>
-                <span className="mt-1 block h-[6px] rounded-full bg-brand" style={{ width: `${Math.max(1.5, (g.amount / max) * 100)}%` }} aria-hidden />
+                <span className="chart-crece-x mt-1 block h-[6px] rounded-full bg-brand" style={{ width: `${Math.max(1.5, (g.amount / max) * 100)}%`, "--i": i } as React.CSSProperties} aria-hidden />
               </span>
               <span className="num whitespace-nowrap text-sm font-semibold" title={formatCurrency(g.amount)}>{formatCompactCurrency(g.amount)}</span>
               <span className="text-right"><Growth amount={g.amount} prev={g.prev} basis={basis} /></span>
@@ -84,6 +85,6 @@ export function SapSalesTop({ groups, from, to, owner, filters, basis }: {
           </li>
         );
       })}
-    </ul>
+    </ul></AlVer>
   );
 }
