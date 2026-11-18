@@ -14,7 +14,8 @@ function itemsQuery(opts: SapSettings["product_import"], top?: number) {
   const fields = ["ItemCode", "ItemName", ...opts.mappings.map((m) => m.sap_field).filter(validSapField)];
   const filters = [
     opts.sales_only ? "SalesItem eq 'tYES'" : null,
-    opts.prefix.trim() ? `startswith(ItemCode,${odataString(opts.prefix.trim())})` : null,
+    // El texto busca códigos que empiezan por él o descripciones que lo contienen.
+    opts.prefix.trim() ? `(startswith(ItemCode,${odataString(opts.prefix.trim())}) or substringof(${odataString(opts.prefix.trim())},ItemName))` : null,
   ].filter(Boolean);
   const q = [`$select=${[...new Set(fields)].join(",")}`, filters.length ? `$filter=${filters.join(" and ")}` : null, "$orderby=ItemCode", top ? `$top=${top}` : null];
   return `/Items?${q.filter(Boolean).join("&")}`;

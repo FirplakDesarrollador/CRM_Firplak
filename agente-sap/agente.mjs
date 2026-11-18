@@ -6,7 +6,7 @@
 // en el CRM por su Código SAP, y el inventario de los productos activos; lo deja en las tablas sap_*
 // del CRM con un usuario técnico que solo puede hacer eso. Nunca escribe en SAP.
 //
-// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|instalar|desinstalar|estado> [--ahora]
+// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -342,6 +342,22 @@ async function muestra([codigo, articulo]) {
   return 0;
 }
 
+/** Busca artículos de venta en SAP como lo hace la lista para importar (código o descripción), sin guardar nada. */
+async function buscar(palabras) {
+  const texto = palabras.join(" ").trim();
+  if (!texto) { log("Falta el texto: node agente-sap/agente.mjs buscar <código o descripción>"); return 2; }
+  const sap = new Sap(leerConfig());
+  await sap.login();
+  try {
+    const { filas, hayMas } = await articulosParaImportar(sap, { prefix: texto, sales_only: true }, 10);
+    log(`«${texto}»: ${filas.length}${hayMas || filas.length === 10 ? " (los diez primeros)" : ""} artículos de venta en SAP`);
+    for (const f of filas) log(`  ${f.ItemCode} · ${f.ItemName ?? ""}`);
+  } finally {
+    await sap.logout();
+  }
+  return 0;
+}
+
 // ---------------------------------------------------------------- Ventas reales (CSV mensuales)
 /** Una línea de CSV en sus campos (admite comillas y comas dentro de comillas). */
 function camposCsv(linea) {
@@ -437,12 +453,13 @@ function convertir(valor, tipo) {
   return String(valor);
 }
 
-/** Artículos de SAP según el filtro de la solicitud (prefijo, solo de venta) con los campos mapeados. */
+/** Artículos de SAP según el filtro de la solicitud (texto buscado, solo de venta) con los campos mapeados.
+ * El texto busca códigos que empiezan por él o descripciones que lo contienen. */
 async function articulosParaImportar(sap, params, limite) {
   const mapeos = (params.mappings ?? []).filter((m) => m?.field && CAMPO_SAP.test(m.sap_field ?? ""));
   const filtros = [
     params.sales_only ? "SalesItem eq 'tYES'" : null,
-    String(params.prefix ?? "").trim() ? `startswith(ItemCode,${comillas(String(params.prefix).trim())})` : null,
+    String(params.prefix ?? "").trim() ? `(startswith(ItemCode,${comillas(String(params.prefix).trim())}) or substringof(${comillas(String(params.prefix).trim())},ItemName))` : null,
   ].filter(Boolean);
   const consulta = {
     $select: [...new Set(["ItemCode", "ItemName", "ItemsGroupCode", "TreeType", ...mapeos.map((m) => m.sap_field)])].join(","),
@@ -663,9 +680,9 @@ function estado() {
 }
 
 const [comando = "", ...resto] = process.argv.slice(2);
-const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), atender, ventas, instalar, desinstalar, estado };
+const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), buscar: () => buscar(resto), atender, ventas, instalar, desinstalar, estado };
 if (!comandos[comando]) {
-  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|instalar|desinstalar|estado> [--ahora]");
+  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
 /** Termina el programa. Con una lectura colgada por macOS, la salida normal también se queda esperando: se corta. */

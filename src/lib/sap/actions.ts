@@ -28,7 +28,7 @@ function readSettings(fd: FormData, current: SapSettings): SapSettings {
   return {
     create_quotations: fd.has("create_quotations") ? fd.get("create_quotations") === "on" : current.create_quotations,
     product_import: {
-      prefix: String(fd.get("prefix") ?? "").trim().slice(0, 20),
+      prefix: String(fd.get("prefix") ?? "").trim().slice(0, 60),
       sales_only: fd.get("sales_only") === "on",
       mappings: fields.map((field, i) => ({ field, sap_field: sapFields[i] ?? "" })).filter((m) => m.field && validSapField(m.sap_field)),
     },
@@ -85,7 +85,7 @@ async function existingCodes(codes: string[]) {
   return found;
 }
 const previewMessage = (n: number, truncated: boolean) => !n ? "No hay artículos de SAP con ese filtro."
-  : truncated ? `SAP tiene más de ${n} artículos con ese filtro: se muestran los primeros ${n}. Usa un código más específico para ver el resto.`
+  : truncated ? `SAP tiene más de ${n} artículos con ese filtro: se muestran los primeros ${n}. Usa una búsqueda más específica para ver el resto.`
     : `${n} artículos de SAP con ese filtro. Elige los que quieres importar.`;
 
 /** Deja una solicitud para el agente de SAP (vista previa o importación) con el filtro y el mapeo vigentes. */

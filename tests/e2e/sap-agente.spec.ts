@@ -109,7 +109,7 @@ test.describe("SAP por agente", () => {
   test("importa de SAP por medio del agente solo los artículos que se eligen de la lista", async ({ page }) => {
     try {
       await elegirOrigen(page, /Copia del agente/);
-      await page.getByLabel(/Solo códigos que empiezan por/).fill("FP-CO-");
+      await page.getByLabel(/Código o descripción/).fill("FP-CO-");
       await page.getByRole("button", { name: /Guardar y ver artículos/ }).click();
       // La solicitud queda esperando al agente; nada más pasa hasta que él la atienda.
       await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
@@ -197,6 +197,21 @@ test.describe("SAP por agente", () => {
       correrAgente("atender");
       await expect(page.getByRole("row", { name: /FP-CO-102/ })).toContainText("Ya está");
       await expect(page.getByRole("row", { name: /FP-CO-110/ })).not.toContainText("Ya está");
+
+      // El mismo campo busca también en la descripción, sin importar mayúsculas.
+      const filtro = page.getByLabel(/Código o descripción/);
+      await filtro.fill("kit cocina");
+      await page.getByRole("button", { name: /Guardar y ver artículos/ }).click();
+      await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
+      correrAgente("atender");
+      await expect(page.getByRole("row", { name: /FP-CO-KIT1/ })).toContainText("KIT COCINA CON LAVAMANOS");
+      await expect(page.getByRole("row", { name: /FP-CO-110/ })).toHaveCount(0);
+      // Deja el filtro como estaba para las demás pruebas.
+      await filtro.fill("FP-CO-");
+      await page.getByRole("button", { name: /Guardar y ver artículos/ }).click();
+      await expect(page.getByText(/Enviado al agente de SAP/)).toBeVisible();
+      correrAgente("atender");
+      await expect(page.getByRole("row", { name: /FP-CO-110/ })).toBeVisible();
     } finally {
       await elegirOrigen(page, /Consulta en vivo/);
     }

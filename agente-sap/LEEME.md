@@ -64,7 +64,7 @@ programadas corren desde ahí, no desde el repositorio: así un cambio de rama o
 las deja sin programa. **Después de cambiar el agente en el repositorio, vuelve a correr `instalar`** para
 que la copia instalada se actualice.
 
-Otros comandos: `atender` (atiende ahora las solicitudes pendientes), `muestra` (lee de SAP un cliente y un artículo y dice qué campos llegan, sin guardar nada ni mostrar valores; acepta un código de cliente y uno de artículo), `estado` (si está instalado) y `desinstalar` (deja de correr solo).
+Otros comandos: `atender` (atiende ahora las solicitudes pendientes), `muestra` (lee de SAP un cliente y un artículo y dice qué campos llegan, sin guardar nada ni mostrar valores; acepta un código de cliente y uno de artículo), `buscar <texto>` (busca artículos de venta en SAP por código o por descripción, como la lista para importar, y muestra los diez primeros), `estado` (si está instalado) y `desinstalar` (deja de correr solo).
 Registro: `~/Library/Logs/Firplak CRM agente SAP.log`.
 
 ## Seguridad

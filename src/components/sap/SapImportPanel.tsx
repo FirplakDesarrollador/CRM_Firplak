@@ -53,8 +53,9 @@ export function SapImportPanel({ fields, prefix, salesOnly, mappings, families, 
       <form action={previewAction} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <div>
-            <label className="label" htmlFor="sap-prefix">{t("Solo códigos que empiezan por (opcional)")}</label>
-            <input id="sap-prefix" name="prefix" defaultValue={prefix} className="input" placeholder={t("Ej. MB-")} />
+            <label className="label" htmlFor="sap-prefix">{t("Código o descripción (opcional)")}</label>
+            <input id="sap-prefix" name="prefix" defaultValue={prefix} maxLength={60} className="input" placeholder={t("Ej. MB- o lavamanos")} aria-describedby="sap-prefix-help" />
+            <p id="sap-prefix-help" className="mt-1 text-xs text-muted">{t("Trae los códigos que empiezan por ese texto y las descripciones que lo contienen.")}</p>
           </div>
           <label className="flex items-center gap-2 pb-2 text-sm font-semibold">
             <input type="checkbox" name="sales_only" defaultChecked={salesOnly} className="accent-[var(--brand)]" /> {t("Solo artículos de venta")}

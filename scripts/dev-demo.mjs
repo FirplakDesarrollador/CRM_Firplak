@@ -560,11 +560,14 @@ const sapServer = http.createServer(async (req, res) => {
     const select = (url.searchParams.get('$select') ?? 'ItemCode,ItemName').split(',');
     const filter = url.searchParams.get('$filter') ?? '';
     const prefix = filter.match(/startswith\(ItemCode,'([^']*)'\)/)?.[1];
+    // Texto en la descripción (sin distinguir mayúsculas, como el SAP real sobre SQL Server).
+    const inName = filter.match(/substringof\('([^']*)',ItemName\)/)?.[1]?.toLowerCase();
+    const matches = (it) => (!prefix && !inName) || (prefix && it.ItemCode.startsWith(prefix)) || (inName && String(it.ItemName ?? '').toLowerCase().includes(inName));
     // Lote de códigos (el agente): ItemCode eq 'A' or ItemCode eq 'B' …
     const codes = [...filter.matchAll(/ItemCode eq '((?:[^']|'')*)'/g)].map((m) => m[1].replace(/''/g, "'"));
     const top = Number(url.searchParams.get('$top') ?? 0) || undefined;
     const skip = Number(url.searchParams.get('$skip') ?? 0);
-    const all = Object.values(sapItems).filter((it) => (!filter.includes("SalesItem eq 'tYES'") || it.SalesItem === 'tYES') && (!prefix || it.ItemCode.startsWith(prefix)) && (!codes.length || codes.includes(it.ItemCode)))
+    const all = Object.values(sapItems).filter((it) => (!filter.includes("SalesItem eq 'tYES'") || it.SalesItem === 'tYES') && matches(it) && (!codes.length || codes.includes(it.ItemCode)))
       .sort((a, b) => a.ItemCode.localeCompare(b.ItemCode));
     const size = Math.min(top ?? 20, 20);
     const page = all.slice(skip, skip + size).map((it) => Object.fromEntries(select.map((f) => [f, it[f] ?? null])));
