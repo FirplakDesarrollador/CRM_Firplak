@@ -10,7 +10,7 @@
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import http from "node:http";
 import https from "node:https";
@@ -586,6 +586,24 @@ const dominio = () => `gui/${process.getuid()}`;
 const SOLICITUDES = `${ETIQUETA}.solicitudes`;
 const plistDe = (etiqueta) => join(homedir(), "Library", "LaunchAgents", `${etiqueta}.plist`);
 
+// El agente instalado corre desde su propia carpeta, fuera del repositorio: si la copia de trabajo cambia
+// de rama o se borra, las tareas programadas siguen encontrando el programa.
+const INSTALADO = join(homedir(), ".firplak-crm", "agente-sap");
+
+/** Copia el agente y su única dependencia a la carpeta de instalación (o la actualiza). */
+function copiarInstalacion() {
+  if (resolve(AQUI) === resolve(INSTALADO)) return;
+  mkdirSync(INSTALADO, { recursive: true });
+  for (const archivo of ["agente.mjs", "LEEME.md"]) {
+    if (existsSync(join(AQUI, archivo))) copyFileSync(join(AQUI, archivo), join(INSTALADO, archivo));
+  }
+  let version = "^2";
+  try { version = JSON.parse(readFileSync(resolve(AQUI, "..", "node_modules", "@supabase", "supabase-js", "package.json"), "utf8")).version; } catch { /* sin copia local: la última 2.x */ }
+  writeFileSync(join(INSTALADO, "package.json"), `${JSON.stringify({ name: "firplak-crm-agente-sap", private: true, type: "module", dependencies: { "@supabase/supabase-js": version } }, null, 2)}\n`);
+  execFileSync("npm", ["install", "--prefer-offline", "--no-audit", "--no-fund", "--silent"], { cwd: INSTALADO, stdio: ["ignore", "ignore", "inherit"] });
+  log(`Agente copiado a ${INSTALADO}`);
+}
+
 function plist(etiqueta, comando, programacion) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -595,10 +613,10 @@ function plist(etiqueta, comando, programacion) {
   <key>ProgramArguments</key>
   <array>
     <string>${xml(process.execPath)}</string>
-    <string>${xml(resolve(AQUI, "agente.mjs"))}</string>
+    <string>${xml(join(INSTALADO, "agente.mjs"))}</string>
     <string>${comando}</string>
   </array>
-  <key>WorkingDirectory</key><string>${xml(resolve(AQUI, ".."))}</string>
+  <key>WorkingDirectory</key><string>${xml(INSTALADO)}</string>
 ${programacion}
   <key>StandardOutPath</key><string>${xml(REGISTRO)}</string>
   <key>StandardErrorPath</key><string>${xml(REGISTRO)}</string>
@@ -617,6 +635,7 @@ function cargar(etiqueta, contenido) {
 function instalar() {
   if (process.platform !== "darwin") throw new Error("La instalación automática es para macOS.");
   leerConfig();
+  copiarInstalacion();
   const horarios = [1, 2, 3, 4, 5].flatMap((dia) => HORAS.map((hora) => `      <dict><key>Weekday</key><integer>${dia}</integer><key>Hour</key><integer>${hora}</integer><key>Minute</key><integer>0</integer></dict>`)).join("\n");
   // Sincronización de cartera, pedidos e inventario: lunes a viernes, cada dos horas.
   cargar(ETIQUETA, plist(ETIQUETA, "correr", `  <key>StartCalendarInterval</key>\n  <array>\n${horarios}\n  </array>`));
