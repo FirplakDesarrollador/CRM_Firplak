@@ -4,7 +4,7 @@
   position: relative;
   display: flex;
   min-height: 100dvh;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 1.25rem;
   background: #0a1826 url("/demo/ingreso.webp") center / cover no-repeat;
@@ -14,7 +14,6 @@
 /* En computador la foto ocupa solo la mitad del formulario; el panel azul de la izquierda no cambia. */
 @media (min-width: 1024px) {
   .foto-ingreso {
-    align-items: center;
     padding: 2.5rem 2rem;
   }
 }
