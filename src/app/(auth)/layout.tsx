@@ -4,7 +4,23 @@ import { Alert } from "@/components/ui/Alert";
 import { hasSupabaseEnv } from "@/lib/env";
 
 import { Tr } from "@/components/ui/Tr";
+import "./foto-ingreso.css";
+
+/** Prueba de diseño: ingreso con foto de producto y vidrio. Solo en el demo con --vidrio. */
+const CON_FOTO = process.env.NEXT_PUBLIC_INGRESO_FOTO === "1";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  if (CON_FOTO) {
+    return (
+      <main className="foto-ingreso">
+        <div className="foto-ingreso-tarjeta">
+          <div className="mb-7">
+            <Logo height={34} onDark />
+          </div>
+          {children}
+        </div>
+      </main>
+    );
+  }
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       <BrandBackdrop />

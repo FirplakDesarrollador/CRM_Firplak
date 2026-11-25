@@ -715,6 +715,8 @@ const appEnv = {
   NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${API_PORT}`,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
   NEXT_PUBLIC_SITE_URL: `http://localhost:${APP_PORT}`,
+  // Prueba de diseño (ingreso con foto y vidrio): solo con --vidrio; la foto va en public/demo/ y no se publica.
+  ...(process.argv.includes('--vidrio') ? { NEXT_PUBLIC_INGRESO_FOTO: '1' } : {}),
   // service_role de esta base de demo (no la real): la usa el servidor para publicar en Teams.
   SUPABASE_SERVICE_ROLE_KEY: sign({ role: 'service_role', iss: 'firplak-demo', iat: Math.floor(Date.now() / 1000), exp: 4102444800 }),
   MS365_TENANT_ID: MS.tenant,

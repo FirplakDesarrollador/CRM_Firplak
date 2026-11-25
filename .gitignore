@@ -47,3 +47,6 @@ supabase/.temp/
 supabase/.branches/
 supabase/setup.sql
 supabase/setup-produccion.sql
+
+# fotos de prueba del demo (no se publican)
+/public/demo/

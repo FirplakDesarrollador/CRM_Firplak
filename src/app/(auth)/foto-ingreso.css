@@ -1,0 +1,56 @@
+/* Ingreso con foto de producto y vidrio transparente. Solo se usa con NEXT_PUBLIC_INGRESO_FOTO=1
+   (el demo con --vidrio); sin esa variable el ingreso es el de siempre. */
+.foto-ingreso {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.25rem;
+  background: #0a1826 url("/demo/ingreso.webp") center / cover no-repeat;
+  color: #f6f7f8;
+  color-scheme: dark;
+}
+@media (min-width: 1024px) {
+  .foto-ingreso {
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 9vw;
+  }
+}
+.foto-ingreso-tarjeta {
+  width: 100%;
+  max-width: 25rem;
+  padding: 2.25rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 1.9rem;
+  background: rgba(20, 22, 20, 0.26);
+  -webkit-backdrop-filter: blur(9px) saturate(140%);
+  backdrop-filter: blur(9px) saturate(140%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+/* Sin desenfoque de fondo el vidrio no existe: la tarjeta se vuelve opaca para que el texto se lea. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .foto-ingreso-tarjeta { background: rgba(10, 18, 26, 0.86); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .foto-ingreso-tarjeta { background: rgba(10, 18, 26, 0.92); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+.foto-ingreso h1,
+.foto-ingreso .label { color: #f6f7f8; }
+.foto-ingreso .text-muted,
+.foto-ingreso p { color: rgba(246, 247, 248, 0.8); }
+.foto-ingreso .link { color: #f6f7f8; text-decoration: underline; text-underline-offset: 3px; }
+.foto-ingreso .input {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.16);
+  color: #f6f7f8;
+}
+.foto-ingreso .input::placeholder { color: rgba(246, 247, 248, 0.6); }
+.foto-ingreso .input:focus-visible { outline: 2px solid #f6f7f8; outline-offset: 2px; }
+.foto-ingreso .btn-primary {
+  border-radius: 999px;
+  background: #f6f7f8;
+  color: #10263a;
+}
+.foto-ingreso .btn-primary:hover { background: #ffffff; }
