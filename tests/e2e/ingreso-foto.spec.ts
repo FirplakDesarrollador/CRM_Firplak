@@ -23,3 +23,25 @@ test("el ingreso muestra el formulario en una tarjeta de vidrio sobre la foto de
   });
   expect(filtro).toContain("blur");
 });
+
+test("en celular el ingreso lleva arriba el azul con el logo FIRPLAK CRM y la tarjeta queda en la mitad de arriba", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  const marca = page.locator(".foto-ingreso-marca");
+  await expect(marca.getByAltText("Firplak · inspirando hogares")).toBeVisible();
+  await expect(marca.getByText("CRM", { exact: true })).toBeVisible();
+  await expect(marca.getByText("Cada proyecto, cada distribuidor y cada visita, en un solo lugar.")).toBeVisible();
+  await expect(page.getByText("Uso interno · Firplak").last()).toBeVisible();
+
+  // La tarjeta va debajo de la marca y empieza en el tercio de arriba, no centrada sobre la foto.
+  const cajaMarca = (await marca.boundingBox())!;
+  const cajaTarjeta = (await page.locator(".foto-ingreso-tarjeta").boundingBox())!;
+  expect(cajaTarjeta.y).toBeGreaterThan(cajaMarca.y + cajaMarca.height);
+  expect(cajaTarjeta.y).toBeLessThan(844 / 3);
+  // Nada se desborda a lo ancho.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  // En computador esa cabecera no aparece: el panel azul de la izquierda ya lleva el logo y la frase.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(marca).toBeHidden();
+});

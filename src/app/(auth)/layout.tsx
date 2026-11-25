@@ -26,10 +26,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <p className="relative text-xs text-ink-2"><Tr>Uso interno · Firplak</Tr></p>
       </aside>
       <main className="foto-ingreso">
-        <div className="foto-ingreso-tarjeta">
-          <div className="mb-7 lg:hidden">
+        {/* En celular no hay panel azul al lado: el azul, el logo y la frase van arriba y se funden con la foto. */}
+        <div className="foto-ingreso-marca lg:hidden">
+          {/* El logo esconde su «CRM» en pantallas angostas (no cabe en la cabecera del CRM); aquí sí va. */}
+          <span className="foto-ingreso-logo">
             <Logo height={34} label={false} onDark />
-          </div>
+            <span>CRM</span>
+          </span>
+          <p className="editorial">Cada proyecto, cada distribuidor y cada visita, en un solo lugar.</p>
+        </div>
+        <div className="foto-ingreso-tarjeta">
           {!hasSupabaseEnv() && (
             <div className="mb-5">
               <Alert tone="warning">
@@ -40,6 +46,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           )}
           {children}
         </div>
+        <p className="foto-ingreso-pie lg:hidden"><Tr>Uso interno · Firplak</Tr></p>
       </main>
     </div>
   );

@@ -1,25 +1,64 @@
 /* Ingreso con foto de producto y vidrio transparente (aprobado por Luis el 25 nov 2026). */
 .foto-ingreso {
+  --azul-foto: #10263a;
   position: relative;
   display: flex;
   min-height: 100dvh;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  background: #0a1826 url("/brand/ingreso.webp") center / cover no-repeat;
+  padding: calc(env(safe-area-inset-top) + 3.4rem) 1.25rem calc(env(safe-area-inset-bottom) + 1.5rem);
+  /* Celular: un azul profundo arriba (logo y frase) que se funde con la foto, y un velo abajo para el pie.
+     El azul es más apagado que el navy del CRM para que acompañe la madera y la piedra. */
+  background:
+    linear-gradient(180deg, #0f2233 0, var(--azul-foto) 11rem, rgba(16, 38, 58, 0.55) 16.5rem, rgba(16, 38, 58, 0) 24rem),
+    linear-gradient(0deg, rgba(13, 27, 40, 0.8), rgba(13, 27, 40, 0) 9rem),
+    #0a1826 url("/brand/ingreso.webp") center 30% / cover no-repeat;
   color: #f6f7f8;
   color-scheme: dark;
 }
-/* En computador la foto ocupa solo la mitad del formulario; el panel azul de la izquierda no cambia. */
+.foto-ingreso-marca {
+  width: 100%;
+  max-width: 24rem;
+  padding-inline: 0.5rem;
+}
+.foto-ingreso-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.foto-ingreso-logo > span:last-child {
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  color: #b7c47f;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+}
+.foto-ingreso .foto-ingreso-marca p {
+  margin-top: 1.5rem;
+  color: #f6f7f8;
+  font-size: 1.32rem;
+  line-height: 1.22;
+}
+.foto-ingreso .foto-ingreso-pie {
+  margin-top: auto;
+  padding-top: 2rem;
+  font-size: 0.72rem;
+  color: rgba(246, 247, 248, 0.66);
+}
+/* En computador la foto ocupa solo la mitad del formulario, sin velos; el panel azul de la izquierda no cambia. */
 @media (min-width: 1024px) {
   .foto-ingreso {
+    justify-content: center;
     padding: 2.5rem 2rem;
+    background: #0a1826 url("/brand/ingreso.webp") center / cover no-repeat;
   }
 }
 .foto-ingreso-tarjeta {
   width: 100%;
   max-width: 24rem;
-  padding: 2rem 1.75rem;
+  margin-top: 1.9rem;
+  padding: 1.75rem 1.6rem;
   border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 1.9rem;
   background: rgba(20, 22, 20, 0.26);
@@ -52,3 +91,6 @@
   color: #10263a;
 }
 .foto-ingreso .btn-primary:hover { background: #ffffff; }
+@media (min-width: 1024px) {
+  .foto-ingreso-tarjeta { margin-top: 0; padding: 2rem 1.75rem; }
+}
