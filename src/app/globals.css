@@ -1065,12 +1065,12 @@ svg.lucide {
   background: rgba(0, 0, 0, 0.84);
 }
 :root[data-theme="dark"] .dock {
-  --dock-a: rgba(22, 24, 26, 0.72);
-  --dock-b: rgba(8, 9, 10, 0.78);
+  --dock-a: rgba(22, 24, 26, 0.4);
+  --dock-b: rgba(8, 9, 10, 0.52);
 }
 :root[data-theme="dark"][data-glass="clear"] .dock {
-  --dock-a: rgba(22, 24, 26, 0.5);
-  --dock-b: rgba(8, 9, 10, 0.58);
+  --dock-a: rgba(22, 24, 26, 0.2);
+  --dock-b: rgba(8, 9, 10, 0.32);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .shell-chrome {
@@ -1080,12 +1080,12 @@ svg.lucide {
     background: rgba(0, 0, 0, 0.84);
   }
   :root:not([data-theme="light"]) .dock {
-    --dock-a: rgba(22, 24, 26, 0.72);
-    --dock-b: rgba(8, 9, 10, 0.78);
+    --dock-a: rgba(22, 24, 26, 0.4);
+    --dock-b: rgba(8, 9, 10, 0.52);
   }
   :root:not([data-theme="light"])[data-glass="clear"] .dock {
-    --dock-a: rgba(22, 24, 26, 0.5);
-    --dock-b: rgba(8, 9, 10, 0.58);
+    --dock-a: rgba(22, 24, 26, 0.2);
+    --dock-b: rgba(8, 9, 10, 0.32);
   }
 }
 
@@ -1156,26 +1156,38 @@ svg.lucide {
    nombres en claro se lean sobre cualquier contenido. Sigue la preferencia de vidrio: «Medio» (por defecto),
    «Transparente» (más abierto y con menos desenfoque) y «Sólido» (sin transparencia, más abajo). */
 .dock {
-  --dock-a: rgba(23, 44, 64, 0.74);
-  --dock-b: rgba(10, 24, 38, 0.8);
-  --dock-blur: 22px;
-  background: linear-gradient(170deg, var(--dock-a), var(--dock-b));
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  --dock-a: rgba(23, 44, 64, 0.4);
+  --dock-b: rgba(10, 24, 38, 0.52);
+  --dock-blur: 20px;
+  --dock-luz: 0.72;
+  /* Tres capas: el brillo de arriba, el reflejo que cruza el vidrio y el tinte. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.03) 42%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(120% 90% at 12% 0%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 58%),
+    linear-gradient(170deg, var(--dock-a), var(--dock-b));
+  border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: 24px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 18px 34px -14px rgba(5, 13, 21, 0.6);
-  -webkit-backdrop-filter: blur(var(--dock-blur)) saturate(180%);
-  backdrop-filter: blur(var(--dock-blur)) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 14px rgba(255, 255, 255, 0.07),
+    0 16px 32px -14px rgba(5, 13, 21, 0.5),
+    0 2px 6px rgba(5, 13, 21, 0.14);
+  /* El fondo se oscurece con el filtro y no con pintura: así sigue viéndose lo que pasa por debajo. */
+  -webkit-backdrop-filter: blur(var(--dock-blur)) saturate(190%) brightness(var(--dock-luz));
+  backdrop-filter: blur(var(--dock-blur)) saturate(190%) brightness(var(--dock-luz));
   transition: transform 0.34s var(--ease), opacity 0.26s var(--ease);
 }
 :root[data-glass="clear"] .dock {
-  --dock-a: rgba(23, 44, 64, 0.6);
-  --dock-b: rgba(10, 24, 38, 0.68);
-  --dock-blur: 12px;
+  --dock-a: rgba(23, 44, 64, 0.2);
+  --dock-b: rgba(10, 24, 38, 0.32);
+  --dock-blur: 9px;
+  --dock-luz: 0.7;
 }
 /* Sobre vidrio, los módulos inactivos van casi blancos: el gris de la barra opaca se perdía sobre páginas claras. */
 .dock .text-muted {
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(5, 13, 21, 0.35);
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 2px rgba(5, 13, 21, 0.55), 0 0 8px rgba(5, 13, 21, 0.3);
 }
 /* Al bajar por la página la barra se va por debajo; al subir, vuelve. */
 .dock[data-oculta="true"] {
