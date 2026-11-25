@@ -1,0 +1,19 @@
+/* Prueba de diseño (solo demo con --vidrio): una foto de producto muy desenfocada como ambiente detrás
+   del vidrio, en lugar del logo animado. Solo quedan sus manchas de color; las cifras se leen encima. */
+.fondo-foto {
+  position: absolute;
+  inset: -12%;
+  background: url("/demo/ambiente.webp") center / cover no-repeat;
+  filter: blur(46px) saturate(118%) brightness(1.12);
+}
+.fondo-foto-velo {
+  position: absolute;
+  inset: 0;
+  background: rgba(238, 243, 246, 0.5);
+}
+:root[data-theme="dark"] .fondo-foto { filter: blur(46px) saturate(118%) brightness(0.85); }
+:root[data-theme="dark"] .fondo-foto-velo { background: rgba(4, 8, 12, 0.18); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .fondo-foto { filter: blur(46px) saturate(118%) brightness(0.85); }
+  :root:not([data-theme="light"]) .fondo-foto-velo { background: rgba(4, 8, 12, 0.18); }
+}

@@ -1,4 +1,5 @@
 import { FondoAnimado } from "./FondoAnimado";
+import "./fondo-foto.css";
 
 const MARK = "M201.54 27.3L304.51 27.3L469.37 472.5L384.51 472.5L253.02 117.45L121.56 472.5L36.69 472.5ZM253.03 340.92L301.75 472.5L204.3 472.5Z";
 
@@ -26,8 +27,17 @@ export function BrandMark({ gradientId, className }: { gradientId: string; class
   );
 }
 
-/** Fondo de la app: el logo detrás del vidrio. Solo decorativo; el movimiento va en globals.css. */
-export function BrandBackdrop() {
+/** Fondo de la app: el logo detrás del vidrio. Solo decorativo; el movimiento va en globals.css.
+ * Con `foto` (prueba de diseño del demo) el fondo es una foto de producto desenfocada. */
+export function BrandBackdrop({ foto = false }: { foto?: boolean }) {
+  if (foto) {
+    return (
+      <div className="brand-backdrop" aria-hidden="true">
+        <div className="fondo-foto" />
+        <div className="fondo-foto-velo" />
+      </div>
+    );
+  }
   return (
     <div className="brand-backdrop" aria-hidden="true">
       <FondoAnimado />
