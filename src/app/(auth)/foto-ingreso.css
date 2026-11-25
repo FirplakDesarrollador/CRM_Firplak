@@ -11,17 +11,17 @@
   color: #f6f7f8;
   color-scheme: dark;
 }
+/* En computador la foto ocupa solo la mitad del formulario; el panel azul de la izquierda no cambia. */
 @media (min-width: 1024px) {
   .foto-ingreso {
     align-items: center;
-    justify-content: flex-start;
-    padding-left: 9vw;
+    padding: 2.5rem 2rem;
   }
 }
 .foto-ingreso-tarjeta {
   width: 100%;
-  max-width: 25rem;
-  padding: 2.25rem 2rem;
+  max-width: 24rem;
+  padding: 2rem 1.75rem;
   border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 1.9rem;
   background: rgba(20, 22, 20, 0.26);
