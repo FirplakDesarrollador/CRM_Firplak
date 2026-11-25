@@ -6,8 +6,7 @@ import { hasSupabaseEnv } from "@/lib/env";
 import { Tr } from "@/components/ui/Tr";
 import "./foto-ingreso.css";
 
-/** Prueba de diseño: ingreso con foto de producto y vidrio. Solo en el demo con --vidrio. */
-const CON_FOTO = process.env.NEXT_PUBLIC_INGRESO_FOTO === "1";
+/** El formulario va en una tarjeta de vidrio sobre una foto de producto; el panel azul de la izquierda no cambia. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
@@ -26,10 +25,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
         <p className="relative text-xs text-ink-2"><Tr>Uso interno · Firplak</Tr></p>
       </aside>
-      <main className={CON_FOTO ? "foto-ingreso" : "flex items-center justify-center px-4 py-10 sm:px-8"}>
-        <div className={CON_FOTO ? "foto-ingreso-tarjeta" : "glass w-full max-w-sm p-7"}>
+      <main className="foto-ingreso">
+        <div className="foto-ingreso-tarjeta">
           <div className="mb-7 lg:hidden">
-            <Logo height={34} label={false} onDark={CON_FOTO} />
+            <Logo height={34} label={false} onDark />
           </div>
           {!hasSupabaseEnv() && (
             <div className="mb-5">

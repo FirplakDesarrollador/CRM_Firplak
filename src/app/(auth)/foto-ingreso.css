@@ -1,5 +1,4 @@
-/* Ingreso con foto de producto y vidrio transparente. Solo se usa con NEXT_PUBLIC_INGRESO_FOTO=1
-   (el demo con --vidrio); sin esa variable el ingreso es el de siempre. */
+/* Ingreso con foto de producto y vidrio transparente (aprobado por Luis el 25 nov 2026). */
 .foto-ingreso {
   position: relative;
   display: flex;
@@ -7,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: #0a1826 url("/demo/ingreso.webp") center / cover no-repeat;
+  background: #0a1826 url("/brand/ingreso.webp") center / cover no-repeat;
   color: #f6f7f8;
   color-scheme: dark;
 }
