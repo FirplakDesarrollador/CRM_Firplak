@@ -34,7 +34,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh">
       {/* Primer elemento con Tab: salta la cabecera y los 17 módulos directo al contenido. */}
       <a href="#contenido" className="skip-link">{t("Saltar al contenido")}</a>
-      <BrandBackdrop foto={process.env.NEXT_PUBLIC_INGRESO_FOTO === "1"} />
+      <BrandBackdrop />
       <AppHeader user={user} notifications={notifications ?? []} unread={unread ?? 0} t={t} />
       <div className="hidden md:block"><NavTabs items={navItems(user.access, t)} /></div>
       {!user.isActive && (
