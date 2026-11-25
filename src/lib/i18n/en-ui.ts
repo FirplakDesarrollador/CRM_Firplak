@@ -755,6 +755,7 @@ export const UI_EN: Record<string, string> = {
   "sucursales": "branches",
   "Sin ventas en el periodo.": "No sales in the period.",
   "Cargando…": "Loading…",
+  "Cargando ventas de SAP": "Loading SAP sales",
   "Ventas reales y vendedores": "Actual sales and salespeople",
   "El agente sube las ventas netas de SAP del año en curso y del anterior. Cada venta se le cuenta al usuario del CRM relacionado con su vendedor de SAP: revisa aquí esa relación.": "The agent uploads SAP net sales for the current and previous year. Each sale counts for the CRM user linked to its SAP salesperson: review that link here.",
   "Todavía no se han cargado ventas.": "No sales have been loaded yet.",

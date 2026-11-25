@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ObjectIcon } from "@/components/ui/icons";
 import { BarList, Funnel, KpiCell, KpiGroup, KpiTile, MonthlyColumns } from "@/components/dashboard/Charts";
@@ -164,7 +165,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       </section>
 
       {/* Ventas reales de SAP (si el agente ya las cargó): lo facturado, frente a lo que el CRM da por ganado. */}
-      <SapSalesSection from={from} to={to} owner={owner} />
+      {/* Es la consulta más pesada de la página (cerca de 1 s con el año completo): el resto se muestra sin esperarla. */}
+      <Suspense key={`${from}/${to}/${owner ?? ""}`}
+        fallback={<div className="skeleton h-80 w-full" aria-busy="true" aria-label={t("Cargando ventas de SAP")} />}>
+        <SapSalesSection from={from} to={to} owner={owner} />
+      </Suspense>
 
       <section className="card overflow-hidden">
         <div className="card-header"><h2 className="card-title"><Tr>Ventas por asesor</Tr></h2></div>
