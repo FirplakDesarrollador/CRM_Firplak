@@ -1065,7 +1065,12 @@ svg.lucide {
   background: rgba(0, 0, 0, 0.84);
 }
 :root[data-theme="dark"] .dock {
-  background: rgba(12, 14, 15, 0.97);
+  --dock-a: rgba(22, 24, 26, 0.72);
+  --dock-b: rgba(8, 9, 10, 0.78);
+}
+:root[data-theme="dark"][data-glass="clear"] .dock {
+  --dock-a: rgba(22, 24, 26, 0.5);
+  --dock-b: rgba(8, 9, 10, 0.58);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .shell-chrome {
@@ -1075,7 +1080,12 @@ svg.lucide {
     background: rgba(0, 0, 0, 0.84);
   }
   :root:not([data-theme="light"]) .dock {
-    background: rgba(12, 14, 15, 0.97);
+    --dock-a: rgba(22, 24, 26, 0.72);
+    --dock-b: rgba(8, 9, 10, 0.78);
+  }
+  :root:not([data-theme="light"])[data-glass="clear"] .dock {
+    --dock-a: rgba(22, 24, 26, 0.5);
+    --dock-b: rgba(8, 9, 10, 0.58);
   }
 }
 
@@ -1142,13 +1152,36 @@ svg.lucide {
 }
 
 /* Dock flotante del celular. */
+/* Vidrio líquido: deja ver, difuminado, lo que pasa por debajo. El tinte navy se conserva para que los
+   nombres en claro se lean sobre cualquier contenido. Sigue la preferencia de vidrio: «Medio» (por defecto),
+   «Transparente» (más abierto y con menos desenfoque) y «Sólido» (sin transparencia, más abajo). */
 .dock {
-  background: linear-gradient(170deg, rgba(23, 44, 64, 0.97), rgba(10, 24, 38, 0.97));
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  --dock-a: rgba(23, 44, 64, 0.74);
+  --dock-b: rgba(10, 24, 38, 0.8);
+  --dock-blur: 22px;
+  background: linear-gradient(170deg, var(--dock-a), var(--dock-b));
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 24px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 34px -14px rgba(5, 13, 21, 0.75);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 18px 34px -14px rgba(5, 13, 21, 0.6);
+  -webkit-backdrop-filter: blur(var(--dock-blur)) saturate(180%);
+  backdrop-filter: blur(var(--dock-blur)) saturate(180%);
+  transition: transform 0.34s var(--ease), opacity 0.26s var(--ease);
+}
+:root[data-glass="clear"] .dock {
+  --dock-a: rgba(23, 44, 64, 0.6);
+  --dock-b: rgba(10, 24, 38, 0.68);
+  --dock-blur: 12px;
+}
+/* Sobre vidrio, los módulos inactivos van casi blancos: el gris de la barra opaca se perdía sobre páginas claras. */
+.dock .text-muted {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(5, 13, 21, 0.35);
+}
+/* Al bajar por la página la barra se va por debajo; al subir, vuelve. */
+.dock[data-oculta="true"] {
+  transform: translateY(calc(100% + 1.5rem));
+  opacity: 0;
+  pointer-events: none;
 }
 /* El módulo en el que se está: todo el bloque (ícono y nombre) con un tinte, no solo el ícono. Decisiones de Luis sobre
    maquetas (13 nov 2026): en claro la barra es navy y el tinte es blanco (el oliva translúcido se veía apagado sobre el

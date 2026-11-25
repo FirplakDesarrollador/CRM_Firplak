@@ -41,6 +41,29 @@ test("las fichas no se desbordan en el celular, llevan a registrar actividad y l
   expect(scroll).toBeLessThanOrEqual(client);
 });
 
+test("la barra inferior se esconde al bajar por la página y vuelve al subir", async ({ page }) => {
+  await page.goto("/inicio");
+  const barra = page.getByRole("navigation", { name: "Navegación principal" });
+  await expect(barra).toBeInViewport();
+  // En el celular no hay rueda: se mueve la página, como hace el dedo.
+  const mover = (y: number) => page.evaluate((y) => window.scrollTo(0, y), y);
+  // La barra empieza a escuchar el desplazamiento cuando la página termina de cargar.
+  await page.waitForLoadState("networkidle");
+  await expect(async () => {
+    await mover(300);
+    await mover(600);
+    await expect(barra).toHaveAttribute("data-oculta", "true", { timeout: 1000 });
+  }).toPass();
+  await expect(barra).not.toBeInViewport();
+  await mover(400);
+  await expect(barra).not.toHaveAttribute("data-oculta", "true");
+  await expect(barra).toBeInViewport();
+  // Con «Más» abierto la barra se queda, aunque la página se mueva.
+  await barra.getByRole("button", { name: "Más" }).click();
+  await mover(900);
+  await expect(barra).toBeInViewport();
+});
+
 test("la barra inferior reemplaza al menú y «Más» abre los demás módulos", async ({ page }) => {
   await page.goto("/inicio");
   const barra = page.getByRole("navigation", { name: "Navegación principal" });

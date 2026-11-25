@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { OBJECT_ICONS } from "@/components/ui/icons";
 import { useT } from "@/lib/i18n/client";
@@ -13,6 +13,26 @@ const PRIMARY = ["/inicio", "/cuentas", "/oportunidades", "/actividades"];
 const LABELS: Record<string, string> = { "/oportunidades": "Pipeline" };
 const HREFS: Record<string, string> = { "/oportunidades": "/oportunidades/pipeline" };
 
+/** La barra se esconde al bajar por la página y vuelve al subir, para dejarle la pantalla al contenido. */
+function useHiddenOnScrollDown(paused: boolean) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      // El rebote de iOS da posiciones negativas o más allá del final: no cuentan como dirección.
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const y = Math.min(Math.max(window.scrollY, 0), Math.max(max, 0));
+      const delta = y - last;
+      if (Math.abs(delta) < 6) return;
+      last = y;
+      setHidden(delta > 0 && y > 80);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return hidden && !paused;
+}
+
 /** Barra de navegación inferior para pantallas pequeñas (y la app instalada en el celular). */
 export function MobileTabBar({ items }: { items: NavItem[] }) {
   const t = useT();
@@ -21,6 +41,9 @@ export function MobileTabBar({ items }: { items: NavItem[] }) {
   const primary = PRIMARY.map((href) => items.find((i) => i.href === href)).filter((i): i is NavItem => Boolean(i));
   const rest = items.filter((i) => !PRIMARY.includes(i.href));
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // Con «Más» abierto, o con el foco del teclado dentro (no el de un toque), la barra no se esconde.
+  const [focused, setFocused] = useState(false);
+  const hidden = useHiddenOnScrollDown(open || focused);
 
   return (
     <>
@@ -49,7 +72,8 @@ export function MobileTabBar({ items }: { items: NavItem[] }) {
           </nav>
         </div>
       )}
-      <nav aria-label={t("Navegación principal")}
+      <nav aria-label={t("Navegación principal")} data-oculta={hidden ? "true" : undefined}
+        onFocus={(e) => setFocused(e.target.matches(":focus-visible"))} onBlur={() => setFocused(false)}
         className="shell-chrome dock fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 md:hidden">
         <ul className="grid grid-cols-5">
           {primary.map((item) => {
