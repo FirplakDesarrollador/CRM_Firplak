@@ -94,3 +94,14 @@
 @media (min-width: 1024px) {
   .foto-ingreso-tarjeta { margin-top: 0; padding: 2rem 1.75rem; }
 }
+
+/* App instalada en iPhone: iOS pinta la franja de la hora con un degradado del color de fondo de la página (ver el
+   final de globals.css). Con la página blanca salía una franja clara encima del azul del ingreso: aquí el fondo de la
+   página es el mismo azul con el que empieza la pantalla, y la hora queda en blanco. */
+@media (display-mode: standalone) {
+  @supports (-webkit-touch-callout: none) {
+    html:has(.foto-ingreso) {
+      background-color: #0f2233;
+    }
+  }
+}
