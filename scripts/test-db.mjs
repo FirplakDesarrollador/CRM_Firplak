@@ -2303,6 +2303,15 @@ await check('ventas reales de SAP: carga por meses, dos años, visibilidad, sucu
   const [branch] = await q(`insert into accounts (name, owner_id, parent_account_id, sap_card_code) values ('Maxi Acacias', $1, $2, 'CN900100200-01') returning id`, [admin.id, main.id]);
   await q(`insert into accounts (name, owner_id, parent_account_id, sap_card_code) values ('Maxi Ibagué', $1, $2, 'CN900100200-02')`, [admin.id, main.id]);
   assert.equal((await as(admin, () => q(`select sap_sales_summary($1, $2) s`, [`${y}-01-01`, `${y}-12-31`])))[0].s.top[0].crm_name, 'Maxi S.A.S.');
+
+  // La raíz del cliente va guardada en cada línea (columna generada, la llena la base al cargar): el resumen agrupa por ella
+  // sin calcular la expresión regular línea por línea. Tiene que coincidir siempre con sap_customer_root(card_code).
+  assert.equal((await q(`select is_generated g from information_schema.columns where table_schema = 'public' and table_name = 'sap_sales' and column_name = 'customer_root'`))[0].g, 'ALWAYS');
+  const [raices] = await q(`select count(*)::int total, count(*) filter (where customer_root is distinct from sap_customer_root(card_code))::int distintas,
+    count(*) filter (where card_code like '%-0_' and customer_root = card_code)::int sin_recortar from sap_sales`);
+  assert.ok(raices.total > 0);
+  assert.deepEqual([raices.distintas, raices.sin_recortar], [0, 0]);
+  assert.match((await q(`select indexdef d from pg_indexes where schemaname = 'public' and indexname = 'sap_sales_root_idx'`))[0].d, /\(customer_root, sale_date\)/);
   await q(`update sap_sales set sale_date = (now() at time zone 'America/Bogota')::date`);
   assert.deepEqual((await as(admin, () => q(`select amount::float a, branches::int b from sap_account_sales($1)`, [main.id]))), [{ a: 1500, b: 2 }]);
   assert.deepEqual((await as(admin, () => q(`select amount::float a, branches::int b from sap_account_sales($1)`, [branch.id]))), [{ a: 1000, b: 1 }]);

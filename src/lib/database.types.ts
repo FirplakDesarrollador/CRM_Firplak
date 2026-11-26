@@ -3841,6 +3841,7 @@ export type Database = {
           card_code: string
           channel: string | null
           customer_name: string | null
+          customer_root: string | null
           id: number
           invoice: string | null
           sale_date: string
@@ -3854,6 +3855,7 @@ export type Database = {
           card_code: string
           channel?: string | null
           customer_name?: string | null
+          customer_root?: never
           id?: number
           invoice?: string | null
           sale_date: string
@@ -3867,6 +3869,7 @@ export type Database = {
           card_code?: string
           channel?: string | null
           customer_name?: string | null
+          customer_root?: never
           id?: number
           invoice?: string | null
           sale_date?: string
