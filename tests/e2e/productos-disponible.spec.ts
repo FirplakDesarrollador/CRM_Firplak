@@ -56,6 +56,13 @@ test("dejar presionado un producto muestra su disponible y sus precios sin entra
   await expect(page).toHaveURL(/\/productos\?q=DEMO-MB-060/);
   await expect(vistazo).toContainText("Disponible PT-01");
   await expect(vistazo).toContainText("160");
+  // La tarjeta sale del producto presionado: queda justo debajo de su fila (resaltada), a la altura del puntero.
+  await expect(fila(page, "DEMO-MB-060")).toHaveAttribute("data-peek", "");
+  const filaCaja = (await fila(page, "DEMO-MB-060").boundingBox())!;
+  const tarjeta = (await vistazo.boundingBox())!;
+  expect(Math.abs(tarjeta.y - (filaCaja.y + filaCaja.height))).toBeLessThan(16);
+  expect(tarjeta.x).toBeLessThanOrEqual(caja.x + 12);
+  expect(tarjeta.x + tarjeta.width).toBeGreaterThan(caja.x + 12);
   await expect(vistazo.getByRole("listitem").first()).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(vistazo).toBeHidden();

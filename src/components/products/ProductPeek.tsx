@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 import { formatCurrency, formatDateTime, formatNumber } from "@/lib/format";
 import { useT } from "@/lib/i18n/client";
@@ -23,11 +24,14 @@ export function ProductPeek({ id, name, code = null, children }: { id: string; n
   const t = useT();
   const anchor = useRef<HTMLSpanElement>(null);
   const card = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState<{ x: number; y: number } | null>(null);
+  // Dónde se presionó y la fila del producto: la tarjeta nace pegada a esa fila, con su pico en el punto presionado.
+  const [open, setOpen] = useState<{ x: number; top: number; bottom: number } | null>(null);
   const [data, setData] = useState<Summary | "error" | null>(null);
 
-  const show = useCallback((x: number, y: number) => {
-    setOpen({ x, y });
+  const show = useCallback((x: number) => {
+    const row = anchor.current?.closest("tr")?.getBoundingClientRect();
+    if (!row) return;
+    setOpen({ x, top: row.top, bottom: row.bottom });
     setData(null);
     fetch(`/api/productos/${id}/resumen`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
@@ -48,7 +52,7 @@ export function ProductPeek({ id, name, code = null, children }: { id: string; n
       held = false;
       start = { x: e.clientX, y: e.clientY };
       cancel();
-      timer = setTimeout(() => { held = true; show(start.x, start.y); }, HOLD_MS);
+      timer = setTimeout(() => { held = true; show(start.x); }, HOLD_MS);
     };
     const move = (e: PointerEvent) => {
       if (timer && Math.hypot(e.clientX - start.x, e.clientY - start.y) > MOVE_PX) cancel();
@@ -80,6 +84,14 @@ export function ProductPeek({ id, name, code = null, children }: { id: string; n
     };
   }, [show]);
 
+  // Mientras está abierta, la fila del producto queda resaltada: se ve de cuál es la tarjeta.
+  useEffect(() => {
+    const row = anchor.current?.closest("tr");
+    if (!open || !row) return;
+    row.setAttribute("data-peek", "");
+    return () => row.removeAttribute("data-peek");
+  }, [open]);
+
   // Se cierra con Escape, al tocar fuera o al desplazar la lista.
   useEffect(() => {
     if (!open) return;
@@ -100,24 +112,30 @@ export function ProductPeek({ id, name, code = null, children }: { id: string; n
 
   const summary = data && data !== "error" ? data : null;
   const width = 304;
-  const left = open ? Math.max(8, Math.min(open.x - 24, (typeof window === "undefined" ? 0 : window.innerWidth) - width - 8)) : 0;
-  const below = open ? open.y < (typeof window === "undefined" ? 0 : window.innerHeight) * 0.55 : true;
+  const left = open ? Math.max(8, Math.min(open.x - 28, window.innerWidth - width - 8)) : 0;
+  // Debajo de la fila; si la fila está en la parte baja de la pantalla, encima.
+  const below = open ? open.bottom < window.innerHeight * 0.6 : true;
+  // El pico apunta al punto presionado (dentro de la tarjeta).
+  const tip = open ? Math.max(16, Math.min(open.x - left, width - 16)) : 0;
 
   return (
     <span ref={anchor} className="group/peek inline-flex max-w-full items-center gap-1.5 [-webkit-touch-callout:none]">
       {children}
       <button type="button" className="shrink-0 rounded-full p-0.5 text-muted opacity-0 transition hover:text-ink focus-visible:opacity-100 group-hover/peek:opacity-100 [@media(pointer:coarse)]:hidden"
         aria-label={`${t("Ver disponible y precios de")} ${name}`} aria-haspopup="dialog"
-        onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); show(r.left, r.bottom); }}>
+        onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); show(r.left + r.width / 2); }}>
         <Info size={14} />
       </button>
       <span className="opacity-0 transition focus-within:opacity-100 group-hover/peek:opacity-100 [@media(pointer:coarse)]:hidden">
         <AddToCart id={id} name={name} code={code} compact />
       </span>
-      {open && (
+      {/* Va en el <body>: la tarjeta de la lista tiene desenfoque de fondo, y dentro de ella «fixed» se mide contra la
+          tarjeta y no contra la pantalla (la tarjeta del vistazo salía lejos del producto). */}
+      {open && createPortal(
         <div ref={card} role="dialog" aria-label={`${t("Disponible y precios de")} ${name}`}
-          className="fixed z-50 rounded-2xl border border-line bg-bg p-3 text-left text-sm font-normal shadow-[var(--shadow-lg)]"
-          style={{ left, width, ...(below ? { top: open.y + 14 } : { bottom: window.innerHeight - open.y + 14 }) }}>
+          className="peek-card fixed z-50 rounded-2xl border border-line bg-bg p-3 text-left text-sm font-normal text-ink shadow-[var(--shadow-lg)]"
+          style={{ left, width, transformOrigin: `${tip}px ${below ? "top" : "bottom"}`, ...(below ? { top: open.bottom + 8 } : { bottom: window.innerHeight - open.top + 8 }) }}>
+          <span aria-hidden className={`absolute h-3 w-3 rotate-45 border-line bg-bg ${below ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-b border-r"}`} style={{ left: tip - 6 }} />
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="break-words font-medium leading-snug">{name}</p>
@@ -155,7 +173,8 @@ export function ProductPeek({ id, name, code = null, children }: { id: string; n
               </div>
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </span>
   );
