@@ -17,7 +17,15 @@ test("la dirección ve las tres capas del pronóstico real, su suma y las barras
   const abiertos = millones(await seccion.getByTestId("real-backlog").innerText());
   expect(abiertos).toBeGreaterThanOrEqual(20);
   await expect(seccion).toContainText("Entregas sin facturar");
-  await expect(seccion).toContainText("Fecha de despacho o de entrega más 4 días; en Exterior, la misma fecha.");
+  await expect(seccion).toContainText("Fecha de despacho o de entrega más 4 días; en Exterior y en pedidos «Sin POD», la misma fecha.");
+  // Lo vencido hace más de 30 días no suma: se lista aparte para revisarlo en SAP.
+  const atrasado = seccion.getByTestId("real-atrasado");
+  await expect(atrasado).toContainText("Atrasado por revisar");
+  await expect(atrasado).toContainText("no suma al pronóstico");
+  await atrasado.locator("summary").click();
+  await expect(atrasado.getByRole("columnheader", { name: "Días de atraso" })).toBeVisible();
+  await expect(atrasado.getByRole("cell", { name: /^Pedido \d+$/ }).first()).toBeVisible();
+  await expect(atrasado.getByRole("cell", { name: "OBRAS DEL SUR S.A.S." }).first()).toBeVisible();
   // Oportunidades abiertas de la demostración.
   expect(millones(await seccion.getByTestId("real-opportunities").innerText())).toBeGreaterThan(0);
   // El total es la suma de las tres capas (en millones, con el redondeo de cada cifra).

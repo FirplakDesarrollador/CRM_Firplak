@@ -4024,6 +4024,7 @@ export type Database = {
           amount: number
           base_date: string | null
           batch: string
+          billing_type: string | null
           card_code: string
           customer_name: string | null
           doc_entry: number
@@ -4036,6 +4037,7 @@ export type Database = {
           amount?: number
           base_date?: string | null
           batch: string
+          billing_type?: string | null
           card_code: string
           customer_name?: string | null
           doc_entry: number
@@ -4048,6 +4050,7 @@ export type Database = {
           amount?: number
           base_date?: string | null
           batch?: string
+          billing_type?: string | null
           card_code?: string
           customer_name?: string | null
           doc_entry?: number
@@ -4783,6 +4786,20 @@ export type Database = {
           opportunities: number
         }[]
       }
+      forecast_stale_backlog: {
+        Args: {
+          p_user?: string
+        }
+        Returns: {
+          kind: string
+          doc_num: string
+          customer_name: string
+          seller: string
+          amount: number
+          overdue_days: number
+          due_date: string
+        }[]
+      }
       forecast_summary: {
         Args: {
           p_period_type: string
@@ -5311,6 +5328,14 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      sap_backlog_is_of: {
+        Args: {
+          p_user: string
+          p_seller: string
+          p_card_code: string
+        }
+        Returns: boolean
+      }
       sap_backlog_lines: {
         Args: never
         Returns: {
@@ -5320,6 +5345,9 @@ export type Database = {
           forecast_date: string
           amount: number
           seller: string
+          overdue_days: number
+          customer_name: string
+          base_date: string
         }[]
       }
       sap_customer_root: {
@@ -5403,6 +5431,10 @@ export type Database = {
           p_zones?: string[]
         }
         Returns: Json
+      }
+      sap_stale_days: {
+        Args: never
+        Returns: number
       }
       sap_stock_warehouse: {
         Args: never

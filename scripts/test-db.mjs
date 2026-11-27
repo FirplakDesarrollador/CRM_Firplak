@@ -2498,7 +2498,8 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   // El agente trae todas las líneas de pedido abiertas y las entregas sin facturar de la compañía, sean o no cuentas del CRM.
   const [agente] = await q(`insert into auth.users (email) values ('agente.pendiente@firplak.com') returning id`);
   await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integración SAP') where id = $1`, [agente.id]);
-  const [{ d10, dm30, dm2 }] = await q(`select ('${hoy}'::date + 10)::text d10, ('${hoy}'::date - 30)::text dm30, ('${hoy}'::date - 2)::text dm2`);
+  const [{ d10, dm30, dm2, dm60, dm31 }] = await q(`select ('${hoy}'::date + 10)::text d10, ('${hoy}'::date - 30)::text dm30, ('${hoy}'::date - 2)::text dm2,
+    ('${hoy}'::date - 60)::text dm60, ('${hoy}'::date - 31)::text dm31`);
   const lote1 = '11111111-1111-4111-8111-111111111111', lote2 = '22222222-2222-4222-8222-222222222222';
   const filas = [
     ['order', 9501, 0, '501', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', d10, 6000],
@@ -2510,6 +2511,13 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
     // Mercado internacional: por código de cliente del exterior, o por la zona de su última venta.
     ['order', 9504, 0, '504', 'CE777', 'Cliente del exterior', 'VENDEDOR SIN USUARIO', d10, 400],
     ['delivery', 9702, 0, '702', 'CNEXPO', 'Nacional que exporta', 'VENDEDOR SIN USUARIO', d10, 500],
+    // Vencidos hace más de 30 días: no suman, van en «Atrasado por revisar». Exterior no tiene los 4 días de gracia.
+    ['order', 9505, 0, '505', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', dm60, 900],
+    ['delivery', 9703, 0, '703', 'CE777', 'Cliente del exterior', 'VENDEDOR SIN USUARIO', dm31, 700],
+    // Nacional «Sin POD»: se factura al despachar, sin los 4 días. Con POD, sí los suma.
+    ['order', 9506, 0, '506', 'CNPOD', 'Nacional sin POD', 'VENDEDOR SIN USUARIO', d10, 110, 'Sin POD'],
+    ['order', 9507, 0, '507', 'CNPOD', 'Nacional con POD', 'VENDEDOR SIN USUARIO', d10, 120, 'POD Total'],
+    ['order', 9508, 0, '508', 'CNPOD', 'Nacional sin POD vencido', 'VENDEDOR SIN USUARIO', dm2, 130, 'Sin POD'],
   ];
   await q(`insert into sap_sales (sale_date, invoice, zone, seller, card_code, customer_name, amount) values
     ($1::date - 40, 'FX1', 'ANTIOQUIA', 'OTRO VENDEDOR', 'CNEXPO', 'Z', 0), ($1::date - 35, 'FX2', 'Exterior', 'OTRO VENDEDOR', 'CNEXPO', 'Z', 0)`, [hoy]);
@@ -2521,13 +2529,24 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   const lineas = await q(`select kind, doc_num, (forecast_date - '${hoy}'::date) dias, amount::float a from sap_backlog_lines() where card_code = 'CREAL01' order by kind, amount`);
   assert.deepEqual(lineas.map((l) => [l.kind, l.doc_num, l.dias, l.a]), [
     // Entrega de hace 2 días + 4 = en 2 días. Pedido: lo vencido se cuenta hoy; la otra línea, en 14 días.
-    ['delivery', '701', 2, 2000], ['order', '501', 0, 800], ['order', '501', 14, 6000]]);
+    ['delivery', '701', 2, 2000], ['order', '501', 0, 800], ['order', '505', 0, 900], ['order', '501', 14, 6000]]);
+  // Atrasado por revisar: por documento, con sus días de atraso (60 − 4 = 56; Exterior, 31).
+  const atrasado = (u) => as(admin, () => q(`select kind, doc_num, customer_name, amount::float a, overdue_days d from forecast_stale_backlog(${u ? '$1' : ''})`, u ? [u] : []));
+  assert.deepEqual((await atrasado()).map((r) => [r.kind, r.doc_num, r.customer_name, r.a, r.d]),
+    [['order', '505', 'Cliente real', 900, 56], ['delivery', '703', 'Cliente del exterior', 700, 31]]);
+  assert.deepEqual((await atrasado(admin.id)).map((r) => r.doc_num), ['505']);
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_stale_backlog()`)))[0].n, 0);
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_stale_backlog($1)`, [admin.id])))[0].n, 0);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.forecast_stale_backlog(uuid)', 'execute') ok`))[0].ok, false);
   // Exterior no suma los 4 días: se factura en el mismo mes de su fecha de despacho.
   const expo = await q(`select doc_num, (forecast_date - '${hoy}'::date) dias from sap_backlog_lines() where card_code in ('CE777', 'CNEXPO') order by doc_num`);
-  assert.deepEqual(expo.map((l) => [l.doc_num, l.dias]), [['504', 10], ['702', 10]]);
+  assert.deepEqual(expo.map((l) => [l.doc_num, l.dias]), [['504', 10], ['702', 10], ['703', 0]]);
   assert.equal((await q(`select has_function_privilege('authenticated', 'public.sap_is_export(text)', 'execute') ok`))[0].ok, false);
+  const pod = await q(`select doc_num, (forecast_date - '${hoy}'::date) dias, overdue_days v from sap_backlog_lines() where card_code = 'CNPOD' order by doc_num`);
+  // El vencido «Sin POD» sigue contando hoy (2 días de atraso, sin días de gracia).
+  assert.deepEqual(pod.map((l) => [l.doc_num, l.dias, l.v]), [['506', 10, 0], ['507', 14, 0], ['508', 0, 2]]);
   // Las líneas en cero no se guardan; el vendedor nuevo queda en la lista para relacionarlo.
-  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 6);
+  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 11);
   assert.equal((await q(`select count(*)::int n from sap_sellers where seller = 'VENDEDOR SIN USUARIO' and user_id is null`))[0].n, 1);
   // Nadie lee la tabla directamente.
   assert.equal((await as(admin, () => q(`select count(*)::int n from sap_backlog`)))[0].n, 0);
@@ -2544,6 +2563,8 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   // Lo del vendedor de SAP sin usuario no es de nadie… salvo del propietario de la cuenta con ese Código SAP.
   const sinVendedor = async () => Number((await as(admin, () => q(`select coalesce(sum(orders), 0) o from forecast_real_days('year', date_trunc('year', now())::date, $1) where day = '${hoy}'`, [admin.id])))[0].o);
   const antesCuenta = await sinVendedor();
+  // Hoy cuenta la línea vencida hace menos de 30 días (800), no la de hace 56 (900).
+  assert.equal(antesCuenta, 800);
   await as(admin, () => q(`insert into accounts (name, industry, sap_card_code, billing_city) values ('Cuenta del vendedor sin usuario', 'Canal Distribución', 'CSINCUENTA', 'Cali')`));
   assert.equal((await sinVendedor()) - antesCuenta, 300);
   // La carga siguiente reemplaza a la anterior completa.

@@ -10,7 +10,8 @@ Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
   abiertos, todas las facturas abiertas y las diez facturas más recientes.
 - De cada producto activo del CRM (por su Referencia): inventario por bodega y listas de precios.
 - De **toda la compañía**, sean o no cuentas del CRM: las líneas abiertas de los pedidos de venta y las
-  entregas sin facturar (cliente, vendedor, fecha y valor sin IVA). Con eso el Pronóstico muestra la capa
+  entregas sin facturar (cliente, vendedor, fecha, valor sin IVA y el Tipo de facturación del pedido,
+  `U_TipoFacturacion`: los «Sin POD» se facturan al despachar). Con eso el Pronóstico muestra la capa
   «Pedidos y entregas abiertos». Cada corrida reemplaza la anterior completa; si falla, queda la anterior.
 
 Además revisa **cada minuto, todos los días**, si el CRM le dejó una solicitud (Configuración → SAP →

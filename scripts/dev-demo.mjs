@@ -476,7 +476,7 @@ const partners = {
   C20002: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', FederalTaxID: '900512334-7', Phone1: '6044412200', EmailAddress: 'pagos@altosdelvalle.example',
     CurrentAccountBalance: 512000000, OpenOrdersBalance: 120000000, OpenDeliveryNotesBalance: 0, CreditLimit: 500000000 },
 };
-const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
+const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, U_TipoFacturacion: n % 2 ? 'POD Total' : 'Sin POD', DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
   PaidToDate: paid, VatSum: Math.round(total - total / 1.19), DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
 const sapOrders = [
   doc(41210, 'C20001', -12, 18, 245000000, 0, 'bost_Open', 'OC-CV-2231'),
@@ -487,6 +487,8 @@ const sapLine = (n, qty, open, ship, whs = 'PT-02') => ({ LineNum: n, VisualOrde
   Quantity: qty, RemainingOpenQuantity: open, ShipDate: sapDay(ship), LineStatus: open ? 'bost_Open' : 'bost_Close', LineTotal: qty * 1250000,
   WarehouseCode: whs, U_TipoTOC: 'MTOSTD', U_Fecha_Plan_Ent_Cli_Linea: sapDay(ship + 3) });
 sapOrders[0].DocumentLines = [sapLine(0, 40, 0, -5), sapLine(1, 60, 60, 18), sapLine(2, 96, 96, 45)];
+// Un pedido viejo de un cliente que no es cuenta del CRM, con un saldo abierto: «Atrasado por revisar» del Pronóstico.
+sapOrders.push({ ...doc(40102, 'C20003', -80, -60, 2975000, 0, 'bost_Open', 'OC-VIEJA'), CardName: 'OBRAS DEL SUR S.A.S.', DocumentLines: [sapLine(0, 2, 2, -60)] });
 // Un pedido largo (seis líneas), para ver el resumen que solo aparece en pedidos de muchas líneas.
 sapOrders[1].DocumentLines = [0, 1, 2, 3, 4, 5].map((n) => sapLine(n, 10, n < 2 ? 0 : 10, 10 + n * 7, 'PT-01'));
 const sapProductionOrders = [
@@ -540,6 +542,8 @@ Object.assign(sapItems['DEMO-LV-RD'], { SalesItem: 'tYES', U_Linea: 'Lavamanos y
     ['order', 87240, 1, '87240', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(18), 30400000],
     ['order', 87311, 0, '87311', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(38), 50000000],
     ['delivery', 45102, 0, '45102', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(-1), 20000000],
+    // Un saldo viejo que nadie cerró en SAP: no suma al pronóstico, sale en «Atrasado por revisar».
+    ['order', 86990, 0, '86990', 'C20003', 'OBRAS DEL SUR S.A.S.', 'VENDEDOR DEMO', dia(-60), 2500000],
   ];
   for (const f of filas) {
     await db.query(`insert into public.sap_backlog (batch, kind, doc_entry, line_num, doc_num, card_code, customer_name, seller, base_date, amount)

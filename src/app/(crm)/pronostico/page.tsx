@@ -48,7 +48,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
   const supabase = await createClient();
   // Pronóstico con lo real de SAP: la compañía para quien ve todas las ventas; si no, lo propio.
   const seesAll = user.access.isAdmin || can(user.access, "opportunities", "view_all");
-  const [{ data, error }, { data: companyGoal }, { data: trendData }, users, { data: realRows }, { data: realGoal }] = await Promise.all([
+  const [{ data, error }, { data: companyGoal }, { data: trendData }, users, { data: realRows }, { data: realGoal }, { data: staleRows }] = await Promise.all([
     supabase.rpc("forecast_summary", { p_period_type: type, p_period_start: start }),
     supabase.from("sales_goals").select("target").is("user_id", null).eq("metric", "won_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
     supabase.rpc("forecast_trend", { p_period_type: type, p_period_start: start }),
@@ -59,7 +59,11 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
       ? supabase.from("sales_goals").select("target").is("user_id", null)
       : supabase.from("sales_goals").select("target").eq("user_id", user.id))
       .eq("metric", "invoiced_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
+    // Pedidos y entregas vencidos hace más de 30 días: no suman al pronóstico, se listan para revisarlos en SAP.
+    supabase.rpc("forecast_stale_backlog", seesAll ? {} : { p_user: user.id }),
   ]);
+  const stale = (staleRows ?? []).map((r) => ({ ...r, amount: Number(r.amount) }));
+  const staleTotal = stale.reduce((n, r) => n + r.amount, 0);
   // Acumulado día a día: lo facturado hasta cada día y lo que se espera facturar hasta él.
   const realToday = todayISO();
   const byDay = new Map((realRows ?? []).map((r) => [r.day, r]));
@@ -229,17 +233,54 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
               <dd className="num text-lg font-medium" data-testid={`real-${l.key}`}>{formatCompactCurrency(real[l.key])}</dd>
               <dd className="text-xs text-muted">
                 {l.key === "invoiced" ? <Tr>Ventas netas de SAP, en su fecha de factura.</Tr>
-                  : l.key === "backlog" ? <>{t("Pedidos")} {formatCompactCurrency(real.orders)} · {t("Entregas sin facturar")} {formatCompactCurrency(real.deliveries)}. <Tr>Fecha de despacho o de entrega más 4 días; en Exterior, la misma fecha.</Tr></>
+                  : l.key === "backlog" ? <>{t("Pedidos")} {formatCompactCurrency(real.orders)} · {t("Entregas sin facturar")} {formatCompactCurrency(real.deliveries)}. <Tr>Fecha de despacho o de entrega más 4 días; en Exterior y en pedidos «Sin POD», la misma fecha.</Tr></>
                     : <Tr>Abiertas en el CRM, en su mes de entrega y facturación.</Tr>}
               </dd>
             </div>
           ))}
         </dl>
+        {stale.length > 0 && (
+          <details className="group/atrasado mt-4 border-t border-line pt-3" data-testid="real-atrasado">
+            <summary className="inline-flex cursor-pointer list-none flex-wrap items-center gap-x-1.5 text-sm font-medium [&::-webkit-details-marker]:hidden">
+              <ChevronRight size={14} aria-hidden="true" className="transition-transform group-open/atrasado:rotate-90" />
+              <Tr>Atrasado por revisar</Tr>
+              <span className="num">{formatCompactCurrency(staleTotal)}</span>
+              <span className="text-xs font-normal text-muted">· {stale.length} {t(stale.length === 1 ? "documento" : "documentos")} · <Tr>no suma al pronóstico</Tr></span>
+            </summary>
+            <p className="mt-2 max-w-[80ch] text-xs text-muted"><Tr>Pedidos y entregas abiertos en SAP que debían facturarse hace más de 30 días. No se cuentan en el pronóstico: conviene facturarlos o cerrarlos en SAP.</Tr></p>
+            <div className="max-h-80 overflow-auto">
+              <table className="table mt-2">
+                <thead>
+                  <tr>
+                    <th><Tr>Documento</Tr></th>
+                    <th><Tr>Cliente</Tr></th>
+                    <th><Tr>Vendedor</Tr></th>
+                    <th><Tr>Fecha</Tr></th>
+                    <th className="text-right"><Tr>Días de atraso</Tr></th>
+                    <th className="text-right"><Tr>Valor sin IVA</Tr></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stale.map((r) => (
+                    <tr key={`${r.kind}-${r.doc_num}`}>
+                      <td className="whitespace-nowrap">{t(r.kind === "order" ? "Pedido" : "Entrega")} <span className="num">{r.doc_num}</span></td>
+                      <td>{r.customer_name ?? "—"}</td>
+                      <td>{r.seller ?? "—"}</td>
+                      <td className="num whitespace-nowrap">{formatDate(r.due_date, locale)}</td>
+                      <td className="num text-right">{r.overdue_days}</td>
+                      <td className="num text-right">{formatCurrency(r.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
         <div className="mt-4">
           <RealForecastChart days={realDays} today={realToday} quota={realQuota} mode={type === "month" ? "weeks" : "months"} />
         </div>
         <p className="mt-2 text-xs text-muted">
-          <Tr>En un mes, cada barra es lo acumulado al cierre de la semana; en trimestre y año, lo que se factura en cada mes. La línea es el total: continua hasta hoy y punteada en lo proyectado. Lo que ya debía haberse facturado se cuenta hoy. Los pedidos y entregas abiertos son todos los de SAP, sean o no cuentas del CRM.</Tr>
+          <Tr>En un mes, cada barra es lo acumulado al cierre de la semana; en trimestre y año, lo que se factura en cada mes. La línea es el total: continua hasta hoy y punteada en lo proyectado. Lo que ya debía haberse facturado se cuenta hoy, salvo lo vencido hace más de 30 días, que va en «Atrasado por revisar». Los pedidos y entregas abiertos son todos los de SAP, sean o no cuentas del CRM.</Tr>
         </p>
       </section>
 

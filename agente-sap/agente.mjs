@@ -6,7 +6,7 @@
 // en el CRM por su Código SAP, y el inventario de los productos activos; lo deja en las tablas sap_*
 // del CRM con un usuario técnico que solo puede hacer eso. Nunca escribe en SAP.
 //
-// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|instalar|desinstalar|estado> [--ahora]
+// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|campos|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -224,7 +224,8 @@ async function cliente(sap, codigo) {
 
 /**
  * Todo lo que falta por facturar en la compañía, sea o no cuenta del CRM: las líneas abiertas de los pedidos de venta
- * y las entregas sin facturar. Filas: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor sin IVA].
+ * y las entregas sin facturar. Filas: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor sin IVA,
+ * tipo de facturación del pedido («Sin POD» se factura al despachar)].
  */
 async function pendientePorFacturar(sap) {
   let vendedores = new Map();
@@ -234,7 +235,7 @@ async function pendientePorFacturar(sap) {
   const vendedor = (d) => (d.SalesPersonCode > 0 ? vendedores.get(d.SalesPersonCode) ?? "" : "");
   const filas = [];
   // Los pedidos traen todas sus líneas: páginas pequeñas para que SAP responda a tiempo.
-  const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
+  const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,U_TipoFacturacion,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
   for (const p of pedidos) {
     if (p.Cancelled === "tYES") continue;
     for (const ln of p.DocumentLines ?? []) {
@@ -242,7 +243,7 @@ async function pendientePorFacturar(sap) {
       const pedida = num(ln.Quantity);
       // Parte de la línea que aún no se ha despachado.
       const valor = pedida > 0 ? Math.round((num(ln.LineTotal) * Math.max(0, num(ln.RemainingOpenQuantity)) / pedida) * 100) / 100 : 0;
-      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor]);
+      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? ""]);
     }
   }
   const entregas = await sap.lista(q("DeliveryNotes", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDate,DocTotal,VatSum,Cancelled", $filter: "DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'", $orderby: "DocEntry" }));
@@ -407,6 +408,30 @@ async function buscar(palabras) {
 
 // ---------------------------------------------------------------- Ventas reales (CSV mensuales)
 /** Una línea de CSV en sus campos (admite comillas y comas dentro de comillas). */
+/**
+ * Lista los campos de usuario de los pedidos de venta (cabecera y líneas) con su descripción y sus valores posibles,
+ * para ubicar un dato por su nombre en SAP (p. ej. «campos factur»). Solo lee definiciones de campos, no documentos.
+ */
+async function campos(palabras) {
+  const texto = palabras.join(" ").trim().toLowerCase();
+  const sap = new Sap(leerConfig());
+  await sap.login();
+  try {
+    for (const [tabla, donde] of [["ORDR", "Pedido (cabecera)"], ["RDR1", "Pedido (líneas)"]]) {
+      const filas = await sap.lista(q("UserFieldsMD", { $filter: `TableName eq ${comillas(tabla)}` }));
+      const vistos = filas.filter((f) => !texto || `${f.Name} ${f.Description} ${(f.ValidValuesMD ?? []).map((v) => `${v.Value} ${v.Description}`).join(" ")}`.toLowerCase().includes(texto));
+      log(`${donde}: ${vistos.length} de ${filas.length} campos de usuario${texto ? ` con «${texto}»` : ""}`);
+      for (const f of vistos) {
+        const valores = (f.ValidValuesMD ?? []).map((v) => `${v.Value}=${v.Description}`).join(" | ");
+        log(`  U_${f.Name} · ${f.Description ?? ""}${valores ? ` · valores: ${valores}` : ""}`);
+      }
+    }
+  } finally {
+    await sap.logout();
+  }
+  return 0;
+}
+
 function camposCsv(linea) {
   const campos = [];
   let actual = "", entreComillas = false;
@@ -727,9 +752,9 @@ function estado() {
 }
 
 const [comando = "", ...resto] = process.argv.slice(2);
-const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), buscar: () => buscar(resto), atender, ventas, instalar, desinstalar, estado };
+const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), buscar: () => buscar(resto), campos: () => campos(resto), atender, ventas, instalar, desinstalar, estado };
 if (!comandos[comando]) {
-  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|instalar|desinstalar|estado> [--ahora]");
+  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|campos|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
 /** Termina el programa. Con una lectura colgada por macOS, la salida normal también se queda esperando: se corta. */

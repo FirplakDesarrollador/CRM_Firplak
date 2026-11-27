@@ -44,8 +44,8 @@ test.describe("SAP por agente", () => {
 
       const salida = correrAgente();
       expect(salida).toMatch(/0 errores/);
-      // También trae todo lo pendiente por facturar de la compañía: 6 líneas de pedido abiertas y 1 entrega.
-      expect(salida).toMatch(/Pendiente por facturar: 7 líneas/);
+      // También trae todo lo pendiente por facturar de la compañía: 7 líneas de pedido abiertas y 1 entrega.
+      expect(salida).toMatch(/Pendiente por facturar: 8 líneas/);
 
       await page.reload();
       await expect(page.getByText("Saldo de cartera")).toBeVisible();
