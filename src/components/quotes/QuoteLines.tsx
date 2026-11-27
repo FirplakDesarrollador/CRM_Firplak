@@ -13,6 +13,7 @@ import type { FormState } from "@/lib/records/form";
 import { Tr } from "@/components/ui/Tr";
 import { useT } from "@/lib/i18n/client";
 import { ConfirmSubmit } from "@/components/ui/ActionForm";
+import { Fmt } from "@/components/ui/Fmt";
 export type QuoteLine = {
   id: string;
   description: string | null;
@@ -24,6 +25,8 @@ export type QuoteLine = {
   not_listed?: boolean;
   /** Cotizada sin señal a un precio distinto al de la lista: el de lista cuando llegó al CRM. */
   offline_list_price?: number | null;
+  /** Entrega estimada de la línea (cotizaciones): para entregas por partes. Vacía: la de la cotización. */
+  delivery_date?: string | null;
   product: { id: string; name: string; product_code: string | null; unit: string } | null;
 };
 
@@ -41,9 +44,10 @@ type Kind = keyof typeof KINDS;
  */
 const COLS = "md:grid-cols-[minmax(0,1fr)_6rem_9rem_6rem_9rem_7.5rem]";
 
-function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: boolean; kind: Kind; currency: string }) {
+function LineRow({ line, canEdit, kind, currency, partial }: { line: QuoteLine; canEdit: boolean; kind: Kind; currency: string; partial: boolean }) {
   const [state, action] = useActionState(KINDS[kind].update.bind(null, line.id), {} as FormState);
   const [delState, del] = useActionState(KINDS[kind].remove.bind(null, line.id), {} as FormState);
+  const formId = `ql-${line.id}`;
   const t = useT();
   // «Guardar» se resalta solo cuando la línea tiene cambios sin guardar; vuelve a discreto al guardarse bien.
   const [dirty, setDirty] = useState(false);
@@ -69,11 +73,22 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
         {line.offline_list_price != null && (
           <p className="text-xs text-muted"><Tr>Precio de lista al llegar al CRM</Tr>: <span className="num">{formatCurrency(line.offline_list_price, currency)}</span></p>
         )}
+        {/* Entregas parciales: cada línea es de una entrega. La fecha se cambia por entrega en el panel de arriba; aquí,
+            la de una sola línea. */}
+        {kind === "quote" && partial && (canEdit ? (
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted">
+            <label htmlFor={`${formId}-entrega`}><Tr>Entrega</Tr></label>
+            <input id={`${formId}-entrega`} form={formId} type="date" name="delivery_date" defaultValue={line.delivery_date ?? ""}
+              className="input h-7 w-auto px-2 text-xs" onInput={() => setDirty(true)} title={t("Vacía: la entrega estimada de la cotización")} />
+          </div>
+        ) : line.delivery_date ? (
+          <p className="mt-1 text-xs text-muted"><Tr>Entrega</Tr>: <Fmt date={line.delivery_date} /></p>
+        ) : null)}
       </div>
       {/* En el celular: cantidad, precio y descuento en una fila con su etiqueta, y el total junto a sus acciones.
           Desde md, «contents» los vuelve celdas de la tabla (los títulos están en la cabecera). */}
       {canEdit ? (
-        <form action={action} onInput={() => setDirty(true)} className="grid grid-cols-3 gap-2 md:contents">
+        <form id={formId} action={action} onInput={() => setDirty(true)} className="grid grid-cols-3 gap-2 md:contents">
           <label className="block md:contents">
             <span className="label md:hidden"><Tr>Cantidad</Tr></span>
             <AmountInput name="quantity" aria-label="Cantidad" defaultValue={line.quantity} className="input num h-8 text-center" />
@@ -125,6 +140,8 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
   const [state, action] = useActionState(KINDS[kind].add.bind(null, quoteId), {} as FormState);
   const formRef = useRef<HTMLFormElement>(null);
   const t = useT();
+  // Entregas parciales: alguna línea tiene su propia fecha de entrega.
+  const partial = kind === "quote" && lines.some((l) => l.delivery_date);
   const [free, setFree] = useState(allowFree);
   const custom = allowFree && free;
   useEffect(() => {
@@ -144,7 +161,8 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
             <Tr>{allowFree ? "Agrega las tipologías que cotizó diseño, con su valor y descuento, o productos del catálogo." : KINDS[kind].empty}</Tr>
           </li>
         )}
-        {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} currency={currency} />)}
+        {/* La clave lleva la fecha: al mover una entrega desde el panel, el campo de la línea toma la fecha nueva. */}
+        {lines.map((line) => <LineRow key={`${line.id}-${line.delivery_date ?? ""}`} line={line} canEdit={canEdit} kind={kind} currency={currency} partial={partial} />)}
       </ul>
       {canEdit && (
         <form ref={formRef} action={action} className={`grid grid-cols-3 gap-2 border-t border-line bg-surface-2 px-4 py-4 md:items-end ${COLS}`}>

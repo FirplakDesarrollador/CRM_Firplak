@@ -2335,6 +2335,98 @@ await check('un administrador sube precios por lista con vista previa, queda el 
   }
 });
 
+console.log('Pronóstico por mes de entrega y facturación');
+await check('una cotización con entregas en dos meses reparte el negocio entre esos meses; el cierre de facturación corre la factura', async () => {
+  // Meses lejanos, para no mezclar con las demás pruebas: marzo, abril y mayo de 2031.
+  const mes = async (inicio, col = 'pipeline') => Number((await as(admin, () => q(
+    `select coalesce(sum(${col}), 0) v from forecast_summary('month', $1::date) where user_id = $2`, [inicio, admin.id])))[0].v);
+  let opp, qt, acc;
+  await as(admin, async () => {
+    [acc] = await q(`insert into accounts (name, industry, billing_city) values ('Cliente por entregas', 'Canal Distribución', 'Cali') returning id`);
+    [opp] = await q(`insert into opportunities (name, account_id, stage_id, amount, close_date, forecast_category)
+      select 'Negocio por entregas', $1, s.id, 0, '2031-03-10', 'pipeline' from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.is_default and s.name = 'Calificación' returning id`, [acc.id]);
+    [qt] = await q(`insert into quotes (name, opportunity_id) values ('100 unidades en dos entregas', $1) returning id`, [opp.id]);
+    // Sin fechas de entrega todo cae en la fecha de cierre (marzo), como antes.
+    await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price, sort_order) values
+      ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Primera entrega', 50, 1000, 1),
+      ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Segunda entrega', 50, 1000, 2)`, [qt.id]);
+  });
+  assert.deepEqual([await mes('2031-03-01'), await mes('2031-04-01'), await mes('2031-05-01')], [100000, 0, 0]);
+  // La cotización dice abril: todo pasa a abril.
+  await as(admin, () => q(`update quotes set delivery_date = '2031-04-15' where id = $1`, [qt.id]));
+  assert.deepEqual([await mes('2031-03-01'), await mes('2031-04-01'), await mes('2031-05-01')], [0, 100000, 0]);
+  // La segunda línea se entrega en mayo: mitad y mitad. El trimestre sigue sumando el total.
+  await as(admin, () => q(`update quote_line_items set delivery_date = '2031-05-20' where quote_id = $1 and sort_order = 2`, [qt.id]));
+  assert.deepEqual([await mes('2031-03-01'), await mes('2031-04-01'), await mes('2031-05-01')], [0, 50000, 50000]);
+  const [tri] = await as(admin, () => q(`select pipeline, open_count from forecast_summary('quarter', '2031-04-01') where user_id = $1`, [admin.id]));
+  assert.deepEqual([Number(tri.pipeline), Number(tri.open_count)], [100000, 1]);
+  // El detalle dice qué parte del negocio cae en el mes y entre qué fechas.
+  const [item] = await as(admin, () => q(`select opportunity_name, bucket, amount, total, first_date::text, last_date::text from forecast_items('month', '2031-05-01', $1)`, [admin.id]));
+  assert.deepEqual([item.opportunity_name, item.bucket, Number(item.amount), Number(item.total), item.first_date], ['Negocio por Entregas', 'pipeline', 50000, 100000, '2031-05-20']);
+  // El cliente cierra facturación el 15: la entrega del 15 de abril se factura en mayo.
+  await as(admin, () => q(`update accounts set billing_cutoff_day = 15 where id = $1`, [acc.id]));
+  assert.deepEqual([await mes('2031-04-01'), await mes('2031-05-01'), await mes('2031-06-01')], [0, 50000, 50000]);
+  assert.equal((await q(`select billing_date('2031-04-14', 15)::text d`))[0].d, '2031-04-14');
+  assert.equal((await q(`select billing_date('2031-12-20', 15)::text d`))[0].d, '2032-01-01');
+  await as(admin, () => q(`update accounts set billing_cutoff_day = null where id = $1`, [acc.id]));
+  // Ganada: cuenta lo aceptado, en los meses de sus entregas, aunque el cierre sea hoy. El pedido toma la primera entrega.
+  await as(admin, async () => {
+    await q(`update quotes set status = 'Presentada', delivery_city = 'Cali' where id = $1`, [qt.id]);
+    await q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]);
+  });
+  assert.deepEqual([await mes('2031-04-01', 'closed'), await mes('2031-05-01', 'closed'), await mes('2031-04-01')], [50000, 50000, 0]);
+  const [{ id: pedido }] = await as(admin, () => q(`select create_order_from_quote($1) id`, [qt.id]));
+  assert.equal((await q(`select requested_delivery_date::text d from orders where id = $1`, [pedido]))[0].d, '2031-04-15');
+  // Un asesor no ve el detalle de otra persona, y la tabla de reparto no se consulta directamente.
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_items('month', '2031-05-01', $1)`, [admin.id])))[0].n, 0);
+  assert.equal((await q(`select has_function_privilege('authenticated', 'public.opportunity_schedule()', 'execute') ok`))[0].ok, false);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.forecast_items(text, date, uuid)', 'execute') ok`))[0].ok, false);
+});
+
+await check('entregas parciales: partir en 2, 3 o 4 reparte todos los productos, pone fechas cada 30 días y deja el sobrante en la última', async () => {
+  let qt;
+  const lineas = async () => (await q(`select description d, quantity::float q, delivery_date::text f from quote_line_items where quote_id = $1 order by sort_order`, [qt.id]))
+    .map((l) => `${l.d} ${l.q} ${l.f ?? '-'}`);
+  await as(admin, async () => {
+    const [acc] = await q(`insert into accounts (name, industry, billing_city) values ('Cliente entregas parciales', 'Canal Distribución', 'Cali') returning id`);
+    const [opp] = await q(`insert into opportunities (name, account_id, stage_id, amount, close_date)
+      select 'Negocio en bloques', $1, s.id, 0, '2032-01-10' from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.is_default and s.name = 'Calificación' returning id`, [acc.id]);
+    [qt] = await q(`insert into quotes (name, opportunity_id) values ('Dos productos de 100', $1) returning id`, [opp.id]);
+    await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price, sort_order) values
+      ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'A', 100, 1000, 1),
+      ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'B', 100, 2000, 2)`, [qt.id]);
+    // Sin la entrega estimada de la cotización no hay desde dónde contar.
+    await assert.rejects(q(`select split_quote_deliveries($1, 2)`, [qt.id]), /Pon primero la «Entrega estimada»/);
+    await q(`update quotes set delivery_date = '2032-02-10' where id = $1`, [qt.id]);
+    assert.equal((await q(`select split_quote_deliveries($1, 2) n`, [qt.id]))[0].n, 4);
+  });
+  assert.deepEqual(await lineas(), ['A 50 2032-02-10', 'A 50 2032-03-11', 'B 50 2032-02-10', 'B 50 2032-03-11']);
+  // Volver a partir no acumula: 100 en 3 son 33, 33 y 34.
+  await as(admin, () => q(`select split_quote_deliveries($1, 3)`, [qt.id]));
+  assert.deepEqual(await lineas(), ['A 33 2032-02-10', 'A 33 2032-03-11', 'A 34 2032-04-10', 'B 33 2032-02-10', 'B 33 2032-03-11', 'B 34 2032-04-10']);
+  const total = async () => Number((await q(`select net_total from quotes where id = $1`, [qt.id]))[0].net_total);
+  assert.equal(await total(), 300000);
+  // El pronóstico queda repartido en los tres meses: 99.000, 99.000 y 102.000.
+  const mes = async (inicio) => Number((await as(admin, () => q(`select coalesce(sum(pipeline + best_case + commit_amount), 0) v from forecast_summary('month', $1::date) where user_id = $2`, [inicio, admin.id])))[0].v);
+  assert.deepEqual([await mes('2032-02-01'), await mes('2032-03-01'), await mes('2032-04-01')], [99000, 99000, 102000]);
+  // Una cantidad menor que las partes no deja líneas en cero: todo va a la última entrega.
+  await as(admin, async () => {
+    await q(`select split_quote_deliveries($1, 1)`, [qt.id]);
+    await q(`update quote_line_items set quantity = 1 where quote_id = $1 and description = 'B'`, [qt.id]);
+    await q(`select split_quote_deliveries($1, 4)`, [qt.id]);
+  });
+  assert.deepEqual(await lineas(), ['A 25 2032-02-10', 'A 25 2032-03-11', 'A 25 2032-04-10', 'A 25 2032-05-10', 'B 1 2032-05-10']);
+  // Una sola entrega: vuelven las líneas originales, sin fecha propia.
+  await as(admin, () => q(`select split_quote_deliveries($1, 1)`, [qt.id]));
+  assert.deepEqual(await lineas(), ['A 100 -', 'B 1 -']);
+  await assert.rejects(as(admin, () => q(`select split_quote_deliveries($1, 0)`, [qt.id])), /de 1 a 12/);
+  // Quien no puede editar la cotización no la parte.
+  await assert.rejects(as(rep, () => q(`select split_quote_deliveries($1, 2)`, [qt.id])), /Cotización no encontrada|row-level security/);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.split_quote_deliveries(uuid, int, int)', 'execute') ok`))[0].ok, false);
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

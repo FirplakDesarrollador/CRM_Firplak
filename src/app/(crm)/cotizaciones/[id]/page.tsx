@@ -13,6 +13,8 @@ import { StatusPath } from "@/components/records/StatusPath";
 import { DeleteButton } from "@/components/records/DeleteButton";
 import { QuoteLines, type QuoteLine } from "@/components/quotes/QuoteLines";
 import { QuoteTotals } from "@/components/quotes/QuoteTotals";
+import { DeliveryMonths } from "@/components/quotes/DeliveryMonths";
+import { PartialDeliveries } from "@/components/quotes/PartialDeliveries";
 import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { QUOTE_STATUSES } from "@/lib/objects/picklists";
@@ -34,11 +36,11 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
     getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
-      .select("id, description, quantity, unit_price, discount, line_total, not_listed, product:products!quote_line_items_product_id_fkey(id, name, product_code, unit)")
+      .select("id, description, quantity, unit_price, discount, line_total, not_listed, delivery_date, product:products!quote_line_items_product_id_fkey(id, name, product_code, unit)")
       .eq("quote_id", id)
       .order("sort_order"),
     supabase.from("orders").select("id, order_number").eq("quote_id", id).maybeSingle(),
-    supabase.from("accounts").select("name, market").eq("id", String(row.account_id ?? "")).maybeSingle(),
+    supabase.from("accounts").select("name, market, billing_cutoff_day").eq("id", String(row.account_id ?? "")).maybeSingle(),
     // Las líneas cotizadas sin señal a otro precio. Va aparte: si la columna aún no existe en la base, la
     // cotización se sigue viendo completa, solo sin la marca.
     supabase.from("quote_line_items").select("id, offline_list_price").eq("quote_id", id).not("offline_list_price", "is", null),
@@ -113,9 +115,17 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
             )}
             {expired && <div className="2xl:col-span-2"><Alert tone="warning">{expiredText}</Alert></div>}
             {stale && <div className="2xl:col-span-2"><Alert tone="warning">{staleText}</Alert></div>}
-            <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")}
-              allowFree={row.sale_type === "Carpintería de Obra"} />
-            <QuoteTotals q={row} />
+            <div className="min-w-0 space-y-4">
+              <PartialDeliveries quoteId={id} lines={quoteLines} quoteDate={(row.delivery_date as string | null) ?? null}
+                canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
+              <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")}
+                allowFree={row.sale_type === "Carpintería de Obra"} />
+            </div>
+            <div className="space-y-4">
+              <QuoteTotals q={row} />
+              <DeliveryMonths lines={quoteLines} quoteDate={(row.delivery_date as string | null) ?? null}
+                cutoffDay={account?.billing_cutoff_day ?? null} currency={String(row.currency ?? "COP")} />
+            </div>
           </div>
         ),
       }]}

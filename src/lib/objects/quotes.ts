@@ -76,6 +76,10 @@ export const quotes: ObjectDef = {
       name: "delivery_city", label: "Ciudad de entrega", type: "text", section: "terms", formRequired: true, accountDefault: "delivery_city",
       help: "Se propone la de la cuenta: cámbiala si se entrega en otra ciudad.",
     },
+    {
+      name: "delivery_date", label: "Entrega estimada", type: "date", section: "terms",
+      help: "Cuándo se entregaría y facturaría: ubica el negocio en ese mes del pronóstico. Si el despacho va por partes, usa «Entregas parciales» en la cotización: esta es la fecha de la primera.",
+    },
     { name: "billing_address", label: "Dirección de facturación", type: "text", section: "terms", readOnly: true, formHidden: true },
     // La dirección exacta se pide en el pedido; la cotización conserva la de la cuenta (o la que ya tenía escrita).
     { name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms", readOnly: true, formHidden: true, hideEmpty: true },

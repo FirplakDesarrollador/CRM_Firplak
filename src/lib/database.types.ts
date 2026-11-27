@@ -3533,6 +3533,7 @@ export type Database = {
       quote_line_items: {
         Row: {
           created_at: string
+          delivery_date: string | null
           description: string | null
           discount: number
           id: string
@@ -3547,6 +3548,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_date?: string | null
           description?: string | null
           discount?: number
           id?: string
@@ -3561,6 +3563,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_date?: string | null
           description?: string | null
           discount?: number
           id?: string
@@ -3602,6 +3605,7 @@ export type Database = {
           currency: string
           custom_fields: Json
           delivery_city: string | null
+          delivery_date: string | null
           delivery_terms: string | null
           description: string | null
           discount_percent: number | null
@@ -3646,6 +3650,7 @@ export type Database = {
           currency?: string
           custom_fields?: Json
           delivery_city?: string | null
+          delivery_date?: string | null
           delivery_terms?: string | null
           description?: string | null
           discount_percent?: never
@@ -3690,6 +3695,7 @@ export type Database = {
           currency?: string
           custom_fields?: Json
           delivery_city?: string | null
+          delivery_date?: string | null
           delivery_terms?: string | null
           description?: string | null
           discount_percent?: never
@@ -4388,6 +4394,13 @@ export type Database = {
         }
         Returns: string
       }
+      billing_date: {
+        Args: {
+          p_delivery: string
+          p_cutoff_day: number
+        }
+        Returns: string
+      }
       can_access_owner: {
         Args: {
           p_owner: string
@@ -4619,6 +4632,24 @@ export type Database = {
           id_b: string
           name_b: string
           reason: string
+        }[]
+      }
+      forecast_items: {
+        Args: {
+          p_period_type: string
+          p_period_start: string
+          p_user: string
+        }
+        Returns: {
+          opportunity_id: string
+          opportunity_name: string
+          account_name: string
+          bucket: string
+          amount: number
+          total: number
+          first_date: string
+          last_date: string
+          close_date: string
         }[]
       }
       forecast_summary: {
@@ -4891,6 +4922,14 @@ export type Database = {
           p_opp: string
         }
         Returns: undefined
+      }
+      opportunity_schedule: {
+        Args: never
+        Returns: {
+          opportunity_id: string
+          forecast_date: string
+          share: number
+        }[]
       }
       opportunity_split_part: {
         Args: {
@@ -5246,6 +5285,14 @@ export type Database = {
           p_object: string
         }
         Returns: string
+      }
+      split_quote_deliveries: {
+        Args: {
+          p_quote: string
+          p_parts: number
+          p_gap_days?: number
+        }
+        Returns: number
       }
       submit_approval: {
         Args: {

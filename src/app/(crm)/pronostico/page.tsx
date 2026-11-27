@@ -79,6 +79,14 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
     ? await supabase.rpc("pipeline_changes", { p_since: compareDate, p_period_type: type, p_period_start: start })
     : { data: [] };
   const userName = (id: string | null) => users.find((u) => u.id === id)?.full_name ?? "—";
+  // Detalle pedido desde una cifra: negocios de esa persona y categoría en el periodo.
+  const BUCKETS: Record<string, string> = { closed: "Cerrado", commit: "Compromiso", best_case: "Mejor caso", pipeline: "Pipeline" };
+  const detailUser = typeof sp.detalle === "string" && /^[0-9a-f-]{36}$/i.test(sp.detalle) ? sp.detalle : null;
+  const detailBucket = typeof sp.cat === "string" && sp.cat in BUCKETS ? sp.cat : null;
+  const { data: detailRows } = detailUser
+    ? await supabase.rpc("forecast_items", { p_period_type: type, p_period_start: start, p_user: detailUser })
+    : { data: null };
+  const items = (detailRows ?? []).filter((i) => !detailBucket || i.bucket === detailBucket);
   const canSnapshot = canSystem(user.access, "customize") || canSystem(user.access, "manage_users");
   const delta = (now: number, prev: number | undefined) => {
     if (prev === undefined || !compareDate) return null;
@@ -93,22 +101,16 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
   const scaleMax = Math.max(1, ...rows.map((r) => Math.max(r.closed + r.commit_amount + r.best_case, r.quota ?? 0, r.adjustment ?? 0)));
 
   const qs = (patch: Record<string, string>) => `/pronostico?${new URLSearchParams({ tipo: type, inicio: start, ...patch })}`;
-  const drill = (ownerId: string, extra: { field: string; op: string; value: string }[]) => {
-    // Por crédito (propietario o parte del reparto), no solo por propietario.
-    const f = [
-      { field: "close_date", op: "gt", value: shiftDay(start, -1) },
-      { field: "close_date", op: "lt", value: shiftDay(end, 1) },
-      ...extra,
-    ];
-    return `/oportunidades?credito=${ownerId}&f=${encodeURIComponent(JSON.stringify(f))}`;
-  };
+  // Cada cifra abre su detalle aquí mismo: los negocios que la forman, con la parte que cae en el periodo. (Una lista
+  // de oportunidades por fecha de cierre ya no cuadraría: el pronóstico va por mes de entrega y facturación.)
+  const drill = (ownerId: string, bucket: string) => `${qs({ detalle: ownerId, cat: bucket })}#detalle`;
 
   type ForecastRow = (typeof rows)[number];
   const figures = (r: ForecastRow) => [
-    { label: "Cerrado", value: r.closed, href: drill(r.user_id, [{ field: "is_won", op: "eq", value: "true" }]) },
-    { label: "Compromiso", value: r.commit_amount, href: drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "commit" }, { field: "is_closed", op: "eq", value: "false" }]) },
-    { label: "Mejor caso", value: r.best_case, href: drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "best_case" }, { field: "is_closed", op: "eq", value: "false" }]) },
-    { label: "Pipeline", value: r.pipeline, href: drill(r.user_id, [{ field: "forecast_category", op: "eq", value: "pipeline" }, { field: "is_closed", op: "eq", value: "false" }]) },
+    { label: "Cerrado", value: r.closed, href: drill(r.user_id, "closed") },
+    { label: "Compromiso", value: r.commit_amount, href: drill(r.user_id, "commit") },
+    { label: "Mejor caso", value: r.best_case, href: drill(r.user_id, "best_case") },
+    { label: "Pipeline", value: r.pipeline, href: drill(r.user_id, "pipeline") },
   ];
   const composition = (r: ForecastRow) => (
     <div className="relative flex h-3.5 gap-[2px]" role="img"
@@ -364,14 +366,61 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
           )}
         </section>
       )}
+      {detailUser && (
+        <section id="detalle" className="card scroll-mt-32 overflow-hidden" aria-label={t("Detalle del pronóstico")}>
+          <div className="card-header flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="card-title">{detailBucket ? t(BUCKETS[detailBucket]) : t("Negocios")} · {userName(detailUser)} <span className="badge">{items.length}</span></h2>
+              <p className="text-xs text-muted"><Tr>Negocios que se entregan y facturan en este periodo, con la parte de su valor que cae aquí.</Tr></p>
+            </div>
+            <Link href={qs({})} className="btn btn-sm"><Tr>Cerrar detalle</Tr></Link>
+          </div>
+          {items.length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted"><Tr>No hay negocios en esta categoría para el periodo.</Tr></p> : (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th><Tr>Oportunidad</Tr></th>
+                    <th className="text-right"><Tr>En este periodo</Tr></th>
+                    <th className="text-right"><Tr>Valor total</Tr></th>
+                    <th><Tr>Entrega y facturación</Tr></th>
+                    <th><Tr>Cierre</Tr></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((i) => {
+                    const partial = Number(i.amount) < Number(i.total) - 0.5;
+                    return (
+                      <tr key={`${i.opportunity_id}-${i.bucket}`}>
+                        <td>
+                          <Link href={`/oportunidades/${i.opportunity_id}`} className="link font-medium">{i.opportunity_name}</Link>
+                          <p className="text-xs text-muted">{i.account_name ?? "—"}</p>
+                        </td>
+                        <td className="num whitespace-nowrap text-right font-medium">
+                          {formatCurrency(Number(i.amount))}
+                          {partial && <span className="block text-xs font-normal text-muted">{formatPercent((Number(i.amount) / Number(i.total)) * 100)} <Tr>del negocio</Tr></span>}
+                        </td>
+                        <td className="num whitespace-nowrap text-right">{formatCurrency(Number(i.total))}</td>
+                        <td className="whitespace-nowrap text-sm">
+                          {i.first_date === i.last_date ? <Fmt date={i.first_date} /> : <><Fmt date={i.first_date} /> – <Fmt date={i.last_date} /></>}
+                          {partial && <span className="badge badge-info ml-2"><Tr>Por partes</Tr></span>}
+                        </td>
+                        <td className="whitespace-nowrap text-sm"><Fmt date={i.close_date} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+      <p className="text-xs text-muted">
+        <Tr>Cada negocio cae en el mes en que se entrega y factura, según la «Entrega estimada» de sus cotizaciones (y de cada línea, si es por partes); si el cliente tiene cierre de facturación y la entrega cae ese día o después, pasa al mes siguiente. Sin cotización con fecha, cae en la fecha de cierre de la oportunidad.</Tr>
+      </p>
       <p className="text-xs text-muted">
         <Tr>La categoría de pronóstico viene de la etapa de cada oportunidad (Configuración → Pipelines y etapas) y se puede cambiar en la oportunidad.</Tr>
       </p>
     </div>
   );
-}
-
-function shiftDay(iso: string, days: number) {
-  const d = new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86400000);
-  return d.toISOString().slice(0, 10);
 }

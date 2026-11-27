@@ -123,7 +123,8 @@ export async function loadPrintQuote(id: string): Promise<PrintDoc | null> {
     project: { name: q.name, lines: [q.opportunity?.name ?? "", join(q.project_segment, q.sale_type !== "Estándar" && q.sale_type)].filter(Boolean) },
     billing: [billing ?? "—"],
     // La dirección exacta se pide en el pedido: la cotización solo la imprime si se escribió una distinta a la de la cuenta.
-    delivery: [city ? `Ciudad: ${city}` : "—", q.shipping_manual && q.shipping_address ? q.shipping_address : "", endCustomer(q.end_customer_name, q.end_customer_tax_id)].filter(Boolean),
+    delivery: [city ? `Ciudad: ${city}` : "—", q.shipping_manual && q.shipping_address ? q.shipping_address : "", endCustomer(q.end_customer_name, q.end_customer_tax_id),
+      q.delivery_date ? `Entrega estimada: ${formatDate(q.delivery_date)}` : ""].filter(Boolean),
     contacts: contact(q.contact as Contact, "Contacto"),
     logistics: [],
     lines: mapLines(lines as unknown as Line[] | null),

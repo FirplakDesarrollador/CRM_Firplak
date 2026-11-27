@@ -235,11 +235,38 @@ export async function updateQuoteLine(lineId: string, _prev: FormState, fd: Form
   if (!quantity || quantity <= 0 || unitPrice === null || unitPrice < 0 || !(discount >= 0 && discount <= 100)) {
     return { message: "Revisa cantidad, precio y descuento" };
   }
+  // Entrega estimada de la línea (entregas por partes); vacía, usa la de la cotización.
+  const delivery = str(fd, "delivery_date");
+  if (delivery && !/^\d{4}-\d{2}-\d{2}$/.test(delivery)) return { message: "Fecha de entrega no válida" };
   const supabase = await createClient();
   const { data, error } = await supabase.from("quote_line_items")
-    .update({ quantity, unit_price: unitPrice, discount }).eq("id", lineId).select("id");
+    .update({ quantity, unit_price: unitPrice, discount, ...(fd.has("delivery_date") ? { delivery_date: delivery || null } : {}) }).eq("id", lineId).select("id");
   if (error) return { message: friendly(error.message) };
   if (!data?.length) return { message: "No tienes permiso para editar esta línea." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Entregas parciales: parte toda la cotización en `parts` entregas (cada producto en una línea por entrega, fechas
+ * cada 30 días desde la «Entrega estimada», sobrante a la última). Con 1, vuelve a una sola entrega.
+ */
+export async function splitQuoteDeliveries(quoteId: string, parts: number, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("split_quote_deliveries", { p_quote: quoteId, p_parts: parts });
+  if (error) return { message: friendly(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Cambia la fecha de una entrega: todas las líneas que tenían esa fecha pasan a la nueva. */
+export async function moveDelivery(quoteId: string, from: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  const to = str(fd, "delivery_date");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || !/^\d{4}-\d{2}-\d{2}$/.test(from)) return { message: "Fecha de entrega no válida" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("quote_line_items").update({ delivery_date: to }).eq("quote_id", quoteId).eq("delivery_date", from).select("id");
+  if (error) return { message: friendly(error.message) };
+  if (!data?.length) return { message: "No tienes permiso para editar esta cotización." };
   revalidatePath("/", "layout");
   return { ok: true };
 }
