@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { RecordFormPage } from "@/components/records/RecordFormPage";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/session";
+import { CartField } from "@/components/products/Cart";
 
 export const metadata: Metadata = { title: "Nueva cotización" };
 
@@ -23,5 +24,6 @@ export default async function NewQuotePage({ searchParams }: PageProps<"/cotizac
       Object.assign(defaults, { project_segment: data.project_segment, sale_type: data.sale_type });
     }
   }
-  return <RecordFormPage object="quotes" user={user} defaults={defaults} />;
+  // Desde la selección de productos: el formulario avisa qué productos entran al guardar.
+  return <RecordFormPage object="quotes" user={user} defaults={defaults} extra={sp.seleccion === "1" ? <CartField /> : undefined} />;
 }

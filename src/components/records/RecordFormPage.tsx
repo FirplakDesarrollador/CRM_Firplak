@@ -19,12 +19,15 @@ export async function RecordFormPage({
   id,
   defaults,
   returnTo,
+  extra,
 }: {
   object: ObjectKey;
   user: CurrentUser;
   id?: string;
   defaults?: Record<string, unknown>;
   returnTo?: string;
+  /** Contenido propio dentro del formulario, antes de sus secciones (p. ej. la selección de productos al cotizar). */
+  extra?: React.ReactNode;
 }) {
   const [def, users, pipelines, locale] = await Promise.all([getObjectDef(object), getUsers(), getPipelines(), getLocale()]);
   const t = makeT(locale);
@@ -65,6 +68,7 @@ export async function RecordFormPage({
         action={saveRecord.bind(null, object, id ?? null)}
         cancelHref={cancelHref}
         returnTo={returnTo}
+        extra={extra}
         owner={user.id}
         version={id ? String(record?.updated_at ?? "") : undefined}
       />

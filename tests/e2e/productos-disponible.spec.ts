@@ -121,3 +121,102 @@ test("Diseño del producto: lista propia, columna y búsqueda; el kit dice cuán
   await page.goto(`/productos?q=${encodeURIComponent(kit)}`);
   await expect(fila(page, kit).getByText("0", { exact: true })).toBeVisible();
 });
+
+test("selección de productos: se arma navegando el catálogo y se convierte en cotización con los precios del cliente", async ({ page }) => {
+  await page.goto("/productos?q=DEMO-MB-0");
+  await expect(page.getByRole("button", { name: /^Selección/ })).toHaveCount(0);
+  await fila(page, "DEMO-MB-060").hover();
+  await fila(page, "DEMO-MB-060").getByRole("button", { name: /Agregar a la selección/ }).click();
+  await fila(page, "DEMO-MB-080").hover();
+  await fila(page, "DEMO-MB-080").getByRole("button", { name: /Agregar a la selección/ }).click();
+  await expect(page.getByTestId("seleccion-cuenta")).toHaveText("2");
+  // La selección sigue ahí al entrar a un producto, y desde su ficha también se agrega.
+  await page.goto("/productos?q=DEMO-DU-090");
+  await fila(page, "DEMO-DU-090").getByRole("link").first().click();
+  await expect(page).toHaveURL(/\/productos\/[0-9a-f-]{36}/);
+  await page.getByRole("button", { name: /Agregar a la selección/ }).click();
+  await expect(page.getByTestId("seleccion-cuenta")).toHaveText("3");
+
+  await page.getByRole("button", { name: /^Selección/ }).click();
+  const panel = page.getByRole("dialog", { name: "Productos seleccionados" });
+  await expect(panel.getByRole("listitem")).toHaveCount(3);
+  await panel.getByLabel(/Cantidad de Mueble de baño flotante 60 cm/).fill("4");
+  await panel.getByRole("button", { name: /Quitar de la selección: Plato de ducha/ }).click();
+  await expect(panel.getByRole("listitem")).toHaveCount(2);
+  await panel.getByRole("link", { name: "Convertir en cotización" }).click();
+
+  // El formulario normal de cotización avisa qué entra; al guardar quedan las líneas con el precio de la lista del cliente.
+  await expect(page).toHaveURL(/\/cotizaciones\/nueva\?seleccion=1/);
+  await page.waitForLoadState("networkidle");
+  const aviso = page.getByRole("region", { name: "Productos seleccionados" });
+  await expect(aviso).toContainText("Mueble de baño flotante 60 cm");
+  await expect(aviso).toContainText("× 4");
+  await page.getByLabel(/Nombre de la cotización/).fill(unico("Cotización desde selección"));
+  const cuenta = page.getByLabel(/^Cuenta/);
+  await cuenta.fill("Casa Viva");
+  await page.getByRole("option", { name: /Casa Viva/i }).first().click();
+  await page.locator("main").getByRole("button", { name: /^Guardar/ }).click();
+  await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}\?seleccion=2/);
+  await expect(page.getByText("Se agregaron 2 productos de tu selección")).toBeVisible();
+  const linea = (ref: string) => page.getByRole("listitem").filter({ hasText: ref });
+  await expect(linea("DEMO-MB-060").getByLabel("Cantidad")).toHaveValue("4");
+  await expect(linea("DEMO-MB-060").getByLabel("Precio unitario")).toHaveValue("960,000");
+  await expect(linea("DEMO-MB-080")).toBeVisible();
+  // La selección quedó vacía.
+  await page.goto("/productos");
+  await expect(page.getByRole("button", { name: /^Selección/ })).toHaveCount(0);
+});
+
+test("ajuste masivo de precios: vista previa, confirmación escrita, registro y deshacer; solo administradores", async ({ page, browser }) => {
+  // Sobre lo que muestra la lista filtrada: un solo producto.
+  await page.goto("/productos?q=DEMO-HM-002");
+  await page.getByRole("link", { name: "Ajustar precios" }).click();
+  await expect(page).toHaveURL(/\/productos\/ajustar-precios\?q=DEMO-HM-002/);
+  await expect(page.getByTestId("productos-elegidos")).toHaveText("1");
+  const lista = page.getByRole("listitem").filter({ hasText: "Lista estándar COP" }).first();
+  await lista.getByRole("textbox").fill("10");
+  await page.getByRole("button", { name: "Ver vista previa" }).click();
+  const previa = page.getByRole("region", { name: "Vista previa" });
+  await expect(previa).toContainText("Todavía no se ha cambiado nada.");
+  await expect(previa).toContainText("+10%");
+  await expect(previa.getByRole("row").filter({ hasText: "DEMO-HM-002" })).toBeVisible();
+  const celdas = previa.getByRole("row").filter({ hasText: "DEMO-HM-002" }).getByRole("cell");
+  const antes = Number((await celdas.nth(1).innerText()).replace(/[^\d]/g, ""));
+  const despues = Number((await celdas.nth(2).innerText()).replace(/[^\d]/g, ""));
+  expect(despues).toBe(Math.round((antes * 1.1) / 1000) * 1000);
+
+  // Sin la palabra de confirmación no aplica.
+  await page.getByRole("button", { name: "Aplicar ajuste" }).click();
+  await expect(page.getByText("Para aplicar, escribe AJUSTAR en la casilla de confirmación.")).toBeVisible();
+  // Si se cambia el porcentaje, hay que volver a ver la vista previa.
+  await lista.getByRole("textbox").fill("12");
+  await expect(page.getByRole("button", { name: "Aplicar ajuste" })).toHaveCount(0);
+  await lista.getByRole("textbox").fill("10");
+  await page.getByRole("button", { name: "Ver vista previa" }).click();
+  await page.getByLabel("Para aplicar, escribe AJUSTAR").fill("ajustar");
+  await page.getByRole("button", { name: "Aplicar ajuste" }).click();
+  await expect(page.getByText("Ajuste aplicado.")).toBeVisible();
+  const registro = page.getByRole("listitem").filter({ hasText: "Lista estándar COP +10%" }).first();
+  await expect(registro).toContainText("1 productos");
+
+  // El precio cambió en el producto; deshacer lo devuelve.
+  const precioEnFicha = async () => {
+    await page.goto("/productos?q=DEMO-HM-002");
+    await fila(page, "DEMO-HM-002").getByRole("link").first().click();
+    return page.getByRole("listitem").filter({ hasText: "Lista estándar COP" }).getByRole("textbox").inputValue();
+  };
+  expect(Number((await precioEnFicha()).replace(/[^\d]/g, ""))).toBe(despues);
+  await page.goto("/productos/ajustar-precios");
+  await page.getByRole("listitem").filter({ hasText: "Lista estándar COP +10%" }).first().getByRole("button", { name: "Deshacer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Deshacer" }).click();
+  await expect(page.getByText("Deshecho").first()).toBeVisible();
+  expect(Number((await precioEnFicha()).replace(/[^\d]/g, ""))).toBe(antes);
+
+  // Una asesora no ve el botón ni entra a la pantalla.
+  const asesora = await (await browser.newContext({ storageState: sesion("asesora") })).newPage();
+  await asesora.goto("/productos");
+  await expect(asesora.getByRole("link", { name: "Ajustar precios" })).toHaveCount(0);
+  await asesora.goto("/productos/ajustar-precios");
+  await expect(asesora).toHaveURL(/\/productos$/);
+  await asesora.context().close();
+});

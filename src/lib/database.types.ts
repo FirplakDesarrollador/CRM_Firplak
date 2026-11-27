@@ -3102,6 +3102,112 @@ export type Database = {
         Relationships: [
         ]
       }
+      price_adjustment_items: {
+        Row: {
+          adjustment_id: string
+          new_price: number
+          old_price: number
+          price_book_id: string
+          product_id: string
+        }
+        Insert: {
+          adjustment_id: string
+          new_price: number
+          old_price: number
+          price_book_id: string
+          product_id: string
+        }
+        Update: {
+          adjustment_id?: string
+          new_price?: number
+          old_price?: number
+          price_book_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_adjustment_items_adjustment_id_fkey"
+            columns: ["adjustment_id"]
+            isOneToOne: false
+            referencedRelation: "price_adjustments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_adjustment_items_price_book_id_fkey"
+            columns: ["price_book_id"]
+            isOneToOne: false
+            referencedRelation: "price_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_adjustment_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_adjustments: {
+        Row: {
+          changes: Json
+          created_at: string
+          created_by: string | null
+          filter: Json
+          id: string
+          note: string | null
+          price_count: number
+          product_count: number
+          reverted_at: string | null
+          reverted_by: string | null
+          reverted_count: number | null
+          rounding: number
+        }
+        Insert: {
+          changes: Json
+          created_at?: string
+          created_by?: string | null
+          filter?: Json
+          id?: string
+          note?: string | null
+          price_count?: number
+          product_count?: number
+          reverted_at?: string | null
+          reverted_by?: string | null
+          reverted_count?: number | null
+          rounding?: number
+        }
+        Update: {
+          changes?: Json
+          created_at?: string
+          created_by?: string | null
+          filter?: Json
+          id?: string
+          note?: string | null
+          price_count?: number
+          product_count?: number
+          reverted_at?: string | null
+          reverted_by?: string | null
+          reverted_count?: number | null
+          rounding?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_adjustments_reverted_by_fkey"
+            columns: ["reverted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_book_entries: {
         Row: {
           created_at: string
@@ -4249,6 +4355,14 @@ export type Database = {
         }
         Returns: number
       }
+      adjusted_price: {
+        Args: {
+          p_price: number
+          p_percent: number
+          p_rounding: number
+        }
+        Returns: number
+      }
       advance_approval: {
         Args: {
           p_request: string
@@ -4263,6 +4377,16 @@ export type Database = {
           p_updates: Json
         }
         Returns: undefined
+      }
+      apply_price_adjustment: {
+        Args: {
+          p_products: string[]
+          p_changes: Json
+          p_rounding?: number
+          p_note?: string
+          p_filter?: Json
+        }
+        Returns: string
       }
       can_access_owner: {
         Args: {
@@ -4813,6 +4937,14 @@ export type Database = {
           can_open: boolean
         }[]
       }
+      preview_price_adjustment: {
+        Args: {
+          p_products: string[]
+          p_changes: Json
+          p_rounding?: number
+        }
+        Returns: Json
+      }
       price_book_problem: {
         Args: {
           p_book: string
@@ -4920,6 +5052,12 @@ export type Database = {
           p_quote: string
         }
         Returns: string
+      }
+      revert_price_adjustment: {
+        Args: {
+          p_adjustment: string
+        }
+        Returns: number
       }
       run_scheduled_automations: {
         Args: never

@@ -19,6 +19,7 @@ import { QUOTE_STATUSES } from "@/lib/objects/picklists";
 import { requireUser } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
 import { Alert } from "@/components/ui/Alert";
+import { CartCleared } from "@/components/products/Cart";
 
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Cotización" };
@@ -101,6 +102,15 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
         count: lines?.length ?? 0,
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+            {typeof sp.seleccion === "string" && (
+              <div className="space-y-2 2xl:col-span-2">
+                <CartCleared />
+                <Alert tone="success">{t("Se agregaron {n} productos de tu selección, con el precio de la lista de esta cotización.").replace("{n}", String(Number(sp.seleccion) || 0))}</Alert>
+                {typeof sp.sin_precio === "string" && sp.sin_precio && (
+                  <Alert tone="warning">{t("No se agregaron por no tener precio en la lista de esta cotización:")} {sp.sin_precio}</Alert>
+                )}
+              </div>
+            )}
             {expired && <div className="2xl:col-span-2"><Alert tone="warning">{expiredText}</Alert></div>}
             {stale && <div className="2xl:col-span-2"><Alert tone="warning">{staleText}</Alert></div>}
             <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")}

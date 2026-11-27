@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PackageCheck, Tags } from "lucide-react";
+import { PackageCheck, Percent, Tags } from "lucide-react";
 import { ObjectListPage } from "@/components/records/ObjectListPage";
 import { decodeFilters } from "@/lib/records/filters";
 import { requireUser } from "@/lib/session";
+import { CartButton } from "@/components/products/Cart";
 
 import { Tr } from "@/components/ui/Tr";
 export const metadata: Metadata = { title: "Productos" };
@@ -21,7 +22,12 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   const qs = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" && k !== "f" && k !== "page" ? [[k, v]] : [])));
   if (next.length) qs.set("f", JSON.stringify(next));
   const href = qs.size ? `/productos?${qs.toString()}` : "/productos";
+  // El ajuste masivo de precios actúa sobre lo que muestra la lista: lleva su vista, búsqueda y filtros.
+  const adjustQs = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" && ["q", "f", "view"].includes(k) ? [[k, v]] : [])));
+  const adjustHref = adjustQs.size ? `/productos/ajustar-precios?${adjustQs.toString()}` : "/productos/ajustar-precios";
   return (
+    <>
+    <CartButton userId={user.id} />
     <ObjectListPage object="products" user={user} searchParams={sp} newHref="/productos/nuevo"
       newLabel="Nuevo producto" defaultViewName="Todos los productos"
       extraActions={
@@ -30,8 +36,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
             title="En inventario menos comprometido en PT-01, mayor que cero">
             <PackageCheck size={16} /> <Tr>Con disponible</Tr>
           </Link>
+          {user.access.isAdmin && <Link href={adjustHref} className="btn"><Percent size={16} /> <Tr>Ajustar precios</Tr></Link>}
           <Link href="/productos/listas" className="btn"><Tags size={16} /> <Tr>Listas de precios</Tr></Link>
         </>
       } />
+    </>
   );
 }

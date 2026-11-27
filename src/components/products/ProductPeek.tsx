@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Info, X } from "lucide-react";
 import { formatCurrency, formatDateTime, formatNumber } from "@/lib/format";
 import { useT } from "@/lib/i18n/client";
+import { AddToCart } from "./Cart";
 
 type Summary = {
   name: string; code: string | null; unit: string | null; isKit: boolean;
@@ -18,7 +19,7 @@ const MOVE_PX = 10;
  * Vistazo de un producto en la lista: al dejar presionada su fila (o con el botón de información) aparece una
  * tarjeta pequeña con el disponible real de PT-01 y el precio en las listas de los canales del asesor.
  */
-export function ProductPeek({ id, name, children }: { id: string; name: string; children: React.ReactNode }) {
+export function ProductPeek({ id, name, code = null, children }: { id: string; name: string; code?: string | null; children: React.ReactNode }) {
   const t = useT();
   const anchor = useRef<HTMLSpanElement>(null);
   const card = useRef<HTMLDivElement>(null);
@@ -110,6 +111,9 @@ export function ProductPeek({ id, name, children }: { id: string; name: string; 
         onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); show(r.left, r.bottom); }}>
         <Info size={14} />
       </button>
+      <span className="opacity-0 transition focus-within:opacity-100 group-hover/peek:opacity-100 [@media(pointer:coarse)]:hidden">
+        <AddToCart id={id} name={name} code={code} compact />
+      </span>
       {open && (
         <div ref={card} role="dialog" aria-label={`${t("Disponible y precios de")} ${name}`}
           className="fixed z-50 rounded-2xl border border-line bg-bg p-3 text-left text-sm font-normal shadow-[var(--shadow-lg)]"
@@ -145,6 +149,9 @@ export function ProductPeek({ id, name, children }: { id: string; name: string; 
                     </li>
                   ))}
                 </ul>
+              </div>
+              <div className="mt-3 flex justify-end border-t border-line pt-2">
+                <AddToCart id={id} name={name} code={summary.code} className="btn btn-sm" />
               </div>
             </>
           )}

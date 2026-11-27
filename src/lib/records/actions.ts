@@ -8,6 +8,7 @@ import { getObject, isObjectKey, type ListDefinition, type ObjectKey } from "@/l
 import { getObjectDef, untypedClient } from "./data";
 import type { FormState } from "./form";
 import { friendlyError, persistRecord } from "./persist";
+import { addCartLines } from "@/lib/products/cart";
 import { insertActivity } from "./activities";
 import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
@@ -21,6 +22,14 @@ export async function saveRecord(objectKey: ObjectKey, id: string | null, _prev:
   if (!result.ok) return result.state;
 
   revalidatePath("/", "layout");
+  // Cotización creada desde la selección de productos («carrito»): entran sus líneas y la ficha dice cuántas.
+  const cart = String(formData.get("_cart") ?? "");
+  if (objectKey === "quotes" && !id && result.id && cart) {
+    const { added, skipped } = await addCartLines(result.id, cart);
+    const qs = new URLSearchParams({ seleccion: String(added) });
+    if (skipped.length) qs.set("sin_precio", skipped.slice(0, 8).join(" · "));
+    redirect(`${def.path}/${result.id}?${qs.toString()}`);
+  }
   const returnTo = String(formData.get("_return") ?? "");
   redirect(returnTo.startsWith("/") ? returnTo : `${def.path}/${result.id}`);
 }

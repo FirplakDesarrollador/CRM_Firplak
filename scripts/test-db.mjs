@@ -2290,6 +2290,51 @@ await check('el disponible es En inventario − Comprometido de PT-01; el de un 
   }
 });
 
+console.log('Ajuste masivo de precios');
+await check('un administrador sube precios por lista con vista previa, queda el lote y se puede deshacer; un asesor no', async () => {
+  const [cop] = await q(`insert into price_books (name, market, channel, is_client_list) values ('Ajuste COP', 'Nacional', null, true) returning id`);
+  const [usd] = await q(`insert into price_books (name, market, channel, is_client_list) values ('Ajuste USD', 'Internacional', null, true) returning id, currency`);
+  assert.equal(usd.currency, 'USD');
+  const prods = await q(`insert into products (name, product_code) values ('Ajuste uno', 'AJ-1'), ('Ajuste dos', 'AJ-2'), ('Ajuste tres', 'AJ-3') returning id, product_code`);
+  const id = (code) => prods.find((p) => p.product_code === code).id;
+  await q(`insert into price_book_entries (price_book_id, product_id, unit_price) values ($1, $3, 123456), ($1, $4, 200000), ($1, $5, 999), ($2, $3, 10.55)`,
+    [cop.id, usd.id, id('AJ-1'), id('AJ-2'), id('AJ-3')]);
+  const elegidos = [id('AJ-1'), id('AJ-2')];
+  const cambios = JSON.stringify([{ price_book_id: cop.id, percent: 8 }, { price_book_id: usd.id, percent: 10 }]);
+  const precio = async (book, code) => Number((await q(`select unit_price from price_book_entries where price_book_id = $1 and product_id = $2`, [book, id(code)]))[0].unit_price);
+
+  await assert.rejects(as(rep, () => q(`select preview_price_adjustment($1, $2::jsonb, 1000)`, [elegidos, cambios])), /Solo un administrador/);
+  await assert.rejects(as(rep, () => q(`select apply_price_adjustment($1, $2::jsonb, 1000)`, [elegidos, cambios])), /Solo un administrador/);
+
+  // La vista previa no guarda nada: en pesos redondea a 1.000; en dólares, a centavos.
+  const [{ v }] = await as(admin, () => q(`select preview_price_adjustment($1, $2::jsonb, 1000) v`, [elegidos, cambios]));
+  const porLista = Object.fromEntries(v.map((l) => [l.name, l]));
+  assert.deepEqual([porLista['Ajuste COP'].prices, Number(porLista['Ajuste COP'].before), Number(porLista['Ajuste COP'].after)], [2, 323456, 133000 + 216000]);
+  assert.deepEqual([porLista['Ajuste USD'].prices, Number(porLista['Ajuste USD'].after)], [1, 11.61]);
+  assert.equal(await precio(cop.id, 'AJ-1'), 123456);
+
+  await assert.rejects(as(admin, () => q(`select apply_price_adjustment($1, $2::jsonb)`, [elegidos, JSON.stringify([{ price_book_id: cop.id, percent: 0 }])])), /entre -90 y 200/);
+  await assert.rejects(as(admin, () => q(`select apply_price_adjustment($1, $2::jsonb)`, [[], cambios])), /No hay productos elegidos/);
+  const [{ lote }] = await as(admin, () => q(`select apply_price_adjustment($1, $2::jsonb, 1000, 'Incremento 2027', '{"q":"ajuste"}') lote`, [elegidos, cambios]));
+  assert.deepEqual([await precio(cop.id, 'AJ-1'), await precio(cop.id, 'AJ-2'), await precio(usd.id, 'AJ-1'), await precio(cop.id, 'AJ-3')], [133000, 216000, 11.61, 999]);
+  const [reg] = await q(`select note, product_count, price_count, rounding, created_by, reverted_at from price_adjustments where id = $1`, [lote]);
+  assert.deepEqual([reg.note, reg.product_count, reg.price_count, Number(reg.rounding), reg.created_by, reg.reverted_at], ['Incremento 2027', 2, 3, 1000, admin.id, null]);
+  // Solo administración ve los lotes; nadie los escribe a mano.
+  assert.equal(await as(rep, () => count(`select count(*) n from price_adjustments`)), 0);
+  await assert.rejects(as(admin, () => q(`insert into price_adjustments (changes) values ('[]')`)), /row-level security/);
+
+  // Deshacer: vuelve cada precio, salvo el que alguien cambió después.
+  await q(`update price_book_entries set unit_price = 250000 where price_book_id = $1 and product_id = $2`, [cop.id, id('AJ-2')]);
+  await assert.rejects(as(rep, () => q(`select revert_price_adjustment($1)`, [lote])), /Solo un administrador/);
+  const [{ n }] = await as(admin, () => q(`select revert_price_adjustment($1) n`, [lote]));
+  assert.equal(n, 2);
+  assert.deepEqual([await precio(cop.id, 'AJ-1'), await precio(cop.id, 'AJ-2'), await precio(usd.id, 'AJ-1')], [123456, 250000, 10.55]);
+  await assert.rejects(as(admin, () => q(`select revert_price_adjustment($1)`, [lote])), /ya se deshizo/);
+  for (const fn of ['apply_price_adjustment(uuid[], jsonb, numeric, text, jsonb)', 'revert_price_adjustment(uuid)', 'preview_price_adjustment(uuid[], jsonb, numeric)']) {
+    assert.equal((await q(`select has_function_privilege('anon', 'public.${fn}', 'execute') ok`))[0].ok, false, fn);
+  }
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

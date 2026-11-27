@@ -23,13 +23,15 @@ type Props = {
   owner: string;
   /** Versión del registro que se edita (`updated_at`); sin ella, registro nuevo. */
   version?: string;
+  /** Contenido propio dentro del formulario, antes de sus secciones. */
+  extra?: React.ReactNode;
 };
 
 type Relation = { id?: string; name?: string; full_name?: string };
 
 const currencyOf = (market: string | null | undefined) => (market === "Internacional" ? "USD" : "COP");
 
-export function RecordForm({ def, fields, record, ctx, action, cancelHref, returnTo, owner, version }: Props) {
+export function RecordForm({ def, fields, record, ctx, action, cancelHref, returnTo, owner, version, extra }: Props) {
   const t = useT();
   const formRef = useRef<HTMLFormElement>(null);
   // Lo escrito se guarda como borrador en el dispositivo; los campos que se toman de la cuenta se guardan vacíos
@@ -162,6 +164,7 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
           ) : <Alert tone={state.offline ? "warning" : "error"}>{t(state.message ?? "")}</Alert>}
         </div>
       )}
+      {extra}
       {/* Al recuperar o descartar un borrador los campos se montan de nuevo con sus valores iniciales. */}
       <Fragment key={mount}>
       {def.sections.map((section) => {

@@ -21,6 +21,7 @@ import { Fmt } from "@/components/ui/Fmt";
 import { AmountInput } from "@/components/ui/AmountInput";
 import { KitComponents, type KitComponent } from "@/components/products/KitComponents";
 import { KitAvailability } from "@/components/products/KitAvailability";
+import { AddToCart, CartButton } from "@/components/products/Cart";
 type KitStockRow = { id: string; quantity: number; component: { id: string; name: string; product_code: string | null; available_qty: number | null } | null };
 
 export const metadata: Metadata = { title: "Producto" };
@@ -48,6 +49,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   ]);
 
   return (
+    <>
+    <CartButton userId={user.id} />
     <RecordLayout
       def={def}
       row={row}
@@ -57,6 +60,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       badges={<>{isKit && <span className="badge badge-brand"><Tr>Kit</Tr></span>}{row.is_active ? null : <span className="badge"><Tr>Inactivo</Tr></span>}</>}
       actions={
         <>
+          {row.is_active && <AddToCart id={id} name={String(row.name)} code={(row.product_code as string | null) ?? null} />}
           {access.canEdit && <Link href={`/productos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {access.canDelete && <DeleteButton object="products" id={id} label={`el producto “${row.name}”`} />}
         </>
@@ -160,5 +164,6 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       }] : [])]}
       activity={null}
     />
+    </>
   );
 }

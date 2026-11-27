@@ -89,7 +89,7 @@ export function ListTable({
                 {columns.map((col, i) => (
                   <td key={col.name} className={columnAlign(col.type)}>
                     {peek && i === 0 ? (
-                      <ProductPeek id={String(row.id)} name={String(row.name ?? "")}>
+                      <ProductPeek id={String(row.id)} name={String(row.name ?? "")} code={(row.product_code as string | null) ?? null}>
                         <FieldValue field={col} row={row} linkName={`${def.path}/${row.id}`} />
                       </ProductPeek>
                     ) : <FieldValue field={col} row={row} linkName={i === 0 ? `${def.path}/${row.id}` : undefined} />}
