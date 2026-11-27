@@ -280,7 +280,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
           <RealForecastChart days={realDays} today={realToday} quota={realQuota} mode={type === "month" ? "weeks" : "months"} />
         </div>
         <p className="mt-2 text-xs text-muted">
-          <Tr>En un mes, cada barra es lo acumulado al cierre de la semana; en trimestre y año, lo que se factura en cada mes. La línea es el total: continua hasta hoy y punteada en lo proyectado. Lo que ya debía haberse facturado se cuenta hoy, salvo lo vencido hace más de 30 días, que va en «Atrasado por revisar». Los pedidos y entregas abiertos son todos los de SAP, sean o no cuentas del CRM.</Tr>
+          <Tr>En un mes, cada barra es lo acumulado al cierre de la semana; en trimestre y año, lo que se factura en cada mes. La línea es el total: continua hasta hoy y punteada en lo proyectado. Lo facturado después del último archivo de ventas se toma de las facturas de SAP. Lo que ya debía haberse facturado se cuenta hoy, salvo lo vencido hace más de 30 días, que va en «Atrasado por revisar». Los pedidos y entregas abiertos son todos los de SAP, sean o no cuentas del CRM.</Tr>
         </p>
       </section>
 

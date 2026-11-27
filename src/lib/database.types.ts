@@ -5297,6 +5297,10 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      sap_agent_sales_last_date: {
+        Args: never
+        Returns: string
+      }
       sap_agent_sales_load: {
         Args: {
           p_month: string

@@ -227,12 +227,7 @@ async function cliente(sap, codigo) {
  * y las entregas sin facturar. Filas: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor sin IVA,
  * tipo de facturación del pedido («Sin POD» se factura al despachar)].
  */
-async function pendientePorFacturar(sap) {
-  let vendedores = new Map();
-  try {
-    vendedores = new Map((await sap.lista(q("SalesPersons", { $select: "SalesEmployeeCode,SalesEmployeeName" }))).map((v) => [v.SalesEmployeeCode, v.SalesEmployeeName]));
-  } catch { /* sin nombres de vendedor: cuenta para el propietario de la cuenta */ }
-  const vendedor = (d) => (d.SalesPersonCode > 0 ? vendedores.get(d.SalesPersonCode) ?? "" : "");
+async function pendientePorFacturar(sap, vendedor) {
   const filas = [];
   // Los pedidos traen todas sus líneas: páginas pequeñas para que SAP responda a tiempo.
   const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,U_TipoFacturacion,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
@@ -254,16 +249,49 @@ async function pendientePorFacturar(sap) {
   return filas;
 }
 
-/** Sube el pendiente por facturar como un lote nuevo; solo al terminar reemplaza al anterior. */
+/**
+ * Facturas y notas crédito de SAP posteriores a la última fecha del archivo de ventas (tope: 15 días), sin IVA: lo
+ * facturado hoy ya salió de los pedidos y entregas abiertos y todavía no está en el archivo. La nota crédito va con
+ * su valor en positivo y tipo «credit».
+ */
+async function facturasRecientes(sap, vendedor, desde) {
+  if (!desde) return [];
+  const tope = new Date(Date.now() - 15 * 86_400_000).toISOString().slice(0, 10);
+  const fecha = String(desde).slice(0, 10) > tope ? String(desde).slice(0, 10) : tope;
+  const filas = [];
+  for (const [entidad, tipo] of [["Invoices", "invoice"], ["CreditNotes", "credit"]]) {
+    const docs = await sap.lista(q(entidad, { $select: "DocEntry,DocNum,DocDate,CardCode,CardName,SalesPersonCode,DocTotal,VatSum,DiscountPercent,Cancelled,DocumentLines", $filter: `DocDate gt '${fecha}' and Cancelled eq 'tNO'`, $orderby: "DocEntry" }), 100);
+    for (const d of docs) {
+      // Valor antes de impuestos y retenciones: la suma de las líneas menos el descuento del documento.
+      const lineas = (d.DocumentLines ?? []).reduce((n, ln) => n + num(ln.LineTotal), 0) * (1 - num(d.DiscountPercent) / 100);
+      const valor = Math.round((lineas > 0 ? lineas : num(d.DocTotal) - num(d.VatSum)) * 100) / 100;
+      if (valor > 0) filas.push([tipo, d.DocEntry, 0, String(d.DocNum), d.CardCode, d.CardName ?? "", vendedor(d), dia(d.DocDate), valor, ""]);
+    }
+  }
+  return filas;
+}
+
+/** Sube el pendiente por facturar y las facturas recientes como un lote nuevo; solo al terminar reemplaza al anterior. */
 async function subirPendiente(sap, destino) {
-  const filas = await pendientePorFacturar(sap);
+  let vendedores = new Map();
+  try {
+    vendedores = new Map((await sap.lista(q("SalesPersons", { $select: "SalesEmployeeCode,SalesEmployeeName" }))).map((v) => [v.SalesEmployeeCode, v.SalesEmployeeName]));
+  } catch { /* sin nombres de vendedor: cuenta para el propietario de la cuenta */ }
+  const vendedor = (d) => (d.SalesPersonCode > 0 ? vendedores.get(d.SalesPersonCode) ?? "" : "");
+  const pendiente = await pendientePorFacturar(sap, vendedor);
+  // Si SAP no entrega las facturas, el pendiente se sube igual.
+  let facturas = [];
+  try {
+    facturas = await facturasRecientes(sap, vendedor, await destino.rpc("sap_agent_sales_last_date"));
+  } catch (e) { log("AVISO facturas recientes:", e?.message ?? e); }
+  const filas = [...pendiente, ...facturas];
   const lote = randomUUID();
   const partes = lotes(filas, 1000);
   if (partes.length === 0) partes.push([]);
   for (let i = 0; i < partes.length; i++) {
     await destino.rpc("sap_agent_backlog_load", { p_batch: lote, p_rows: partes[i], p_last: i === partes.length - 1 });
   }
-  return filas.length;
+  return { pendiente: pendiente.length, facturas: facturas.length };
 }
 
 /** Inventario y precios de un lote de artículos (hasta 20 por consulta: las URL largas fallan). */
@@ -329,15 +357,17 @@ async function correr({ ahora }) {
         nArticulos += await destino.rpc("sap_agent_save", { p_kind: "items", p_rows: await articulos(sap, lote) });
       } catch (e) { anotar(`artículos ${lote[0]}…`, e); }
     }
-    // Pronóstico: todos los pedidos y entregas abiertos de la compañía.
-    try {
-      log(`Pendiente por facturar: ${await subirPendiente(sap, destino)} líneas de pedidos y entregas abiertos`);
-    } catch (e) { anotar("pendiente por facturar", e); }
     // Ventas reales: los CSV mensuales que hayan cambiado (si la carpeta está configurada).
     try {
       const v = await subirVentas(cfg, destino);
       if (v.meses) log(`Ventas: ${v.meses} meses actualizados, ${v.filas} líneas`);
     } catch (e) { anotar("ventas", e); }
+    // Pronóstico: todos los pedidos y entregas abiertos de la compañía, y las facturas posteriores al archivo de ventas.
+    try {
+      const p = await subirPendiente(sap, destino);
+      log(`Pendiente por facturar: ${p.pendiente} líneas de pedidos y entregas abiertos`);
+      log(`Facturas posteriores al archivo de ventas: ${p.facturas}`);
+    } catch (e) { anotar("pendiente por facturar", e); }
   } catch (e) {
     anotar("corrida", e);
   } finally {

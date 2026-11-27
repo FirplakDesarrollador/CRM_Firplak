@@ -642,8 +642,9 @@ const sapServer = http.createServer(async (req, res) => {
     const filter = url.searchParams.get('$filter') ?? '';
     const card = filter.match(/CardCode eq '([^']+)'/)?.[1];
     const openOnly = filter.includes("DocumentStatus eq 'bost_Open'");
+    const after = filter.match(/DocDate gt '([^']+)'/)?.[1];
     // Sin filtro de cliente: todos (el agente trae así el pendiente por facturar de la compañía).
-    const list = (path === '/Orders' ? sapOrders : path === '/DeliveryNotes' ? sapDeliveries : sapInvoices).filter((d) => (!card || d.CardCode === card) && (!openOnly || d.DocumentStatus === 'bost_Open'));
+    const list = (path === '/Orders' ? sapOrders : path === '/DeliveryNotes' ? sapDeliveries : sapInvoices).filter((d) => (!card || d.CardCode === card) && (!openOnly || d.DocumentStatus === 'bost_Open') && (!after || d.DocDate.slice(0, 10) > after));
     return json(res, 200, { value: list.sort((a, b) => b.DocDate.localeCompare(a.DocDate)) });
   }
   sapError(res, 404, `No simulado: ${path}`);

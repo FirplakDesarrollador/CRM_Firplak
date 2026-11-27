@@ -13,6 +13,8 @@ Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
   entregas sin facturar (cliente, vendedor, fecha, valor sin IVA y el Tipo de facturación del pedido,
   `U_TipoFacturacion`: los «Sin POD» se facturan al despachar). Con eso el Pronóstico muestra la capa
   «Pedidos y entregas abiertos». Cada corrida reemplaza la anterior completa; si falla, queda la anterior.
+  En el mismo lote van las **facturas y notas crédito posteriores al archivo de ventas** (tope de 15 días),
+  para que lo facturado hoy no desaparezca del Pronóstico mientras se regenera el archivo.
 
 Además revisa **cada minuto, todos los días**, si el CRM le dejó una solicitud (Configuración → SAP →
 «Importar productos desde SAP»): la vista previa o la importación de artículos. La atiende, deja el

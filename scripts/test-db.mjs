@@ -2500,6 +2500,7 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integración SAP') where id = $1`, [agente.id]);
   const [{ d10, dm30, dm2, dm60, dm31 }] = await q(`select ('${hoy}'::date + 10)::text d10, ('${hoy}'::date - 30)::text dm30, ('${hoy}'::date - 2)::text dm2,
     ('${hoy}'::date - 60)::text dm60, ('${hoy}'::date - 31)::text dm31`);
+  const dm1 = (await q(`select ('${hoy}'::date - 1)::text d`))[0].d;
   const lote1 = '11111111-1111-4111-8111-111111111111', lote2 = '22222222-2222-4222-8222-222222222222';
   const filas = [
     ['order', 9501, 0, '501', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', d10, 6000],
@@ -2518,7 +2519,15 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
     ['order', 9506, 0, '506', 'CNPOD', 'Nacional sin POD', 'VENDEDOR SIN USUARIO', d10, 110, 'Sin POD'],
     ['order', 9507, 0, '507', 'CNPOD', 'Nacional con POD', 'VENDEDOR SIN USUARIO', d10, 120, 'POD Total'],
     ['order', 9508, 0, '508', 'CNPOD', 'Nacional sin POD vencido', 'VENDEDOR SIN USUARIO', dm2, 130, 'Sin POD'],
+    // Facturas de SAP posteriores al archivo de ventas (que aquí llega hasta ayer): la de hoy y su nota crédito suman a
+    // «Facturado»; la de ayer no, porque el archivo ya la trae.
+    ['invoice', 9901, 0, '901', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', hoy, 5000],
+    ['credit', 9901, 0, '951', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', hoy, 200],
+    ['invoice', 9902, 0, '902', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', dm1, 9999],
   ];
+  await q(`insert into sap_sales (sale_date, invoice, seller, card_code, customer_name, amount) values ($1, 'FAYER', 'OTRO VENDEDOR', 'CZZ', 'Y', 0)`, [dm1]);
+  assert.equal((await as(agente, () => q(`select sap_agent_sales_last_date()::text d`)))[0].d >= dm1, true);
+  await assert.rejects(as(admin, () => q(`select sap_agent_sales_last_date()`)), /Solo el agente de SAP/);
   await q(`insert into sap_sales (sale_date, invoice, zone, seller, card_code, customer_name, amount) values
     ($1::date - 40, 'FX1', 'ANTIOQUIA', 'OTRO VENDEDOR', 'CNEXPO', 'Z', 0), ($1::date - 35, 'FX2', 'Exterior', 'OTRO VENDEDOR', 'CNEXPO', 'Z', 0)`, [hoy]);
   await assert.rejects(as(admin, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [lote1, JSON.stringify(filas)])), /Solo el agente de SAP/);
@@ -2546,19 +2555,22 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   // El vencido «Sin POD» sigue contando hoy (2 días de atraso, sin días de gracia).
   assert.deepEqual(pod.map((l) => [l.doc_num, l.dias, l.v]), [['506', 10, 0], ['507', 14, 0], ['508', 0, 2]]);
   // Las líneas en cero no se guardan; el vendedor nuevo queda en la lista para relacionarlo.
-  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 11);
+  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 14);
+  // Las facturas del lote no son pendiente por facturar.
+  assert.equal((await q(`select count(*)::int n from sap_backlog_lines() where doc_num in ('901', '951', '902')`))[0].n, 0);
   assert.equal((await q(`select count(*)::int n from sap_sellers where seller = 'VENDEDOR SIN USUARIO' and user_id is null`))[0].n, 1);
   // Nadie lee la tabla directamente.
   assert.equal((await as(admin, () => q(`select count(*)::int n from sap_backlog`)))[0].n, 0);
   const despues = (await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o, coalesce(sum(deliveries), 0) e from forecast_real_days('year', date_trunc('year', now())::date)`)))[0];
-  assert.equal(Number(despues.i) - Number(base.i), 1400);
+  // 1.400 del archivo de ventas + la factura de hoy (5.000) − su nota crédito (200).
+  assert.equal(Number(despues.i) - Number(base.i), 6200);
   // El pedido de 14 días puede caer en el año siguiente si la prueba corre a fin de diciembre: al menos la línea vencida y la entrega.
   // Suma también el cliente que no es cuenta del CRM (300).
   assert.ok(Number(despues.o) - Number(base.o) >= 1100);
   assert.ok(Number(despues.e) - Number(base.e) >= 0);
   // Por persona: su facturación (sin la del otro vendedor) y los pedidos de sus cuentas.
   const mia = (await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o from forecast_real_days('year', date_trunc('year', now())::date, $1)`, [admin.id])))[0];
-  assert.equal(Number(mia.i), 900);
+  assert.equal(Number(mia.i), 5700);
   assert.ok(Number(mia.o) >= 800);
   // Lo del vendedor de SAP sin usuario no es de nadie… salvo del propietario de la cuenta con ese Código SAP.
   const sinVendedor = async () => Number((await as(admin, () => q(`select coalesce(sum(orders), 0) o from forecast_real_days('year', date_trunc('year', now())::date, $1) where day = '${hoy}'`, [admin.id])))[0].o);
@@ -2583,7 +2595,7 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   assert.equal((await q(`select has_function_privilege('authenticated', 'public.sap_backlog_lines()', 'execute') ok`))[0].ok, false);
   assert.equal((await q(`select has_function_privilege('anon', 'public.forecast_real_days(text, date, uuid)', 'execute') ok`))[0].ok, false);
   // Deja las tablas de SAP como estaban para las pruebas siguientes.
-  await db.exec(`delete from sap_backlog; update sap_backlog_state set batch = null, row_count = 0, loaded_at = null; delete from sap_sales where invoice in ('F1', 'F2', 'F3', 'FX1', 'FX2') and card_code in ('CREAL01', 'CZZ', 'CNEXPO'); delete from sap_sellers where seller in ('VENDEDOR REAL', 'VENDEDOR SIN USUARIO');`);
+  await db.exec(`delete from sap_backlog; update sap_backlog_state set batch = null, row_count = 0, loaded_at = null; delete from sap_sales where invoice in ('F1', 'F2', 'F3', 'FX1', 'FX2', 'FAYER') and card_code in ('CREAL01', 'CZZ', 'CNEXPO'); delete from sap_sellers where seller in ('VENDEDOR REAL', 'VENDEDOR SIN USUARIO');`);
   await q(`delete from auth.users where id = $1`, [agente.id]);
 });
 
