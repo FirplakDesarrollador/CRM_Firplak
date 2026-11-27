@@ -17,7 +17,7 @@ test("la dirección ve las tres capas del pronóstico real, su suma y las barras
   const abiertos = millones(await seccion.getByTestId("real-backlog").innerText());
   expect(abiertos).toBeGreaterThanOrEqual(20);
   await expect(seccion).toContainText("Entregas sin facturar");
-  await expect(seccion).toContainText("Fecha de despacho o de entrega más 4 días.");
+  await expect(seccion).toContainText("Fecha de despacho o de entrega más 4 días; en Exterior, la misma fecha.");
   // Oportunidades abiertas de la demostración.
   expect(millones(await seccion.getByTestId("real-opportunities").innerText())).toBeGreaterThan(0);
   // El total es la suma de las tres capas (en millones, con el redondeo de cada cifra).

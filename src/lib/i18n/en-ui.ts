@@ -1393,7 +1393,7 @@ export const UI_EN: Record<string, string> = {
   "Pronóstico del periodo": "Period forecast",
   "de la meta de": "of the goal of",
   "Ventas netas de SAP, en su fecha de factura.": "SAP net sales, on their invoice date.",
-  "Fecha de despacho o de entrega más 4 días.": "Dispatch or delivery date plus 4 days.",
+  "Fecha de despacho o de entrega más 4 días; en Exterior, la misma fecha.": "Dispatch or delivery date plus 4 days; for export, the same date.",
   "Abiertas en el CRM, en su mes de entrega y facturación.": "Open in the CRM, in their delivery and invoicing month.",
   "En un mes, cada barra es lo acumulado al cierre de la semana; en trimestre y año, lo que se factura en cada mes. La línea es el total: continua hasta hoy y punteada en lo proyectado. Lo que ya debía haberse facturado se cuenta hoy. Los pedidos y entregas abiertos son todos los de SAP, sean o no cuentas del CRM.": "In a month, each bar is the cumulative amount at the end of the week; in a quarter or year, what is invoiced in each month. The line is the total: solid up to today and dotted for the projection. Anything that should already have been invoiced counts today. Open orders and deliveries are all those in SAP, whether or not they are CRM accounts.",
   "Oportunidades del CRM por categoría y asesor": "CRM opportunities by category and rep",

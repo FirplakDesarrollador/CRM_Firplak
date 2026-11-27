@@ -229,7 +229,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
               <dd className="num text-lg font-medium" data-testid={`real-${l.key}`}>{formatCompactCurrency(real[l.key])}</dd>
               <dd className="text-xs text-muted">
                 {l.key === "invoiced" ? <Tr>Ventas netas de SAP, en su fecha de factura.</Tr>
-                  : l.key === "backlog" ? <>{t("Pedidos")} {formatCompactCurrency(real.orders)} · {t("Entregas sin facturar")} {formatCompactCurrency(real.deliveries)}. <Tr>Fecha de despacho o de entrega más 4 días.</Tr></>
+                  : l.key === "backlog" ? <>{t("Pedidos")} {formatCompactCurrency(real.orders)} · {t("Entregas sin facturar")} {formatCompactCurrency(real.deliveries)}. <Tr>Fecha de despacho o de entrega más 4 días; en Exterior, la misma fecha.</Tr></>
                     : <Tr>Abiertas en el CRM, en su mes de entrega y facturación.</Tr>}
               </dd>
             </div>

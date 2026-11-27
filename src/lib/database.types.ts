@@ -5332,6 +5332,12 @@ export type Database = {
         Args: never
         Returns: number
       }
+      sap_is_export: {
+        Args: {
+          p_card_code: string
+        }
+        Returns: boolean
+      }
       sap_item_available: {
         Args: {
           p_code: string

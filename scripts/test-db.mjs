@@ -2507,7 +2507,12 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
     // Un cliente que no existe en el CRM, de un vendedor sin usuario: suma en la compañía.
     ['order', 9502, 0, '502', 'CSINCUENTA', 'Sin cuenta', 'VENDEDOR SIN USUARIO', dm30, 300],
     ['order', 9503, 0, '503', 'CSINCUENTA', 'Sin cuenta', 'VENDEDOR SIN USUARIO', dm30, 0],
+    // Mercado internacional: por código de cliente del exterior, o por la zona de su última venta.
+    ['order', 9504, 0, '504', 'CE777', 'Cliente del exterior', 'VENDEDOR SIN USUARIO', d10, 400],
+    ['delivery', 9702, 0, '702', 'CNEXPO', 'Nacional que exporta', 'VENDEDOR SIN USUARIO', d10, 500],
   ];
+  await q(`insert into sap_sales (sale_date, invoice, zone, seller, card_code, customer_name, amount) values
+    ($1::date - 40, 'FX1', 'ANTIOQUIA', 'OTRO VENDEDOR', 'CNEXPO', 'Z', 0), ($1::date - 35, 'FX2', 'Exterior', 'OTRO VENDEDOR', 'CNEXPO', 'Z', 0)`, [hoy]);
   await assert.rejects(as(admin, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [lote1, JSON.stringify(filas)])), /Solo el agente de SAP/);
   // Una carga a medias no se ve: sigue vigente la anterior (aquí, ninguna).
   await as(agente, () => q(`select sap_agent_backlog_load($1, $2::jsonb, false)`, [lote1, JSON.stringify(filas.slice(0, 2))]));
@@ -2517,8 +2522,12 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   assert.deepEqual(lineas.map((l) => [l.kind, l.doc_num, l.dias, l.a]), [
     // Entrega de hace 2 días + 4 = en 2 días. Pedido: lo vencido se cuenta hoy; la otra línea, en 14 días.
     ['delivery', '701', 2, 2000], ['order', '501', 0, 800], ['order', '501', 14, 6000]]);
+  // Exterior no suma los 4 días: se factura en el mismo mes de su fecha de despacho.
+  const expo = await q(`select doc_num, (forecast_date - '${hoy}'::date) dias from sap_backlog_lines() where card_code in ('CE777', 'CNEXPO') order by doc_num`);
+  assert.deepEqual(expo.map((l) => [l.doc_num, l.dias]), [['504', 10], ['702', 10]]);
+  assert.equal((await q(`select has_function_privilege('authenticated', 'public.sap_is_export(text)', 'execute') ok`))[0].ok, false);
   // Las líneas en cero no se guardan; el vendedor nuevo queda en la lista para relacionarlo.
-  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 4);
+  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 6);
   assert.equal((await q(`select count(*)::int n from sap_sellers where seller = 'VENDEDOR SIN USUARIO' and user_id is null`))[0].n, 1);
   // Nadie lee la tabla directamente.
   assert.equal((await as(admin, () => q(`select count(*)::int n from sap_backlog`)))[0].n, 0);
@@ -2553,7 +2562,7 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   assert.equal((await q(`select has_function_privilege('authenticated', 'public.sap_backlog_lines()', 'execute') ok`))[0].ok, false);
   assert.equal((await q(`select has_function_privilege('anon', 'public.forecast_real_days(text, date, uuid)', 'execute') ok`))[0].ok, false);
   // Deja las tablas de SAP como estaban para las pruebas siguientes.
-  await db.exec(`delete from sap_backlog; update sap_backlog_state set batch = null, row_count = 0, loaded_at = null; delete from sap_sales where invoice in ('F1', 'F2', 'F3') and card_code in ('CREAL01', 'CZZ'); delete from sap_sellers where seller in ('VENDEDOR REAL', 'VENDEDOR SIN USUARIO');`);
+  await db.exec(`delete from sap_backlog; update sap_backlog_state set batch = null, row_count = 0, loaded_at = null; delete from sap_sales where invoice in ('F1', 'F2', 'F3', 'FX1', 'FX2') and card_code in ('CREAL01', 'CZZ', 'CNEXPO'); delete from sap_sellers where seller in ('VENDEDOR REAL', 'VENDEDOR SIN USUARIO');`);
   await q(`delete from auth.users where id = $1`, [agente.id]);
 });
 
