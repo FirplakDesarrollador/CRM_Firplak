@@ -4019,6 +4019,68 @@ export type Database = {
           },
         ]
       }
+      sap_backlog: {
+        Row: {
+          amount: number
+          base_date: string | null
+          batch: string
+          card_code: string
+          customer_name: string | null
+          doc_entry: number
+          doc_num: string | null
+          kind: string
+          line_num: number
+          seller: string | null
+        }
+        Insert: {
+          amount?: number
+          base_date?: string | null
+          batch: string
+          card_code: string
+          customer_name?: string | null
+          doc_entry: number
+          doc_num?: string | null
+          kind: string
+          line_num?: number
+          seller?: string | null
+        }
+        Update: {
+          amount?: number
+          base_date?: string | null
+          batch?: string
+          card_code?: string
+          customer_name?: string | null
+          doc_entry?: number
+          doc_num?: string | null
+          kind?: string
+          line_num?: number
+          seller?: string | null
+        }
+        Relationships: [
+        ]
+      }
+      sap_backlog_state: {
+        Row: {
+          batch: string | null
+          id: boolean
+          loaded_at: string | null
+          row_count: number
+        }
+        Insert: {
+          batch?: string | null
+          id?: boolean
+          loaded_at?: string | null
+          row_count?: number
+        }
+        Update: {
+          batch?: string | null
+          id?: boolean
+          loaded_at?: string | null
+          row_count?: number
+        }
+        Relationships: [
+        ]
+      }
       sap_items: {
         Row: {
           data: Json | null
@@ -5181,6 +5243,14 @@ export type Database = {
           branches: number
         }[]
       }
+      sap_agent_backlog_load: {
+        Args: {
+          p_batch: string
+          p_rows: Json
+          p_last: boolean
+        }
+        Returns: number
+      }
       sap_agent_finish: {
         Args: {
           p_run: string
@@ -5249,6 +5319,7 @@ export type Database = {
           doc_num: string
           forecast_date: string
           amount: number
+          seller: string
         }[]
       }
       sap_customer_root: {

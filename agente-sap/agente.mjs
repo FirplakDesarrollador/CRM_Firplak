@@ -9,7 +9,7 @@
 // Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import http from "node:http";
@@ -59,7 +59,7 @@ class Sap {
   }
 
   /** Petición al Service Layer. El certificado autofirmado se acepta solo aquí, para este host. */
-  pedir(method, path, body) {
+  pedir(method, path, body, pagina = 500) {
     const url = new URL(path.startsWith("http") ? path : `${this.cfg.sapUrl}/${path.replace(/^\//, "")}`);
     if (url.host !== this.base.host) throw new Error(`Destino inesperado: ${url.host}`);
     const lib = url.protocol === "https:" ? https : http;
@@ -70,7 +70,7 @@ class Sap {
         timeout: 60_000,
         ...(url.protocol === "https:" ? { rejectUnauthorized: this.cfg.sapCertificadoAutofirmado !== true } : {}),
         headers: {
-          Prefer: "odata.maxpagesize=500",
+          Prefer: `odata.maxpagesize=${pagina}`,
           ...(this.cookie ? { Cookie: this.cookie } : {}),
           ...(payload ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) } : {}),
         },
@@ -105,12 +105,12 @@ class Sap {
   }
 
   /** GET con una sola sesión compartida; ante un 401 vuelve a entrar y reintenta una vez. */
-  async get(path, reintento = true) {
+  async get(path, reintento = true, pagina = 500) {
     if (!this.cookie) await this.login();
-    const r = await this.pedir("GET", path);
+    const r = await this.pedir("GET", path, undefined, pagina);
     if (r.status === 401 && reintento) {
       this.cookie = null;
-      return this.get(path, false);
+      return this.get(path, false, pagina);
     }
     if (r.status === 404) return null;
     if (r.status < 200 || r.status >= 300) throw new Error(r.json?.error?.message?.value ?? `SAP respondió ${r.status}`);
@@ -118,13 +118,13 @@ class Sap {
   }
 
   /** Todas las páginas de una lista. */
-  async lista(path) {
+  async lista(path, pagina = 500) {
     const filas = [];
     let siguiente = path;
     while (siguiente) {
-      const pagina = await this.get(siguiente);
-      filas.push(...(pagina?.value ?? []));
-      siguiente = pagina?.["odata.nextLink"] ?? null;
+      const parte = await this.get(siguiente, true, pagina);
+      filas.push(...(parte?.value ?? []));
+      siguiente = parte?.["odata.nextLink"] ?? null;
     }
     return filas;
   }
@@ -222,6 +222,49 @@ async function cliente(sap, codigo) {
   return { partner, orders, deliveries: deliveries.slice(0, MAX_DOCS), invoices: invoices.slice(0, MAX_DOCS) };
 }
 
+/**
+ * Todo lo que falta por facturar en la compañía, sea o no cuenta del CRM: las líneas abiertas de los pedidos de venta
+ * y las entregas sin facturar. Filas: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor sin IVA].
+ */
+async function pendientePorFacturar(sap) {
+  let vendedores = new Map();
+  try {
+    vendedores = new Map((await sap.lista(q("SalesPersons", { $select: "SalesEmployeeCode,SalesEmployeeName" }))).map((v) => [v.SalesEmployeeCode, v.SalesEmployeeName]));
+  } catch { /* sin nombres de vendedor: cuenta para el propietario de la cuenta */ }
+  const vendedor = (d) => (d.SalesPersonCode > 0 ? vendedores.get(d.SalesPersonCode) ?? "" : "");
+  const filas = [];
+  // Los pedidos traen todas sus líneas: páginas pequeñas para que SAP responda a tiempo.
+  const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
+  for (const p of pedidos) {
+    if (p.Cancelled === "tYES") continue;
+    for (const ln of p.DocumentLines ?? []) {
+      if (ln.LineStatus !== "bost_Open") continue;
+      const pedida = num(ln.Quantity);
+      // Parte de la línea que aún no se ha despachado.
+      const valor = pedida > 0 ? Math.round((num(ln.LineTotal) * Math.max(0, num(ln.RemainingOpenQuantity)) / pedida) * 100) / 100 : 0;
+      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor]);
+    }
+  }
+  const entregas = await sap.lista(q("DeliveryNotes", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDate,DocTotal,VatSum,Cancelled", $filter: "DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'", $orderby: "DocEntry" }));
+  for (const e of entregas) {
+    const valor = Math.round((num(e.DocTotal) - num(e.VatSum)) * 100) / 100;
+    if (valor > 0) filas.push(["delivery", e.DocEntry, 0, String(e.DocNum), e.CardCode, e.CardName ?? "", vendedor(e), dia(e.DocDate), valor]);
+  }
+  return filas;
+}
+
+/** Sube el pendiente por facturar como un lote nuevo; solo al terminar reemplaza al anterior. */
+async function subirPendiente(sap, destino) {
+  const filas = await pendientePorFacturar(sap);
+  const lote = randomUUID();
+  const partes = lotes(filas, 1000);
+  if (partes.length === 0) partes.push([]);
+  for (let i = 0; i < partes.length; i++) {
+    await destino.rpc("sap_agent_backlog_load", { p_batch: lote, p_rows: partes[i], p_last: i === partes.length - 1 });
+  }
+  return filas.length;
+}
+
 /** Inventario y precios de un lote de artículos (hasta 20 por consulta: las URL largas fallan). */
 async function articulos(sap, codigos) {
   const filas = await sap.lista(q("Items", { $filter: codigos.map((c) => `ItemCode eq ${comillas(c)}`).join(" or "), $select: ARTICULO }));
@@ -285,6 +328,10 @@ async function correr({ ahora }) {
         nArticulos += await destino.rpc("sap_agent_save", { p_kind: "items", p_rows: await articulos(sap, lote) });
       } catch (e) { anotar(`artículos ${lote[0]}…`, e); }
     }
+    // Pronóstico: todos los pedidos y entregas abiertos de la compañía.
+    try {
+      log(`Pendiente por facturar: ${await subirPendiente(sap, destino)} líneas de pedidos y entregas abiertos`);
+    } catch (e) { anotar("pendiente por facturar", e); }
     // Ventas reales: los CSV mensuales que hayan cambiado (si la carpeta está configurada).
     try {
       const v = await subirVentas(cfg, destino);

@@ -2495,30 +2495,53 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   await q(`insert into sap_sellers (seller, user_id) values ('VENDEDOR REAL', $1) on conflict (seller) do update set user_id = excluded.user_id`, [admin.id]);
   await q(`insert into sap_sales (sale_date, invoice, seller, card_code, customer_name, amount) values
     ($1, 'F1', 'VENDEDOR REAL', 'CREAL01', 'X', 1000), ($1, 'F2', 'VENDEDOR REAL', 'CREAL01', 'X', -100), ($1, 'F3', 'OTRO VENDEDOR', 'CZZ', 'Y', 500)`, [ini]);
-  // Copia de SAP del cliente: un pedido con una línea a medio despachar y otra cerrada, uno anulado, y una entrega sin facturar.
-  const dias = (n) => `(('${hoy}'::date + ${n})::text)`;
-  await q(`insert into sap_partners (card_code, data) values ('CREAL01', jsonb_build_object(
-    'orders', jsonb_build_array(
-      jsonb_build_object('DocNum', 501, 'Cancelled', 'tNO', 'Lines', jsonb_build_array(
-        jsonb_build_object('Line', 1, 'Quantity', 10, 'Invoiced', 4, 'LineTotal', 10000, 'Open', true, 'ShipDate', ${dias(10)}),
-        jsonb_build_object('Line', 2, 'Quantity', 5, 'Invoiced', 5, 'LineTotal', 9000, 'Open', false, 'ShipDate', ${dias(10)}),
-        jsonb_build_object('Line', 3, 'Quantity', 2, 'Invoiced', 0, 'LineTotal', 800, 'Open', true, 'ShipDate', ${dias(-30)}))),
-      jsonb_build_object('DocNum', 502, 'Cancelled', 'tYES', 'Lines', jsonb_build_array(
-        jsonb_build_object('Line', 1, 'Quantity', 1, 'Invoiced', 0, 'LineTotal', 99999, 'Open', true, 'ShipDate', ${dias(3)})))),
-    'deliveries', jsonb_build_array(jsonb_build_object('DocNum', 701, 'Cancelled', 'tNO', 'DocDate', ${dias(-2)}, 'DocTotal', 2380, 'VatSum', 380))))`);
+  // El agente trae todas las líneas de pedido abiertas y las entregas sin facturar de la compañía, sean o no cuentas del CRM.
+  const [agente] = await q(`insert into auth.users (email) values ('agente.pendiente@firplak.com') returning id`);
+  await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integración SAP') where id = $1`, [agente.id]);
+  const [{ d10, dm30, dm2 }] = await q(`select ('${hoy}'::date + 10)::text d10, ('${hoy}'::date - 30)::text dm30, ('${hoy}'::date - 2)::text dm2`);
+  const lote1 = '11111111-1111-4111-8111-111111111111', lote2 = '22222222-2222-4222-8222-222222222222';
+  const filas = [
+    ['order', 9501, 0, '501', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', d10, 6000],
+    ['order', 9501, 2, '501', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', dm30, 800],
+    ['delivery', 9701, 0, '701', 'CREAL01', 'Cliente real', 'VENDEDOR REAL', dm2, 2000],
+    // Un cliente que no existe en el CRM, de un vendedor sin usuario: suma en la compañía.
+    ['order', 9502, 0, '502', 'CSINCUENTA', 'Sin cuenta', 'VENDEDOR SIN USUARIO', dm30, 300],
+    ['order', 9503, 0, '503', 'CSINCUENTA', 'Sin cuenta', 'VENDEDOR SIN USUARIO', dm30, 0],
+  ];
+  await assert.rejects(as(admin, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [lote1, JSON.stringify(filas)])), /Solo el agente de SAP/);
+  // Una carga a medias no se ve: sigue vigente la anterior (aquí, ninguna).
+  await as(agente, () => q(`select sap_agent_backlog_load($1, $2::jsonb, false)`, [lote1, JSON.stringify(filas.slice(0, 2))]));
+  assert.equal((await q(`select count(*)::int n from sap_backlog_lines()`))[0].n, 0);
+  await as(agente, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [lote1, JSON.stringify(filas.slice(2))]));
   const lineas = await q(`select kind, doc_num, (forecast_date - '${hoy}'::date) dias, amount::float a from sap_backlog_lines() where card_code = 'CREAL01' order by kind, amount`);
   assert.deepEqual(lineas.map((l) => [l.kind, l.doc_num, l.dias, l.a]), [
-    // Entrega de hace 2 días + 4 = en 2 días. Pedido: lo vencido se cuenta hoy; la línea a medias, 6 de 10 = 6.000 en 14 días.
+    // Entrega de hace 2 días + 4 = en 2 días. Pedido: lo vencido se cuenta hoy; la otra línea, en 14 días.
     ['delivery', '701', 2, 2000], ['order', '501', 0, 800], ['order', '501', 14, 6000]]);
+  // Las líneas en cero no se guardan; el vendedor nuevo queda en la lista para relacionarlo.
+  assert.equal((await q(`select count(*)::int n from sap_backlog`))[0].n, 4);
+  assert.equal((await q(`select count(*)::int n from sap_sellers where seller = 'VENDEDOR SIN USUARIO' and user_id is null`))[0].n, 1);
+  // Nadie lee la tabla directamente.
+  assert.equal((await as(admin, () => q(`select count(*)::int n from sap_backlog`)))[0].n, 0);
   const despues = (await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o, coalesce(sum(deliveries), 0) e from forecast_real_days('year', date_trunc('year', now())::date)`)))[0];
   assert.equal(Number(despues.i) - Number(base.i), 1400);
   // El pedido de 14 días puede caer en el año siguiente si la prueba corre a fin de diciembre: al menos la línea vencida y la entrega.
-  assert.ok(Number(despues.o) - Number(base.o) >= 800);
+  // Suma también el cliente que no es cuenta del CRM (300).
+  assert.ok(Number(despues.o) - Number(base.o) >= 1100);
   assert.ok(Number(despues.e) - Number(base.e) >= 0);
   // Por persona: su facturación (sin la del otro vendedor) y los pedidos de sus cuentas.
   const mia = (await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o from forecast_real_days('year', date_trunc('year', now())::date, $1)`, [admin.id])))[0];
   assert.equal(Number(mia.i), 900);
   assert.ok(Number(mia.o) >= 800);
+  // Lo del vendedor de SAP sin usuario no es de nadie… salvo del propietario de la cuenta con ese Código SAP.
+  const sinVendedor = async () => Number((await as(admin, () => q(`select coalesce(sum(orders), 0) o from forecast_real_days('year', date_trunc('year', now())::date, $1) where day = '${hoy}'`, [admin.id])))[0].o);
+  const antesCuenta = await sinVendedor();
+  await as(admin, () => q(`insert into accounts (name, industry, sap_card_code, billing_city) values ('Cuenta del vendedor sin usuario', 'Canal Distribución', 'CSINCUENTA', 'Cali')`));
+  assert.equal((await sinVendedor()) - antesCuenta, 300);
+  // La carga siguiente reemplaza a la anterior completa.
+  await as(agente, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [lote2, JSON.stringify([filas[2]])]));
+  assert.deepEqual((await q(`select kind, amount::float a from sap_backlog_lines()`)).map((l) => [l.kind, l.a]), [['delivery', 2000]]);
+  assert.equal((await q(`select row_count from sap_backlog_state`))[0].row_count, 1);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.sap_agent_backlog_load(uuid, jsonb, boolean)', 'execute') ok`))[0].ok, false);
   // Una oportunidad abierta con cierre vencido se cuenta hoy; una ganada no suma (ya está en SAP).
   await as(admin, () => q(`insert into opportunities (name, account_id, stage_id, amount, close_date)
     select 'Abierta vencida real', $1, s.id, 7000, '${hoy}'::date - 20 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación'`, [acc.id]));
@@ -2530,7 +2553,8 @@ await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fe
   assert.equal((await q(`select has_function_privilege('authenticated', 'public.sap_backlog_lines()', 'execute') ok`))[0].ok, false);
   assert.equal((await q(`select has_function_privilege('anon', 'public.forecast_real_days(text, date, uuid)', 'execute') ok`))[0].ok, false);
   // Deja las tablas de SAP como estaban para las pruebas siguientes.
-  await db.exec(`delete from sap_partners where card_code = 'CREAL01'; delete from sap_sales where invoice in ('F1', 'F2', 'F3') and card_code in ('CREAL01', 'CZZ'); delete from sap_sellers where seller = 'VENDEDOR REAL';`);
+  await db.exec(`delete from sap_backlog; update sap_backlog_state set batch = null, row_count = 0, loaded_at = null; delete from sap_sales where invoice in ('F1', 'F2', 'F3') and card_code in ('CREAL01', 'CZZ'); delete from sap_sellers where seller in ('VENDEDOR REAL', 'VENDEDOR SIN USUARIO');`);
+  await q(`delete from auth.users where id = $1`, [agente.id]);
 });
 
 console.log('Semillas: configuración inicial separada de los datos de demostración');

@@ -9,6 +9,9 @@ Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
 - De cada cuenta del CRM que tiene **Código SAP**: saldo de cartera, cupo, todos los pedidos de venta
   abiertos, todas las facturas abiertas y las diez facturas más recientes.
 - De cada producto activo del CRM (por su Referencia): inventario por bodega y listas de precios.
+- De **toda la compañía**, sean o no cuentas del CRM: las líneas abiertas de los pedidos de venta y las
+  entregas sin facturar (cliente, vendedor, fecha y valor sin IVA). Con eso el Pronóstico muestra la capa
+  «Pedidos y entregas abiertos». Cada corrida reemplaza la anterior completa; si falla, queda la anterior.
 
 Además revisa **cada minuto, todos los días**, si el CRM le dejó una solicitud (Configuración → SAP →
 «Importar productos desde SAP»): la vista previa o la importación de artículos. La atiende, deja el

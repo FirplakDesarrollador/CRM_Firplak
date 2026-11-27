@@ -476,7 +476,7 @@ const partners = {
   C20002: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', FederalTaxID: '900512334-7', Phone1: '6044412200', EmailAddress: 'pagos@altosdelvalle.example',
     CurrentAccountBalance: 512000000, OpenOrdersBalance: 120000000, OpenDeliveryNotesBalance: 0, CreditLimit: 500000000 },
 };
-const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
+const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
   PaidToDate: paid, VatSum: Math.round(total - total / 1.19), DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
 const sapOrders = [
   doc(41210, 'C20001', -12, 18, 245000000, 0, 'bost_Open', 'OC-CV-2231'),
@@ -533,19 +533,19 @@ Object.assign(sapItems['DEMO-LV-RD'], { SalesItem: 'tYES', U_Linea: 'Lavamanos y
 // muestra la capa de pedidos y entregas abiertos (la facturación la suben las pruebas del agente).
 {
   const dia = (n) => new Date(Date.now() - 5 * 3600000 + n * 86400000).toISOString().slice(0, 10);
-  const linea = (n, cantidad, despachada, total, despacho) => ({ Line: n, ItemCode: 'DEMO-MB-060', ItemDescription: 'MUEBLE BAÑO 60 CM', Quantity: cantidad, Invoiced: despachada, InDispatch: 0, ShipDate: dia(despacho), ClientDate: dia(despacho), Open: despachada < cantidad, LineTotal: total });
-  // Un cliente de SAP que no es cuenta del CRM: la copia de Casa Viva (C20001) la trae el agente en sus propias pruebas.
-  await db.query(`insert into public.sap_partners (card_code, data) values ('C20002', $1) on conflict (card_code) do update set data = excluded.data`, [JSON.stringify({
-    partner: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.' },
-    orders: [
-      { DocNum: 87240, DocDate: dia(-10), DocDueDate: dia(8), DocTotal: 112336000, VatSum: 17936000, DocCurrency: 'COP', DocumentStatus: 'bost_Open', Cancelled: 'tNO', NumAtCard: 'OC-CV-2204',
-        Lines: [linea(1, 80, 20, 64000000, 6), linea(2, 40, 0, 30400000, 18)] },
-      { DocNum: 87311, DocDate: dia(-3), DocDueDate: dia(40), DocTotal: 59500000, VatSum: 9500000, DocCurrency: 'COP', DocumentStatus: 'bost_Open', Cancelled: 'tNO', NumAtCard: 'OC-CV-2231',
-        Lines: [linea(1, 60, 0, 50000000, 38)] },
-    ],
-    deliveries: [{ DocNum: 45102, DocDate: dia(-1), DocDueDate: dia(-1), DocTotal: 23800000, VatSum: 3800000, DocCurrency: 'COP', DocumentStatus: 'bost_Open', Cancelled: 'tNO', NumAtCard: 'OC-CV-2188' }],
-    invoices: [],
-  })]);
+  // Un cliente de SAP que no es cuenta del CRM: el agente reemplaza estas líneas en sus propias pruebas.
+  const lote = randomUUID();
+  const filas = [
+    ['order', 87240, 0, '87240', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(6), 48000000],
+    ['order', 87240, 1, '87240', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(18), 30400000],
+    ['order', 87311, 0, '87311', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(38), 50000000],
+    ['delivery', 45102, 0, '45102', 'C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'VENDEDOR DEMO', dia(-1), 20000000],
+  ];
+  for (const f of filas) {
+    await db.query(`insert into public.sap_backlog (batch, kind, doc_entry, line_num, doc_num, card_code, customer_name, seller, base_date, amount)
+                    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, [lote, ...f]);
+  }
+  await db.query(`update public.sap_backlog_state set batch = $1, row_count = $2, loaded_at = now()`, [lote, filas.length]);
 }
 // La copia que dejaría el agente de SAP: con ella la base calcula el disponible real (En inventario − Comprometido en
 // PT-01) de cada producto de ejemplo, que es lo que muestran la lista de productos, su filtro y los kits.
@@ -629,6 +629,7 @@ const sapServer = http.createServer(async (req, res) => {
     const codes = [...(url.searchParams.get('$filter') ?? '').matchAll(/TreeCode eq '((?:[^']|'')*)'/g)].map((m) => m[1]);
     return json(res, 200, { value: codes.filter((c) => sapTrees[c]).map((c) => ({ TreeCode: c, ProductTreeLines: sapTrees[c] })) });
   }
+  if (path === '/SalesPersons') return json(res, 200, { value: [{ SalesEmployeeCode: -1, SalesEmployeeName: '-Ningún empleado del departamento de ventas-' }, { SalesEmployeeCode: 7, SalesEmployeeName: 'VENDEDOR DEMO' }] });
   if (path === '/ProductionOrders') {
     const origins = [...(url.searchParams.get('$filter') ?? '').matchAll(/ProductionOrderOriginNumber eq (\d+)/g)].map((m) => Number(m[1]));
     return json(res, 200, { value: sapProductionOrders.filter((o) => origins.includes(o.ProductionOrderOriginNumber)) });
@@ -637,7 +638,8 @@ const sapServer = http.createServer(async (req, res) => {
     const filter = url.searchParams.get('$filter') ?? '';
     const card = filter.match(/CardCode eq '([^']+)'/)?.[1];
     const openOnly = filter.includes("DocumentStatus eq 'bost_Open'");
-    const list = (path === '/Orders' ? sapOrders : path === '/DeliveryNotes' ? sapDeliveries : sapInvoices).filter((d) => d.CardCode === card && (!openOnly || d.DocumentStatus === 'bost_Open'));
+    // Sin filtro de cliente: todos (el agente trae así el pendiente por facturar de la compañía).
+    const list = (path === '/Orders' ? sapOrders : path === '/DeliveryNotes' ? sapDeliveries : sapInvoices).filter((d) => (!card || d.CardCode === card) && (!openOnly || d.DocumentStatus === 'bost_Open'));
     return json(res, 200, { value: list.sort((a, b) => b.DocDate.localeCompare(a.DocDate)) });
   }
   sapError(res, 404, `No simulado: ${path}`);
