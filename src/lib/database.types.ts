@@ -3244,10 +3244,13 @@ export type Database = {
       }
       products: {
         Row: {
+          available_at: string | null
+          available_qty: number | null
           created_at: string
           created_by: string | null
           custom_fields: Json
           description: string | null
+          design: string | null
           family: string | null
           id: string
           is_active: boolean
@@ -3261,10 +3264,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          available_at?: string | null
+          available_qty?: number | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           description?: string | null
+          design?: string | null
           family?: string | null
           id?: string
           is_active?: boolean
@@ -3278,10 +3284,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          available_at?: string | null
+          available_qty?: number | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           description?: string | null
+          design?: string | null
           family?: string | null
           id?: string
           is_active?: boolean
@@ -4900,6 +4909,12 @@ export type Database = {
         Args: never
         Returns: number
       }
+      refresh_product_availability: {
+        Args: {
+          p_product: string
+        }
+        Returns: undefined
+      }
       renew_quote: {
         Args: {
           p_quote: string
@@ -4986,6 +5001,12 @@ export type Database = {
         }
         Returns: string
       }
+      sap_item_available: {
+        Args: {
+          p_code: string
+        }
+        Returns: number
+      }
       sap_match_seller: {
         Args: {
           p_seller: string
@@ -5045,6 +5066,10 @@ export type Database = {
           p_zones?: string[]
         }
         Returns: Json
+      }
+      sap_stock_warehouse: {
+        Args: never
+        Returns: string
       }
       save_exchange_rate: {
         Args: {

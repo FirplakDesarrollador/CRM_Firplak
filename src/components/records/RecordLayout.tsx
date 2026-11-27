@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/lib/session";
 import { DetailSections } from "./DetailSections";
 import { FieldHistory } from "./FieldHistory";
 import { RecordHeader } from "./RecordHeader";
+import { BackToList } from "./ListMemory";
 import { Tabs } from "./Tabs";
 
 type Tab = { key: string; label: string; count?: number; content: React.ReactNode };
@@ -60,6 +61,7 @@ export async function RecordLayout({
 
   return (
     <div className="space-y-4">
+      <BackToList path={def.path} />
       <RecordHeader def={def} row={row} title={title} badges={badges} actions={actions}>
         {headerExtra}
         {approvals && <ApprovalBar object={def.key} recordId={row.id} path={basePath} {...approvals} />}

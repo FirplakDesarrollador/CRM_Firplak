@@ -2249,6 +2249,47 @@ console.log('Cotización corta y pedido completo');
   });
 }
 
+console.log('Productos: diseño y disponible real');
+await check('el disponible es En inventario − Comprometido de PT-01; el de un kit, los kits completos que salen con sus componentes', async () => {
+  const sap = (code, bodegas) => q(`insert into sap_items (item_code, data, synced_at) values ($1, $2, now())
+    on conflict (item_code) do update set data = excluded.data, synced_at = excluded.synced_at`, [code, bodegas && JSON.stringify({ ItemCode: code, ItemWarehouseInfoCollection: bodegas })]);
+  const disp = async (code) => { const [r] = await q(`select available_qty from products where product_code = $1`, [code]); return r.available_qty === null ? null : Number(r.available_qty); };
+  const [a] = await q(`insert into products (name, product_code, design) values ('Lavamanos disponible', 'DISP-A', 'Oslo') returning id, updated_at::text`);
+  const [b] = await q(`insert into products (name, product_code) values ('Mueble disponible', 'DISP-B') returning id`);
+  const [k] = await q(`insert into products (name, product_code, is_kit) values ('Kit disponible', 'DISP-K', true) returning id`);
+  assert.equal(await disp('DISP-A'), null);
+  // Solo cuenta PT-01, aunque otras bodegas tengan inventario.
+  await sap('DISP-A', [{ WarehouseCode: 'PT-01', InStock: 10, Committed: 3 }, { WarehouseCode: 'PT-02', InStock: 100, Committed: 0 }]);
+  await sap('DISP-B', [{ WarehouseCode: 'PT-01', InStock: 5, Committed: 1 }]);
+  assert.deepEqual([await disp('DISP-A'), await disp('DISP-B')], [7, 4]);
+  // El kit lleva 1 lavamanos y 2 muebles: con 7 y 4 salen 2 kits.
+  await q(`insert into product_kit_components (kit_id, component_id, quantity) values ($1, $2, 1), ($1, $3, 2)`, [k.id, a.id, b.id]);
+  assert.equal(await disp('DISP-K'), 2);
+  await sap('DISP-B', [{ WarehouseCode: 'PT-01', InStock: 5, Committed: 4 }]);
+  assert.equal(await disp('DISP-K'), 0);
+  // Más comprometido que inventario: el componente queda en negativo y el kit en 0.
+  await sap('DISP-B', [{ WarehouseCode: 'PT-01', InStock: 1, Committed: 4 }]);
+  assert.deepEqual([await disp('DISP-B'), await disp('DISP-K')], [-3, 0]);
+  // Sin PT-01 en SAP el disponible es 0; si SAP no conoce el artículo, no se sabe (ni el del kit).
+  await sap('DISP-B', [{ WarehouseCode: 'PT-05', InStock: 9, Committed: 0 }]);
+  assert.deepEqual([await disp('DISP-B'), await disp('DISP-K')], [0, 0]);
+  await sap('DISP-B', null);
+  assert.deepEqual([await disp('DISP-B'), await disp('DISP-K')], [null, null]);
+  await q(`delete from product_kit_components where kit_id = $1 and component_id = $2`, [k.id, b.id]);
+  assert.equal(await disp('DISP-K'), 7);
+  // El disponible no cuenta como modificación del producto ni llena su historial.
+  const [despues] = await q(`select updated_at::text, design from products where id = $1`, [a.id]);
+  assert.equal(String(despues.updated_at), String(a.updated_at));
+  assert.equal(despues.design, 'Oslo');
+  assert.equal(await count(`select count(*) n from field_history where record_id = $1 and field in ('available_qty', 'available_at')`, [a.id]), 0);
+  await q(`update products set design = 'Siena' where id = $1`, [a.id]);
+  assert.equal(await count(`select count(*) n from field_history where record_id = $1 and field = 'design'`, [a.id]), 1);
+  assert.notEqual(String((await q(`select updated_at::text from products where id = $1`, [a.id]))[0].updated_at), String(a.updated_at));
+  for (const fn of ['sap_item_available(text)', 'refresh_product_availability(uuid)']) {
+    assert.equal((await q(`select has_function_privilege('authenticated', 'public.${fn}', 'execute') ok`))[0].ok, false, fn);
+  }
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

@@ -20,6 +20,9 @@ import { Val } from "@/components/ui/Val";
 import { Fmt } from "@/components/ui/Fmt";
 import { AmountInput } from "@/components/ui/AmountInput";
 import { KitComponents, type KitComponent } from "@/components/products/KitComponents";
+import { KitAvailability } from "@/components/products/KitAvailability";
+type KitStockRow = { id: string; quantity: number; component: { id: string; name: string; product_code: string | null; available_qty: number | null } | null };
+
 export const metadata: Metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps<"/productos/[id]">) {
@@ -37,7 +40,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
     supabase.from("cases").select("id, case_number, subject, status, created_at").eq("product_id", id).order("created_at", { ascending: false }).limit(20),
     // Kit: sus componentes. Componente: los kits que lo incluyen.
     supabase.from("product_kit_components")
-      .select("id, quantity, component:products!product_kit_components_component_id_fkey(id, name, product_code, plant, unit, is_active)")
+      .select("id, quantity, component:products!product_kit_components_component_id_fkey(id, name, product_code, plant, unit, is_active, available_qty)")
       .eq("kit_id", id).order("sort_order").order("created_at"),
     supabase.from("product_kit_components")
       .select("id, quantity, kit:products!product_kit_components_kit_id_fkey(id, name, product_code)")
@@ -141,7 +144,19 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       }, ...(showSap ? [{
         key: "sap",
         label: "SAP",
-        content: <SapProductCard itemCode={(row.product_code as string | null) ?? null} />,
+        content: (
+          <>
+            {isKit && (
+              <KitAvailability available={row.available_qty === null || row.available_qty === undefined ? null : Number(row.available_qty)}
+                syncedAt={(row.available_at as string | null) ?? null}
+                components={((components ?? []) as unknown as KitStockRow[]).map((c) => ({
+                  id: c.id, quantity: Number(c.quantity), name: c.component?.name ?? "—", code: c.component?.product_code ?? null,
+                  productId: c.component?.id ?? null, available: c.component?.available_qty == null ? null : Number(c.component.available_qty),
+                }))} />
+            )}
+            <SapProductCard itemCode={(row.product_code as string | null) ?? null} />
+          </>
+        ),
       }] : [])]}
       activity={null}
     />

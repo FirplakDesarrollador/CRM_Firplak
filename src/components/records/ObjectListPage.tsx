@@ -23,6 +23,7 @@ export function flatParams(sp: SP): Record<string, string> {
   }
   return out;
 }
+import { RememberList } from "./ListMemory";
 
 export async function ObjectListPage({
   object,
@@ -55,6 +56,7 @@ export async function ObjectListPage({
 
   return (
     <div className="space-y-4">
+      <RememberList />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <ObjectIcon object={object} />
@@ -96,7 +98,7 @@ export async function ObjectListPage({
         exportHref={`/api/export/${object}${exportQs ? `?${exportQs}` : ""}`}
       />
       {error && <Alert tone="error">No se pudo cargar la lista: {error}</Alert>}
-      <ListTable def={def} rows={rows} count={count} params={params} current={current} basePath={def.path} t={t} />
+      <ListTable def={def} rows={rows} count={count} params={params} current={current} basePath={def.path} t={t} peek={object === "products"} />
     </div>
   );
 }

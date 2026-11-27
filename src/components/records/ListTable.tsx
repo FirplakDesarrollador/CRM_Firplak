@@ -6,6 +6,7 @@ import type { Row } from "@/lib/records/data";
 import { FieldValue } from "./FieldValue";
 import type { T } from "@/lib/i18n";
 import { columnAlign } from "./column-align";
+import { ProductPeek } from "@/components/products/ProductPeek";
 
 export function hrefWith(path: string, current: Record<string, string>, patch: Record<string, string | null>) {
   const qs = new URLSearchParams(current);
@@ -28,6 +29,7 @@ export function ListTable({
   basePath,
   emptyText,
   t = (s) => s,
+  peek = false,
 }: {
   def: ObjectDef;
   rows: Row[];
@@ -37,6 +39,8 @@ export function ListTable({
   basePath: string;
   emptyText?: string;
   t?: T;
+  /** Productos: dejar presionada una fila muestra su disponible y sus precios. */
+  peek?: boolean;
 }) {
   const columns = params.columns
     .map((c) => def.fields.find((f) => f.name === c))
@@ -84,7 +88,11 @@ export function ListTable({
               <tr key={row.id}>
                 {columns.map((col, i) => (
                   <td key={col.name} className={columnAlign(col.type)}>
-                    <FieldValue field={col} row={row} linkName={i === 0 ? `${def.path}/${row.id}` : undefined} />
+                    {peek && i === 0 ? (
+                      <ProductPeek id={String(row.id)} name={String(row.name ?? "")}>
+                        <FieldValue field={col} row={row} linkName={`${def.path}/${row.id}`} />
+                      </ProductPeek>
+                    ) : <FieldValue field={col} row={row} linkName={i === 0 ? `${def.path}/${row.id}` : undefined} />}
                   </td>
                 ))}
               </tr>

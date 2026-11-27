@@ -503,10 +503,10 @@ const sapInvoices = [
 const sapItems = {
   'DEMO-MB-060': { ItemCode: 'DEMO-MB-060', ItemName: 'MUEBLE BAÑO 60 CM BLANCO', QuantityOnStock: 340, QuantityOrderedByCustomers: 120, QuantityOrderedFromVendors: 200, SalesUnit: 'UN',
     ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 685000 }, { PriceList: 2, PriceListName: 'Distribuidores', Price: 590000 }, { PriceList: 3, PriceListName: 'Proyectos', Price: 610000 }],
-    ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 260, Committed: 100, Ordered: 200 }, { WarehouseCode: 'BOG-CD', InStock: 80, Committed: 20, Ordered: 0 }] },
+    ItemWarehouseInfoCollection: [{ WarehouseCode: 'PT-01', InStock: 260, Committed: 100, Ordered: 200 }, { WarehouseCode: 'BOG-CD', InStock: 80, Committed: 20, Ordered: 0 }] },
   'DEMO-LV-RD': { ItemCode: 'DEMO-LV-RD', ItemName: 'LAVAMANOS REDONDO SOBREPONER', QuantityOnStock: 45, QuantityOrderedByCustomers: 60, SalesUnit: 'UN',
     ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 289000 }, { PriceList: 2, PriceListName: 'Distribuidores', Price: 245000 }],
-    ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 45, Committed: 60, Ordered: 150 }] },
+    ItemWarehouseInfoCollection: [{ WarehouseCode: 'PT-01', InStock: 45, Committed: 60, Ordered: 150 }] },
 };
 // Catálogo de artículos (60, algunos que no son de venta) con campos de usuario U_Linea y U_Color.
 const lines = [['MB', 'MUEBLE BAÑO', 'Muebles de baño'], ['LV', 'LAVAMANOS', 'Lavamanos y superficies'], ['CO', 'COCINA INTEGRAL', 'Cocinas'], ['DU', 'DUCHA', 'Duchas y bañeras']];
@@ -525,10 +525,16 @@ const sapTrees = { 'FP-CO-KIT1': [{ ItemCode: 'FP-LV-101', ItemName: 'LAVAMANOS 
 // Todos los productos de ejemplo del CRM existen en SAP (para crear ofertas con los pedidos de la demo).
 for (const p of demoProducts) {
   sapItems[p.product_code] ??= { ItemCode: p.product_code, ItemName: p.name.toUpperCase(), SalesItem: 'tYES', QuantityOnStock: 50,
-    ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 500000 }], ItemWarehouseInfoCollection: [{ WarehouseCode: 'MED-PT', InStock: 50, Committed: 0, Ordered: 0 }] };
+    ItemPrices: [{ PriceList: 1, PriceListName: 'Lista general', Price: 500000 }], ItemWarehouseInfoCollection: [{ WarehouseCode: 'PT-01', InStock: 50, Committed: 0, Ordered: 0 }] };
 }
 Object.assign(sapItems['DEMO-MB-060'], { SalesItem: 'tYES', U_Linea: 'Muebles de baño', U_Color: 'Blanco' });
 Object.assign(sapItems['DEMO-LV-RD'], { SalesItem: 'tYES', U_Linea: 'Lavamanos y superficies', U_Color: 'Blanco' });
+// La copia que dejaría el agente de SAP: con ella la base calcula el disponible real (En inventario − Comprometido en
+// PT-01) de cada producto de ejemplo, que es lo que muestran la lista de productos, su filtro y los kits.
+for (const p of demoProducts) {
+  await db.query(`insert into public.sap_items (item_code, data) values ($1, $2)
+    on conflict (item_code) do update set data = excluded.data, synced_at = now()`, [p.product_code, JSON.stringify(sapItems[p.product_code])]);
+}
 const quotations = new Map();
 let quotationSeq = 3000;
 const sapError = (res, status, value) => json(res, status, { error: { code: -1, message: { lang: 'es-ES', value } } });
