@@ -4662,6 +4662,20 @@ export type Database = {
           close_date: string
         }[]
       }
+      forecast_real_days: {
+        Args: {
+          p_period_type: string
+          p_period_start: string
+          p_user?: string
+        }
+        Returns: {
+          day: string
+          invoiced: number
+          orders: number
+          deliveries: number
+          opportunities: number
+        }[]
+      }
       forecast_summary: {
         Args: {
           p_period_type: string
@@ -5182,11 +5196,25 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      sap_backlog_lines: {
+        Args: never
+        Returns: {
+          kind: string
+          card_code: string
+          doc_num: string
+          forecast_date: string
+          amount: number
+        }[]
+      }
       sap_customer_root: {
         Args: {
           p_card_code: string
         }
         Returns: string
+      }
+      sap_dispatch_lag_days: {
+        Args: never
+        Returns: number
       }
       sap_item_available: {
         Args: {

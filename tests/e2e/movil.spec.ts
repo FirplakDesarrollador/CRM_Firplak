@@ -137,7 +137,8 @@ test("el gráfico de tendencia se lee en el celular: texto real de 11 px, fechas
   const caja = (await grafico.boundingBox())!;
   await page.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
   await expect(page.getByRole("status").filter({ hasText: "Potencial" })).toBeVisible();
-  await page.getByText("Ver datos en tabla").click();
+  // La página tiene dos gráficas con tabla: la de tendencia es la segunda.
+  await page.getByText("Ver datos en tabla").last().click();
   await expect(page.getByRole("columnheader", { name: "Fecha", exact: true })).toBeVisible();
 });
 

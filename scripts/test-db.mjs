@@ -2483,6 +2483,56 @@ await check('el cliente acepta una entrega: se separa en su propia cotización a
   assert.equal((await q(`select has_function_privilege('anon', 'public.separate_quote_delivery(uuid, date, boolean)', 'execute') ok`))[0].ok, false);
 });
 
+console.log('Pronóstico con lo real de SAP');
+await check('el pronóstico real suma facturado, pedidos y entregas abiertos (fecha + 4 días) y oportunidades abiertas, cada uno en su fecha', async () => {
+  // Depende de «hoy» (lo vencido se cuenta hoy), así que se mide la diferencia sobre el año en curso.
+  const [{ hoy, ini }] = await q(`select (now() at time zone 'America/Bogota')::date::text hoy,
+    date_trunc('month', now() at time zone 'America/Bogota')::date::text ini`);
+  const antes = await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o, coalesce(sum(deliveries), 0) e, coalesce(sum(opportunities), 0) p from forecast_real_days('year', date_trunc('year', now())::date)`));
+  const base = antes[0];
+  const [acc] = await as(admin, () => q(`insert into accounts (name, industry, sap_card_code, billing_city) values ('Cliente con pedidos en SAP', 'Canal Distribución', 'CREAL01', 'Cali') returning id`));
+  // Facturas del año: dos de la persona y una de otro vendedor.
+  await q(`insert into sap_sellers (seller, user_id) values ('VENDEDOR REAL', $1) on conflict (seller) do update set user_id = excluded.user_id`, [admin.id]);
+  await q(`insert into sap_sales (sale_date, invoice, seller, card_code, customer_name, amount) values
+    ($1, 'F1', 'VENDEDOR REAL', 'CREAL01', 'X', 1000), ($1, 'F2', 'VENDEDOR REAL', 'CREAL01', 'X', -100), ($1, 'F3', 'OTRO VENDEDOR', 'CZZ', 'Y', 500)`, [ini]);
+  // Copia de SAP del cliente: un pedido con una línea a medio despachar y otra cerrada, uno anulado, y una entrega sin facturar.
+  const dias = (n) => `(('${hoy}'::date + ${n})::text)`;
+  await q(`insert into sap_partners (card_code, data) values ('CREAL01', jsonb_build_object(
+    'orders', jsonb_build_array(
+      jsonb_build_object('DocNum', 501, 'Cancelled', 'tNO', 'Lines', jsonb_build_array(
+        jsonb_build_object('Line', 1, 'Quantity', 10, 'Invoiced', 4, 'LineTotal', 10000, 'Open', true, 'ShipDate', ${dias(10)}),
+        jsonb_build_object('Line', 2, 'Quantity', 5, 'Invoiced', 5, 'LineTotal', 9000, 'Open', false, 'ShipDate', ${dias(10)}),
+        jsonb_build_object('Line', 3, 'Quantity', 2, 'Invoiced', 0, 'LineTotal', 800, 'Open', true, 'ShipDate', ${dias(-30)}))),
+      jsonb_build_object('DocNum', 502, 'Cancelled', 'tYES', 'Lines', jsonb_build_array(
+        jsonb_build_object('Line', 1, 'Quantity', 1, 'Invoiced', 0, 'LineTotal', 99999, 'Open', true, 'ShipDate', ${dias(3)})))),
+    'deliveries', jsonb_build_array(jsonb_build_object('DocNum', 701, 'Cancelled', 'tNO', 'DocDate', ${dias(-2)}, 'DocTotal', 2380, 'VatSum', 380))))`);
+  const lineas = await q(`select kind, doc_num, (forecast_date - '${hoy}'::date) dias, amount::float a from sap_backlog_lines() where card_code = 'CREAL01' order by kind, amount`);
+  assert.deepEqual(lineas.map((l) => [l.kind, l.doc_num, l.dias, l.a]), [
+    // Entrega de hace 2 días + 4 = en 2 días. Pedido: lo vencido se cuenta hoy; la línea a medias, 6 de 10 = 6.000 en 14 días.
+    ['delivery', '701', 2, 2000], ['order', '501', 0, 800], ['order', '501', 14, 6000]]);
+  const despues = (await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o, coalesce(sum(deliveries), 0) e from forecast_real_days('year', date_trunc('year', now())::date)`)))[0];
+  assert.equal(Number(despues.i) - Number(base.i), 1400);
+  // El pedido de 14 días puede caer en el año siguiente si la prueba corre a fin de diciembre: al menos la línea vencida y la entrega.
+  assert.ok(Number(despues.o) - Number(base.o) >= 800);
+  assert.ok(Number(despues.e) - Number(base.e) >= 0);
+  // Por persona: su facturación (sin la del otro vendedor) y los pedidos de sus cuentas.
+  const mia = (await as(admin, () => q(`select coalesce(sum(invoiced), 0) i, coalesce(sum(orders), 0) o from forecast_real_days('year', date_trunc('year', now())::date, $1)`, [admin.id])))[0];
+  assert.equal(Number(mia.i), 900);
+  assert.ok(Number(mia.o) >= 800);
+  // Una oportunidad abierta con cierre vencido se cuenta hoy; una ganada no suma (ya está en SAP).
+  await as(admin, () => q(`insert into opportunities (name, account_id, stage_id, amount, close_date)
+    select 'Abierta vencida real', $1, s.id, 7000, '${hoy}'::date - 20 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación'`, [acc.id]));
+  const conOpp = (await as(admin, () => q(`select day::text d, opportunities::float p from forecast_real_days('year', date_trunc('year', now())::date, $1) where opportunities > 0 and day = '${hoy}'`, [admin.id])))[0];
+  assert.ok(conOpp && conOpp.p >= 7000);
+  // Un asesor no ve el total de la compañía ni lo de otra persona; sí lo suyo.
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_real_days('year', date_trunc('year', now())::date)`)))[0].n, 0);
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_real_days('year', date_trunc('year', now())::date, $1)`, [admin.id])))[0].n, 0);
+  assert.equal((await q(`select has_function_privilege('authenticated', 'public.sap_backlog_lines()', 'execute') ok`))[0].ok, false);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.forecast_real_days(text, date, uuid)', 'execute') ok`))[0].ok, false);
+  // Deja las tablas de SAP como estaban para las pruebas siguientes.
+  await db.exec(`delete from sap_partners where card_code = 'CREAL01'; delete from sap_sales where invoice in ('F1', 'F2', 'F3') and card_code in ('CREAL01', 'CZZ'); delete from sap_sellers where seller = 'VENDEDOR REAL';`);
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

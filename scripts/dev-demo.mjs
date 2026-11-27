@@ -529,6 +529,24 @@ for (const p of demoProducts) {
 }
 Object.assign(sapItems['DEMO-MB-060'], { SalesItem: 'tYES', U_Linea: 'Muebles de baño', U_Color: 'Blanco' });
 Object.assign(sapItems['DEMO-LV-RD'], { SalesItem: 'tYES', U_Linea: 'Lavamanos y superficies', U_Color: 'Blanco' });
+// Pedidos de venta abiertos y una entrega sin facturar de un cliente de SAP de ejemplo: con ellos el Pronóstico
+// muestra la capa de pedidos y entregas abiertos (la facturación la suben las pruebas del agente).
+{
+  const dia = (n) => new Date(Date.now() - 5 * 3600000 + n * 86400000).toISOString().slice(0, 10);
+  const linea = (n, cantidad, despachada, total, despacho) => ({ Line: n, ItemCode: 'DEMO-MB-060', ItemDescription: 'MUEBLE BAÑO 60 CM', Quantity: cantidad, Invoiced: despachada, InDispatch: 0, ShipDate: dia(despacho), ClientDate: dia(despacho), Open: despachada < cantidad, LineTotal: total });
+  // Un cliente de SAP que no es cuenta del CRM: la copia de Casa Viva (C20001) la trae el agente en sus propias pruebas.
+  await db.query(`insert into public.sap_partners (card_code, data) values ('C20002', $1) on conflict (card_code) do update set data = excluded.data`, [JSON.stringify({
+    partner: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.' },
+    orders: [
+      { DocNum: 87240, DocDate: dia(-10), DocDueDate: dia(8), DocTotal: 112336000, VatSum: 17936000, DocCurrency: 'COP', DocumentStatus: 'bost_Open', Cancelled: 'tNO', NumAtCard: 'OC-CV-2204',
+        Lines: [linea(1, 80, 20, 64000000, 6), linea(2, 40, 0, 30400000, 18)] },
+      { DocNum: 87311, DocDate: dia(-3), DocDueDate: dia(40), DocTotal: 59500000, VatSum: 9500000, DocCurrency: 'COP', DocumentStatus: 'bost_Open', Cancelled: 'tNO', NumAtCard: 'OC-CV-2231',
+        Lines: [linea(1, 60, 0, 50000000, 38)] },
+    ],
+    deliveries: [{ DocNum: 45102, DocDate: dia(-1), DocDueDate: dia(-1), DocTotal: 23800000, VatSum: 3800000, DocCurrency: 'COP', DocumentStatus: 'bost_Open', Cancelled: 'tNO', NumAtCard: 'OC-CV-2188' }],
+    invoices: [],
+  })]);
+}
 // La copia que dejaría el agente de SAP: con ella la base calcula el disponible real (En inventario − Comprometido en
 // PT-01) de cada producto de ejemplo, que es lo que muestran la lista de productos, su filtro y los kits.
 for (const p of demoProducts) {

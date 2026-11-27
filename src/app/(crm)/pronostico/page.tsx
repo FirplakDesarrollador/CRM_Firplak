@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ObjectIcon } from "@/components/ui/icons";
 import { KpiTile } from "@/components/dashboard/Charts";
+import { RealForecastChart } from "@/components/forecast/RealForecastChart";
+import { REAL_LAYERS, type RealDay } from "@/components/forecast/real-layers";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Tr } from "@/components/ui/Tr";
@@ -12,7 +14,7 @@ import { AmountInput } from "@/components/ui/AmountInput";
 import { TrendChart, type TrendPoint } from "@/components/forecast/TrendChart";
 import { getUsers } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
-import { canSystem } from "@/lib/permissions";
+import { can, canSystem } from "@/lib/permissions";
 import { formatCompactCurrency, formatCurrency, formatDate, formatMillions, formatPercent, todayISO } from "@/lib/format";
 import { periodEnd, periodLabel, periodStart, shiftPeriod, type GoalPeriodType } from "@/lib/goals/periods";
 import { saveForecastAdjustment, takeForecastSnapshot } from "@/lib/goals/actions";
@@ -44,17 +46,46 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
   const end = periodEnd(type, start);
 
   const supabase = await createClient();
-  const [{ data, error }, { data: companyGoal }, { data: trendData }, users] = await Promise.all([
+  // Pronóstico con lo real de SAP: la compañía para quien ve todas las ventas; si no, lo propio.
+  const seesAll = user.access.isAdmin || can(user.access, "opportunities", "view_all");
+  const [{ data, error }, { data: companyGoal }, { data: trendData }, users, { data: realRows }, { data: realGoal }] = await Promise.all([
     supabase.rpc("forecast_summary", { p_period_type: type, p_period_start: start }),
     supabase.from("sales_goals").select("target").is("user_id", null).eq("metric", "won_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
     supabase.rpc("forecast_trend", { p_period_type: type, p_period_start: start }),
     getUsers(),
+    supabase.rpc("forecast_real_days", { p_period_type: type, p_period_start: start, ...(seesAll ? {} : { p_user: user.id }) }),
+    // La meta de facturación del periodo (de la compañía o de la persona), si está definida.
+    (seesAll
+      ? supabase.from("sales_goals").select("target").is("user_id", null)
+      : supabase.from("sales_goals").select("target").eq("user_id", user.id))
+      .eq("metric", "invoiced_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
   ]);
+  // Acumulado día a día: lo facturado hasta cada día y lo que se espera facturar hasta él.
+  const realToday = todayISO();
+  const byDay = new Map((realRows ?? []).map((r) => [r.day, r]));
+  const realDays: RealDay[] = [];
+  const acc = { invoiced: 0, backlog: 0, opportunities: 0 };
+  for (let d = start; d <= end; d = nextDay(d)) {
+    const r = byDay.get(d);
+    if (r) {
+      acc.invoiced += Number(r.invoiced);
+      acc.backlog += Number(r.orders) + Number(r.deliveries);
+      acc.opportunities += Number(r.opportunities);
+    }
+    realDays.push({ date: d, ...acc });
+  }
+  const real = {
+    invoiced: acc.invoiced, backlog: acc.backlog, opportunities: acc.opportunities,
+    orders: (realRows ?? []).reduce((n, r) => n + Number(r.orders), 0), deliveries: (realRows ?? []).reduce((n, r) => n + Number(r.deliveries), 0),
+    total: acc.invoiced + acc.backlog + acc.opportunities,
+  };
   const rows = ((data ?? []) as Row[]).map((r) => ({
     ...r,
     closed: Number(r.closed), commit_amount: Number(r.commit_amount), best_case: Number(r.best_case), pipeline: Number(r.pipeline),
     quota: r.quota === null ? null : Number(r.quota), adjustment: r.adjustment === null ? null : Number(r.adjustment),
   }));
+  const realQuota = realGoal ? Number(realGoal.target) : null;
+  const realScale = Math.max(1, real.total, realQuota ?? 0);
   const forecastOf = (r: (typeof rows)[number]) => r.adjustment ?? r.closed + r.commit_amount;
   const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((s, r) => s + f(r), 0);
   const totals = {
@@ -168,6 +199,51 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
         </div>
       </div>
       {error && <p className="error-text">{error.message}</p>}
+
+      <section className="glass p-5" aria-label={t("Pronóstico con lo real de SAP")}>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="card-title"><Tr>Pronóstico con lo real de SAP</Tr>{!seesAll && <span className="badge ml-2"><Tr>Lo tuyo</Tr></span>}</h2>
+            <p className="max-w-[70ch] text-xs text-muted"><Tr>Lo ya facturado, más los pedidos y entregas que faltan por facturar, más las oportunidades abiertas: cada valor en la fecha en que se convierte en factura.</Tr></p>
+          </div>
+          <div className="text-right">
+            <p className="eyebrow"><Tr>Pronóstico del periodo</Tr></p>
+            <p className="kpi-value" data-testid="pronostico-real">{formatMillions(real.total).value}<span className="kpi-unit"><Tr>Millones COP</Tr></span></p>
+            <p className={`text-xs font-medium ${realQuota ? (real.total >= realQuota ? "text-success" : "text-warning") : "text-muted"}`}>
+              {realQuota ? <>{formatPercent((real.total / realQuota) * 100)} {t("de la meta de")} {formatCompactCurrency(realQuota)}</> : t("Sin meta definida")}
+            </p>
+          </div>
+        </div>
+        {/* De qué está hecho hoy: una sola barra, de lo más seguro a lo menos, con la meta como marca. */}
+        <div className="relative mt-4 flex h-5 gap-[2px]" role="img"
+          aria-label={REAL_LAYERS.map((l) => `${t(l.label)} ${formatCompactCurrency(real[l.key])}`).join(", ")}>
+          {REAL_LAYERS.map((l) => (real[l.key] > 0
+            ? <span key={l.key} className="h-full first:rounded-l-[5px] last:rounded-r-[5px]" style={{ width: `${(real[l.key] / realScale) * 100}%`, background: l.color }} />
+            : null))}
+          {realQuota ? <span className="absolute -top-1 h-7 w-0.5 rounded bg-ink" style={{ left: `${Math.min(100, (realQuota / realScale) * 100)}%` }} title={t("Meta")} /> : null}
+        </div>
+        <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+          {REAL_LAYERS.map((l) => (
+            <div key={l.key} className="min-w-0">
+              <dt className="flex items-center gap-1.5 text-xs font-medium text-muted"><span className="h-2 w-2 shrink-0 rounded-full" style={{ background: l.color }} /><Tr>{l.label}</Tr></dt>
+              <dd className="num text-lg font-medium" data-testid={`real-${l.key}`}>{formatCompactCurrency(real[l.key])}</dd>
+              <dd className="text-xs text-muted">
+                {l.key === "invoiced" ? <Tr>Ventas netas de SAP, en su fecha de factura.</Tr>
+                  : l.key === "backlog" ? <>{t("Pedidos")} {formatCompactCurrency(real.orders)} · {t("Entregas sin facturar")} {formatCompactCurrency(real.deliveries)}. <Tr>Fecha de despacho o de entrega más 4 días.</Tr></>
+                    : <Tr>Abiertas en el CRM, en su mes de entrega y facturación.</Tr>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4">
+          <RealForecastChart days={realDays} today={realToday} quota={realQuota} />
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          <Tr>Hasta «Hoy» la curva es facturación real; de ahí en adelante suma lo que se espera facturar cada día. Lo que ya debía haberse facturado se cuenta hoy. Los pedidos y entregas abiertos salen de la copia de SAP de las cuentas del CRM que tienen Código SAP.</Tr>
+        </p>
+      </section>
+
+      <h2 className="pt-2 text-sm font-medium text-muted"><Tr>Oportunidades del CRM por categoría y asesor</Tr></h2>
 
       <div className="grid gap-3 sm:grid-cols-2 sm:max-xl:[&>*:last-child]:col-span-2 xl:grid-cols-5">
         <KpiTile label="Cerrado" {...formatMillions(totals.closed)} sub={delta(totals.closed, before?.closed)} />
@@ -423,4 +499,8 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
       </p>
     </div>
   );
+}
+
+function nextDay(iso: string) {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
 }

@@ -49,7 +49,8 @@ test("el gráfico de tendencia responde al teclado y tiene vista de tabla", asyn
   await expect(detalle).not.toContainText("Hoy (en vivo)");
   await page.keyboard.press("Escape");
   await expect(detalle).toHaveCount(0);
-  await page.getByText("Ver datos en tabla").click();
+  // La página tiene dos gráficas con tabla: la de tendencia es la segunda.
+  await page.getByText("Ver datos en tabla").last().click();
   await expect(page.getByRole("columnheader", { name: "Fecha", exact: true })).toBeVisible();
 });
 
