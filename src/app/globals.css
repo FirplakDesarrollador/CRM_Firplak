@@ -59,12 +59,6 @@
   --danger-soft: rgba(156, 58, 36, 0.13);
   --info: var(--navy-600);
   --info-soft: rgba(39, 80, 111, 0.12);
-  /* Neón del pronóstico real: solo en esa gráfica (facturado, pedidos y entregas, oportunidades y total) */
-  --neon-green: #12d95c;
-  --neon-blue: #1790ff;
-  --neon-orange: #ff8a1f;
-  --neon-purple: #9b6bff;
-  --neon-glow: 45%;
   --chart-commit: var(--navy-700); /* Compromiso y Pronóstico en los gráficos */
   --chart-best: #6f9fc2; /* Mejor caso y Potencial */
 
@@ -132,11 +126,6 @@
     --danger-soft: rgba(238, 159, 141, 0.16);
     --info: #8fb9da;
     --info-soft: rgba(15, 32, 46, 0.86);
-    --neon-green: #39ff7a;
-    --neon-blue: #2bb8ff;
-    --neon-orange: #ff9a2e;
-    --neon-purple: #b792ff;
-    --neon-glow: 85%;
     --chart-commit: #8fb9da;
     --chart-best: #d8cda9;
     --primary-a: #a6b85c;
@@ -191,11 +180,6 @@
   --danger-soft: rgba(238, 159, 141, 0.16);
   --info: #8fb9da;
   --info-soft: rgba(15, 32, 46, 0.86);
-  --neon-green: #39ff7a;
-  --neon-blue: #2bb8ff;
-  --neon-orange: #ff9a2e;
-  --neon-purple: #b792ff;
-  --neon-glow: 85%;
   --chart-commit: #8fb9da;
   --chart-best: #d8cda9;
   --primary-a: #a6b85c;
@@ -283,11 +267,6 @@
   --danger-soft: rgba(238, 159, 141, 0.16);
   --info: #8fb9da;
   --info-soft: rgba(15, 32, 46, 0.86);
-  --neon-green: #39ff7a;
-  --neon-blue: #2bb8ff;
-  --neon-orange: #ff9a2e;
-  --neon-purple: #b792ff;
-  --neon-glow: 85%;
   --chart-commit: #8fb9da;
   --chart-best: #d8cda9;
   --primary-a: #a6b85c;

@@ -3,9 +3,9 @@
 /** Acumulado al cierre de cada día del periodo: lo facturado hasta ese día y lo que ya se espera facturar hasta él. */
 export type RealDay = { date: string; invoiced: number; backlog: number; opportunities: number };
 
-/** Las tres capas del pronóstico, de abajo hacia arriba: lo más seguro primero. */
+/** Las tres capas del pronóstico, de abajo hacia arriba: lo más seguro primero. Colores de «Tendencia del pronóstico». */
 export const REAL_LAYERS = [
-  { key: "invoiced", label: "Facturado", color: "var(--neon-green)" },
-  { key: "backlog", label: "Pedidos y entregas abiertos", color: "var(--neon-blue)" },
-  { key: "opportunities", label: "Oportunidades", color: "var(--neon-orange)" },
+  { key: "invoiced", label: "Facturado", color: "var(--success)" },
+  { key: "backlog", label: "Pedidos y entregas abiertos", color: "var(--chart-commit)" },
+  { key: "opportunities", label: "Oportunidades", color: "var(--chart-best)" },
 ] as const;

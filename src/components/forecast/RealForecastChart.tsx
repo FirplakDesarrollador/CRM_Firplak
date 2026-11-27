@@ -7,13 +7,12 @@ import { useLocale, useT } from "@/lib/i18n/client";
 import { REAL_LAYERS, type RealDay } from "./real-layers";
 
 const PAD = { top: 30, right: 12, bottom: 44, left: 64 };
-const PURPLE = "var(--neon-purple)";
-const glow = (color: string, blur = 6) => `drop-shadow(0 0 ${blur}px color-mix(in srgb, ${color} var(--neon-glow), transparent))`;
+const TOTAL = "var(--text)"; // la línea del total va en la tinta de la app, sobre los colores de siempre
 
 type Bucket = { key: string; label: string; start: string; end: string; invoiced: number; backlog: number; opportunities: number };
 
 /**
- * Barras apiladas en neón (verde facturado, azul pedidos y entregas, naranja oportunidades) dentro de una franja morada
+ * Barras apiladas con los colores de la app (los de «Tendencia del pronóstico»: verde facturado, azul pedidos y entregas, y el tono de mejor caso para las oportunidades) dentro de una franja tenue
  * cuyo borde es la línea del total proyectado: continua hasta hoy, punteada de ahí en adelante.
  * En un mes, cada barra es lo acumulado al cierre de la semana y la línea termina en el pronóstico del mes.
  * En trimestre y año, cada barra es lo que se factura en ese mes y la línea muestra hacia dónde va el total.
@@ -93,11 +92,11 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
 
   return (
     <div>
-      <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+      <ul className="mb-3 flex flex-wrap gap-2 text-xs text-ink-2" aria-label={t("Leyenda")}>
         {REAL_LAYERS.map((l) => (
-          <li key={l.key} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: l.color, filter: glow(l.color, 4) }} />{t(l.label)}</li>
+          <li key={l.key} className="chart-pastilla"><span className="h-2 w-2 rounded-full" style={{ background: l.color }} />{t(l.label)}</li>
         ))}
-        <li className="flex items-center gap-1.5"><span className="h-[3px] w-5 rounded-full" style={{ background: PURPLE, filter: glow(PURPLE, 4) }} />{t("Total proyectado")}</li>
+        <li className="chart-pastilla"><span className="h-[3px] w-4 rounded-full" style={{ background: TOTAL }} />{t("Total proyectado")}</li>
       </ul>
       <div className="relative" ref={box}>
         <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="group" tabIndex={0}
@@ -112,8 +111,8 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
           }}>
           <defs>
             <linearGradient id={`${id}-franja`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor={PURPLE} stopOpacity={0.34} />
-              <stop offset="1" stopColor={PURPLE} stopOpacity={0.04} />
+              <stop offset="0" stopColor={TOTAL} stopOpacity={0.14} />
+              <stop offset="1" stopColor={TOTAL} stopOpacity={0.02} />
             </linearGradient>
           </defs>
           {ticks.map((v) => (
@@ -122,7 +121,7 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
               <text x={PAD.left - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="var(--muted)">{formatCompactCurrency(v)}</text>
             </g>
           ))}
-          {/* La franja morada: todo lo que queda bajo la línea del total. */}
+          {/* La franja: todo lo que queda bajo la línea del total. */}
           {buckets.length > 0 && <path d={`M${PAD.left},${y(0)} L${edge.join(" L")} L${W - PAD.right},${y(0)} Z`} fill={`url(#${id}-franja)`} />}
           {hover !== null && <rect x={x(hover) - band / 2} y={PAD.top} width={band} height={innerH} fill="var(--text)" fillOpacity={0.05} rx={8} />}
           {buckets.map((b, i) => {
@@ -134,7 +133,7 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
                   if (v <= 0) return null;
                   const top = y(base + v), height = Math.max(2, y(base) - top - (base > 0 ? 2 : 0));
                   base += v;
-                  return <rect key={l.key} x={x(i) - barW / 2} y={top} width={barW} height={height} rx={Math.min(5, barW / 3, height / 2)} fill={l.color} style={{ filter: glow(l.color) }} />;
+                  return <rect key={l.key} x={x(i) - barW / 2} y={top} width={barW} height={height} rx={Math.min(5, barW / 3, height / 2)} fill={l.color} />;
                 })}
                 <text x={x(i)} y={H - 24} fontSize={11} textAnchor="middle" fill={i === todayIndex ? "var(--text)" : "var(--muted)"} fontWeight={i === todayIndex ? 600 : 400}>{axisLabel(b)}</text>
                 {i === todayIndex && <text x={x(i)} y={H - 8} fontSize={10} textAnchor="middle" fill="var(--muted)">{t("Hoy")}</text>}
@@ -148,14 +147,14 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
             </g>
           ) : null}
           {buckets.length > 1 && (
-            <g style={{ filter: glow(PURPLE) }}>
-              {split > 0 && <polyline fill="none" stroke={PURPLE} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" points={buckets.slice(0, split + 1).map((_, i) => point(i)).join(" ")} />}
-              {split < last && <polyline fill="none" stroke={PURPLE} strokeWidth={2.5} strokeDasharray="1 7" strokeLinejoin="round" strokeLinecap="round" points={buckets.slice(split).map((_, k) => point(split + k)).join(" ")} />}
+            <g>
+              {split > 0 && <polyline fill="none" stroke={TOTAL} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" points={buckets.slice(0, split + 1).map((_, i) => point(i)).join(" ")} />}
+              {split < last && <polyline fill="none" stroke={TOTAL} strokeWidth={2.5} strokeDasharray="1 7" strokeLinejoin="round" strokeLinecap="round" points={buckets.slice(split).map((_, k) => point(split + k)).join(" ")} />}
             </g>
           )}
           {buckets.map((b, i) => (
             <g key={b.key}>
-              <circle cx={x(i)} cy={y(total(b))} r={hover === i ? 5.5 : 4.5} fill={PURPLE} stroke="var(--surface)" strokeWidth={2} />
+              <circle cx={x(i)} cy={y(total(b))} r={hover === i ? 5.5 : 4.5} fill={TOTAL} stroke="var(--surface)" strokeWidth={2} />
               {((showValues && total(b) > 0) || hover === i) && (
                 <text x={x(i)} y={y(total(b)) - 11} fontSize={11.5} fontWeight={600} textAnchor="middle" fill="var(--text)" stroke="var(--surface)" strokeWidth={3} strokeOpacity={0.7} paintOrder="stroke">{formatCompactCurrency(total(b))}</text>
               )}
@@ -176,7 +175,7 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
               </p>
             ))}
             <p className="mt-1 flex justify-between gap-2 border-t border-line pt-1 font-semibold text-ink">
-              <span className="flex items-center gap-1.5"><span className="h-[3px] w-3 rounded-full" style={{ background: PURPLE }} />{totalLabel}</span>
+              <span className="flex items-center gap-1.5"><span className="h-[3px] w-3 rounded-full" style={{ background: TOTAL }} />{totalLabel}</span>
               <span className="num">{formatCompactCurrency(total(buckets[hover]))}</span>
             </p>
           </div>
