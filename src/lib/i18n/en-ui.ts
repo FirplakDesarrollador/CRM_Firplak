@@ -1321,4 +1321,9 @@ export const UI_EN: Record<string, string> = {
   "Cada uno entra con el precio de la lista de la cuenta que elijas; los que no tengan precio en esa lista no se agregan.": "Each one enters with the price from the list of the account you choose; those without a price in that list are not added.",
   "Se agregaron {n} productos de tu selección, con el precio de la lista de esta cotización.": "{n} products from your selection were added, with the price from this quote's list.",
   "No se agregaron por no tener precio en la lista de esta cotización:": "Not added because they have no price in this quote's list:",
+  "Disponible real": "Real availability",
+  "Disponible real = En inventario − Comprometido en {bodega}, la bodega que se reserva.": "Real availability = In stock − Committed in {bodega}, the warehouse that is reserved.",
+  "Sumando todas las bodegas:": "Adding all warehouses:",
+  "en inventario y": "in stock and",
+  "comprometidas (detalle abajo).": "committed (detail below).",
 };

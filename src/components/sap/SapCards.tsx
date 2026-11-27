@@ -135,6 +135,9 @@ export async function SapAccountCard({ cardCode }: { cardCode: string | null }) 
 }
 
 /** Artículo en SAP: inventario por bodega y listas de precios (solo lectura). */
+/** Bodega de disponible real (la que se reserva en SAP). La base usa la misma: `public.sap_stock_warehouse()`. */
+const STOCK_WAREHOUSE = "PT-01";
+
 export async function SapProductCard({ itemCode }: { itemCode: string | null }) {
   const t = await getT();
   if (!itemCode) return <section className="card p-4 text-sm text-muted"><Tr>Este producto no tiene referencia: debe coincidir con el código del artículo en SAP (ItemCode).</Tr></section>;
@@ -146,16 +149,27 @@ export async function SapProductCard({ itemCode }: { itemCode: string | null }) 
     return <section className="card p-4"><Alert tone="error">{t("No se pudo consultar SAP:")} {(e as Error).message}</Alert></section>;
   }
   if (!item) return <section className="card p-4 text-sm text-muted">{t("No existe un artículo con el código")} <code>{itemCode}</code> {t("en SAP.")}</section>;
-  const available = item.QuantityOnStock - (item.QuantityOrderedByCustomers ?? 0);
+  // Las cifras principales son las de la bodega de disponible real (PT-01), la que se reserva en SAP: es en lo que se
+  // fija el vendedor. El total de todas las bodegas queda en una línea aparte y el detalle, en la tabla.
+  const warehouses = item.ItemWarehouseInfoCollection ?? [];
+  const main = warehouses.find((w) => w.WarehouseCode === STOCK_WAREHOUSE);
+  const inStock = Number(main?.InStock ?? 0);
+  const committed = Number(main?.Committed ?? 0);
+  const available = inStock - committed;
+  const others = warehouses.some((w) => w.WarehouseCode !== STOCK_WAREHOUSE && (w.InStock || w.Committed));
 
   return (
     <section className="card overflow-hidden">
       <Header title={`${t("SAP Business One")} · ${item.ItemCode}`} subtitle={`${item.ItemName} · ${t("Solo lectura")}`} syncedAt={item.syncedAt} />
       <div className="grid gap-2 p-4 sm:grid-cols-3">
-        <Kpi label={t("En inventario")} value={formatNumber(item.QuantityOnStock)} />
-        <Kpi label={t("Comprometido con clientes")} value={formatNumber(item.QuantityOrderedByCustomers ?? 0)} />
-        <Kpi label={t("Disponible")} value={formatNumber(available)} tone={available <= 0 ? "text-danger" : "text-success"} />
+        <Kpi label={`${t("En inventario")} · ${STOCK_WAREHOUSE}`} value={formatNumber(inStock)} />
+        <Kpi label={`${t("Comprometido con clientes")} · ${STOCK_WAREHOUSE}`} value={formatNumber(committed)} />
+        <Kpi label={`${t("Disponible real")} · ${STOCK_WAREHOUSE}`} value={formatNumber(available)} tone={available <= 0 ? "text-danger" : "text-success"} />
       </div>
+      <p className="px-4 pb-3 text-xs text-muted" data-testid="sap-otras-bodegas">
+        {t("Disponible real = En inventario − Comprometido en {bodega}, la bodega que se reserva.").replace("{bodega}", STOCK_WAREHOUSE)}
+        {others && <> {t("Sumando todas las bodegas:")} {formatNumber(item.QuantityOnStock)} {t("en inventario y")} {formatNumber(item.QuantityOrderedByCustomers ?? 0)} {t("comprometidas (detalle abajo).")}</>}
+      </p>
       <div className="grid gap-4 border-t border-line p-4 xl:grid-cols-2">
         <div>
           <h3 className="mb-2 text-sm font-semibold"><Tr>Inventario por bodega</Tr></h3>
@@ -163,8 +177,8 @@ export async function SapProductCard({ itemCode }: { itemCode: string | null }) 
             <thead><tr><th><Tr>Bodega</Tr></th><th className="text-right"><Tr>En inventario</Tr></th><th className="text-right"><Tr>Comprometido</Tr></th><th className="text-right"><Tr>Pedido a proveedor</Tr></th></tr></thead>
             <tbody>
               {(item.ItemWarehouseInfoCollection ?? []).filter((w) => w.InStock || w.Committed || w.Ordered).map((w) => (
-                <tr key={w.WarehouseCode}>
-                  <td>{w.WarehouseCode}</td>
+                <tr key={w.WarehouseCode} className={w.WarehouseCode === STOCK_WAREHOUSE ? "font-medium" : undefined}>
+                  <td>{w.WarehouseCode}{w.WarehouseCode === STOCK_WAREHOUSE && <span className="badge badge-brand ml-2"><Tr>Disponible real</Tr></span>}</td>
                   <td className="num text-right">{formatNumber(w.InStock)}</td>
                   <td className="num text-right">{formatNumber(w.Committed)}</td>
                   <td className="num text-right">{formatNumber(w.Ordered)}</td>

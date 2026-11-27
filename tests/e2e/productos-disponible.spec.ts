@@ -227,3 +227,16 @@ test("ajuste masivo de precios: vista previa, confirmación escrita, registro y 
   await expect(asesora).toHaveURL(/\/productos$/);
   await asesora.context().close();
 });
+
+test("la ficha de SAP del producto muestra como cifras principales las de PT-01, no la suma de todas las bodegas", async ({ page }) => {
+  // DEMO-MB-060: PT-01 tiene 260 en inventario y 100 comprometidas (160); con BOG-CD suman 340 y 120.
+  await page.goto("/productos?q=DEMO-MB-060");
+  await fila(page, "DEMO-MB-060").getByRole("link").first().click();
+  await page.getByRole("tab", { name: "SAP" }).click();
+  const cifra = (titulo: string) => page.locator("div").filter({ has: page.getByText(titulo, { exact: true }) }).last();
+  await expect(cifra("En inventario · PT-01")).toContainText("260");
+  await expect(cifra("Comprometido con clientes · PT-01")).toContainText("100");
+  await expect(cifra("Disponible real · PT-01")).toContainText("160");
+  await expect(page.getByTestId("sap-otras-bodegas")).toContainText("Sumando todas las bodegas: 340 en inventario y 120 comprometidas");
+  await expect(page.getByRole("row").filter({ hasText: "PT-01" })).toContainText("Disponible real");
+});
