@@ -291,6 +291,25 @@ test.describe("administrador", () => {
     await page.getByRole("tab", { name: "Detalles" }).click();
     await expect(page.getByText(lista).first()).toBeVisible();
     await expect(page.getByText("USD", { exact: true }).first()).toBeVisible();
+    // Su impreso trae las cuentas bancarias del mercado Internacional, no las nacionales.
+    const exterior = page.url().split("?")[0];
+    await page.goto("/configuracion/documentos");
+    await page.locator('textarea[name="payment_lines"]').fill("BANCO NACIONAL DE PRUEBA Cta Cte 000");
+    await page.locator('textarea[name="payment_lines_intl"]').fill("INTERNATIONAL TEST BANK · SWIFT TESTUS00 · Account 000");
+    await page.locator('input[name="payment_note_intl"]').fill("Send the payment receipt to your sales advisor.");
+    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    await expect(page.getByText("Guardado. Las cotizaciones y los pedidos ya se imprimen con estos datos.")).toBeVisible();
+    await page.goto(exterior.replace("/cotizaciones/", "/imprimir/cotizacion/"));
+    await expect(page.locator("article")).toContainText("INTERNATIONAL TEST BANK · SWIFT TESTUS00 · Account 000");
+    await expect(page.locator("article")).toContainText("Send the payment receipt to your sales advisor.");
+    await expect(page.locator("article")).not.toContainText("BANCO NACIONAL DE PRUEBA");
+    // Y una cotización nacional, solo las nacionales.
+    await page.goto("/cotizaciones");
+    await page.getByRole("link", { name: "COT-1001" }).click();
+    await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+    await page.goto(page.url().split("?")[0].replace("/cotizaciones/", "/imprimir/cotizacion/"));
+    await expect(page.locator("article")).toContainText("BANCO NACIONAL DE PRUEBA Cta Cte 000");
+    await expect(page.locator("article")).not.toContainText("INTERNATIONAL TEST BANK");
     // Constructor del exterior sin lista de su canal: no se crea (ni usa la general en USD ni la nacional).
     await cotizar(unico("Constructora Andina"), "Canal Constructores");
     await expect(page.getByText("No hay una lista de precios activa para el mercado Internacional y el Canal Constructores").first()).toBeVisible();

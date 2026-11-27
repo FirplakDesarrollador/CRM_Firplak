@@ -1229,4 +1229,9 @@ export const UI_EN: Record<string, string> = {
   "Cierre de facturación (día del mes)": "Invoicing cutoff (day of month)",
   "Día hasta el que el cliente recibe facturas del mes. Si cierra el 25, hay que entregar a más tardar el 24. Déjalo vacío si no tiene corte.": "Day until which the customer accepts invoices for the month. If it closes on the 25th, delivery must happen by the 24th. Leave empty if there is no cutoff.",
   "Escribe un día entre 1 y 31": "Type a day between 1 and 31",
+  "Lo que escribas aquí sale en el PDF de las cotizaciones y los pedidos, junto a los totales. Cada documento imprime las cuentas del mercado de su cliente, nunca las del otro; si las de su mercado están vacías, ese bloque no se imprime.": "What you write here appears on the PDF of quotes and orders, next to the totals. Each document prints the accounts of its customer's market, never the other one's; if its market's block is empty, it is not printed.",
+  "Forma de pago y consignación · mercado Nacional": "Payment and deposit details · Domestic market",
+  "Forma de pago y consignación · mercado Internacional": "Payment and deposit details · International market",
+  "Sale en los documentos de las cuentas del mercado Nacional (pesos).": "Printed on documents of Domestic market accounts (pesos).",
+  "Sale en los documentos de las cuentas del mercado Internacional (dólares): banco, cuenta, SWIFT, banco intermediario.": "Printed on documents of International market accounts (dollars): bank, account, SWIFT, intermediary bank.",
 };

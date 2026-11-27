@@ -29,9 +29,14 @@ export type PrintDoc = {
   payment: PrintSettings;
 };
 
-/** Formas de pago que se imprimen: las pone administración en Configuración → Documentos impresos. */
+/** Formas de pago que se imprimen en un documento: las del mercado de su cuenta. */
 export type PrintSettings = { payment_lines: string[]; payment_note: string };
-export const DEFAULT_PRINT_SETTINGS: PrintSettings = { payment_lines: [], payment_note: "" };
+/**
+ * Lo que administración carga en Configuración → Documentos impresos: las cuentas del mercado Nacional y, aparte, las
+ * del Internacional (bancos distintos). Un documento nunca imprime las del otro mercado: si las suyas están vacías,
+ * el bloque no sale.
+ */
+export type PrintSettingsByMarket = { nacional: PrintSettings; internacional: PrintSettings };
 
 /** Datos públicos de la empresa que van al pie de cada documento. */
 export const COMPANY = {
@@ -42,18 +47,20 @@ export const COMPANY = {
   address: "Autopista Sur, Calle 29 No. 41-15, Itagüí – Antioquia · PBX (604) 444 17 71 · www.firplak.com",
 };
 
-export async function getPrintSettings(): Promise<PrintSettings> {
+export async function getPrintSettings(): Promise<PrintSettingsByMarket> {
   const supabase = await createClient();
   const { data } = await supabase.from("integration_settings").select("value").eq("key", "print").maybeSingle();
-  const v = (data?.value ?? {}) as Partial<PrintSettings>;
-  return {
-    payment_lines: Array.isArray(v.payment_lines) ? v.payment_lines.map(String).filter(Boolean) : [],
-    payment_note: typeof v.payment_note === "string" ? v.payment_note : "",
-  };
+  const v = (data?.value ?? {}) as Record<string, unknown>;
+  const block = (lines: unknown, note: unknown): PrintSettings => ({
+    payment_lines: Array.isArray(lines) ? lines.map(String).filter(Boolean) : [],
+    payment_note: typeof note === "string" ? note : "",
+  });
+  return { nacional: block(v.payment_lines, v.payment_note), internacional: block(v.payment_lines_intl, v.payment_note_intl) };
 }
+const paymentFor = (all: PrintSettingsByMarket, market: string | null | undefined) => (market === "Internacional" ? all.internacional : all.nacional);
 
 type Contact = { full_name: string | null; email: string | null; mobile: string | null; phone: string | null; contact_role: string | null } | null;
-const ACCOUNT = "name, tax_id, phone, einvoice_email, billing_street, billing_city, shipping_city, billing_cutoff_day";
+const ACCOUNT = "name, tax_id, phone, einvoice_email, billing_street, billing_city, shipping_city, billing_cutoff_day, market";
 const CONTACT = "full_name, email, mobile, phone, contact_role";
 const OWNER = "full_name, email, phone, title";
 const join = (...parts: (string | null | undefined | false)[]) => parts.filter(Boolean).join(" · ");
@@ -79,7 +86,7 @@ const mapTotals = (d: Totals): [string, number][] => [
   ...(Number(d.shipping) ? [["Flete", Number(d.shipping)] as [string, number]] : []),
 ];
 
-type Account = { name: string; tax_id: string | null; phone: string | null; einvoice_email: string | null; billing_street: string | null; billing_city: string | null; shipping_city: string | null; billing_cutoff_day: number | null } | null;
+type Account = { name: string; tax_id: string | null; phone: string | null; einvoice_email: string | null; billing_street: string | null; billing_city: string | null; shipping_city: string | null; billing_cutoff_day: number | null; market: string | null } | null;
 const customerOf = (name: string | null | undefined, a: Account): PrintDoc["customer"] => ({
   name: name ?? a?.name ?? "",
   lines: [a?.tax_id ? `NIT ${a.tax_id}` : "", a?.phone ? `Tel. ${a.phone}` : "", a?.einvoice_email ? `Facturación electrónica: ${a.einvoice_email}` : "",
@@ -126,7 +133,7 @@ export async function loadPrintQuote(id: string): Promise<PrintDoc | null> {
     terms: [q.payment_terms ? `Condiciones de pago: ${q.payment_terms}` : "", q.delivery_terms ? `Condiciones de entrega: ${q.delivery_terms}` : "", q.incoterm ? `Incoterm: ${q.incoterm}` : ""].filter(Boolean),
     notes: q.description,
     owner: { name: q.owner?.full_name ?? "", detail: join(q.owner?.title, q.owner?.email, q.owner?.phone) },
-    payment,
+    payment: paymentFor(payment, account?.market),
   };
 }
 
@@ -174,7 +181,7 @@ export async function loadPrintOrder(id: string): Promise<PrintDoc | null> {
     terms: [o.payment_terms ? `Condiciones de pago: ${o.payment_terms}` : "", o.delivery_terms ? `Condiciones de entrega: ${o.delivery_terms}` : "", o.incoterm ? `Incoterm: ${o.incoterm}` : ""].filter(Boolean),
     notes: o.description,
     owner: { name: o.owner?.full_name ?? "", detail: join(o.owner?.title, o.owner?.email, o.owner?.phone) },
-    payment,
+    payment: paymentFor(payment, account?.market),
   };
 }
 
