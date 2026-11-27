@@ -74,6 +74,11 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       badges={
         <>
           {expired && <span className="badge badge-danger"><Tr>Vencida</Tr></span>}
+          {row.split_from ? (
+            <Link href={`/cotizaciones/${(row.split_from as { id: string }).id}`} className="badge badge-info no-underline">
+              <Tr>Entrega separada de</Tr> {(row.split_from as { quote_number: string }).quote_number}
+            </Link>
+          ) : null}
           {renewal && <Link href={`/cotizaciones/${renewal.id}`} className="badge badge-info no-underline"><Tr>Renovada en</Tr> {renewal.quote_number}</Link>}
           {order && <Link href={`/pedidos/${order.id}`} className="badge badge-info no-underline"><Tr>Pedido</Tr> {order.order_number}</Link>}
         </>
@@ -113,11 +118,20 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
                 )}
               </div>
             )}
+            {typeof sp.separada === "string" && (
+              <div className="2xl:col-span-2">
+                <Alert tone="success">
+                  {t(sp.separada === "aceptada"
+                    ? "Esta es la entrega que aceptó el cliente, ya separada y Aceptada: desde aquí puedes crear el pedido. La cotización original sigue abierta con las demás entregas."
+                    : "Esta es la entrega separada. La cotización original sigue con las demás entregas.")}
+                </Alert>
+              </div>
+            )}
             {expired && <div className="2xl:col-span-2"><Alert tone="warning">{expiredText}</Alert></div>}
             {stale && <div className="2xl:col-span-2"><Alert tone="warning">{staleText}</Alert></div>}
             <div className="min-w-0 space-y-4">
               <PartialDeliveries quoteId={id} lines={quoteLines} quoteDate={(row.delivery_date as string | null) ?? null}
-                canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
+                canEdit={access.canEdit} currency={String(row.currency ?? "COP")} status={String(row.status)} />
               <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")}
                 allowFree={row.sale_type === "Carpintería de Obra"} />
             </div>

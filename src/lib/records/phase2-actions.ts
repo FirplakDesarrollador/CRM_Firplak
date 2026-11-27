@@ -259,6 +259,19 @@ export async function splitQuoteDeliveries(quoteId: string, parts: number, _prev
   return { ok: true };
 }
 
+/**
+ * Separa una entrega en su propia cotización (misma información, precios, descuentos y aprobación). Con `accept`,
+ * además la marca Aceptada: es el caso «el cliente aprobó solo esta entrega». Abre la cotización nueva.
+ */
+export async function separateDelivery(quoteId: string, date: string, accept: boolean, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { message: "Fecha de entrega no válida" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("separate_quote_delivery", { p_quote: quoteId, p_date: date, p_accept: accept });
+  if (error || !data) return { message: friendly(error?.message ?? "No se pudo separar la entrega") };
+  revalidatePath("/", "layout");
+  redirect(`/cotizaciones/${data}?separada=${accept ? "aceptada" : "1"}`);
+}
+
 /** Cambia la fecha de una entrega: todas las líneas que tenían esa fecha pasan a la nueva. */
 export async function moveDelivery(quoteId: string, from: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const to = str(fd, "delivery_date");

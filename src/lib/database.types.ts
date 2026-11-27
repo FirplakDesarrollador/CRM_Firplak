@@ -3632,6 +3632,7 @@ export type Database = {
           shipping: number
           shipping_address: string | null
           shipping_manual: boolean
+          split_from_id: string | null
           status: string
           subtotal: number
           tax: number
@@ -3677,6 +3678,7 @@ export type Database = {
           shipping?: number
           shipping_address?: string | null
           shipping_manual?: boolean
+          split_from_id?: string | null
           status?: string
           subtotal?: number
           tax?: number
@@ -3722,6 +3724,7 @@ export type Database = {
           shipping?: number
           shipping_address?: string | null
           shipping_manual?: boolean
+          split_from_id?: string | null
           status?: string
           subtotal?: number
           tax?: number
@@ -3775,6 +3778,13 @@ export type Database = {
           {
             foreignKeyName: "quotes_renewed_from_id_fkey"
             columns: ["renewed_from_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_split_from_id_fkey"
+            columns: ["split_from_id"]
             isOneToOne: false
             referencedRelation: "quotes"
             referencedColumns: ["id"]
@@ -5257,6 +5267,14 @@ export type Database = {
           p_source: string
         }
         Returns: undefined
+      }
+      separate_quote_delivery: {
+        Args: {
+          p_quote: string
+          p_date: string
+          p_accept?: boolean
+        }
+        Returns: string
       }
       set_exchange_rate: {
         Args: {

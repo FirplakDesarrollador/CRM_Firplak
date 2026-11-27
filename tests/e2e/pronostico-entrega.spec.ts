@@ -83,3 +83,53 @@ test("entregas parciales: la cotización se parte en 2, 3 o 4 y el pronóstico r
   await page.getByRole("row").filter({ hasText: "Luis Demo" }).first().getByRole("link").filter({ hasText: /\$/ }).last().click();
   await expect(detalle.getByRole("row").filter({ hasText: new RegExp(nombre.split(" ").slice(-1)[0], "i") })).toContainText("$4,800,000");
 });
+
+test("el cliente acepta una sola entrega: se separa en su cotización aceptada y la original sigue con el resto", async ({ page }) => {
+  const nombre = unico("Aceptación por partes");
+  await page.goto("/cotizaciones/nueva");
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel(/Nombre de la cotización/).fill(nombre);
+  await page.getByLabel(/^Cuenta/).fill("Casa Viva");
+  await page.getByRole("option", { name: /Casa Viva/i }).first().click();
+  await page.locator("#f-delivery_date").fill("2032-03-10");
+  await page.locator("main").getByRole("button", { name: /^Guardar/ }).click();
+  await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
+  const original = page.url().split("?")[0];
+  await expect(async () => {
+    await page.locator("#ql-product").fill("DEMO-MB-060");
+    await page.getByRole("option", { name: /DEMO-MB-060/ }).first().click({ timeout: 2000 });
+  }).toPass();
+  await page.locator("#ql-qty").fill("10");
+  await page.getByRole("button", { name: "Agregar" }).click();
+  const lineas = page.getByRole("listitem").filter({ hasText: "DEMO-MB-060" });
+  await expect(lineas).toHaveCount(1);
+  const entregas = page.getByRole("region", { name: "Entregas parciales" });
+  // Con una sola entrega no hay nada que separar.
+  await expect(page.getByRole("button", { name: "El cliente aceptó esta entrega" })).toHaveCount(0);
+  await entregas.getByRole("button", { name: "Partir en 2 entregas" }).click();
+  await expect(lineas).toHaveCount(2);
+
+  // «Volver» en la confirmación no cambia nada; al confirmar, abre la cotización nueva, ya Aceptada.
+  const primera = entregas.getByRole("listitem").first();
+  await primera.getByRole("button", { name: "El cliente aceptó esta entrega" }).click();
+  await expect(page.getByRole("dialog")).toContainText("queda Aceptada, lista para crear el pedido");
+  await page.getByRole("dialog").getByRole("button", { name: "Volver" }).click();
+  await expect(lineas).toHaveCount(2);
+  await primera.getByRole("button", { name: "El cliente aceptó esta entrega" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Sí, la aceptó" }).click();
+  await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}\?separada=aceptada/);
+  expect(page.url().split("?")[0]).not.toBe(original);
+  await expect(page.getByText("Esta es la entrega que aceptó el cliente")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Entrega separada de COT-/ })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Aceptada" })).toBeDisabled();
+  await expect(lineas).toHaveCount(1);
+  await expect(lineas.first().getByLabel("Cantidad")).toHaveValue("5");
+  await expect(page.getByRole("button", { name: "Crear pedido" })).toBeVisible();
+
+  // La original sigue abierta, con la otra mitad y sin estar partida.
+  await page.goto(original);
+  await expect(page.getByRole("list", { name: "Estado" }).getByRole("button", { name: "Borrador" })).toBeDisabled();
+  await expect(lineas).toHaveCount(1);
+  await expect(lineas.first().getByLabel("Cantidad")).toHaveValue("5");
+  await expect(page.getByRole("button", { name: "El cliente aceptó esta entrega" })).toHaveCount(0);
+});

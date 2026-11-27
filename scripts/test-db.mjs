@@ -2427,6 +2427,62 @@ await check('entregas parciales: partir en 2, 3 o 4 reparte todos los productos,
   assert.equal((await q(`select has_function_privilege('anon', 'public.split_quote_deliveries(uuid, int, int)', 'execute') ok`))[0].ok, false);
 });
 
+await check('el cliente acepta una entrega: se separa en su propia cotización aceptada, hereda la aprobación y la original sigue con el resto', async () => {
+  let acc, opp, qt;
+  const crear = async (descuento) => {
+    [opp] = await q(`insert into opportunities (name, account_id, stage_id, amount, close_date)
+      select 'Negocio por aceptar ' || gen_random_uuid(), $1, s.id, 0, '2033-01-10' from pipeline_stages s join pipelines p on p.id = s.pipeline_id
+      where p.is_default and s.name = 'Calificación' returning id`, [acc.id]);
+    [qt] = await q(`insert into quotes (name, opportunity_id, delivery_date, shipping) values ('Pedido en dos entregas', $1, '2033-02-10', 5000) returning id, quote_number`, [opp.id]);
+    await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price, discount, sort_order) values
+      ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'A', 100, 1000, $2, 1),
+      ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'B', 10, 2000, $2, 2)`, [qt.id, descuento]);
+    await q(`select split_quote_deliveries($1, 2)`, [qt.id]);
+  };
+  await as(admin, async () => {
+    [acc] = await q(`insert into accounts (name, industry, billing_city) values ('Cliente que acepta por partes', 'Canal Distribución', 'Cali') returning id`);
+    await crear(0);
+    // Separar sin aceptar (opción secundaria): la nueva queda en el mismo estado y con el mismo «Válida hasta».
+    await assert.rejects(q(`select separate_quote_delivery($1, '2033-07-01')`, [qt.id]), /no tiene una entrega con esa fecha/);
+    const [{ id: aparte }] = await q(`select separate_quote_delivery($1, '2033-03-12') id`, [qt.id]);
+    const [n] = await q(`select status, split_from_id, delivery_date::text f, net_total, shipping, expiration_date = (select expiration_date from quotes where id = $2) misma from quotes where id = $1`, [aparte, qt.id]);
+    assert.deepEqual([n.status, n.split_from_id, n.f, Number(n.net_total), Number(n.shipping), n.misma], ['Borrador', qt.id, '2033-03-12', 60000, 0, true]);
+    // La original queda con una sola entrega: ya no está partida y conserva el flete.
+    const [o] = await q(`select net_total, shipping, delivery_date::text f, (select count(*)::int from quote_line_items l where l.quote_id = q.id and l.delivery_date is not null) con_fecha from quotes q where id = $1`, [qt.id]);
+    assert.deepEqual([Number(o.net_total), Number(o.shipping), o.f, o.con_fecha], [60000, 5000, '2033-02-10', 0]);
+    await assert.rejects(q(`select separate_quote_delivery($1, '2033-02-10')`, [qt.id]), /no tiene una entrega con esa fecha/);
+
+    // El cliente acepta la primera entrega: queda Aceptada, se vuelve oportunidad ganada y la original sigue abierta.
+    await crear(0);
+    const [{ id: aceptada }] = await q(`select separate_quote_delivery($1, '2033-02-10', true) id`, [qt.id]);
+    const [a] = await q(`select q.status, q.net_total, q.opportunity_id, o.is_won, o.parent_opportunity_id from quotes q join opportunities o on o.id = q.opportunity_id where q.id = $1`, [aceptada]);
+    assert.deepEqual([a.status, Number(a.net_total), a.is_won, a.parent_opportunity_id], ['Aceptada', 60000, true, opp.id]);
+    const [resto] = await q(`select q.status, q.net_total, q.delivery_date::text f, o.amount, o.is_closed from quotes q join opportunities o on o.id = q.opportunity_id where q.id = $1`, [qt.id]);
+    assert.deepEqual([resto.status, Number(resto.net_total), resto.f, Number(resto.amount), resto.is_closed], ['Borrador', 60000, '2033-03-12', 60000, false]);
+    // De la parte aceptada sale el pedido, con la fecha de su entrega.
+    const [{ id: pedido }] = await q(`select create_order_from_quote($1) id`, [aceptada]);
+    assert.equal((await q(`select requested_delivery_date::text d from orders where id = $1`, [pedido]))[0].d, '2033-02-10');
+  });
+
+  // Con descuento alto: sin aprobación no se puede aceptar la entrega (y no se separa nada); con la original aprobada, la hereda.
+  await as(admin, () => crear(20));
+  await assert.rejects(as(admin, () => q(`select separate_quote_delivery($1, '2033-02-10', true)`, [qt.id])), /requiere aprobación/);
+  assert.equal(await count(`select count(*) n from quotes where split_from_id = $1`, [qt.id]), 0);
+  assert.equal(await count(`select count(*) n from quote_line_items where quote_id = $1`, [qt.id]), 4);
+  await q(`insert into approval_requests (process_id, process_name, object, record_id, record_name, status, lock_record, submitted_by, decided_by, decided_at)
+    select p.id, p.name, 'quotes', $1, 'Pedido en dos entregas', 'approved', true, $2, $2, now() from approval_processes p where p.object = 'quotes' and p.is_active`, [qt.id, admin.id]);
+  const [{ id: heredada }] = await as(admin, () => q(`select separate_quote_delivery($1, '2033-02-10', true) id`, [qt.id]));
+  assert.equal((await q(`select status from quotes where id = $1`, [heredada]))[0].status, 'Aceptada');
+  const [ap] = await q(`select status, lock_record, decision_comment from approval_requests where object = 'quotes' and record_id = $1`, [heredada]);
+  assert.deepEqual([ap.status, ap.lock_record, ap.decision_comment], ['approved', false, `Heredada de ${qt.quote_number} al separar la entrega`]);
+  // La original conserva su aprobación: se puede presentar sin pedirla otra vez.
+  await as(admin, () => q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]));
+
+  // Quien no puede editar la cotización no separa entregas; sin sesión, tampoco.
+  await assert.rejects(as(rep, () => q(`select separate_quote_delivery($1, '2033-03-12')`, [qt.id])), /sin permiso para editarla/);
+  assert.equal((await q(`select has_function_privilege('anon', 'public.separate_quote_delivery(uuid, date, boolean)', 'execute') ok`))[0].ok, false);
+});
+
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.
 const DEMO_TABLES = ['accounts', 'contacts', 'opportunities', 'activities', 'leads', 'campaigns', 'products', 'quotes', 'cases', 'orders'];

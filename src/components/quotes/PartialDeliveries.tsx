@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, CheckCircle2 } from "lucide-react";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { ConfirmSubmit } from "@/components/ui/ActionForm";
 import { Tr } from "@/components/ui/Tr";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { useT } from "@/lib/i18n/client";
-import { moveDelivery, splitQuoteDeliveries } from "@/lib/records/phase2-actions";
+import { moveDelivery, separateDelivery, splitQuoteDeliveries } from "@/lib/records/phase2-actions";
 import type { FormState } from "@/lib/records/form";
 import type { QuoteLine } from "./QuoteLines";
 
@@ -14,11 +15,15 @@ import type { QuoteLine } from "./QuoteLines";
 const MAX_PARTS = 12;
 
 /** Fecha de una entrega: al cambiarla, todas sus líneas pasan a la fecha nueva. */
-function DeliveryRow({ quoteId, index, date, lines, total, units, currency, canEdit }: {
+function DeliveryRow({ quoteId, index, date, lines, total, units, currency, canEdit, canSeparate }: {
   quoteId: string; index: number; date: string; lines: number; total: number; units: number; currency: string; canEdit: boolean;
+  /** Hay más de una entrega y la cotización sigue abierta: esta se puede separar en su propia cotización. */
+  canSeparate: boolean;
 }) {
   const t = useT();
   const [state, action] = useActionState(moveDelivery.bind(null, quoteId, date), {} as FormState);
+  const [acceptState, accept] = useActionState(separateDelivery.bind(null, quoteId, date, true), {} as FormState);
+  const [separateState, separate] = useActionState(separateDelivery.bind(null, quoteId, date, false), {} as FormState);
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5">
       <p className="font-medium"><Tr>Entrega</Tr> {index}</p>
@@ -30,7 +35,23 @@ function DeliveryRow({ quoteId, index, date, lines, total, units, currency, canE
       <p className="num text-sm text-muted">
         {formatNumber(units)} {t("unidades")} · {formatNumber(lines)} {t(lines === 1 ? "línea" : "líneas")} · <span className="font-medium text-ink">{formatCurrency(total, currency)}</span>
       </p>
-      {state.message && <p className="error-text w-full">{t(state.message)}</p>}
+      {canSeparate && (
+        <div className="flex w-full flex-wrap items-center justify-end gap-2">
+          <form action={separate}>
+            <ConfirmSubmit className="btn btn-sm btn-ghost" message={`${t("¿Separar la entrega")} ${index} ${t("en otra cotización?")}`} confirmLabel="Separar"
+              body="Sus líneas pasan a una cotización nueva con los mismos datos, precios y descuentos, en el mismo estado de esta. Esta queda con las demás entregas.">
+              <Tr>Separar en otra cotización</Tr>
+            </ConfirmSubmit>
+          </form>
+          <form action={accept}>
+            <ConfirmSubmit className="btn btn-sm" message={`${t("¿El cliente aceptó la entrega")} ${index}?`} confirmLabel="Sí, la aceptó"
+              body="Sus líneas pasan a una cotización nueva que queda Aceptada, lista para crear el pedido, y esa parte del negocio queda ganada. Esta cotización sigue abierta con las demás entregas.">
+              <CheckCircle2 size={14} /> <Tr>El cliente aceptó esta entrega</Tr>
+            </ConfirmSubmit>
+          </form>
+        </div>
+      )}
+      {(state.message || acceptState.message || separateState.message) && <p className="error-text w-full">{t(state.message ?? acceptState.message ?? separateState.message ?? "")}</p>}
     </li>
   );
 }
@@ -41,8 +62,8 @@ function DeliveryRow({ quoteId, index, date, lines, total, units, currency, canE
  * cada 30 días desde la «Entrega estimada» y el sobrante en la última. Después ajusta fechas (aquí, por entrega) y
  * cantidades (en cada línea). El pronóstico ubica cada entrega en su mes.
  */
-export function PartialDeliveries({ quoteId, lines, quoteDate, canEdit, currency }: {
-  quoteId: string; lines: QuoteLine[]; quoteDate: string | null; canEdit: boolean; currency: string;
+export function PartialDeliveries({ quoteId, lines, quoteDate, canEdit, currency, status }: {
+  quoteId: string; lines: QuoteLine[]; quoteDate: string | null; canEdit: boolean; currency: string; status: string;
 }) {
   const t = useT();
   const [state, split] = useActionState(
@@ -94,7 +115,8 @@ export function PartialDeliveries({ quoteId, lines, quoteDate, canEdit, currency
       {partial && (
         <ul className="divide-y divide-[var(--border)] border-t border-line">
           {deliveries.map(([date, d], i) => (
-            <DeliveryRow key={date} quoteId={quoteId} index={i + 1} date={date} lines={d.lines} total={d.total} units={d.units} currency={currency} canEdit={canEdit} />
+            <DeliveryRow key={date} quoteId={quoteId} index={i + 1} date={date} lines={d.lines} total={d.total} units={d.units} currency={currency} canEdit={canEdit}
+              canSeparate={canEdit && deliveries.length > 1 && ["Borrador", "Aprobada", "Presentada"].includes(status)} />
           ))}
         </ul>
       )}
