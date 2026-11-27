@@ -1225,4 +1225,8 @@ export const UI_EN: Record<string, string> = {
   "Textos fijos de la empresa que cierran cada documento.": "Fixed company texts that close every document.",
   "Escribe la tipología (p. ej. «Cocina en L · Apto tipo B»).": "Type the typology (e.g. “L-shaped kitchen · Type B apartment”).",
   "Escribe el valor de la tipología.": "Type the typology's value.",
+  "El cliente cierra facturación el día {dia} de cada mes y la entrega solicitada es el {fecha}: para facturar en ese mes hay que entregar antes del día {dia}; si no, la factura pasa al mes siguiente.": "The customer closes invoicing on day {dia} of each month and the requested delivery is {fecha}: to invoice in that month, delivery must happen before day {dia}; otherwise the invoice moves to the next month.",
+  "Cierre de facturación (día del mes)": "Invoicing cutoff (day of month)",
+  "Día hasta el que el cliente recibe facturas del mes. Si cierra el 25, hay que entregar a más tardar el 24. Déjalo vacío si no tiene corte.": "Day until which the customer accepts invoices for the month. If it closes on the 25th, delivery must happen by the 24th. Leave empty if there is no cutoff.",
+  "Escribe un día entre 1 y 31": "Type a day between 1 and 31",
 };

@@ -94,6 +94,9 @@ export async function persistRecord(
     }
   }
   if (objectKey === "opportunities" && !values.sale_type) values.sale_type = "Estándar";
+  if (objectKey === "accounts" && values.billing_cutoff_day != null && !(Number(values.billing_cutoff_day) >= 1 && Number(values.billing_cutoff_day) <= 31)) {
+    return { ok: false, state: { errors: { billing_cutoff_day: "Escribe un día entre 1 y 31" }, values: echo, message: "Revisa los campos marcados." } };
+  }
 
   // Moneda según el Mercado de la cuenta: en USD se pide el Valor en USD y el Valor en pesos lo calcula la
   // base con la TRM del día; en pesos se pide el Valor. (La base aplica lo mismo en cualquier otra vía.)

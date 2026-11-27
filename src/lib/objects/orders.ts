@@ -12,7 +12,7 @@ export const orders: ObjectDef = {
   select: [
     "*",
     "owner:profiles!orders_owner_id_fkey(id, full_name, email)",
-    "account:accounts!orders_account_id_fkey(id, name, industry, market)",
+    "account:accounts!orders_account_id_fkey(id, name, industry, market, billing_cutoff_day)",
     "opportunity:opportunities!orders_opportunity_id_fkey(id, name)",
     "quote:quotes!orders_quote_id_fkey(id, name, quote_number)",
     "contact:contacts!orders_contact_id_fkey(id, full_name)",

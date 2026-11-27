@@ -81,6 +81,7 @@ export type Database = {
           annual_revenue: number | null
           billing_city: string | null
           billing_country: string | null
+          billing_cutoff_day: number | null
           billing_state: string | null
           billing_street: string | null
           created_at: string
@@ -119,6 +120,7 @@ export type Database = {
           annual_revenue?: number | null
           billing_city?: string | null
           billing_country?: string | null
+          billing_cutoff_day?: number | null
           billing_state?: string | null
           billing_street?: string | null
           created_at?: string
@@ -157,6 +159,7 @@ export type Database = {
           annual_revenue?: number | null
           billing_city?: string | null
           billing_country?: string | null
+          billing_cutoff_day?: number | null
           billing_state?: string | null
           billing_street?: string | null
           created_at?: string

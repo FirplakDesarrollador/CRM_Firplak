@@ -53,6 +53,10 @@ export const accounts: ObjectDef = {
     { name: "employees", label: "Empleados", type: "number", section: "info" },
     { name: "payment_terms", label: "Condiciones de pago", type: "select", options: PAYMENT_TERMS, section: "info" },
     {
+      name: "billing_cutoff_day", label: "Cierre de facturación (día del mes)", type: "number", section: "info", hideEmpty: true,
+      help: "Día hasta el que el cliente recibe facturas del mes. Si cierra el 25, hay que entregar a más tardar el 24. Déjalo vacío si no tiene corte.",
+    },
+    {
       name: "price_book_id", label: "Lista de precios propia", type: "text", relation: "price_book", choices: "clientPriceBooks",
       section: "info", sortable: false, hideEmpty: true,
       help: "Solo para clientes con productos codificados y precios propios, y del mismo mercado de la cuenta. Lo que no esté en ella se cotiza con la lista del canal y queda marcado «No codificado».",

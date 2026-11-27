@@ -32,6 +32,7 @@ test.describe("cotización corta y pedido completo", () => {
     await page.locator("#f-industry").selectOption({ label: "Canal Constructores" });
     await page.locator("#f-tax_id").fill(`900${Date.now().toString().slice(-6)}-1`);
     await page.locator("#f-einvoice_email").fill("facturas@tipologias.example");
+    await page.locator("#f-billing_cutoff_day").fill("25");
     await page.locator("#f-billing_street").fill("Calle 6 Norte # 2-36");
     await page.locator("#f-billing_state").selectOption("Valle del Cauca");
     await page.locator("#f-billing_city").selectOption("Cali");
@@ -149,10 +150,13 @@ test.describe("cotización corta y pedido completo", () => {
     await page.locator("#f-shipping_address").fill("Obra Torre Norte, portería 2");
     await page.locator("#f-delivery_type").selectOption("Entrega en obra");
     await page.locator("#f-delivery_floor").fill("4");
+    // Entrega pedida después del cierre de facturación del cliente (día 25): el pedido lo avisa.
+    await page.locator("#f-requested_delivery_date").fill("2027-01-28");
     await page.getByLabel("Servicio de subida").check();
     await guardar(page);
     await expect(page).toHaveURL(new RegExp(`${pedido.split("/").pop()}$`));
     await page.getByRole("link", { name: "Imprimir / PDF" }).waitFor();
+    await expect(page.getByText(/El cliente cierra facturación el día 25 de cada mes .* hay que entregar antes del día 25/)).toBeVisible();
     const pedidoImpreso = pedido.replace("/pedidos/", "/imprimir/pedido/");
     await page.goto(pedidoImpreso);
     await expect(hoja).toContainText("Pedido");
@@ -162,6 +166,7 @@ test.describe("cotización corta y pedido completo", () => {
     await expect(hoja).toContainText("Obra Torre Norte, portería 2");
     await expect(hoja).toContainText("Tipo de entrega: Entrega en obra");
     await expect(hoja).toContainText("Servicio de subida: Sí");
+    await expect(hoja).toContainText("Cierre de facturación: día 25 de cada mes");
     await expect(hoja).toContainText("Obras Vis/Vip · Carpintería de Obra");
     await expect(hoja).toContainText(banco);
     const pedidoPdf = await page.request.get(`${pedidoImpreso}/pdf`);

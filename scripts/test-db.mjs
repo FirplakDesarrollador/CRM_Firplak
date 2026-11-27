@@ -2221,6 +2221,14 @@ console.log('Cotización corta y pedido completo');
     await q(`update quotes set created_at = now() - interval '40 days' where id = $1`, [ajena.id]);
     await assert.rejects(as(rep, () => q(`select renew_quote($1)`, [ajena.id])), /Cotización no encontrada|row-level security/);
   });
+  await check('cierre de facturación: un día del mes entre 1 y 31, o vacío', async () => {
+    await as(admin, async () => {
+      const [a] = await q(`update accounts set billing_cutoff_day = 25 where id = $1 returning billing_cutoff_day`, [obra.id]);
+      assert.equal(a.billing_cutoff_day, 25);
+      for (const dia of [0, 32]) await assert.rejects(q(`update accounts set billing_cutoff_day = $2 where id = $1`, [obra.id, dia]), /billing_cutoff_day_check/);
+      await q(`update accounts set billing_cutoff_day = null where id = $1`, [dist.id]);
+    });
+  });
   await check('el pedido hereda segmento, tipo, cliente final, ciudad y tipologías; no se activa sin dirección de entrega', async () => {
     await as(admin, async () => {
       const [qt] = await q(`select id from quotes where name = 'Por renovar' and status = 'Borrador'`);

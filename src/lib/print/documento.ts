@@ -53,7 +53,7 @@ export async function getPrintSettings(): Promise<PrintSettings> {
 }
 
 type Contact = { full_name: string | null; email: string | null; mobile: string | null; phone: string | null; contact_role: string | null } | null;
-const ACCOUNT = "name, tax_id, phone, einvoice_email, billing_street, billing_city, shipping_city";
+const ACCOUNT = "name, tax_id, phone, einvoice_email, billing_street, billing_city, shipping_city, billing_cutoff_day";
 const CONTACT = "full_name, email, mobile, phone, contact_role";
 const OWNER = "full_name, email, phone, title";
 const join = (...parts: (string | null | undefined | false)[]) => parts.filter(Boolean).join(" · ");
@@ -79,10 +79,11 @@ const mapTotals = (d: Totals): [string, number][] => [
   ...(Number(d.shipping) ? [["Flete", Number(d.shipping)] as [string, number]] : []),
 ];
 
-type Account = { name: string; tax_id: string | null; phone: string | null; einvoice_email: string | null; billing_street: string | null; billing_city: string | null; shipping_city: string | null } | null;
+type Account = { name: string; tax_id: string | null; phone: string | null; einvoice_email: string | null; billing_street: string | null; billing_city: string | null; shipping_city: string | null; billing_cutoff_day: number | null } | null;
 const customerOf = (name: string | null | undefined, a: Account): PrintDoc["customer"] => ({
   name: name ?? a?.name ?? "",
-  lines: [a?.tax_id ? `NIT ${a.tax_id}` : "", a?.phone ? `Tel. ${a.phone}` : "", a?.einvoice_email ? `Facturación electrónica: ${a.einvoice_email}` : ""].filter(Boolean),
+  lines: [a?.tax_id ? `NIT ${a.tax_id}` : "", a?.phone ? `Tel. ${a.phone}` : "", a?.einvoice_email ? `Facturación electrónica: ${a.einvoice_email}` : "",
+    a?.billing_cutoff_day ? `Cierre de facturación: día ${a.billing_cutoff_day} de cada mes` : ""].filter(Boolean),
 });
 const endCustomer = (name: string | null, taxId: string | null) => (name ? `Cliente final: ${name}${taxId ? ` (NIT ${taxId})` : ""}` : "");
 

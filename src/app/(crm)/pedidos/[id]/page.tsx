@@ -8,6 +8,9 @@ import { DeleteButton } from "@/components/records/DeleteButton";
 import { QuoteLines, type QuoteLine } from "@/components/quotes/QuoteLines";
 import { QuoteTotals } from "@/components/quotes/QuoteTotals";
 import { Tr } from "@/components/ui/Tr";
+import { Alert } from "@/components/ui/Alert";
+import { formatDate } from "@/lib/format";
+import { getT } from "@/lib/i18n/server";
 import { getObjectDef, getRecord, getRecordAccess } from "@/lib/records/data";
 import { createClient } from "@/lib/supabase/server";
 import { ORDER_STATUSES } from "@/lib/objects/picklists";
@@ -18,7 +21,7 @@ import { SapOrderCard } from "@/components/sap/SapOrderCard";
 export const metadata: Metadata = { title: "Pedido" };
 
 export default async function OrderDetailPage({ params, searchParams }: PageProps<"/pedidos/[id]">) {
-  const [, { id }, sp] = await Promise.all([requireUser(), params, searchParams]);
+  const [, { id }, sp, t] = await Promise.all([requireUser(), params, searchParams, getT()]);
   const def = await getObjectDef("orders");
   const row = await getRecord(def, id);
   if (!row) notFound();
@@ -32,6 +35,12 @@ export default async function OrderDetailPage({ params, searchParams }: PageProp
       .order("sort_order"),
   ]);
   const status = String(row.status);
+  // Cierre de facturación del cliente: si la entrega solicitada cae ese día o después, la factura pasa al mes siguiente.
+  const cutoff = Number((row.account as { billing_cutoff_day?: number | null } | null)?.billing_cutoff_day ?? 0);
+  const requested = typeof row.requested_delivery_date === "string" ? row.requested_delivery_date : null;
+  const afterCutoff = cutoff > 0 && requested !== null && !["Entregado", "Cancelado"].includes(status) && Number(requested.slice(8, 10)) >= cutoff;
+  const cutoffText = afterCutoff ? t("El cliente cierra facturación el día {dia} de cada mes y la entrega solicitada es el {fecha}: para facturar en ese mes hay que entregar antes del día {dia}; si no, la factura pasa al mes siguiente.")
+    .replaceAll("{dia}", String(cutoff)).replace("{fecha}", formatDate(requested)) : "";
   const draft = status === "Borrador";
   // Un pedido activado no vuelve a borrador; uno en borrador puede cancelarse o activarse.
   const statuses = draft ? ORDER_STATUSES : ORDER_STATUSES.filter((s) => s !== "Borrador");
@@ -66,6 +75,7 @@ export default async function OrderDetailPage({ params, searchParams }: PageProp
         count: lines?.length ?? 0,
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+            {afterCutoff && <div className="2xl:col-span-2"><Alert tone="warning">{cutoffText}</Alert></div>}
             <QuoteLines kind="order" quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit && draft} currency={String(row.currency ?? "COP")}
               allowFree={row.sale_type === "Carpintería de Obra"} />
             <QuoteTotals q={row} />
