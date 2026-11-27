@@ -893,7 +893,11 @@ svg.lucide {
     font-weight: 500;
     font-size: 0.76rem;
     color: var(--muted);
-    background: var(--surface-2);
+    /* Encabezado fijo: vidrio con cuerpo y desenfoque propio, para que al desplazar la lista las filas que pasan
+       por debajo no se mezclen con los títulos (en oscuro el fondo anterior era casi transparente). */
+    background: var(--table-head);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
     padding: 0.6rem 0.8rem;
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
@@ -1514,4 +1518,24 @@ tr[data-peek] > td { background: var(--brand-soft); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .peek-card { animation: peek-in 0.14s cubic-bezier(0.2, 0.8, 0.2, 1); }
+}
+
+/* Fondo del encabezado fijo de las tablas (ver `.table th`): deja ver el vidrio, pero manda sobre las filas. */
+:root { --table-head: rgba(240, 244, 248, 0.86); }
+:root[data-theme="dark"] { --table-head: rgba(18, 22, 27, 0.78); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --table-head: rgba(18, 22, 27, 0.78); }
+}
+/* Vidrio «Sólido» o transparencia reducida en el sistema: sin transparencia. */
+:root[data-glass="solid"] { --table-head: #eef2f6; }
+:root[data-theme="dark"][data-glass="solid"] { --table-head: #12161b; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-glass="solid"] { --table-head: #12161b; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --table-head: #eef2f6; }
+  :root[data-theme="dark"] { --table-head: #12161b; }
+}
+@media (prefers-reduced-transparency: reduce) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --table-head: #12161b; }
 }
