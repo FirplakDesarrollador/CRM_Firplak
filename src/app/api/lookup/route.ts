@@ -4,6 +4,10 @@ import { getObject, isObjectKey } from "@/lib/objects";
 import { untypedClient } from "@/lib/records/data";
 import { applySearch } from "@/lib/records/filters";
 
+/** La cuenta de una oportunidad, con lo que el formulario necesita de ella: su Mercado (moneda) y su Canal. */
+const accountOf = (a: { id: string; name: string; market: string | null; industry: string | null }) =>
+  ({ id: String(a.id), label: String(a.name), market: a.market ?? null, channel: a.industry ?? null });
+
 /** Búsqueda para campos de relación: /api/lookup?object=accounts&q=casa&account=<id> */
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
   };
   // Lo que el formulario necesita de lo elegido: el Mercado y el Canal de una cuenta; la cuenta de una oportunidad.
   const extra = object === "accounts" ? ", market, industry"
-    : object === "opportunities" ? ", account:accounts!opportunities_account_id_fkey(id, name)" : "";
+    : object === "opportunities" ? ", account:accounts!opportunities_account_id_fkey(id, name, market, industry)" : "";
   let query = db.from(def.table).select(`id, ${def.nameField}, ${subtitle[object]}${extra}`).limit(10).order(def.nameField);
   // Por todas las columnas de búsqueda del objeto: p. ej. un producto por su referencia o una cuenta por su NIT.
   query = applySearch(query, def, term);
@@ -48,7 +52,7 @@ export async function GET(request: NextRequest) {
     sub: subtitle[object].split(", ").map((k) => r[k]).filter(Boolean).join(" · "),
     ...(object === "accounts" ? { market: (r.market as string | null) ?? null, channel: (r.industry as string | null) ?? null } : {}),
     ...(object === "opportunities" && r.account
-      ? { account: { id: String((r.account as { id: string }).id), label: String((r.account as { name: string }).name) } } : {}),
+      ? { account: accountOf(r.account as { id: string; name: string; market: string | null; industry: string | null }) } : {}),
   }));
   return NextResponse.json({ results });
 }

@@ -15,7 +15,7 @@ export async function sendOrderToSap(orderId: string): Promise<{ ok: boolean; me
   if (!sapConfigured()) return { ok: false, message: "SAP Business One no está configurado." };
   const supabase = await createClient();
   const { data: order } = await supabase.from("orders")
-    .select("id, order_number, name, status, customer_po, requested_delivery_date, sap_quotation_entry, sap_quotation_num, account:accounts!orders_account_id_fkey(name, sap_card_code), owner:profiles!orders_owner_id_fkey(full_name)")
+    .select("id, order_number, name, status, customer_po, requested_delivery_date, project_segment, sale_type, sap_quotation_entry, sap_quotation_num, account:accounts!orders_account_id_fkey(name, sap_card_code), owner:profiles!orders_owner_id_fkey(full_name)")
     .eq("id", orderId).maybeSingle();
   if (!order) return { ok: false, message: "El pedido no existe o no tienes acceso." };
   if (order.sap_quotation_entry) return { ok: true, message: `El pedido ya tiene la oferta de venta SAP N.º ${order.sap_quotation_num}.` };
@@ -33,6 +33,11 @@ export async function sendOrderToSap(orderId: string): Promise<{ ok: boolean; me
   const lines = (lineRows ?? []) as unknown as Line[];
   const missing = lines.filter((l) => !l.product?.product_code).map((l) => l.product?.name ?? l.description ?? "(sin producto)");
   if (!lines.length) return fail("El pedido no tiene productos.");
+  // Carpintería de Obra: una tipología escrita a mano no tiene referencia; el pedido espera a que se codifique.
+  const typologies = lines.filter((l) => !l.product).length;
+  if (typologies) {
+    return fail(`Pendiente de codificación: ${typologies === 1 ? "1 tipología" : `${typologies} tipologías`} de Carpintería de Obra sin referencia de SAP. Reemplázalas por sus productos codificados y vuelve a enviar.`);
+  }
   if (missing.length) return fail(`Estos productos no tienen Referencia (ItemCode de SAP): ${missing.join(", ")}.`);
 
   const in30 = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
@@ -42,7 +47,9 @@ export async function sendOrderToSap(orderId: string): Promise<{ ok: boolean; me
       DocDate: new Date().toISOString().slice(0, 10),
       DocDueDate: order.requested_delivery_date ?? in30,
       NumAtCard: order.customer_po || order.order_number,
-      Comments: `Pedido ${order.order_number} del CRM · ${order.name} · ${(order.owner as { full_name: string } | null)?.full_name ?? ""} · ${siteUrl}/pedidos/${order.id}`.slice(0, 254),
+      // El segmento de obra va primero: quien digita la orden de venta lo necesita.
+      Comments: [order.project_segment, order.sale_type !== "Estándar" ? order.sale_type : null, `Pedido ${order.order_number} del CRM`, order.name,
+        (order.owner as { full_name: string } | null)?.full_name, `${siteUrl}/pedidos/${order.id}`].filter(Boolean).join(" · ").slice(0, 254),
       DocumentLines: lines.map((l) => ({ ItemCode: l.product!.product_code, Quantity: Number(l.quantity), UnitPrice: Number(l.unit_price), DiscountPercent: Number(l.discount) })),
     });
     await supabase.from("orders").update({

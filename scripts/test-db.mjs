@@ -174,7 +174,7 @@ await check('la semilla crea catálogo, precios, campañas, prospectos, cotizaci
   const [r] = await q(`select (select count(*) from products)::int p, (select count(*) from price_book_entries)::int e,
     (select count(*) from campaigns)::int c, (select count(*) from leads)::int l, (select count(*) from quotes)::int qt,
     (select count(*) from cases)::int cs`);
-  assert.deepEqual(r, { p: 13, e: 30, c: 3, l: 7, qt: 3, cs: 5 });
+  assert.deepEqual(r, { p: 13, e: 30, c: 3, l: 7, qt: 4, cs: 5 });
 });
 await check('totales de cotización: subtotal, descuento, IVA 19% y total', async () => {
   const [qt] = await as(admin, () => q(`select * from quotes where name like 'Torre 3%'`));
@@ -428,7 +428,7 @@ await check('las reglas programadas se disparan una vez por fecha objetivo', asy
   await assert.rejects(as(rep, () => q(`select run_scheduled_automations()`)));
 });
 await check('las cotizaciones vencidas avisan al propietario y a su jefe', async () => {
-  await q(`update quotes set status = 'Presentada', expiration_date = (now() at time zone 'America/Bogota')::date - 1 where id = $1`, [quote.id]);
+  await q(`update quotes set status = 'Presentada', created_at = now() - interval '31 days' where id = $1`, [quote.id]);
   await q(`select run_scheduled_automations()`);
   assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title = 'Cotización vencida sin respuesta'`, [rep.id]), 1);
   assert.equal(await count(`select count(*) n from notifications where user_id = $1 and title = 'Cotización de tu equipo vencida'`, [mgr.id]), 1);
@@ -1142,7 +1142,9 @@ await check('la oportunidad toma la moneda del Mercado de la cuenta y convierte 
   const [qt] = await as(admin, () => q(`insert into quotes (name, opportunity_id) values ('Cotización exterior', $1)
     returning id, currency, tax_rate, (select currency || ' ' || name from price_books where id = price_book_id) book`, [usd.id]));
   assert.deepEqual([qt.currency, Number(qt.tax_rate), qt.book], ['USD', 0, 'USD Exterior Constructores USD']);
-  await as(admin, () => q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 2, 750)`, [qt.id]));
+  // Producto inactivo para las líneas de prueba (una línea sin producto solo cabe en Carpintería de Obra).
+  await q(`insert into products (name, product_code, is_active) select 'Mueble de prueba', 'TEST-MUEBLE', false where not exists (select 1 from products where product_code = 'TEST-MUEBLE')`);
+  await as(admin, () => q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 2, 750)`, [qt.id]));
   await as(admin, () => q(`update quotes set tax_rate = 19 where id = $1`, [qt.id]));
   const [tot] = await q(`select tax_rate, tax, net_total, grand_total from quotes where id = $1`, [qt.id]);
   assert.deepEqual([Number(tot.tax_rate), Number(tot.tax), Number(tot.net_total), Number(tot.grand_total)], [0, 0, 1500, 1500]);
@@ -1231,8 +1233,8 @@ await check('una cotización con descuento alto no se presenta ni se marca aprob
   const [abierta] = await as(rep, () => q(`insert into opportunities (name, account_id, stage_id, amount)
     select 'Opp con descuento', o.account_id, s.id, 0 from opportunities o, pipeline_stages s join pipelines p on p.id = s.pipeline_id
     where o.id = $1 and p.is_default and s.name = 'Calificación' returning id`, [repOpp.id]));
-  const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id) values ('Cotización con descuento', $1) returning id, status`, [abierta.id]));
-  const [line] = await as(rep, () => q(`insert into quote_line_items (quote_id, description, quantity, unit_price, discount) values ($1, 'Mueble', 10, 1000000, 20) returning id`, [qt.id]));
+  const [qt] = await as(rep, () => q(`insert into quotes (name, opportunity_id, delivery_city, project_segment) values ('Cotización con descuento', $1, 'Medellín', 'Hotelería') returning id, status`, [abierta.id]));
+  const [line] = await as(rep, () => q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price, discount) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 10, 1000000, 20) returning id`, [qt.id]));
   for (const status of ['Presentada', 'Aceptada', 'Aprobada', 'En revisión']) {
     await assert.rejects(as(rep, () => q(`update quotes set status = $1 where id = $2`, [status, qt.id])), /requiere aprobación/, status);
   }
@@ -1717,11 +1719,11 @@ await check('al cambiar el mercado: borradores sin productos cambian; con produc
       [acc.id, name, amount]))[0].id;
     const libre = await nuevaOpp('Opp libre', 8000000);
     const ocupada = await nuevaOpp('Opp ocupada', 2000000);
-    const cotizar = async (oppId, name) => (await q(`insert into quotes (name, opportunity_id) values ($2, $1) returning id`, [oppId, name]))[0].id;
+    const cotizar = async (oppId, name) => (await q(`insert into quotes (name, opportunity_id, delivery_city) values ($2, $1, 'Medellín') returning id`, [oppId, name]))[0].id;
     const vacia = await cotizar(libre, 'Borrador vacío');
     const conProductos = await cotizar(ocupada, 'Borrador con productos');
     const presentada = await cotizar(ocupada, 'Cotización presentada');
-    for (const id of [conProductos, presentada]) await q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 1, 1000)`, [id]);
+    for (const id of [conProductos, presentada]) await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 1, 1000)`, [id]);
     await q(`update quotes set status = 'Presentada' where id = $1`, [presentada]);
     const [pedido] = await q(`insert into orders (name, account_id, opportunity_id) values ('Pedido directo', $1, $2) returning id`, [acc.id, ocupada]);
 
@@ -1744,7 +1746,7 @@ await check('al cambiar el mercado: borradores sin productos cambian; con produc
     // Su valor es la suma de sus partes abiertas (2 cotizaciones de 1.000), no el escrito a mano.
     assert.deepEqual(await op(ocupada), ['COP', 2000, null]);
     // El borrador con productos no admite productos nuevos ni se cotiza de nuevo sobre la oportunidad en pesos.
-    await assert.rejects(q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Otro', 1, 10)`, [conProductos]),
+    await assert.rejects(q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Otro', 1, 10)`, [conProductos]),
       /La cuenta «Cambia de mercado» ahora es del mercado Internacional \(USD\) y la cotización COT-\d+ está en COP: quita sus productos/i);
     await assert.rejects(cotizar(ocupada, 'Otra'), /La oportunidad está en COP y la cuenta es del mercado Internacional \(USD\)/);
     // Al quitarle los productos pasa a la lista nueva; sincronizarla con la oportunidad en pesos no se permite.
@@ -1786,8 +1788,8 @@ await check('partes: el valor suma lo abierto, la oportunidad avanza solo hacia 
       select 'Proyecto Torres', $1, s.id, 123 from pipeline_stages s join pipelines p on p.id = s.pipeline_id
       where p.is_default and s.name = 'Calificación' returning id`, [acc.id]);
     const parte = async (name, valor, oppId = opp.id) => {
-      const [qt] = await q(`insert into quotes (name, opportunity_id) values ($1, $2) returning id`, [name, oppId]);
-      if (valor) await q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 1, $2)`, [qt.id, valor]);
+      const [qt] = await q(`insert into quotes (name, opportunity_id, delivery_city, project_segment) values ($1, $2, 'Medellín', 'Hotelería') returning id`, [name, oppId]);
+      if (valor) await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 1, $2)`, [qt.id, valor]);
       return qt.id;
     };
     const estado = (id, status) => q(`update quotes set status = $2 where id = $1`, [id, status]);
@@ -1838,8 +1840,8 @@ await check('partes: la última abierta aceptada gana la original; un pedido act
     const nueva = async (name) => (await q(`insert into opportunities (name, account_id, stage_id, amount)
       select $2, $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación' returning id`, [acc.id, name]))[0].id;
     const parte = async (oppId, name, valor) => {
-      const [qt] = await q(`insert into quotes (name, opportunity_id) values ($1, $2) returning id`, [name, oppId]);
-      await q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Mueble', 1, $2)`, [qt.id, valor]);
+      const [qt] = await q(`insert into quotes (name, opportunity_id, delivery_city, project_segment) values ($1, $2, 'Medellín', 'Hotelería') returning id`, [name, oppId]);
+      await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 1, $2)`, [qt.id, valor]);
       return qt.id;
     };
     const b = await nueva('Proyecto Dos Etapas');
@@ -1851,8 +1853,8 @@ await check('partes: la última abierta aceptada gana la original; un pedido act
     // Con un pedido activo no se puede marcar Perdida; al cancelarlo, avisa.
     const c = await nueva('Proyecto Con Pedido');
     await parte(c, 'Suministro', 900);
-    const [pedido] = await q(`insert into orders (name, account_id, opportunity_id) values ('Pedido directo', $1, $2) returning id`, [acc.id, c]);
-    await q(`insert into order_items (order_id, description, quantity, unit_price) values ($1, 'Mueble', 1, 900)`, [pedido.id]);
+    const [pedido] = await q(`insert into orders (name, account_id, opportunity_id, shipping_address, delivery_city) values ('Pedido directo', $1, $2, 'Obra Torres del Parque', 'Medellín') returning id`, [acc.id, c]);
+    await q(`insert into order_items (order_id, product_id, description, quantity, unit_price) values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 1, 900)`, [pedido.id]);
     await q(`update orders set status = 'Activado' where id = $1`, [pedido.id]);
     await assert.rejects(q(`update opportunities set stage_id = (select s.id from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.category = 'lost') where id = $1`, [c]),
       /No se puede marcar Perdida: el cliente ya aceptó una parte o hay un pedido activo/);
@@ -2127,6 +2129,117 @@ await check('cotización hecha sin señal: se respeta el precio cotizado, la lí
   await assert.rejects(q(`update quote_line_items set offline_list_price = -1 where quote_id = $1`, [id]), /check/);
   assert.equal((await q(`select has_function_privilege('authenticated', 'public.quote_line_offline_price()'::regprocedure, 'EXECUTE') ok`))[0].ok, false);
 });
+
+console.log('Cotización corta y pedido completo');
+{
+  const hoy = `(now() at time zone 'America/Bogota')::date`;
+  const oppDe = (acc, name) => q(`insert into opportunities (name, account_id, stage_id, amount)
+    select $2, $1, s.id, 0 from pipeline_stages s join pipelines p on p.id = s.pipeline_id where p.is_default and s.name = 'Calificación' returning id`, [acc, name]);
+  let obra, obraOpp, dist;
+  await check('validez de 15, 30 o 60 días desde la fecha de la cotización; «Válida hasta» no se escribe a mano', async () => {
+    await as(admin, async () => {
+      [obra] = await q(`insert into accounts (name, industry, billing_city, einvoice_email) values ('Constructora Validez', 'Canal Constructores', 'Cali', 'facturas@validez.example') returning id`);
+      [obraOpp] = await oppDe(obra.id, 'Obra validez');
+      const [a] = await q(`insert into quotes (name, opportunity_id, expiration_date) values ('Validez por defecto', $1, '2020-01-01') returning id, validity_days, expiration_date - ${hoy} dias, delivery_city`, [obraOpp.id]);
+      assert.deepEqual([a.validity_days, a.dias, a.delivery_city], [30, 30, 'Cali']);
+      const [b] = await q(`update quotes set validity_days = 15 where id = $1 returning expiration_date - ${hoy} dias`, [a.id]);
+      assert.equal(b.dias, 15);
+      const [c] = await q(`update quotes set validity_days = 60, expiration_date = '2020-01-01', delivery_city = 'Palmira' where id = $1 returning expiration_date - ${hoy} dias, delivery_city`, [a.id]);
+      assert.deepEqual([c.dias, c.delivery_city], [60, 'Palmira']);
+      await assert.rejects(q(`update quotes set validity_days = 45 where id = $1`, [a.id]), /validity_days_check/);
+    });
+  });
+  await check('segmento de obra y tipo: obligatorios al presentar en Constructores, pasan a la oportunidad; otros canales quedan Estándar', async () => {
+    await as(admin, async () => {
+      const [qt] = await q(`insert into quotes (name, opportunity_id, sale_type) values ('Sin segmento', $1, 'Carpintería de Obra') returning id, sale_type`, [obraOpp.id]);
+      assert.equal(qt.sale_type, 'Carpintería de Obra');
+      await assert.rejects(q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]), /Elige el segmento de obra antes de pasar la cotización a «Presentada»/);
+      await q(`update quotes set project_segment = 'Obras Vis/Vip' where id = $1`, [qt.id]);
+      assert.deepEqual((await q(`select project_segment, sale_type from opportunities where id = $1`, [obraOpp.id]))[0], { project_segment: 'Obras Vis/Vip', sale_type: 'Carpintería de Obra' });
+      // La siguiente cotización de la misma oportunidad nace con su segmento.
+      const [otra] = await q(`insert into quotes (name, opportunity_id) values ('Hereda segmento', $1) returning project_segment`, [obraOpp.id]);
+      assert.equal(otra.project_segment, 'Obras Vis/Vip');
+      await assert.rejects(q(`update quotes set sale_type = 'Otro' where id = $1`, [qt.id]), /sale_type_check/);
+      // Sin ciudad en la cuenta ni en la cotización, no se presenta.
+      [dist] = await q(`insert into accounts (name, industry) values ('Distribuidor sin ciudad', 'Canal Distribución') returning id`);
+      const [dOpp] = await oppDe(dist.id, 'Surtido sin ciudad');
+      const [d] = await q(`insert into quotes (name, opportunity_id, sale_type, project_segment) values ('Distribución', $1, 'Carpintería de Obra', 'Hotelería') returning id, sale_type, project_segment, delivery_city`, [dOpp.id]);
+      assert.deepEqual([d.sale_type, d.project_segment, d.delivery_city], ['Estándar', null, null]);
+      await assert.rejects(q(`update quotes set status = 'Presentada' where id = $1`, [d.id]), /Indica la ciudad de entrega/);
+      await q(`update quotes set delivery_city = 'Pereira', status = 'Presentada' where id = $1`, [d.id]);
+    });
+  });
+  await check('Carpintería de Obra: tipologías sin producto, mezcladas con el catálogo; en Estándar no se admiten', async () => {
+    await as(admin, async () => {
+      const [std] = await q(`insert into quotes (name, opportunity_id, project_segment) values ('Estándar', $1, 'Hotelería') returning id`, [obraOpp.id]);
+      await assert.rejects(q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, 'Cocina en L', 1, 100000)`, [std.id]),
+        /Solo los documentos de Carpintería de Obra admiten líneas sin producto del catálogo/);
+      const [carp] = await q(`insert into quotes (name, opportunity_id, sale_type) values ('Carpintería', $1, 'Carpintería de Obra') returning id`, [obraOpp.id]);
+      await assert.rejects(q(`insert into quote_line_items (quote_id, description, quantity, unit_price) values ($1, '  ', 1, 100000)`, [carp.id]), /Escribe la tipología/);
+      await q(`insert into quote_line_items (quote_id, description, quantity, unit_price, discount, sort_order) values
+        ($1, 'Tipología de Cocina L', 1, 100000, 25, 1), ($1, 'Tipología de Cocina U - Apto B', 2, 200000, 25, 2)`, [carp.id]);
+      await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price, sort_order)
+        values ($1, (select id from products where product_code = 'TEST-MUEBLE'), 'Mueble', 1, 50000, 3)`, [carp.id]);
+      const [t] = await q(`select subtotal, discount_total, net_total from quotes where id = $1`, [carp.id]);
+      assert.deepEqual([Number(t.subtotal), Number(t.discount_total), Number(t.net_total)], [550000, 125000, 425000]);
+      await assert.rejects(q(`update quotes set sale_type = 'Estándar' where id = $1`, [carp.id]), /tiene tipologías sin producto del catálogo/);
+    });
+  });
+  await check('una cotización vencida no se acepta: se renueva con los precios vigentes y la anterior queda Reemplazada', async () => {
+    await as(admin, async () => {
+      const [lista] = await q(`select q.price_book_id id from quotes q where q.name = 'Carpintería' and q.opportunity_id = $1`, [obraOpp.id]);
+      const [prod] = await q(`insert into products (name, product_code) values ('Lavamanos renovable', 'PR-RENOVAR') returning id`);
+      await q(`insert into price_book_entries (price_book_id, product_id, unit_price) values ($1, $2, 1000)`, [lista.id, prod.id]);
+      const [qt] = await q(`insert into quotes (name, opportunity_id, sale_type, project_segment, end_customer_name, validity_days, description)
+        values ('Por renovar', $1, 'Carpintería de Obra', 'Hotelería', 'Hotel del Parque', 15, 'Entrega por pisos') returning id, quote_number`, [obraOpp.id]);
+      await q(`insert into quote_line_items (quote_id, product_id, description, quantity, unit_price, discount, sort_order) values ($1, $2, 'Lavamanos renovable', 4, 800, 10, 1)`, [qt.id, prod.id]);
+      await q(`insert into quote_line_items (quote_id, description, quantity, unit_price, sort_order) values ($1, 'Clóset tipo A', 3, 500, 2)`, [qt.id]);
+      await q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]);
+      // Vigente: se acepta sin más y no se puede renovar.
+      await assert.rejects(q(`select renew_quote($1)`, [qt.id]), /sigue vigente hasta el/);
+      await q(`update quotes set created_at = now() - interval '16 days' where id = $1`, [qt.id]);
+      await assert.rejects(q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]), /venció el \d\d\/\d\d\/\d{4}: renuévala para poder aceptarla/);
+      const [{ id: nueva }] = await q(`select renew_quote($1) id`, [qt.id]);
+      const [vieja] = await q(`select status from quotes where id = $1`, [qt.id]);
+      assert.equal(vieja.status, 'Reemplazada');
+      const [n] = await q(`select status, renewed_from_id, validity_days, expiration_date - ${hoy} dias, sale_type, project_segment, end_customer_name, description, quote_number, net_total
+        from quotes where id = $1`, [nueva]);
+      assert.deepEqual([n.status, n.renewed_from_id, n.validity_days, n.dias, n.sale_type, n.project_segment, n.end_customer_name, n.description],
+        ['Borrador', qt.id, 15, 15, 'Carpintería de Obra', 'Hotelería', 'Hotel del Parque', 'Entrega por pisos']);
+      assert.notEqual(n.quote_number, qt.quote_number);
+      // El producto del catálogo toma el precio de lista de hoy; la tipología conserva su valor; los descuentos se mantienen.
+      const lineas = await q(`select description, unit_price, discount from quote_line_items where quote_id = $1 order by sort_order`, [nueva]);
+      assert.deepEqual(lineas.map((l) => [l.description, Number(l.unit_price), Number(l.discount)]), [['Lavamanos renovable', 1000, 10], ['Clóset tipo A', 500, 0]]);
+      assert.equal(Number(n.net_total), 4 * 1000 * 0.9 + 1500);
+      // Una ya reemplazada o aceptada no se renueva.
+      await assert.rejects(q(`select renew_quote($1)`, [qt.id]), /Solo se renuevan cotizaciones en Borrador, Aprobada o Presentada/);
+    });
+    assert.equal((await q(`select has_function_privilege('anon', 'public.renew_quote(uuid)', 'execute') ok`))[0].ok, false);
+    assert.equal((await q(`select has_function_privilege('authenticated', 'public.renew_quote(uuid)', 'execute') ok`))[0].ok, true);
+    // Quien no puede editar la cotización no la renueva.
+    const [ajena] = await q(`select id from quotes where name = 'Por renovar' and status = 'Borrador'`);
+    await q(`update quotes set created_at = now() - interval '40 days' where id = $1`, [ajena.id]);
+    await assert.rejects(as(rep, () => q(`select renew_quote($1)`, [ajena.id])), /Cotización no encontrada|row-level security/);
+  });
+  await check('el pedido hereda segmento, tipo, cliente final, ciudad y tipologías; no se activa sin dirección de entrega', async () => {
+    await as(admin, async () => {
+      const [qt] = await q(`select id from quotes where name = 'Por renovar' and status = 'Borrador'`);
+      await q(`update quotes set created_at = now(), end_customer_tax_id = '900.111.222-3' where id = $1`, [qt.id]);
+      await q(`update quotes set status = 'Presentada' where id = $1`, [qt.id]);
+      await q(`update quotes set status = 'Aceptada' where id = $1`, [qt.id]);
+      const [{ id }] = await q(`select create_order_from_quote($1) id`, [qt.id]);
+      const [o] = await q(`select project_segment, sale_type, end_customer_name, end_customer_tax_id, delivery_city, shipping_address from orders where id = $1`, [id]);
+      assert.deepEqual([o.project_segment, o.sale_type, o.end_customer_name, o.end_customer_tax_id, o.delivery_city],
+        ['Hotelería', 'Carpintería de Obra', 'Hotel del Parque', '900.111.222-3', 'Cali']);
+      assert.equal(await count(`select count(*) n from order_items where order_id = $1 and product_id is null and description = 'Clóset tipo A'`, [id]), 1);
+      await q(`update orders set shipping_address = null where id = $1`, [id]);
+      await assert.rejects(q(`update orders set status = 'Activado' where id = $1`, [id]), /Completa la dirección y la ciudad de entrega antes de activar el pedido/);
+      const [log] = await q(`insert into contacts (last_name, account_id, contact_role) values ('Logístico', $1, 'Logística') returning id`, [obra.id]);
+      await q(`update orders set shipping_address = 'Calle 6 Norte # 2-36', logistics_contact_id = $2, delivery_type = 'Entrega en obra', lift_service = true, delivery_floor = '4', status = 'Activado' where id = $1`, [id, log.id]);
+      await assert.rejects(q(`insert into order_items (order_id, description, quantity, unit_price) values ($1, 'Otra', 1, 1)`, [id]), /borrador/);
+    });
+  });
+}
 
 console.log('Semillas: configuración inicial separada de los datos de demostración');
 // Cada comprobación usa su propia base limpia (como un proyecto nuevo de Supabase), no la de arriba.

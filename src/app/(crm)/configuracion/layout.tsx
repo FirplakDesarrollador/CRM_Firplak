@@ -25,6 +25,7 @@ export default async function SetupLayout({ children }: { children: React.ReactN
       { href: "/configuracion/listas", label: "Listas de valores", group: "Personalización" },
       { href: "/configuracion/validaciones", label: "Reglas de validación", group: "Personalización" },
       { href: "/configuracion/monedas", label: "Monedas", group: "Personalización" },
+      { href: "/configuracion/documentos", label: "Documentos impresos", group: "Personalización" },
       { href: "/configuracion/automatizaciones", label: "Automatizaciones", group: "Automatización" },
       { href: "/configuracion/aprobaciones", label: "Procesos de aprobación", group: "Automatización" },
       { href: "/configuracion/alertas", label: "Alertas programadas", group: "Automatización" },

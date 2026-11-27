@@ -8,9 +8,9 @@ import { TEAM_ROLES } from "@/lib/teams/config";
  */
 export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
   accounts: ["account_type", "market", "industry", "segment", "zone", "payment_terms"],
-  contacts: ["salutation", "lead_source"],
+  contacts: ["salutation", "lead_source", "contact_role"],
   leads: ["salutation", "lead_source"],
-  opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role"],
+  opportunities: ["opportunity_type", "lead_source", "loss_reason", "team_role", "project_segment"],
   cases: ["case_type", "origin"],
   campaigns: ["campaign_type"],
   products: ["family", "plant", "item_group", "unit"],
@@ -23,6 +23,8 @@ export const EDITABLE_PICKLISTS: Partial<Record<ObjectKey, string[]>> = {
  */
 export const SHARED_PICKLISTS: Partial<Record<ObjectKey, { from: ObjectKey; fields: string[] }>> = {
   leads: { from: "accounts", fields: ["market", "industry", "segment", "zone"] },
+  quotes: { from: "opportunities", fields: ["project_segment"] },
+  orders: { from: "opportunities", fields: ["project_segment"] },
 };
 
 /** Listas que no son un campo del objeto: se guardan con el objeto de la pestaña donde aparecen. */

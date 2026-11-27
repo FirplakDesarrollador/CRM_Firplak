@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { LEAD_SOURCES, SALUTATIONS } from "./picklists";
+import { CONTACT_ROLES, LEAD_SOURCES, SALUTATIONS } from "./picklists";
 
 export const contacts: ObjectDef = {
   key: "contacts",
@@ -29,6 +29,10 @@ export const contacts: ObjectDef = {
     { name: "full_name", label: "Nombre", type: "text", readOnly: true, formHidden: true, section: "info" },
     { name: "account_id", label: "Cuenta", type: "lookup", lookup: "accounts", relation: "account", section: "info" },
     { name: "title", label: "Cargo", type: "text", section: "info" },
+    {
+      name: "contact_role", label: "Rol", type: "select", options: CONTACT_ROLES, section: "info",
+      help: "Compras, logística, financiero…: sale impreso junto a su nombre en cotizaciones y pedidos.",
+    },
     { name: "department", label: "Área", type: "text", section: "info" },
     { name: "email", label: "Correo", type: "email", section: "info" },
     { name: "phone", label: "Teléfono", type: "phone", section: "info" },

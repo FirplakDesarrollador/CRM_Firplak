@@ -312,13 +312,13 @@ begin
   where is_demo and lead_source = 'Feria';
 
   -- Cotizaciones con líneas
-  insert into public.quotes (name, opportunity_id, status, expiration_date, payment_terms, payment_terms_manual, delivery_terms, is_demo, created_at)
-  select v.name, o.id, v.status, current_date + v.exp, v.payment, true, v.delivery, true, now() - (v.age || ' days')::interval
+  insert into public.quotes (name, opportunity_id, status, expiration_date, payment_terms, payment_terms_manual, delivery_terms, is_demo, created_at, project_segment)
+  select v.name, o.id, v.status, current_date + v.exp, v.payment, true, v.delivery, true, now() - (v.age || ' days')::interval, v.segment
   from (values
-    ('Torre 3 · propuesta muebles de baño', 'Altos del Valle · Torre 3 muebles de baño', 'Presentada', 20, '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 15),
-    ('Remodelación 180 habitaciones · opción A', 'Mirador de la Bahía · Remodelación 180 hab.', 'Borrador', 25, '30 días', 'Instalación incluida', 6),
-    ('Surtido 2027 · propuesta inicial', 'Casa Viva · Surtido 2027 muebles de baño', 'Borrador', 30, '60 días', 'Entrega en centro de distribución', 2)
-  ) as v(name, opp, status, exp, payment, delivery, age)
+    ('Torre 3 · propuesta muebles de baño', 'Altos del Valle · Torre 3 muebles de baño', 'Presentada', 20, '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 15, 'Obras Estrato Medio'),
+    ('Remodelación 180 habitaciones · opción A', 'Mirador de la Bahía · Remodelación 180 hab.', 'Borrador', 25, '30 días', 'Instalación incluida', 6, 'Hotelería'),
+    ('Surtido 2027 · propuesta inicial', 'Casa Viva · Surtido 2027 muebles de baño', 'Borrador', 30, '60 días', 'Entrega en centro de distribución', 2, null)
+  ) as v(name, opp, status, exp, payment, delivery, age, segment)
   join public.opportunities o on o.name = v.opp and o.is_demo;
 
   insert into public.quote_line_items (quote_id, product_id, description, quantity, unit_price, discount, sort_order)
@@ -337,6 +337,11 @@ begin
   join public.quotes q on q.name = v.quote and q.is_demo
   join public.products p on p.product_code = v.code
   join public.price_book_entries e on e.product_id = p.id and e.price_book_id = q.price_book_id;
+
+  -- Un borrador vencido y sin productos (no suma al valor de la oportunidad): sirve para probar «Renovar».
+  insert into public.quotes (name, opportunity_id, status, validity_days, is_demo, created_at, project_segment)
+  select 'Altos del Valle · borrador anterior', o.id, 'Borrador', 15, true, now() - interval '40 days', 'Obras Estrato Medio'
+  from public.opportunities o where o.name = 'Altos del Valle · Torre 3 muebles de baño' and o.is_demo;
 
   -- Casos de servicio
   insert into public.cases (subject, description, status, priority, origin, case_type, account_id, contact_id, product_id, resolution, is_demo, created_at)
@@ -395,9 +400,10 @@ begin
     return;
   end if;
   insert into public.orders (name, opportunity_id, account_id, order_date, requested_delivery_date, customer_po,
-                             payment_terms, delivery_terms, shipping_address, is_demo)
+                             payment_terms, delivery_terms, shipping_address, is_demo, project_segment, delivery_city)
   select 'Torre 2 · muebles de baño y duchas', o.id, o.account_id, o.close_date + 3, o.close_date + 75, 'OC-AV-2026-118',
-         '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 'Obra Altos del Valle Torre 2, Envigado', true
+         '50 % anticipo, saldo contra entrega', 'Entregas por piso según cronograma de obra', 'Obra Altos del Valle Torre 2, Envigado', true,
+         'Obras Estrato Medio', 'Envigado'
   from public.opportunities o where o.name = 'Altos del Valle · Torre 2' and o.is_demo
   returning id into v_order;
 

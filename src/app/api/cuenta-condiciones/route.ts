@@ -28,5 +28,6 @@ export async function GET(request: NextRequest) {
     billing_address: billing,
     shipping_address: address(a.shipping_street, a.shipping_city, a.shipping_state, a.shipping_country) ?? billing,
     payment_terms: a.payment_terms ?? null,
+    delivery_city: a.shipping_city?.trim() || a.billing_city?.trim() || null,
   });
 }

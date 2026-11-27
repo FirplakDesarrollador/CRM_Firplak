@@ -88,6 +88,7 @@ export type Database = {
           custom_fields: Json
           description: string | null
           destination_port: string | null
+          einvoice_email: string | null
           email: string | null
           employees: number | null
           id: string
@@ -125,6 +126,7 @@ export type Database = {
           custom_fields?: Json
           description?: string | null
           destination_port?: string | null
+          einvoice_email?: string | null
           email?: string | null
           employees?: number | null
           id?: string
@@ -162,6 +164,7 @@ export type Database = {
           custom_fields?: Json
           description?: string | null
           destination_port?: string | null
+          einvoice_email?: string | null
           email?: string | null
           employees?: number | null
           id?: string
@@ -1006,6 +1009,7 @@ export type Database = {
         Row: {
           account_id: string | null
           birthdate: string | null
+          contact_role: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -1035,6 +1039,7 @@ export type Database = {
         Insert: {
           account_id?: string | null
           birthdate?: string | null
+          contact_role?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -1064,6 +1069,7 @@ export type Database = {
         Update: {
           account_id?: string | null
           birthdate?: string | null
+          contact_role?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -2267,6 +2273,8 @@ export type Database = {
           pipeline_id: string
           price_book_id: string | null
           probability: number
+          project_segment: string | null
+          sale_type: string
           stage_changed_at: string
           stage_id: string
           updated_at: string
@@ -2301,6 +2309,8 @@ export type Database = {
           pipeline_id: string
           price_book_id?: string | null
           probability?: number
+          project_segment?: string | null
+          sale_type?: string
           stage_changed_at?: string
           stage_id: string
           updated_at?: string
@@ -2335,6 +2345,8 @@ export type Database = {
           pipeline_id?: string
           price_book_id?: string | null
           probability?: number
+          project_segment?: string | null
+          sale_type?: string
           stage_changed_at?: string
           stage_id?: string
           updated_at?: string
@@ -2682,13 +2694,23 @@ export type Database = {
           custom_fields: Json
           customer_po: string | null
           delivered_at: string | null
+          delivery_access: string | null
+          delivery_city: string | null
+          delivery_floor: string | null
           delivery_terms: string | null
+          delivery_type: string | null
           description: string | null
           discount_total: number
+          end_customer_name: string | null
+          end_customer_tax_id: string | null
+          finance_contact_id: string | null
           grand_total: number
           id: string
           incoterm: string | null
           is_demo: boolean
+          is_sample: boolean
+          lift_service: boolean
+          logistics_contact_id: string | null
           name: string
           net_total: number
           opportunity_id: string | null
@@ -2697,8 +2719,10 @@ export type Database = {
           owner_id: string | null
           payment_terms: string | null
           price_book_id: string | null
+          project_segment: string | null
           quote_id: string | null
           requested_delivery_date: string | null
+          sale_type: string
           sap_error: string | null
           sap_quotation_entry: number | null
           sap_quotation_num: number | null
@@ -2723,13 +2747,23 @@ export type Database = {
           custom_fields?: Json
           customer_po?: string | null
           delivered_at?: string | null
+          delivery_access?: string | null
+          delivery_city?: string | null
+          delivery_floor?: string | null
           delivery_terms?: string | null
+          delivery_type?: string | null
           description?: string | null
           discount_total?: number
+          end_customer_name?: string | null
+          end_customer_tax_id?: string | null
+          finance_contact_id?: string | null
           grand_total?: number
           id?: string
           incoterm?: string | null
           is_demo?: boolean
+          is_sample?: boolean
+          lift_service?: boolean
+          logistics_contact_id?: string | null
           name: string
           net_total?: number
           opportunity_id?: string | null
@@ -2738,8 +2772,10 @@ export type Database = {
           owner_id?: string | null
           payment_terms?: string | null
           price_book_id?: string | null
+          project_segment?: string | null
           quote_id?: string | null
           requested_delivery_date?: string | null
+          sale_type?: string
           sap_error?: string | null
           sap_quotation_entry?: number | null
           sap_quotation_num?: number | null
@@ -2764,13 +2800,23 @@ export type Database = {
           custom_fields?: Json
           customer_po?: string | null
           delivered_at?: string | null
+          delivery_access?: string | null
+          delivery_city?: string | null
+          delivery_floor?: string | null
           delivery_terms?: string | null
+          delivery_type?: string | null
           description?: string | null
           discount_total?: number
+          end_customer_name?: string | null
+          end_customer_tax_id?: string | null
+          finance_contact_id?: string | null
           grand_total?: number
           id?: string
           incoterm?: string | null
           is_demo?: boolean
+          is_sample?: boolean
+          lift_service?: boolean
+          logistics_contact_id?: string | null
           name?: string
           net_total?: number
           opportunity_id?: string | null
@@ -2779,8 +2825,10 @@ export type Database = {
           owner_id?: string | null
           payment_terms?: string | null
           price_book_id?: string | null
+          project_segment?: string | null
           quote_id?: string | null
           requested_delivery_date?: string | null
+          sale_type?: string
           sap_error?: string | null
           sap_quotation_entry?: number | null
           sap_quotation_num?: number | null
@@ -2813,6 +2861,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_finance_contact_id_fkey"
+            columns: ["finance_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_logistics_contact_id_fkey"
+            columns: ["logistics_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
@@ -3421,10 +3483,13 @@ export type Database = {
           created_by: string | null
           currency: string
           custom_fields: Json
+          delivery_city: string | null
           delivery_terms: string | null
           description: string | null
           discount_percent: number | null
           discount_total: number
+          end_customer_name: string | null
+          end_customer_tax_id: string | null
           expiration_date: string | null
           grand_total: number
           id: string
@@ -3438,7 +3503,10 @@ export type Database = {
           payment_terms: string | null
           payment_terms_manual: boolean
           price_book_id: string | null
+          project_segment: string | null
           quote_number: string
+          renewed_from_id: string | null
+          sale_type: string
           shipping: number
           shipping_address: string | null
           shipping_manual: boolean
@@ -3447,6 +3515,7 @@ export type Database = {
           tax: number
           tax_rate: number
           updated_at: string
+          validity_days: number
         }
         Insert: {
           account_id?: string | null
@@ -3458,10 +3527,13 @@ export type Database = {
           created_by?: string | null
           currency?: string
           custom_fields?: Json
+          delivery_city?: string | null
           delivery_terms?: string | null
           description?: string | null
           discount_percent?: never
           discount_total?: number
+          end_customer_name?: string | null
+          end_customer_tax_id?: string | null
           expiration_date?: string | null
           grand_total?: number
           id?: string
@@ -3475,7 +3547,10 @@ export type Database = {
           payment_terms?: string | null
           payment_terms_manual?: boolean
           price_book_id?: string | null
+          project_segment?: string | null
           quote_number?: string
+          renewed_from_id?: string | null
+          sale_type?: string
           shipping?: number
           shipping_address?: string | null
           shipping_manual?: boolean
@@ -3484,6 +3559,7 @@ export type Database = {
           tax?: number
           tax_rate?: number
           updated_at?: string
+          validity_days?: number
         }
         Update: {
           account_id?: string | null
@@ -3495,10 +3571,13 @@ export type Database = {
           created_by?: string | null
           currency?: string
           custom_fields?: Json
+          delivery_city?: string | null
           delivery_terms?: string | null
           description?: string | null
           discount_percent?: never
           discount_total?: number
+          end_customer_name?: string | null
+          end_customer_tax_id?: string | null
           expiration_date?: string | null
           grand_total?: number
           id?: string
@@ -3512,7 +3591,10 @@ export type Database = {
           payment_terms?: string | null
           payment_terms_manual?: boolean
           price_book_id?: string | null
+          project_segment?: string | null
           quote_number?: string
+          renewed_from_id?: string | null
+          sale_type?: string
           shipping?: number
           shipping_address?: string | null
           shipping_manual?: boolean
@@ -3521,6 +3603,7 @@ export type Database = {
           tax?: number
           tax_rate?: number
           updated_at?: string
+          validity_days?: number
         }
         Relationships: [
           {
@@ -3563,6 +3646,13 @@ export type Database = {
             columns: ["price_book_id"]
             isOneToOne: false
             referencedRelation: "price_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_renewed_from_id_fkey"
+            columns: ["renewed_from_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
@@ -4806,6 +4896,12 @@ export type Database = {
       refresh_exchange_rates: {
         Args: never
         Returns: number
+      }
+      renew_quote: {
+        Args: {
+          p_quote: string
+        }
+        Returns: string
       }
       run_scheduled_automations: {
         Args: never

@@ -54,12 +54,19 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
   // Moneda del registro según el Mercado de la cuenta elegida: decide si se pide el valor en pesos o en USD.
   const [pickedCurrency, setPickedCurrency] = useState<string | null>(null);
   const currency = pickedCurrency ?? (draftAccount !== undefined ? currencyOf(draftAccount?.market) : String(record?.currency ?? "COP"));
+  // Canal de la cuenta elegida: decide los campos propios de un canal (segmento de obra y tipo, en Constructores).
+  const [pickedChannel, setPickedChannel] = useState<{ value: string | null } | null>(null);
+  const channel = pickedChannel ? pickedChannel.value
+    : draftAccount !== undefined ? draftAccount?.channel ?? null
+      : (record?.account as { industry?: string | null } | null | undefined)?.industry ?? null;
   useEffect(() => {
     const form = formRef.current;
-    if (!form || !fields.some((f) => f.formCurrency)) return;
+    if (!form || !fields.some((f) => f.formCurrency || f.formChannel)) return;
     const onSelect = (e: Event) => {
-      const { name, item } = (e as CustomEvent<{ name: string; item: { market?: string | null } | null }>).detail;
-      if (name === "account_id") setPickedCurrency(currencyOf(item?.market));
+      const { name, item } = (e as CustomEvent<{ name: string; item: { market?: string | null; channel?: string | null } | null }>).detail;
+      if (name !== "account_id") return;
+      setPickedCurrency(currencyOf(item?.market));
+      setPickedChannel({ value: item?.channel ?? null });
     };
     form.addEventListener("lookup:select", onSelect);
     return () => form.removeEventListener("lookup:select", onSelect);
@@ -87,6 +94,7 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
       return { source: currentValue(field.derived.from), manual: field.manualFlag ? ["true", "on"].includes(currentValue(field.manualFlag)) : false };
     }
     if (field.lookupFilter) return { source: currentValue(field.lookupFilter) };
+    if (field.accountDefault) return { source: currentValue("account_id") };
     if (field.type === "stage") {
       if (draftAccount !== undefined) return { channel: draftAccount?.channel ?? null, market: draftAccount?.market ?? null };
       const account = record?.account as { industry?: string | null; market?: string | null } | null | undefined;
@@ -107,10 +115,12 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
   };
 
   const drop = () => {
+    setPickedChannel(null);
     setPickedCurrency(null);
     discard();
   };
   const recover = () => {
+    setPickedChannel(null);
     setPickedCurrency(null);
     restore();
   };
@@ -155,7 +165,8 @@ export function RecordForm({ def, fields, record, ctx, action, cancelHref, retur
       {/* Al recuperar o descartar un borrador los campos se montan de nuevo con sus valores iniciales. */}
       <Fragment key={mount}>
       {def.sections.map((section) => {
-        const sectionFields = fields.filter((f) => (f.section ?? "info") === section.key && (!f.formCurrency || f.formCurrency === currency));
+        const sectionFields = fields.filter((f) => (f.section ?? "info") === section.key && (!f.formCurrency || f.formCurrency === currency)
+          && (!f.formChannel || f.formChannel === channel));
         if (!sectionFields.length) return null;
         return (
           <section key={section.key} className="card">

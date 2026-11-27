@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { INCOTERMS, ORDER_STATUSES } from "./picklists";
+import { CONSTRUCTION_CHANNEL, DELIVERY_ACCESS, DELIVERY_TYPES, INCOTERMS, ORDER_STATUSES, PROJECT_SEGMENTS, SALE_TYPES } from "./picklists";
 
 export const orders: ObjectDef = {
   key: "orders",
@@ -12,10 +12,12 @@ export const orders: ObjectDef = {
   select: [
     "*",
     "owner:profiles!orders_owner_id_fkey(id, full_name, email)",
-    "account:accounts!orders_account_id_fkey(id, name)",
+    "account:accounts!orders_account_id_fkey(id, name, industry, market)",
     "opportunity:opportunities!orders_opportunity_id_fkey(id, name)",
     "quote:quotes!orders_quote_id_fkey(id, name, quote_number)",
     "contact:contacts!orders_contact_id_fkey(id, full_name)",
+    "logistics_contact:contacts!orders_logistics_contact_id_fkey(id, full_name)",
+    "finance_contact:contacts!orders_finance_contact_id_fkey(id, full_name)",
     "price_book:price_books!orders_price_book_id_fkey(id, name)",
   ].join(", "),
   searchColumns: ["name", "order_number", "customer_po"],
@@ -35,7 +37,20 @@ export const orders: ObjectDef = {
     { name: "account_id", label: "Cuenta", type: "lookup", lookup: "accounts", relation: "account", required: true, section: "info" },
     { name: "opportunity_id", label: "Oportunidad", type: "lookup", lookup: "opportunities", relation: "opportunity", section: "info" },
     { name: "quote_id", label: "Cotización", type: "lookup", lookup: "quotes", relation: "quote", readOnly: true, formHidden: true, section: "info" },
-    { name: "contact_id", label: "Contacto", type: "lookup", lookup: "contacts", relation: "contact", section: "info" },
+    {
+      name: "contact_id", label: "Contacto de compras", type: "lookup", lookup: "contacts", relation: "contact", section: "info", lookupFilter: "account_id",
+      help: "Los contactos se imprimen en el pedido con el rol que tienen en su ficha.",
+    },
+    { name: "logistics_contact_id", label: "Contacto de logística", type: "lookup", lookup: "contacts", relation: "logistics_contact", section: "info", lookupFilter: "account_id", help: "Quien recibe el despacho." },
+    { name: "finance_contact_id", label: "Contacto financiero", type: "lookup", lookup: "contacts", relation: "finance_contact", section: "info", lookupFilter: "account_id", help: "Tesorería o pagos." },
+    {
+      name: "sale_type", label: "Tipo de pedido", type: "select", options: SALE_TYPES, formRequired: true, section: "info", formChannel: CONSTRUCTION_CHANNEL,
+      help: "Carpintería de Obra admite tipologías sin producto del catálogo; se envía a SAP cuando cada una tenga su referencia.",
+    },
+    {
+      name: "project_segment", label: "Segmento de obra", type: "select", options: PROJECT_SEGMENTS, formRequired: true, section: "info",
+      formChannel: CONSTRUCTION_CHANNEL, hideEmpty: true, help: "Quien digita la oferta u orden de venta en SAP lo necesita.",
+    },
     { name: "status", label: "Estado", type: "select", options: ORDER_STATUSES, required: true, readOnly: true, formHidden: true, section: "info" },
     { name: "customer_po", label: "Orden de compra del cliente", type: "text", section: "info" },
     { name: "order_date", label: "Fecha del pedido", type: "date", required: true, section: "info" },
@@ -52,9 +67,23 @@ export const orders: ObjectDef = {
     { name: "tax", label: "IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     { name: "shipping", label: "Flete", type: "currency", currencyField: "currency", section: "totals" },
     { name: "grand_total", label: "Total con IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
+    { name: "end_customer_name", label: "Cliente final", type: "text", section: "terms", hideEmpty: true, help: "Solo si el despacho va al cliente final de nuestro distribuidor." },
+    { name: "end_customer_tax_id", label: "NIT del cliente final", type: "text", section: "terms", hideEmpty: true },
+    {
+      name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms", formRequired: true, accountDefault: "shipping_address",
+      help: "Se propone la de la cuenta: cámbiala si se entrega en la obra o en otra bodega.",
+    },
+    {
+      name: "delivery_city", label: "Ciudad de entrega", type: "text", section: "terms", formRequired: true, accountDefault: "delivery_city",
+      help: "Se propone la de la cuenta: cámbiala si se entrega en otra ciudad.",
+    },
+    { name: "delivery_type", label: "Tipo de entrega", type: "select", options: DELIVERY_TYPES, section: "terms" },
+    { name: "delivery_access", label: "Acceso", type: "select", options: DELIVERY_ACCESS, section: "terms", hideEmpty: true },
+    { name: "lift_service", label: "Servicio de subida", type: "checkbox", section: "terms" },
+    { name: "is_sample", label: "Es una muestra", type: "checkbox", section: "terms" },
+    { name: "delivery_floor", label: "Piso", type: "text", section: "terms", hideEmpty: true },
     { name: "bill_to_name", label: "Facturar a", type: "text", section: "terms" },
     { name: "billing_address", label: "Dirección de facturación", type: "text", section: "terms" },
-    { name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms" },
     { name: "payment_terms", label: "Condiciones de pago", type: "text", section: "terms" },
     { name: "delivery_terms", label: "Condiciones de entrega", type: "text", section: "terms" },
     { name: "incoterm", label: "Incoterm", type: "select", options: INCOTERMS, section: "terms", help: "Para exportaciones (mercado Internacional)." },

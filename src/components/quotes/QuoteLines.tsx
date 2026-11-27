@@ -57,7 +57,8 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
       <div className="min-w-0">
         <p className="truncate font-medium">{line.description ?? line.product?.name}</p>
         <p className="text-xs text-muted">
-          {line.product?.product_code} · {line.product?.unit}
+          {line.product ? <>{line.product.product_code} · {line.product.unit}</>
+            : <span className="badge" title={t("Tipología de Carpintería de Obra: no es un producto del catálogo.")}><Tr>A medida</Tr></span>}
           {line.not_listed && <span className="badge badge-warning ml-2" title="No está en la lista de precios del cliente: se cotiza con la lista del canal."><Tr>No codificado</Tr></span>}
           {line.offline_list_price != null && (
             <span className="badge badge-info ml-2" title={`${t("Se cotizó sin conexión con el precio descargado. Precio de lista al llegar al CRM")}: ${formatCurrency(line.offline_list_price, currency)}`}>
@@ -116,9 +117,16 @@ function LineRow({ line, canEdit, kind, currency }: { line: QuoteLine; canEdit: 
   );
 }
 
-export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency = "COP" }: { quoteId: string; lines: QuoteLine[]; canEdit: boolean; kind?: Kind; currency?: string }) {
+export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency = "COP", allowFree = false }: {
+  quoteId: string; lines: QuoteLine[]; canEdit: boolean; kind?: Kind; currency?: string;
+  /** Carpintería de Obra: además de productos del catálogo, admite tipologías escritas a mano con su valor. */
+  allowFree?: boolean;
+}) {
   const [state, action] = useActionState(KINDS[kind].add.bind(null, quoteId), {} as FormState);
   const formRef = useRef<HTMLFormElement>(null);
+  const t = useT();
+  const [free, setFree] = useState(allowFree);
+  const custom = allowFree && free;
   useEffect(() => {
     if (state.ok) formRef.current?.reset();
   }, [state]);
@@ -127,28 +135,48 @@ export function QuoteLines({ quoteId, lines, canEdit, kind = "quote", currency =
     <section className="card overflow-hidden">
       <div className="card-header"><h2 className="card-title"><Tr>{KINDS[kind].title}</Tr> <span className="badge">{lines.length}</span></h2></div>
       <div className={`hidden ${COLS} gap-2 border-b border-line bg-surface-2 px-4 py-2 text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted md:grid`}>
-        <span><Tr>Producto</Tr></span><span className="text-center"><Tr>Cantidad</Tr></span><span className="text-right"><Tr>Precio unit.</Tr></span>
+        <span><Tr>{allowFree ? "Producto o tipología" : "Producto"}</Tr></span><span className="text-center"><Tr>Cantidad</Tr></span><span className="text-right"><Tr>Precio unit.</Tr></span>
         <span className="text-center"><Tr>Desc. %</Tr></span><span className="text-right"><Tr>Total</Tr></span><span />
       </div>
       <ul className="divide-y divide-[var(--border)]">
-        {lines.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted"><Tr>{KINDS[kind].empty}</Tr></li>}
+        {lines.length === 0 && (
+          <li className="px-4 py-8 text-center text-sm text-muted">
+            <Tr>{allowFree ? "Agrega las tipologías que cotizó diseño, con su valor y descuento, o productos del catálogo." : KINDS[kind].empty}</Tr>
+          </li>
+        )}
         {lines.map((line) => <LineRow key={line.id} line={line} canEdit={canEdit} kind={kind} currency={currency} />)}
       </ul>
       {canEdit && (
         <form ref={formRef} action={action} className={`grid grid-cols-3 gap-2 border-t border-line bg-surface-2 px-4 py-4 md:items-end ${COLS}`}>
-          <div className="col-span-3 md:col-span-1">
-            <label className="label" htmlFor="ql-product"><Tr>Producto</Tr></label>
-            <LookupInput key={state.values?.nonce ?? "add"} id="ql-product" name="product_id" object="products" placeholder="Buscar producto o referencia…"
-              invalid={Boolean(state.errors?.product_id)} />
-          </div>
+          {allowFree && (
+            <div className="col-span-3 flex flex-wrap gap-1 md:col-span-6" role="group" aria-label={t("Qué se agrega")}>
+              <button type="button" className={`btn btn-sm ${custom ? "btn-primary" : ""}`} aria-pressed={custom} onClick={() => setFree(true)}><Tr>Tipología a medida</Tr></button>
+              <button type="button" className={`btn btn-sm ${custom ? "" : "btn-primary"}`} aria-pressed={!custom} onClick={() => setFree(false)}><Tr>Producto del catálogo</Tr></button>
+            </div>
+          )}
+          {custom ? (
+            <div className="col-span-3 md:col-span-1">
+              <input type="hidden" name="_free" value="1" />
+              <label className="label" htmlFor="ql-typology"><Tr>Tipología</Tr></label>
+              <input key={state.values?.nonce ?? "add"} id="ql-typology" name="description" type="text" className="input" maxLength={200}
+                placeholder={t("P. ej. Cocina en L · Apto tipo B")} aria-invalid={Boolean(state.errors?.description)} />
+            </div>
+          ) : (
+            <div className="col-span-3 md:col-span-1">
+              <label className="label" htmlFor="ql-product"><Tr>Producto</Tr></label>
+              <LookupInput key={state.values?.nonce ?? "add"} id="ql-product" name="product_id" object="products" placeholder="Buscar producto o referencia…"
+                invalid={Boolean(state.errors?.product_id)} />
+            </div>
+          )}
           {/* Cantidad, precio y descuento son cifras cortas: título y dato centrados. */}
           <div className="text-center">
             <label className="label" htmlFor="ql-qty"><Tr>Cantidad</Tr></label>
             <AmountInput id="ql-qty" name="quantity" defaultValue={1} className="input num text-center" />
           </div>
           <div className="text-center">
-            <label className="label" htmlFor="ql-price"><Tr>Precio (opcional)</Tr></label>
-            <AmountInput id="ql-price" name="unit_price" className="input num text-center" placeholder="De la lista" />
+            <label className="label" htmlFor="ql-price"><Tr>{custom ? "Valor unitario" : "Precio (opcional)"}</Tr></label>
+            <AmountInput key={custom ? "valor" : "precio"} id="ql-price" name="unit_price" className="input num text-center" placeholder={custom ? "" : "De la lista"}
+              aria-invalid={Boolean(state.errors?.unit_price)} />
           </div>
           <div className="text-center">
             <label className="label" htmlFor="ql-disc"><Tr>Desc. %</Tr></label>

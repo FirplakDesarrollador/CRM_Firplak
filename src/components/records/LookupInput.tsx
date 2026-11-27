@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n/client";
 export type LookupOption = {
   id: string; label: string; sub?: string;
   /** Cuentas: Mercado y Canal. Oportunidades: su cuenta. */
-  market?: string | null; channel?: string | null; account?: { id: string; label: string } | null;
+  market?: string | null; channel?: string | null; account?: { id: string; label: string; market?: string | null; channel?: string | null } | null;
 };
 type Option = LookupOption;
 

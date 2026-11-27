@@ -642,6 +642,19 @@ export async function refreshExchangeRatesNow(_prev?: FormState, _fd?: FormData)
   return done(`TRM actualizada: $${rate}`, "/configuracion/monedas");
 }
 
+/** Formas de pago que se imprimen en cotizaciones y pedidos: una por renglón, más una nota. */
+export async function savePrintSettings(_prev: FormState, fd: FormData): Promise<FormState> {
+  const g = await guard("customize");
+  if ("denied" in g) return g.denied!;
+  const lines = String(fd.get("payment_lines") ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 8) return { message: "Máximo 8 renglones: el bloque debe caber junto a los totales." };
+  if (lines.some((l) => l.length > 160)) return { message: "Cada renglón admite hasta 160 caracteres." };
+  const value = { payment_lines: lines, payment_note: str(fd, "payment_note").slice(0, 240) };
+  const { error } = await g.supabase.from("integration_settings").upsert({ key: "print", value, updated_at: new Date().toISOString() });
+  if (error) return fail(error);
+  return done("Guardado. Las cotizaciones y los pedidos ya se imprimen con estos datos.", "/configuracion/documentos");
+}
+
 export async function saveManualExchangeRate(_prev: FormState, fd: FormData): Promise<FormState> {
   const g = await guard("customize");
   if ("denied" in g) return g.denied!;

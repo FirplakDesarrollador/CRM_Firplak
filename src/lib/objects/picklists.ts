@@ -11,6 +11,17 @@ export const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP"
 export const INDUSTRIES = ["Canal Constructores", "Canal Distribución", "Canal B2C"];
 /** Condiciones de pago de la cuenta; la cotización las toma de ahí (o se escriben a mano). */
 export const PAYMENT_TERMS = ["Contado", "Anticipado", "8 días", "15 días", "30 días", "45 días", "60 días", "90 días"];
+/** Segmento de la obra (Canal Constructores): se elige en la cotización y pasa a la oportunidad y al pedido. */
+export const PROJECT_SEGMENTS = ["Obras Estrato Alto", "Obras Estrato Medio", "Obras Vis/Vip", "Reforma de Vivienda", "Reforma Vis/Vip", "Hotelería"];
+/** Carpintería de Obra admite tipologías a medida, sin producto del catálogo. La base valida estos dos valores. */
+export const SALE_TYPES = ["Estándar", "Carpintería de Obra"];
+export const CONSTRUCTION_CHANNEL = "Canal Constructores";
+/** Validez de la oferta, en días calendario desde la fecha de la cotización. La base solo acepta estos. */
+export const VALIDITY_DAYS = ["15", "30", "60"];
+/** Rol del contacto en su empresa: sale impreso junto a su nombre en cotizaciones y pedidos. */
+export const CONTACT_ROLES = ["Compras", "Logística", "Financiero", "Gerencia", "Técnico / Obra", "Otro"];
+export const DELIVERY_TYPES = ["Entrega en obra", "Entrega en bodega del cliente", "Entrega en punto de venta", "Recoge en planta"];
+export const DELIVERY_ACCESS = ["Escaleras", "Ascensor", "Montacargas", "Primer piso"];
 export const SEGMENTS = ["Grandes cuentas", "Empresarial", "Canal", "Institucional", "Prescriptor", "Pyme"];
 export const RATINGS = ["Caliente", "Templada", "Fría"];
 export const SALUTATIONS = ["Sr.", "Sra.", "Ing.", "Arq.", "Dr.", "Dra."];

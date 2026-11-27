@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
 import { RecordFormPage } from "@/components/records/RecordFormPage";
 import { createClient } from "@/lib/supabase/server";
-import { addDaysISO, todayISO } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Nueva cotización" };
 
 export default async function NewQuotePage({ searchParams }: PageProps<"/cotizaciones/nueva">) {
   const [user, sp] = await Promise.all([requireUser(), searchParams]);
-  const defaults: Record<string, unknown> = { status: "Borrador", tax_rate: 19, shipping: 0, expiration_date: addDaysISO(todayISO(), 30) };
+  const defaults: Record<string, unknown> = { status: "Borrador", tax_rate: 19, shipping: 0, validity_days: 30, sale_type: "Estándar" };
   if (typeof sp.opportunity === "string") {
     const supabase = await createClient();
     const { data } = await supabase
       .from("opportunities")
-      .select("id, name, account:accounts!opportunities_account_id_fkey(id, name), contact:contacts!opportunities_contact_id_fkey(id, full_name)")
+      .select("id, name, project_segment, sale_type, account:accounts!opportunities_account_id_fkey(id, name, industry, market), contact:contacts!opportunities_contact_id_fkey(id, full_name)")
       .eq("id", sp.opportunity)
       .maybeSingle();
     if (data) {
       Object.assign(defaults, { opportunity_id: data.id, opportunity: data, name: `${data.name} · Cotización` });
       if (data.contact) Object.assign(defaults, { contact_id: data.contact.id, contact: data.contact });
-      // «Facturar a» es la cuenta de la oportunidad.
+      // La cuenta es la de la oportunidad; el segmento de obra y el tipo, los que ya tenga.
       if (data.account) Object.assign(defaults, { account_id: data.account.id, account: data.account });
+      Object.assign(defaults, { project_segment: data.project_segment, sale_type: data.sale_type });
     }
   }
   return <RecordFormPage object="quotes" user={user} defaults={defaults} />;

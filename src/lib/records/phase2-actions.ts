@@ -8,6 +8,7 @@ import {
   CAMPAIGN_MEMBER_STATUSES, CAMPAIGN_STATUSES, CASE_STATUSES, LEAD_STATUSES, ORDER_STATUSES, QUOTE_STATUSES,
 } from "@/lib/objects/picklists";
 import { parseAmount, type FormState } from "./form";
+import { freeLine } from "./lines";
 import { validateRecord } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
 import { sendOrderToSapIfEnabled } from "@/lib/sap/quotations";
@@ -171,14 +172,34 @@ export async function savePriceBook(id: string | null, _prev: FormState, fd: For
 // ---------------------------------------------------------------------------
 // Cotizaciones
 // ---------------------------------------------------------------------------
+/** Renueva una cotización vencida: crea otra con fecha de hoy y los precios vigentes; la anterior queda Reemplazada. */
+export async function renewQuote(quoteId: string, _prev?: FormState, _fd?: FormData): Promise<FormState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("renew_quote", { p_quote: quoteId });
+  if (error || !data) return { message: friendly(error?.message ?? "No se pudo renovar la cotización") };
+  revalidatePath("/", "layout");
+  redirect(`/cotizaciones/${data}`);
+}
+
 export async function addQuoteLine(quoteId: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const productId = str(fd, "product_id");
-  if (!isUuid(productId)) return { errors: { product_id: "Elige un producto" } };
+  const free = str(fd, "_free") === "1";
+  if (!free && !isUuid(productId)) return { errors: { product_id: "Elige un producto" } };
   const quantity = parseAmount(str(fd, "quantity")) ?? 1;
   if (quantity <= 0) return { errors: { quantity: "Cantidad no válida" } };
   const discount = Math.min(100, Math.max(0, parseAmount(str(fd, "discount")) ?? 0));
 
   const supabase = await createClient();
+  // Carpintería de Obra: tipología escrita a mano, con su valor (la base solo la admite en ese tipo de cotización).
+  if (free) {
+    const line = freeLine(fd);
+    if ("errors" in line) return line;
+    const { count } = await supabase.from("quote_line_items").select("id", { count: "exact", head: true }).eq("quote_id", quoteId);
+    const { error } = await supabase.from("quote_line_items").insert({ quote_id: quoteId, ...line, quantity, discount, sort_order: (count ?? 0) + 1 });
+    if (error) return { message: friendly(error.message) };
+    revalidatePath("/", "layout");
+    return { ok: true, values: { nonce: crypto.randomUUID() } };
+  }
   // Precio de la lista de la cotización; con la lista propia del cliente, un producto no codificado toma el de la
   // lista del canal (la línea queda marcada «No codificado»).
   const [{ data: price, error: priceError }, { data: product }, { count }] = await Promise.all([

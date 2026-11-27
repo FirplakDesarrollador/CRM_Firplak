@@ -116,17 +116,15 @@ test.describe("administrador", () => {
     await page.goto("/cotizaciones/nueva");
     await page.waitForLoadState("networkidle");
     await page.getByLabel(/Nombre de la cotización/).fill(nombre);
-    await buscarYElegir(page, /^Facturar a/, "Casa Viva");
-    // Direcciones y condiciones de pago vienen de la cuenta y no se editan…
-    await expect(page.locator("#f-billing_address")).toHaveValue(/Av\. Boyacá/);
-    await expect(page.locator("#f-billing_address")).toBeDisabled();
+    await buscarYElegir(page, /^Cuenta/, "Casa Viva");
+    // Las condiciones de pago vienen de la cuenta y no se editan; la cotización ya no pide direcciones (van en el pedido)…
     await expect(page.locator("#f-payment_terms")).toHaveValue("60 días");
-    await expect(page.locator("#f-shipping_address")).toBeDisabled();
-    // …salvo la entrega con su casilla: se parte de la dirección de la cuenta y se cambia.
-    await page.getByLabel("Entregar en otra dirección").check();
-    await expect(page.locator("#f-shipping_address")).toBeEnabled();
-    await expect(page.locator("#f-shipping_address")).toHaveValue(/Av\. Boyacá/);
-    await page.locator("#f-shipping_address").fill("Bodega del cliente final, Funza");
+    await expect(page.locator("#f-billing_address")).toHaveCount(0);
+    await expect(page.locator("#f-shipping_address")).toHaveCount(0);
+    // …pero sí la ciudad de entrega: se propone la de la cuenta y se cambia si el despacho va al cliente final.
+    await expect(page.locator("#f-delivery_city")).toHaveValue("Bogotá");
+    await page.locator("#f-delivery_city").fill("Funza");
+    await page.locator("#f-end_customer_name").fill("Bodega del cliente final");
     await page.getByLabel("Observaciones").fill("Precios sujetos a disponibilidad.\nIncluye instalación en obra.");
     await guardar(page);
     await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
@@ -185,7 +183,8 @@ test.describe("administrador", () => {
 
     await page.getByRole("tab", { name: "Detalles" }).click();
     await expect(page.getByText("Casa Viva 2026").first()).toBeVisible();
-    await expect(page.getByText("Bodega del cliente final, Funza").first()).toBeVisible();
+    await expect(page.getByText("Bodega del cliente final").first()).toBeVisible();
+    await expect(page.getByText("Funza", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("60 días").first()).toBeVisible();
 
     // La oportunidad nueva lleva el nombre de la cotización, está en el pipeline del canal y vale lo cotizado.
@@ -195,11 +194,12 @@ test.describe("administrador", () => {
     await expect(page.getByText("Distribución y retail").first()).toBeVisible();
     await expect(page.getByText("$6,208,000").first()).toBeVisible();
 
-    // El PDF distingue la dirección de facturación de la de entrega y lleva las observaciones con su título.
+    // El PDF distingue la dirección de facturación de la entrega (ciudad y cliente final) y lleva las observaciones con su título.
     await page.goto(cotizacion.replace("/cotizaciones/", "/imprimir/cotizacion/"));
     const bloque = (titulo: string) => page.locator("section > div, section").filter({ has: page.getByText(titulo, { exact: true }) }).last();
     await expect(bloque("Dirección de facturación")).toContainText("Av. Boyacá");
-    await expect(bloque("Dirección de entrega")).toContainText("Bodega del cliente final, Funza");
+    await expect(bloque("Entrega")).toContainText("Ciudad: Funza");
+    await expect(bloque("Entrega")).toContainText("Cliente final: Bodega del cliente final");
     await expect(bloque("Observaciones")).toContainText("Precios sujetos a disponibilidad.");
     await expect(bloque("Observaciones")).toContainText("Incluye instalación en obra.");
     await expect(page.getByText("Condiciones de pago: 60 días")).toBeVisible();
@@ -279,7 +279,10 @@ test.describe("administrador", () => {
       await page.goto("/cotizaciones/nueva");
       await page.waitForLoadState("networkidle");
       await page.getByLabel(/Nombre de la cotización/).fill(`Cotización ${cuenta}`);
-      await buscarYElegir(page, /^Facturar a/, cuenta);
+      await buscarYElegir(page, /^Cuenta/, cuenta);
+      // La cuenta no tiene ciudad: se escribe la de entrega; en Constructores, además, el segmento de obra.
+      await page.locator("#f-delivery_city").fill("Quito");
+      if (canal === "Canal Constructores") await page.locator("#f-project_segment").selectOption("Hotelería");
       await guardar(page);
     };
     // Distribuidor del exterior: su lista de mercado y canal, en dólares.
@@ -355,6 +358,8 @@ test.describe("administrador", () => {
       await page.getByRole("link", { name: "Nueva cotización" }).first().click();
       await page.waitForLoadState("networkidle");
       await page.getByLabel(/Nombre de la cotización/).fill(nombre);
+      await page.locator("#f-delivery_city").fill("Medellín");
+      await page.locator("#f-project_segment").selectOption("Obras Estrato Medio");
       await guardar(page);
       await expect(page).toHaveURL(/\/cotizaciones\/[0-9a-f-]{36}/);
       await expect(async () => {
@@ -385,15 +390,16 @@ test.describe("administrador", () => {
     await expect(valor()).toHaveText("$2,500,000");
   });
 
-  test("«Facturar a» debe ser la cuenta de la oportunidad", async ({ page }) => {
+  test("la cuenta de la cotización debe ser la de la oportunidad", async ({ page }) => {
     await page.goto("/cotizaciones/nueva");
     await page.waitForLoadState("networkidle");
     await page.getByLabel(/Nombre de la cotización/).fill(unico("Cuenta cruzada"));
     await buscarYElegir(page, /^Oportunidad/, "Exhibición nueva tienda");
-    // Al elegir la oportunidad, «Facturar a» toma su cuenta.
+    // Al elegir la oportunidad, «Cuenta» toma la suya.
     await expect(page.locator("main").getByText("Distribuidora Hogar y Acabados Ltda.").first()).toBeVisible();
-    await page.getByRole("button", { name: "Quitar selección" }).nth(1).click();
-    await buscarYElegir(page, /^Facturar a/, "Casa Viva");
+    // La cuenta es el primer campo de relación del formulario.
+    await page.getByRole("button", { name: "Quitar selección" }).first().click();
+    await buscarYElegir(page, /^Cuenta/, "Casa Viva");
     await guardar(page);
     await expect(page.getByText(/debe ser la misma de la oportunidad \(Distribuidora Hogar y Acabados Ltda\.\)/).first()).toBeVisible();
     await expect(page).toHaveURL(/\/cotizaciones\/nueva/);

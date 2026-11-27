@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, Printer } from "lucide-react";
 import { RecordLayout } from "@/components/records/RecordLayout";
 import { StatusPath } from "@/components/records/StatusPath";
 import { DeleteButton } from "@/components/records/DeleteButton";
@@ -46,6 +46,7 @@ export default async function OrderDetailPage({ params, searchParams }: PageProp
       badges={draft ? <span className="badge badge-warning"><Tr>Productos editables</Tr></span> : null}
       actions={
         <>
+          <Link href={`/imprimir/pedido/${id}`} target="_blank" className="btn"><Printer size={15} /> <Tr>Imprimir / PDF</Tr></Link>
           {access.canEdit && <Link href={`/pedidos/${id}/editar`} className="btn btn-primary"><Pencil size={15} /> <Tr>Editar</Tr></Link>}
           {/* Lo decide el permiso «Eliminar» del perfil; un pedido que ya salió de borrador lo advierte antes. */}
           {access.canDelete && (
@@ -65,7 +66,8 @@ export default async function OrderDetailPage({ params, searchParams }: PageProp
         count: lines?.length ?? 0,
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
-            <QuoteLines kind="order" quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit && draft} currency={String(row.currency ?? "COP")} />
+            <QuoteLines kind="order" quoteId={id} lines={(lines ?? []) as unknown as QuoteLine[]} canEdit={access.canEdit && draft} currency={String(row.currency ?? "COP")}
+              allowFree={row.sale_type === "Carpintería de Obra"} />
             <QuoteTotals q={row} />
           </div>
         ),

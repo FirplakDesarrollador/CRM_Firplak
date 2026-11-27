@@ -126,7 +126,7 @@ function LinkedLookup({ field, id, invalid, initial, initialFilter }: {
       setFilled((f) => ({ value: account, version: f.version + 1 }));
       // Los demás campos reaccionan como si se hubiera elegido a mano (direcciones, condiciones de pago).
       queueMicrotask(() => ref.current?.closest("form")?.dispatchEvent(
-        new CustomEvent("lookup:select", { detail: { name: field.name, item: { id: account.id, label: account.label } } })));
+        new CustomEvent("lookup:select", { detail: { name: field.name, item: account } })));
     }
   });
 
@@ -200,6 +200,42 @@ function DerivedInput({ common, field, initialValue, links }: {
     <input {...common} ref={ref} type="text" className="input" value={typed} onChange={(e) => setTyped(e.target.value)} />
   ) : (
     <input id={common.id} ref={ref} type="text" className="input" value={fromAccount} disabled placeholder={t("Se toma de la cuenta")} />
+  );
+}
+
+/**
+ * Texto que se propone con un dato de la cuenta (p. ej. la ciudad de entrega): se llena al elegir la cuenta y deja de
+ * seguirla en cuanto el usuario escribe otra cosa.
+ */
+function AccountDefaultInput({ common, field, initialValue, source }: {
+  common: { id: string; name: string; "aria-invalid": boolean; required?: boolean };
+  field: FieldDef;
+  initialValue: string;
+  source?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState(initialValue);
+  const typed = useRef(Boolean(initialValue));
+  const load = (accountId: string | null | undefined) => {
+    if (!accountId || typed.current) return;
+    accountTerms(accountId).then((terms) => {
+      if (!typed.current) setValue(terms[field.accountDefault!] ?? "");
+    });
+  };
+  // Registro nuevo con la cuenta ya elegida (p. ej. la cotización que se crea desde la oportunidad).
+  useEffect(() => {
+    load(source);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useLookupSelect(ref, (name, item) => {
+    if (name === "account_id") load(item?.id);
+  });
+  return (
+    <input {...common} ref={ref} type="text" className="input" value={value}
+      onChange={(e) => {
+        typed.current = e.target.value.trim() !== "";
+        setValue(e.target.value);
+      }} />
   );
 }
 
@@ -384,15 +420,20 @@ export function FieldInput({
   const id = `f-${field.name.replace(".", "-")}`;
   const invalid = Boolean(error);
   const str = echo ?? (value === null || value === undefined ? "" : String(value));
-  const common = { id, name: field.name, "aria-invalid": invalid, required: field.required };
+  const required = field.required || field.formRequired;
+  const common = { id, name: field.name, "aria-invalid": invalid, required };
 
   let control: React.ReactNode;
   // Las listas simples llevan `key` con su valor: tras un intento fallido de guardar, React devuelve el formulario
   // a sus valores iniciales y en un <select> ya montado no aplica el `defaultValue` nuevo (volvía al valor anterior).
   // Un país nuevo empieza en Colombia; los registros existentes conservan lo que tenían.
   const geoValue = field.geoRole === "country" && !str && ctx.isNew && echo === undefined ? "Colombia" : str;
-  const kind = field.geoRole && ctx.geo && place ? "geo" : field.derived ? "derived" : field.choices ? "choices" : field.type;
+  const kind = field.geoRole && ctx.geo && place ? "geo" : field.derived ? "derived" : field.choices ? "choices"
+    : field.accountDefault ? "accountDefault" : field.type;
   switch (kind) {
+    case "accountDefault":
+      control = <AccountDefaultInput common={common} field={field} initialValue={str} source={links?.source} />;
+      break;
     case "derived":
       control = <DerivedInput common={common} field={field} initialValue={str} links={links} />;
       break;
@@ -522,7 +563,7 @@ export function FieldInput({
     <div>
       <label htmlFor={id} className="label">
         {field.label}
-        {field.required && <span className="text-danger"> *</span>}
+        {required && <span className="text-danger"> *</span>}
       </label>
       {control}
       {error ? <p className="error-text">{t(error)}</p> : field.help ? <p className="help">{t(field.help)}</p> : null}

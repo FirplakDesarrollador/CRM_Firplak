@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { parseAmount, type FormState } from "@/lib/records/form";
+import { freeLine } from "@/lib/records/lines";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const isUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
@@ -27,12 +28,23 @@ export async function createOrderFromQuote(quoteId: string, _prev?: FormState, _
 
 export async function addOrderLine(orderId: string, _prev: FormState, fd: FormData): Promise<FormState> {
   const productId = str(fd, "product_id");
-  if (!isUuid(productId)) return { errors: { product_id: "Elige un producto" } };
+  const free = str(fd, "_free") === "1";
+  if (!free && !isUuid(productId)) return { errors: { product_id: "Elige un producto" } };
   const quantity = parseAmount(str(fd, "quantity")) ?? 1;
   if (quantity <= 0) return { errors: { quantity: "Cantidad no válida" } };
   const discount = Math.min(100, Math.max(0, parseAmount(str(fd, "discount")) ?? 0));
 
   const supabase = await createClient();
+  // Carpintería de Obra: tipología sin producto del catálogo (la base solo la admite en ese tipo de pedido).
+  if (free) {
+    const line = freeLine(fd);
+    if ("errors" in line) return line;
+    const { count } = await supabase.from("order_items").select("id", { count: "exact", head: true }).eq("order_id", orderId);
+    const { error } = await supabase.from("order_items").insert({ order_id: orderId, ...line, quantity, discount, sort_order: (count ?? 0) + 1 });
+    if (error) return { message: friendly(error.message) };
+    revalidatePath("/", "layout");
+    return { ok: true, values: { nonce: crypto.randomUUID() } };
+  }
   const { data: order } = await supabase.from("orders").select("price_book_id").eq("id", orderId).maybeSingle();
   if (!order) return { message: "Pedido no encontrado" };
   const [{ data: entry }, { data: product }, { count }] = await Promise.all([

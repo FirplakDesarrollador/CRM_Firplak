@@ -7,6 +7,7 @@ import { validateRecord, withStageEffects } from "@/lib/rules/server";
 import { runAutomations } from "@/lib/rules/automation";
 import { syncActivityToMicrosoft } from "@/lib/ms365/sync";
 import { addDaysISO, todayISO } from "@/lib/format";
+import { CONSTRUCTION_CHANNEL } from "@/lib/objects/picklists";
 import { getObjectDef, getPipelines, untypedClient } from "./data";
 import { parseRecordForm, type FormState } from "./form";
 
@@ -73,6 +74,26 @@ export async function persistRecord(
     }
     delete values.opportunity_id;
   }
+
+  // Cotizaciones y pedidos: el tipo es «Estándar» si no se pidió (otros canales no lo muestran) y la validez, 30 días.
+  // Lo que se llena en pantalla exige ciudad de entrega y, en el Canal Constructores, el segmento de obra; lo que
+  // llega de un teléfono sin señal (`newId`) lo completa la base con la cuenta y se exige al presentar.
+  if (objectKey === "quotes" || objectKey === "orders") {
+    if (!values.sale_type) values.sale_type = "Estándar";
+    if (objectKey === "quotes" && !values.validity_days) values.validity_days = 30;
+    if (!opts.newId) {
+      const missing: Record<string, string> = {};
+      const { data: account } = values.account_id
+        ? await db.from("accounts").select("industry, shipping_city, billing_city").eq("id", String(values.account_id)).maybeSingle()
+        : { data: null };
+      // Sin ciudad escrita vale la de la cuenta (lo mismo hace la base); si la cuenta tampoco la tiene, se pide.
+      if (!values.delivery_city && !account?.shipping_city?.trim() && !account?.billing_city?.trim()) missing.delivery_city = "Campo obligatorio";
+      if (objectKey === "orders" && !values.shipping_address) missing.shipping_address = "Campo obligatorio";
+      if (account?.industry === CONSTRUCTION_CHANNEL && !values.project_segment) missing.project_segment = "Campo obligatorio";
+      if (Object.keys(missing).length) return { ok: false, state: { errors: missing, values: echo, message: "Revisa los campos marcados." } };
+    }
+  }
+  if (objectKey === "opportunities" && !values.sale_type) values.sale_type = "Estándar";
 
   // Moneda según el Mercado de la cuenta: en USD se pide el Valor en USD y el Valor en pesos lo calcula la
   // base con la TRM del día; en pesos se pide el Valor. (La base aplica lo mismo en cualquier otra vía.)
@@ -161,7 +182,7 @@ export async function persistRecord(
       stage_id: stage.id,
       pipeline_id: stage.pipeline_id,
       amount: 0,
-      close_date: values.expiration_date ?? addDaysISO(todayISO(), 30),
+      close_date: addDaysISO(todayISO(), Number(values.validity_days) || 30),
       owner_id: values.owner_id ?? user.id,
     }).select("id").single();
     if (oppError || !opp) {

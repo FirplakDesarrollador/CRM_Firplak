@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { FORECAST_CATEGORIES, LEAD_SOURCES, LOSS_REASONS, OPPORTUNITY_TYPES } from "./picklists";
+import { CONSTRUCTION_CHANNEL, FORECAST_CATEGORIES, LEAD_SOURCES, LOSS_REASONS, OPPORTUNITY_TYPES, PROJECT_SEGMENTS, SALE_TYPES } from "./picklists";
 
 export const opportunities: ObjectDef = {
   key: "opportunities",
@@ -37,6 +37,9 @@ export const opportunities: ObjectDef = {
     { name: "stage_id", label: "Etapa", type: "stage", relation: "stage", required: true, section: "info" },
     { name: "pipeline_id", label: "Pipeline", type: "text", relation: "pipeline", readOnly: true, formHidden: true, section: "info", sortable: false },
     { name: "opportunity_type", label: "Tipo", type: "select", options: OPPORTUNITY_TYPES, section: "info" },
+    // Del Canal Constructores: los pone la cotización (y aquí se pueden corregir); el pedido los hereda.
+    { name: "project_segment", label: "Segmento de obra", type: "select", options: PROJECT_SEGMENTS, section: "info", formChannel: CONSTRUCTION_CHANNEL, hideEmpty: true },
+    { name: "sale_type", label: "Tipo de venta", type: "select", options: SALE_TYPES, section: "info", formChannel: CONSTRUCTION_CHANNEL },
     { name: "lead_source", label: "Origen", type: "select", options: LEAD_SOURCES, section: "info" },
     { name: "campaign_id", label: "Campaña de origen", type: "lookup", lookup: "campaigns", relation: "campaign", section: "info" },
     { name: "next_step", label: "Siguiente paso", type: "text", section: "info" },

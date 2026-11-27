@@ -73,6 +73,18 @@ export type FieldDef = {
   lookupFilter?: string;
   /** Se llena con la cuenta del registro elegido en ese campo (p. ej. la cuenta de la oportunidad). */
   fillFrom?: string;
+  /** En el formulario, solo aparece cuando la cuenta elegida es de este Canal (p. ej. «Canal Constructores»). */
+  formChannel?: string;
+  /**
+   * Obligatorio al llenar el formulario en pantalla (lo comprueba `persistRecord`), pero no para lo que llega por
+   * otras vías (p. ej. una cotización hecha sin señal, que la base completa con los datos de la cuenta).
+   */
+  formRequired?: boolean;
+  /**
+   * Texto que se propone con un dato de la cuenta elegida (clave de /api/cuenta-condiciones, p. ej. la ciudad de
+   * entrega) y que el usuario puede cambiar.
+   */
+  accountDefault?: string;
 };
 
 export type ObjectDef = {

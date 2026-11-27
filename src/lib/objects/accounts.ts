@@ -44,6 +44,10 @@ export const accounts: ObjectDef = {
     },
     { name: "phone", label: "Teléfono", type: "phone", section: "info" },
     { name: "email", label: "Correo", type: "email", section: "info" },
+    {
+      name: "einvoice_email", label: "Correo de facturación electrónica", type: "email", section: "info",
+      help: "Donde el cliente recibe la factura electrónica. Sale impreso en cotizaciones y pedidos.",
+    },
     { name: "website", label: "Sitio web", type: "url", section: "info" },
     { name: "annual_revenue", label: "Ingresos anuales", type: "currency", section: "info" },
     { name: "employees", label: "Empleados", type: "number", section: "info" },

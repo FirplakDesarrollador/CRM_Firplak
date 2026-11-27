@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClipboardList, Pencil, Printer } from "lucide-react";
+import { ClipboardList, Pencil, Printer, RefreshCw } from "lucide-react";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { createOrderFromQuote } from "@/lib/orders/actions";
+import { renewQuote } from "@/lib/records/phase2-actions";
+import { formatDate, todayISO } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { RecordLayout } from "@/components/records/RecordLayout";
 import { StatusPath } from "@/components/records/StatusPath";
@@ -27,7 +29,7 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
   const row = await getRecord(def, id);
   if (!row) notFound();
   const supabase = await createClient();
-  const [access, { data: lines }, { data: order }, { data: account }, { data: offline }, t] = await Promise.all([
+  const [access, { data: lines }, { data: order }, { data: account }, { data: offline }, { data: renewal }, t] = await Promise.all([
     getRecordAccess("quotes", row.owner_id as string | null, row.id),
     supabase
       .from("quote_line_items")
@@ -39,6 +41,8 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
     // Las líneas cotizadas sin señal a otro precio. Va aparte: si la columna aún no existe en la base, la
     // cotización se sigue viendo completa, solo sin la marca.
     supabase.from("quote_line_items").select("id, offline_list_price").eq("quote_id", id).not("offline_list_price", "is", null),
+    // La cotización que renovó a esta (esta quedó Reemplazada).
+    supabase.from("quotes").select("id, quote_number").eq("renewed_from_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     getT(),
   ]);
   const offlinePrices = new Map((offline ?? []).map((line) => [line.id, Number(line.offline_list_price)]));
@@ -51,6 +55,11 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
     .replace("{cuenta}", String(account?.name ?? "")).replace("{mercado}", t(market)).replace("{moneda}", marketCurrency)
     .replace("{moneda_cotizacion}", String(row.currency)).replace("{lista}", String((row.price_book as { name?: string } | null)?.name ?? "—"));
   const canOrder = !order && row.status === "Aceptada" && can(user.access, "orders", "create");
+  // Vencida: sigue abierta y ya pasó su «Válida hasta». No se puede aceptar; se renueva (con los precios de hoy).
+  const expired = ["Borrador", "En revisión", "Aprobada", "Presentada"].includes(String(row.status)) && String(row.expiration_date ?? "9999") < todayISO();
+  const canRenew = expired && access.canEdit && row.status !== "En revisión";
+  const expiredText = t("Esta cotización venció el {fecha} y ya no se puede aceptar. Al renovarla se crea otra con fecha de hoy y los precios de la lista vigente (las tipologías conservan su valor), y esta queda como Reemplazada.")
+    .replace("{fecha}", formatDate(String(row.expiration_date)));
 
   return (
     <RecordLayout
@@ -61,6 +70,8 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
       activeTab={typeof sp.tab === "string" ? sp.tab : undefined}
       badges={
         <>
+          {expired && <span className="badge badge-danger"><Tr>Vencida</Tr></span>}
+          {renewal && <Link href={`/cotizaciones/${renewal.id}`} className="badge badge-info no-underline"><Tr>Renovada en</Tr> {renewal.quote_number}</Link>}
           {order && <Link href={`/pedidos/${order.id}`} className="badge badge-info no-underline"><Tr>Pedido</Tr> {order.order_number}</Link>}
         </>
       }
@@ -69,6 +80,11 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
           {canOrder && (
             <ActionForm action={createOrderFromQuote.bind(null, id)} className="flex flex-col items-end gap-1">
               <SubmitButton className="btn btn-primary" pendingText="Creando…"><ClipboardList size={15} /> <Tr>Crear pedido</Tr></SubmitButton>
+            </ActionForm>
+          )}
+          {canRenew && (
+            <ActionForm action={renewQuote.bind(null, id)} className="flex flex-col items-end gap-1">
+              <SubmitButton className="btn btn-primary" pendingText="Renovando…"><RefreshCw size={15} /> <Tr>Renovar</Tr></SubmitButton>
             </ActionForm>
           )}
           <Link href={`/imprimir/cotizacion/${id}`} target="_blank" className="btn"><Printer size={15} /> <Tr>Imprimir / PDF</Tr></Link>
@@ -85,8 +101,10 @@ export default async function QuoteDetailPage({ params, searchParams }: PageProp
         count: lines?.length ?? 0,
         content: (
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+            {expired && <div className="2xl:col-span-2"><Alert tone="warning">{expiredText}</Alert></div>}
             {stale && <div className="2xl:col-span-2"><Alert tone="warning">{staleText}</Alert></div>}
-            <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")} />
+            <QuoteLines quoteId={id} lines={quoteLines} canEdit={access.canEdit} currency={String(row.currency ?? "COP")}
+              allowFree={row.sale_type === "Carpintería de Obra"} />
             <QuoteTotals q={row} />
           </div>
         ),

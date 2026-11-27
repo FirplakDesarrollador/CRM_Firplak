@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
       "./node_modules/@fontsource/outfit/files/outfit-{latin,latin-ext}-{300,400,500}-normal.woff",
       "./public/brand/firplak-wordmark-navy.png",
     ],
+    "/imprimir/pedido/\\[id\\]/pdf": [
+      "./node_modules/@fontsource/outfit/files/outfit-{latin,latin-ext}-{300,400,500}-normal.woff",
+      "./public/brand/firplak-wordmark-navy.png",
+    ],
   },
   turbopack: {
     rules: {

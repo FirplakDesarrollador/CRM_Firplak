@@ -1,5 +1,5 @@
 import type { ObjectDef } from "./types";
-import { INCOTERMS, QUOTE_STATUSES } from "./picklists";
+import { CONSTRUCTION_CHANNEL, INCOTERMS, PROJECT_SEGMENTS, QUOTE_STATUSES, SALE_TYPES, VALIDITY_DAYS } from "./picklists";
 
 export const quotes: ObjectDef = {
   key: "quotes",
@@ -13,18 +13,19 @@ export const quotes: ObjectDef = {
     "*",
     "owner:profiles!quotes_owner_id_fkey(id, full_name, email)",
     "opportunity:opportunities!quotes_opportunity_id_fkey(id, name)",
-    "account:accounts!quotes_account_id_fkey(id, name)",
+    "account:accounts!quotes_account_id_fkey(id, name, industry, market)",
+    "renewed_from:renewed_from_id(id, name, quote_number)",
     "contact:contacts!quotes_contact_id_fkey(id, full_name)",
     "price_book:price_books!quotes_price_book_id_fkey(id, name)",
   ].join(", "),
   searchColumns: ["name", "quote_number"],
   defaultColumns: ["quote_number", "name", "account_id", "status", "net_total", "expiration_date", "owner_id"],
   defaultSort: { field: "created_at", dir: "desc" },
-  highlightFields: ["opportunity_id", "account_id", "status", "expiration_date", "grand_total"],
+  highlightFields: ["account_id", "opportunity_id", "status", "expiration_date", "grand_total"],
   sections: [
     { key: "info", label: "Información de la cotización" },
     { key: "totals", label: "Totales" },
-    { key: "terms", label: "Condiciones y facturación" },
+    { key: "terms", label: "Entrega y condiciones" },
     { key: "custom", label: "Información adicional" },
     { key: "system", label: "Sistema" },
   ],
@@ -32,13 +33,30 @@ export const quotes: ObjectDef = {
     { name: "quote_number", label: "N.º de cotización", type: "text", readOnly: true, section: "info" },
     { name: "name", label: "Nombre de la cotización", type: "text", required: true, section: "info" },
     {
+      name: "account_id", label: "Cuenta", type: "lookup", lookup: "accounts", relation: "account", required: true, section: "info",
+      fillFrom: "opportunity_id", help: "Cliente o prospecto al que se factura. Debe ser la misma cuenta de la oportunidad.",
+    },
+    {
       name: "opportunity_id", label: "Oportunidad", type: "lookup", lookup: "opportunities", relation: "opportunity", section: "info",
       lookupFilter: "account_id", help: "Si la dejas vacía, se crea una oportunidad con el nombre de la cotización.",
     },
     { name: "contact_id", label: "Contacto", type: "lookup", lookup: "contacts", relation: "contact", section: "info", lookupFilter: "account_id" },
     { name: "price_book_id", label: "Lista de precios", type: "text", relation: "price_book", readOnly: true, formHidden: true, section: "info", sortable: false },
     { name: "status", label: "Estado", type: "select", options: QUOTE_STATUSES, required: true, section: "info" },
-    { name: "expiration_date", label: "Válida hasta", type: "date", section: "info" },
+    {
+      name: "validity_days", label: "Validez de la oferta", type: "select", options: VALIDITY_DAYS, formRequired: true, section: "info",
+      optionLabels: { "15": "15 días", "30": "30 días", "60": "60 días" }, help: "Días calendario desde la fecha de la cotización.",
+    },
+    { name: "expiration_date", label: "Válida hasta", type: "date", readOnly: true, formHidden: true, section: "info" },
+    {
+      name: "sale_type", label: "Tipo de cotización", type: "select", options: SALE_TYPES, formRequired: true, section: "info", formChannel: CONSTRUCTION_CHANNEL,
+      help: "Carpintería de Obra: muebles a medida que cotiza diseño; admite tipologías escritas a mano, sin producto del catálogo.",
+    },
+    {
+      name: "project_segment", label: "Segmento de obra", type: "select", options: PROJECT_SEGMENTS, formRequired: true, section: "info",
+      formChannel: CONSTRUCTION_CHANNEL, hideEmpty: true, help: "Pasa a la oportunidad y al pedido.",
+    },
+    { name: "renewed_from_id", label: "Renueva a", type: "lookup", lookup: "quotes", relation: "renewed_from", readOnly: true, formHidden: true, hideEmpty: true, section: "info" },
     { name: "is_synced", label: "Sincronizada con la oportunidad", type: "checkbox", readOnly: true, formHidden: true, section: "info" },
     { name: "owner_id", label: "Propietario", type: "user", relation: "owner", section: "info" },
     { name: "subtotal", label: "Subtotal", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
@@ -51,15 +69,16 @@ export const quotes: ObjectDef = {
     { name: "shipping", label: "Flete", type: "currency", currencyField: "currency", section: "totals" },
     { name: "grand_total", label: "Total con IVA", type: "currency", currencyField: "currency", readOnly: true, formHidden: true, section: "totals" },
     {
-      name: "account_id", label: "Facturar a", type: "lookup", lookup: "accounts", relation: "account", required: true, section: "terms",
-      fillFrom: "opportunity_id", help: "Cliente o prospecto. Debe ser la misma cuenta de la oportunidad.",
+      name: "end_customer_name", label: "Cliente final", type: "text", section: "terms", hideEmpty: true,
+      help: "Solo si el despacho va al cliente final de nuestro distribuidor.",
     },
-    { name: "billing_address", label: "Dirección de facturación", type: "text", section: "terms", derived: { from: "account_id" }, help: "De la cuenta." },
-    { name: "shipping_manual", label: "Entregar en otra dirección", type: "checkbox", section: "terms", formOnly: true },
     {
-      name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms", derived: { from: "account_id" }, manualFlag: "shipping_manual",
-      help: "De la cuenta. Marca «Entregar en otra dirección» para escribirla (cliente final, otra bodega).",
+      name: "delivery_city", label: "Ciudad de entrega", type: "text", section: "terms", formRequired: true, accountDefault: "delivery_city",
+      help: "Se propone la de la cuenta: cámbiala si se entrega en otra ciudad.",
     },
+    { name: "billing_address", label: "Dirección de facturación", type: "text", section: "terms", readOnly: true, formHidden: true },
+    // La dirección exacta se pide en el pedido; la cotización conserva la de la cuenta (o la que ya tenía escrita).
+    { name: "shipping_address", label: "Dirección de entrega", type: "text", section: "terms", readOnly: true, formHidden: true, hideEmpty: true },
     { name: "payment_terms_manual", label: "Cambiar condiciones de pago", type: "checkbox", section: "terms", formOnly: true },
     {
       name: "payment_terms", label: "Condiciones de pago", type: "text", section: "terms", derived: { from: "account_id" }, manualFlag: "payment_terms_manual",
