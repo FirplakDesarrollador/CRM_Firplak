@@ -1484,6 +1484,51 @@ export type Database = {
           },
         ]
       }
+      forecast_snapshot_items: {
+        Row: {
+          amount: number
+          bucket: string
+          opportunity_id: string
+          period_start: string
+          period_type: string
+          taken_on: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          bucket: string
+          opportunity_id: string
+          period_start: string
+          period_type: string
+          taken_on: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bucket?: string
+          opportunity_id?: string
+          period_start?: string
+          period_type?: string
+          taken_on?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forecast_snapshot_items_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forecast_snapshot_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forecast_snapshots: {
         Row: {
           adjustment: number | null

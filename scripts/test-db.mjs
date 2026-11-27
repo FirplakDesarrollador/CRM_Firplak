@@ -2732,6 +2732,45 @@ await check('ventas reales de SAP: carga por meses, dos años, visibilidad, sucu
   await q(`update profiles set full_name = '' where id = $1`, [rep.id]);
   await q(`delete from auth.users where id = $1`, [agent.id]);
 });
+await check('una oportunidad borrada se descuenta de las fotos del pronóstico en las que sumaba', async () => {
+  const [base] = await q(`select id from opportunities where not is_closed and owner_id is not null
+                          and forecast_category in ('commit', 'best_case', 'pipeline') order by name limit 1`);
+  const [nueva] = await q(`insert into opportunities (name, account_id, pipeline_id, stage_id, amount, close_date, owner_id)
+                           select 'Ensayo para borrar', account_id, pipeline_id, stage_id, 77000000,
+                                  (now() at time zone 'America/Bogota')::date, owner_id
+                           from opportunities where id = $1 returning id, owner_id`, [base.id]);
+  await as(admin, () => q(`select take_forecast_snapshot()`));
+  const detalle = await q(`select taken_on::text, period_type, period_start::text, bucket, amount::float
+                           from forecast_snapshot_items where opportunity_id = $1 order by period_type`, [nueva.id]);
+  assert.deepEqual(detalle.map((d) => d.period_type), ['month', 'quarter', 'year']);
+  assert.ok(detalle.every((d) => d.amount === 77000000 && d.bucket !== 'closed'));
+  // El detalle de cada foto suma lo mismo que la foto.
+  const descuadre = await q(`select 1 from forecast_snapshots f
+    left join (select taken_on, period_type, period_start, user_id,
+                      sum(amount) filter (where bucket = 'closed') c, sum(amount) filter (where bucket = 'commit') m,
+                      sum(amount) filter (where bucket = 'best_case') b, sum(amount) filter (where bucket = 'pipeline') p
+               from forecast_snapshot_items group by 1, 2, 3, 4) i using (taken_on, period_type, period_start, user_id)
+    where f.taken_on = (now() at time zone 'America/Bogota')::date
+      and (abs(f.closed - coalesce(i.c, 0)) > 0.01 or abs(f.commit_amount - coalesce(i.m, 0)) > 0.01
+        or abs(f.best_case - coalesce(i.b, 0)) > 0.01 or abs(f.pipeline - coalesce(i.p, 0)) > 0.01)`);
+  assert.equal(descuadre.length, 0);
+
+  const foto = () => q(`select period_type, (closed + commit_amount + best_case + pipeline)::float total, open_count
+                        from forecast_snapshots where user_id = $1 and taken_on = (now() at time zone 'America/Bogota')::date
+                        order by period_type`, [nueva.owner_id]);
+  const antes = await foto();
+  // El asesor ve su detalle; el detalle no se puede escribir desde la app.
+  await as(rep, () => q(`delete from forecast_snapshot_items`)).catch(() => {});
+  assert.equal(await count(`select count(*) n from forecast_snapshot_items where opportunity_id = $1`, [nueva.id]), 3);
+  await q(`delete from opportunities where id = $1`, [nueva.id]);
+  const despues = await foto();
+  assert.equal(despues.length, 3);
+  despues.forEach((d, i) => {
+    assert.equal(antes[i].total - d.total, 77000000);
+    assert.equal(antes[i].open_count - d.open_count, 1);
+  });
+  assert.equal(await count(`select count(*) n from forecast_snapshot_items where opportunity_id = $1`, [nueva.id]), 0);
+});
 await check('publicar exige un proyecto de destino explícito y enlazado', async () => {
   const { spawnSync } = await import('node:child_process');
   const run = (...args) => spawnSync(process.execPath, [join(root, 'scripts/db-publicar.mjs'), ...args], { cwd: root, encoding: 'utf8' });
