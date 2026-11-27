@@ -10,6 +10,9 @@ import { moveDelivery, splitQuoteDeliveries } from "@/lib/records/phase2-actions
 import type { FormState } from "@/lib/records/form";
 import type { QuoteLine } from "./QuoteLines";
 
+/** Máximo de entregas (el mismo de `public.split_quote_deliveries`). */
+const MAX_PARTS = 12;
+
 /** Fecha de una entrega: al cambiarla, todas sus líneas pasan a la fecha nueva. */
 function DeliveryRow({ quoteId, index, date, lines, total, units, currency, canEdit }: {
   quoteId: string; index: number; date: string; lines: number; total: number; units: number; currency: string; canEdit: boolean;
@@ -34,7 +37,7 @@ function DeliveryRow({ quoteId, index, date, lines, total, units, currency, canE
 
 /**
  * Entregas parciales de una cotización. El asesor cotiza las cantidades completas y, si el despacho va por partes,
- * parte toda la cotización en 2, 3 o 4 entregas con un clic: cada producto queda en una línea por entrega, con fechas
+ * parte toda la cotización en 2, 3 o 4 entregas con un clic (u otra cantidad, hasta 12): cada producto queda en una línea por entrega, con fechas
  * cada 30 días desde la «Entrega estimada» y el sobrante en la última. Después ajusta fechas (aquí, por entrega) y
  * cantidades (en cada línea). El pronóstico ubica cada entrega en su mes.
  */
@@ -43,7 +46,12 @@ export function PartialDeliveries({ quoteId, lines, quoteDate, canEdit, currency
 }) {
   const t = useT();
   const [state, split] = useActionState(
-    (_prev: FormState, fd: FormData) => splitQuoteDeliveries(quoteId, Number(fd.get("parts"))), {} as FormState);
+    async (_prev: FormState, fd: FormData): Promise<FormState> => {
+      // Los botones 2, 3 y 4 mandan su número; «Partir» manda el que se escribió en la casilla (hasta 12).
+      const parts = fd.get("parts") === "custom" ? Number(fd.get("custom")) : Number(fd.get("parts"));
+      if (!Number.isInteger(parts) || parts < 1 || parts > MAX_PARTS) return { message: `Escribe un número de entregas entre 2 y ${MAX_PARTS}.` };
+      return splitQuoteDeliveries(quoteId, parts);
+    }, {} as FormState);
   const byDate = new Map<string, { lines: number; total: number; units: number }>();
   for (const line of lines) {
     if (!line.delivery_date) continue;
@@ -69,9 +77,13 @@ export function PartialDeliveries({ quoteId, lines, quoteDate, canEdit, currency
           <form action={split} className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted">{partial ? t("Volver a partir en") : t("Partir en")}</span>
             {[2, 3, 4].map((n) => (
-              <SubmitButton key={n} name="parts" value={String(n)} className="btn btn-sm" pendingText="…" aria-label={`${t("Partir en")} ${n} ${t("entregas")}`}>{n}</SubmitButton>
+              <SubmitButton key={n} name="parts" value={String(n)} formNoValidate className="btn btn-sm" pendingText="…" aria-label={`${t("Partir en")} ${n} ${t("entregas")}`}>{n}</SubmitButton>
             ))}
-            {partial && <SubmitButton name="parts" value="1" className="btn btn-sm btn-ghost" pendingText="…"><Tr>Una sola entrega</Tr></SubmitButton>}
+            <span className="ml-1 text-xs text-muted">{t("u otra cantidad")}</span>
+            <input type="number" name="custom" min={2} max={MAX_PARTS} step={1} inputMode="numeric" placeholder="5"
+              className="input num h-8 w-16 px-2 text-center" aria-label={t("Otra cantidad de entregas")} />
+            <SubmitButton name="parts" value="custom" className="btn btn-sm" pendingText="…"><Tr>Partir</Tr></SubmitButton>
+            {partial && <SubmitButton name="parts" value="1" formNoValidate className="btn btn-sm btn-ghost" pendingText="…"><Tr>Una sola entrega</Tr></SubmitButton>}
           </form>
         )}
       </div>

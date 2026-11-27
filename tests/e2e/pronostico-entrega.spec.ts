@@ -51,6 +51,15 @@ test("entregas parciales: la cotización se parte en 2, 3 o 4 y el pronóstico r
   await expect(lineas).toHaveCount(3);
   await expect(lineas.nth(2).getByLabel("Cantidad")).toHaveValue("4");
   await expect(entregas.getByLabel("Fecha de la entrega 3")).toHaveValue("2031-09-08");
+  // Otra cantidad: 5 entregas de 2 unidades cada una; un número fuera de rango se rechaza sin tocar nada.
+  await entregas.getByLabel("Otra cantidad de entregas").fill("5");
+  await entregas.getByRole("button", { name: "Partir", exact: true }).click();
+  await expect(lineas).toHaveCount(5);
+  await expect(lineas.nth(4).getByLabel("Cantidad")).toHaveValue("2");
+  await expect(entregas.getByLabel("Fecha de la entrega 5")).toHaveValue("2031-11-07");
+  await entregas.getByLabel("Otra cantidad de entregas").fill("13");
+  await entregas.getByRole("button", { name: "Partir", exact: true }).click();
+  await expect(lineas).toHaveCount(5);
   // «Una sola entrega» devuelve la línea original; después se deja en dos para revisar el pronóstico.
   await entregas.getByRole("button", { name: "Una sola entrega" }).click();
   await expect(lineas).toHaveCount(1);

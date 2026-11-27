@@ -1361,4 +1361,8 @@ export const UI_EN: Record<string, string> = {
   "Una sola entrega": "Single delivery",
   "Antes de partir, pon la «Entrega estimada» de la cotización (Editar): es la fecha de la primera entrega.": "Before splitting, set the quote's “Estimated delivery” (Edit): it is the date of the first delivery.",
   "No tienes permiso para editar esta cotización.": "You do not have permission to edit this quote.",
+  "u otra cantidad": "or another number",
+  "Otra cantidad de entregas": "Another number of deliveries",
+  "Partir": "Split",
+  "Escribe un número de entregas entre 2 y 12.": "Type a number of deliveries between 2 and 12.",
 };
