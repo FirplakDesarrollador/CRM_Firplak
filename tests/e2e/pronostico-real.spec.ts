@@ -2,12 +2,12 @@ import { expect, test } from "@playwright/test";
 import { sesion } from "./ayuda";
 
 // Pronóstico con lo real de SAP: facturado + pedidos y entregas abiertos + oportunidades abiertas, cada capa con su
-// color en una barra de composición y en la curva día a día. En la demostración, el cliente con Código SAP tiene dos
+// color en una barra de composición y en las barras con la línea del total. En la demostración, el cliente con Código SAP tiene dos
 // pedidos abiertos y una entrega sin facturar (de ayer: se facturaría en 3 días, 20 millones sin IVA).
 
 const millones = (texto: string) => Number(texto.replace(/[^\d.]/g, ""));
 
-test("la dirección ve las tres capas del pronóstico real, su suma y la curva del periodo", async ({ browser }) => {
+test("la dirección ve las tres capas del pronóstico real, su suma y las barras con la línea del total", async ({ browser }) => {
   const page = await (await browser.newContext({ storageState: sesion("admin") })).newPage();
   await page.goto("/pronostico?tipo=year");
   const seccion = page.getByRole("region", { name: "Pronóstico con lo real de SAP" });
@@ -24,15 +24,26 @@ test("la dirección ve las tres capas del pronóstico real, su suma y la curva d
   const total = millones(await seccion.getByTestId("pronostico-real").innerText());
   const suma = abiertos + millones(await seccion.getByTestId("real-invoiced").innerText()) + millones(await seccion.getByTestId("real-opportunities").innerText());
   expect(Math.abs(total - suma)).toBeLessThan(1.6);
-  // La curva: marca «Hoy», responde al teclado y tiene su tabla de datos.
-  const curva = seccion.getByRole("group", { name: /Avance del pronóstico día a día/ });
+  // Año: una barra por mes con la línea del total; marca «Hoy», responde al teclado y tiene su tabla de datos.
+  const curva = seccion.getByRole("group", { name: /Pronóstico mes a mes/ });
   await expect(curva).toBeVisible();
   await expect(curva.getByText("Hoy", { exact: true })).toBeVisible();
   await curva.focus();
-  await expect(seccion.getByRole("status")).toContainText("Acumulado");
+  await expect(seccion.getByRole("status")).toContainText("Total del mes");
   await page.keyboard.press("Escape");
   await seccion.getByText("Ver datos en tabla").click();
   await expect(seccion.getByRole("columnheader", { name: "Pedidos y entregas abiertos" })).toBeVisible();
+  await expect(seccion.getByRole("columnheader", { name: "Mes", exact: true })).toBeVisible();
+  // Mes: barras acumuladas por semana, y la última termina en el pronóstico del periodo.
+  await page.goto("/pronostico?tipo=month");
+  const semanas = page.getByRole("region", { name: "Pronóstico con lo real de SAP" });
+  const barras = semanas.getByRole("group", { name: /Pronóstico acumulado por semana/ });
+  await expect(barras).toBeVisible();
+  await barras.focus();
+  await expect(semanas.getByRole("status")).toContainText("Acumulado");
+  await page.keyboard.press("Escape");
+  await semanas.getByText("Ver datos en tabla").click();
+  await expect(semanas.getByRole("columnheader", { name: "Semana", exact: true })).toBeVisible();
   // Las cifras por asesor de las oportunidades siguen debajo.
   await expect(page.getByRole("heading", { name: "Oportunidades del CRM por categoría y asesor" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Tendencia del pronóstico" })).toBeVisible();

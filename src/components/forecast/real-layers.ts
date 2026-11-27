@@ -5,7 +5,7 @@ export type RealDay = { date: string; invoiced: number; backlog: number; opportu
 
 /** Las tres capas del pronóstico, de abajo hacia arriba: lo más seguro primero. */
 export const REAL_LAYERS = [
-  { key: "invoiced", label: "Facturado", color: "var(--success)" },
-  { key: "backlog", label: "Pedidos y entregas abiertos", color: "var(--info)" },
-  { key: "opportunities", label: "Oportunidades", color: "var(--warning)" },
+  { key: "invoiced", label: "Facturado", color: "var(--neon-green)" },
+  { key: "backlog", label: "Pedidos y entregas abiertos", color: "var(--neon-blue)" },
+  { key: "opportunities", label: "Oportunidades", color: "var(--neon-orange)" },
 ] as const;
