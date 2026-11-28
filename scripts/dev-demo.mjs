@@ -476,7 +476,7 @@ const partners = {
   C20002: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', FederalTaxID: '900512334-7', Phone1: '6044412200', EmailAddress: 'pagos@altosdelvalle.example',
     CurrentAccountBalance: 512000000, OpenOrdersBalance: 120000000, OpenDeliveryNotesBalance: 0, CreditLimit: 500000000 },
 };
-const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, U_TipoFacturacion: n % 2 ? 'POD Total' : 'Sin POD', U_Segmentacion: card === 'C20002' ? 'Vivienda No VIS' : '', DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
+const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, U_TipoFacturacion: n % 2 ? 'POD Total' : 'Sin POD', U_Segmentacion: card === 'C20002' ? '0002' : '', DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
   PaidToDate: paid, VatSum: Math.round(total - total / 1.19), DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
 const sapOrders = [
   doc(41210, 'C20001', -12, 18, 245000000, 0, 'bost_Open', 'OC-CV-2231'),
@@ -641,7 +641,8 @@ const sapServer = http.createServer(async (req, res) => {
   // Maestro de clientes: grupos (canal), territorios con su zona, tabla de subgrupos y la lista de clientes.
   if (path === '/BusinessPartnerGroups') return json(res, 200, { value: [{ Code: 100, Name: 'Canal Distribución' }, { Code: 101, Name: 'Canal Constructores' }] });
   if (path === '/Territories') return json(res, 200, { value: [{ TerritoryID: 1, Description: 'CENTRO DEL PAIS', Parent: -2 }, { TerritoryID: 2, Description: 'Bogotá, D.C.', Parent: 1 }, { TerritoryID: 3, Description: 'ANTIOQUIA', Parent: -2 }, { TerritoryID: 4, Description: 'Antioquia', Parent: 3 }] });
-  if (path === '/UserTablesMD') return json(res, 200, { value: [{ TableName: 'SUBGRUPOS', TableDescription: 'Subgrupos de clientes' }] });
+  if (path === '/UserTablesMD') return json(res, 200, { value: [{ TableName: 'SUBGRUPOS', TableDescription: 'Subgrupos de clientes' }, { TableName: 'SEGMENTOS', TableDescription: 'Segmentos de pedido' }] });
+  if (path === '/U_SEGMENTOS') return json(res, 200, { value: [{ Code: '0002', Name: 'Vivienda No VIS' }] });
   if (path === '/U_SUBGRUPOS') return json(res, 200, { value: [{ Code: '10', Name: 'Grandes superficies' }, { Code: '20', Name: 'Constructor mediano' }] });
   if (path === '/BusinessPartners') return json(res, 200, { value: [
     { CardCode: 'C20001', CardName: partners.C20001.CardName, GroupCode: 100, Territory: 2, U_SubGroupCode: '10' },

@@ -227,7 +227,7 @@ async function cliente(sap, codigo) {
  * y las entregas sin facturar. Filas: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor sin IVA,
  * tipo de facturación del pedido («Sin POD» se factura al despachar)].
  */
-async function pendientePorFacturar(sap, vendedor) {
+async function pendientePorFacturar(sap, vendedor, segmento = (codigo) => codigo ?? "") {
   const filas = [];
   // Los pedidos traen todas sus líneas: páginas pequeñas para que SAP responda a tiempo.
   const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,U_TipoFacturacion,U_Segmentacion,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
@@ -238,7 +238,7 @@ async function pendientePorFacturar(sap, vendedor) {
       const pedida = num(ln.Quantity);
       // Parte de la línea que aún no se ha despachado.
       const valor = pedida > 0 ? Math.round((num(ln.LineTotal) * Math.max(0, num(ln.RemainingOpenQuantity)) / pedida) * 100) / 100 : 0;
-      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? "", p.U_Segmentacion ?? "", ln.U_Tiendas ?? ""]);
+      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? "", segmento(p.U_Segmentacion), ln.U_Tiendas ?? ""]);
     }
   }
   const entregas = await sap.lista(q("DeliveryNotes", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDate,DocTotal,VatSum,Cancelled", $filter: "DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'", $orderby: "DocEntry" }));
@@ -317,7 +317,18 @@ async function subirPendiente(sap, destino) {
     vendedores = new Map((await sap.lista(q("SalesPersons", { $select: "SalesEmployeeCode,SalesEmployeeName" }))).map((v) => [v.SalesEmployeeCode, v.SalesEmployeeName]));
   } catch { /* sin nombres de vendedor: cuenta para el propietario de la cuenta */ }
   const vendedor = (d) => (d.SalesPersonCode > 0 ? vendedores.get(d.SalesPersonCode) ?? "" : "");
-  const pendiente = await pendientePorFacturar(sap, vendedor);
+  // El pedido guarda el código del segmento; su nombre vive en una tabla de usuario que se busca por su nombre.
+  let segmentos = new Map(), tablaSegmentos = "";
+  try {
+    const tablas = await sap.lista(q("UserTablesMD", { $select: "TableName,TableDescription" }));
+    const tabla = tablas.find((t) => /segment/i.test(`${t.TableName} ${t.TableDescription}`));
+    if (tabla) {
+      tablaSegmentos = tabla.TableName;
+      segmentos = new Map((await sap.lista(`U_${tabla.TableName}`)).map((r) => [String(r.Code), r.Name]));
+    }
+  } catch (e) { log("AVISO nombres de segmento:", e?.message ?? e); }
+  const segmento = (codigo) => (codigo === null || codigo === undefined || codigo === "" ? "" : segmentos.get(String(codigo)) ?? String(codigo));
+  const pendiente = await pendientePorFacturar(sap, vendedor, segmento);
   // Si SAP no entrega las facturas, el pendiente se sube igual.
   let facturas = [];
   try {
@@ -330,7 +341,7 @@ async function subirPendiente(sap, destino) {
   for (let i = 0; i < partes.length; i++) {
     await destino.rpc("sap_agent_backlog_load", { p_batch: lote, p_rows: partes[i], p_last: i === partes.length - 1 });
   }
-  return { pendiente: pendiente.length, facturas: facturas.length };
+  return { pendiente: pendiente.length, facturas: facturas.length, tablaSegmentos, segmentos: segmentos.size };
 }
 
 /** Inventario y precios de un lote de artículos (hasta 20 por consulta: las URL largas fallan). */
@@ -406,6 +417,7 @@ async function correr({ ahora }) {
       const p = await subirPendiente(sap, destino);
       log(`Pendiente por facturar: ${p.pendiente} líneas de pedidos y entregas abiertos`);
       log(`Facturas posteriores al archivo de ventas: ${p.facturas}`);
+      log(`Segmentos de pedido: ${p.tablaSegmentos ? `tabla ${p.tablaSegmentos}, ${p.segmentos} nombres` : "sin tabla de nombres (queda el código)"}`);
     } catch (e) { anotar("pendiente por facturar", e); }
     // Maestro de clientes: canal, zona, territorio y subgrupo, para los cortes del pronóstico.
     try {

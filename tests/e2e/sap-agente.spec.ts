@@ -48,6 +48,7 @@ test.describe("SAP por agente", () => {
       expect(salida).toMatch(/Pendiente por facturar: 8 líneas/);
       // Y el maestro de clientes de SAP, con los nombres de los subgrupos de su tabla.
       expect(salida).toMatch(/Maestro de clientes: 3 clientes; subgrupos: tabla SUBGRUPOS, 2 nombres/);
+      expect(salida).toMatch(/Segmentos de pedido: tabla SEGMENTOS, 1 nombres/);
 
       await page.reload();
       await expect(page.getByText("Saldo de cartera")).toBeVisible();
