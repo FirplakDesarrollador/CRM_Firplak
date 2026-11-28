@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { AlVer } from "@/components/dashboard/AlVer";
 import { Tr } from "@/components/ui/Tr";
 import { useT } from "@/lib/i18n/client";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
-import { loadSalesCountry, type SalesCountryCustomer, type SalesFilters, type SalesSlice } from "@/lib/sap/sales";
+import type { SalesCountryCustomer, SalesSlice } from "@/lib/sap/sales";
 import { groupName } from "./SapSalesExplorer";
 import { Growth } from "./SapSalesTop";
 
@@ -30,7 +29,7 @@ function SliceRows({ title, items, color, basis, detail }: {
   const max = Math.max(1, ...items.map((i) => Number(i.amount)));
   if (!items.length) return <p className="py-6 text-center text-sm text-muted"><Tr>Sin datos en el periodo.</Tr></p>;
   return (
-    <AlVer><ul className="space-y-1.5" aria-label={title}>
+    <AlVer><ul className={`gap-x-10 space-y-1.5 ${items.length > 6 ? "xl:columns-2" : ""}`} aria-label={title}>
       {items.map((item, i) => {
         const amount = Number(item.amount);
         const rows = detail?.open[item.key];
@@ -51,7 +50,7 @@ function SliceRows({ title, items, color, basis, detail }: {
         );
         const grid = "grid w-full grid-cols-[1.25rem_minmax(0,1fr)_auto_3rem_4rem] items-center gap-2 px-1 py-1 text-left";
         return (
-          <li key={item.key}>
+          <li key={item.key} className="break-inside-avoid">
             {detail
               ? <button type="button" aria-expanded={Boolean(rows)} onClick={() => detail.toggle(item.key)} className={`${grid} rounded-lg hover:bg-[color-mix(in_srgb,var(--brand)_6%,transparent)]`}>{body}</button>
               : <div className={grid}>{body}</div>}
@@ -78,22 +77,4 @@ function SliceRows({ title, items, color, basis, detail }: {
 export function SalesBySeller({ items, basis }: { items: SalesSlice[]; basis: string }) {
   const t = useT();
   return <SliceRows title={t("Ventas facturadas por asesor")} items={items} color="var(--brand)" basis={basis} />;
-}
-
-/** Ventas por país del mercado internacional; al abrir un país se ven sus principales clientes. */
-export function SalesByCountry({ items, basis, from, to, owner, filters }: {
-  items: SalesSlice[]; basis: string; from: string; to: string; owner: string | null; filters: SalesFilters;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState<Record<string, SalesCountryCustomer[] | "loading">>({});
-  const [, start] = useTransition();
-  const toggle = (key: string) => {
-    if (open[key]) return setOpen(({ [key]: _closed, ...rest }) => rest);
-    setOpen((prev) => ({ ...prev, [key]: "loading" }));
-    start(async () => {
-      const rows = await loadSalesCountry(key, from, to, owner, filters).catch(() => []);
-      setOpen((prev) => (prev[key] ? { ...prev, [key]: rows } : prev));
-    });
-  };
-  return <SliceRows title={t("Ventas facturadas por país")} items={items} color="var(--accent)" basis={basis} detail={{ open, toggle }} />;
 }

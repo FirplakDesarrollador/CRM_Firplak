@@ -97,11 +97,22 @@ test.describe("ventas reales de SAP", () => {
     const asesores = ventas.getByRole("list", { name: "Ventas facturadas por asesor" });
     await expect(asesores.getByRole("listitem").filter({ hasText: "LUIS DEMO" })).toContainText("79 %");
     await expect(asesores.getByRole("listitem").filter({ hasText: "CAMILA ASESORA" })).toContainText("21 %");
-    // Ventas por país, solo mercado internacional: al abrir el país salen sus clientes.
+    // Ventas por país sobre el mapa de América, solo mercado internacional: un punto por país con su participación.
+    const mapa = ventas.getByRole("group", { name: "Mapa de ventas por país" });
+    await expect(mapa.getByRole("button", { name: "Panamá, 100 %" })).toBeVisible();
     const paises = ventas.getByRole("list", { name: "Ventas facturadas por país" });
     await expect(paises.getByRole("button")).toHaveCount(1);
+    // Al elegir el país, el mapa se acerca y el panel muestra sus principales clientes; se puede volver.
     await paises.getByRole("button", { name: /Panamá/ }).click();
     await expect(ventas.getByRole("list", { name: "Principales clientes · Panamá" })).toContainText("ISTMO HOME CENTER");
+    await expect(mapa.getByRole("button", { name: "Panamá, 100 %" })).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(async () => Number((await mapa.getAttribute("viewBox"))!.split(" ")[2])).toBeLessThan(200);
+    await ventas.getByRole("button", { name: "Volver a América" }).click();
+    await expect(paises.getByRole("button")).toHaveCount(1);
+    // El punto del mapa también abre el país.
+    await mapa.getByRole("button", { name: "Panamá, 100 %" }).click();
+    await expect(ventas.getByRole("list", { name: "Principales clientes · Panamá" })).toBeVisible();
+    await ventas.getByRole("button", { name: "Volver a América" }).click();
     // Filtro de mercado: Internacional deja solo Exterior; Nacional lo quita (y conserva «Excluido»).
     await admin.getByLabel("Mercado", { exact: true }).selectOption("internacional");
     await expect(ventas.getByText(/1 facturas · 1 clientes/)).toBeVisible();

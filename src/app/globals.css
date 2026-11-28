@@ -1502,6 +1502,8 @@ dialog::backdrop {
     animation: chart-dibuja 0.9s cubic-bezier(0.4, 0, 0.2, 1) backwards;
   }
   .chart-punto { animation: chart-aparece 0.3s ease-out calc(0.25s + var(--i, 0) * 60ms) backwards; }
+  /* Mapa de ventas por país: el halo de cada punto respira despacio, desfasado por país. */
+  .mapa-pulso { animation: mapa-pulso 3.2s ease-in-out calc(var(--i, 0) * 180ms) infinite; }
   .chart-area { animation: chart-aparece 0.9s ease-out 0.35s backwards; }
 }
 
@@ -1538,4 +1540,10 @@ tr[data-peek] > td { background: var(--brand-soft); }
 }
 @media (prefers-reduced-transparency: reduce) and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --table-head: #12161b; }
+}
+
+/* Solo brillo, sin cambiar de tamaño: el punto es un botón y su borde no debe moverse. */
+@keyframes mapa-pulso {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1.6; }
 }

@@ -9,7 +9,8 @@ import { Fmt } from "@/components/ui/Fmt";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { formatCompactCurrency, formatCurrency, formatDate, formatMillions, formatMonth } from "@/lib/format";
 import { loadSalesSummary, type SalesFilters, type SalesMarket, type SalesSummary } from "@/lib/sap/sales";
-import { SalesByCountry, SalesBySeller } from "./SapSalesBreakdowns";
+import { SalesBySeller } from "./SapSalesBreakdowns";
+import { SalesMap } from "./SalesMap";
 import { Growth, SapSalesTop, type SalesGroup } from "./SapSalesTop";
 
 /** Nombre de un grupo de sucursales: lo que sus nombres de SAP tienen en común al principio («ALMACENES ACME S A S»). */
@@ -150,27 +151,24 @@ export function SapSalesExplorer({ initial, from, to, owner, market = null }: { 
             <div className="p-3"><PickBars title={t("Ventas facturadas por zona")} items={data.by_zone} picked={filters.zones} onToggle={(k) => toggle("zones", k)} color="var(--accent)" /></div>
           </section>
         </div>
-        <div className={`grid gap-4 ${(data.by_country ?? []).length ? "xl:grid-cols-2" : ""}`}>
+        {(data.by_country ?? []).length > 0 && (
           <section className="card">
             <div className="card-header flex-wrap gap-2">
-              <h3 className="card-title"><Tr>Ventas facturadas por asesor</Tr></h3>
-              <span className="text-xs text-muted"><Tr>Vendedor de SAP de cada factura</Tr></span>
+              <h3 className="card-title"><Tr>Ventas facturadas por país</Tr></h3>
+              <span className="text-xs text-muted"><Tr>Mercado internacional</Tr></span>
             </div>
-            <div className="p-4"><SalesBySeller items={data.by_seller ?? []} basis={basis} /></div>
+            <div className="p-3">
+              <SalesMap key={topKey} items={data.by_country} grandTotal={Number(data.total)} basis={basis} from={from} to={to} owner={owner} filters={filters} />
+            </div>
           </section>
-          {(data.by_country ?? []).length > 0 && (
-            <section className="card">
-              <div className="card-header flex-wrap gap-2">
-                <h3 className="card-title"><Tr>Ventas facturadas por país</Tr></h3>
-                <span className="text-xs text-muted"><Tr>Mercado internacional</Tr></span>
-              </div>
-              <div className="p-4">
-                <SalesByCountry key={topKey} items={data.by_country} basis={basis} from={from} to={to} owner={owner} filters={filters} />
-                <p className="mt-3 text-xs text-muted"><Tr>Abre un país para ver sus principales clientes.</Tr></p>
-              </div>
-            </section>
-          )}
-        </div>
+        )}
+        <section className="card">
+          <div className="card-header flex-wrap gap-2">
+            <h3 className="card-title"><Tr>Ventas facturadas por asesor</Tr></h3>
+            <span className="text-xs text-muted"><Tr>Vendedor de SAP de cada factura</Tr></span>
+          </div>
+          <div className="p-4"><SalesBySeller items={data.by_seller ?? []} basis={basis} /></div>
+        </section>
       </div>
     </section>
   );
