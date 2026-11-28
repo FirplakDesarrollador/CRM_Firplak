@@ -4031,6 +4031,7 @@ export type Database = {
           doc_num: string | null
           kind: string
           line_num: number
+          segment: string | null
           seller: string | null
         }
         Insert: {
@@ -4044,6 +4045,7 @@ export type Database = {
           doc_num?: string | null
           kind: string
           line_num?: number
+          segment?: string | null
           seller?: string | null
         }
         Update: {
@@ -4057,6 +4059,7 @@ export type Database = {
           doc_num?: string | null
           kind?: string
           line_num?: number
+          segment?: string | null
           seller?: string | null
         }
         Relationships: [
@@ -4080,6 +4083,43 @@ export type Database = {
           id?: boolean
           loaded_at?: string | null
           row_count?: number
+        }
+        Relationships: [
+        ]
+      }
+      sap_customers: {
+        Row: {
+          batch: string
+          card_code: string
+          channel: string | null
+          name: string | null
+          subgroup: string | null
+          subgroup_code: string | null
+          synced_at: string
+          territory: string | null
+          zone: string | null
+        }
+        Insert: {
+          batch: string
+          card_code: string
+          channel?: string | null
+          name?: string | null
+          subgroup?: string | null
+          subgroup_code?: string | null
+          synced_at?: string
+          territory?: string | null
+          zone?: string | null
+        }
+        Update: {
+          batch?: string
+          card_code?: string
+          channel?: string | null
+          name?: string | null
+          subgroup?: string | null
+          subgroup_code?: string | null
+          synced_at?: string
+          territory?: string | null
+          zone?: string | null
         }
         Relationships: [
         ]
@@ -4772,6 +4812,20 @@ export type Database = {
           close_date: string
         }[]
       }
+      forecast_real_breakdown: {
+        Args: {
+          p_period_type: string
+          p_period_start: string
+          p_user?: string
+        }
+        Returns: {
+          dimension: string
+          key: string
+          invoiced: number
+          backlog: number
+          opportunities: number
+        }[]
+      }
       forecast_real_days: {
         Args: {
           p_period_type: string
@@ -5268,6 +5322,14 @@ export type Database = {
         }
         Returns: number
       }
+      sap_agent_customers_load: {
+        Args: {
+          p_batch: string
+          p_rows: Json
+          p_last: boolean
+        }
+        Returns: number
+      }
       sap_agent_finish: {
         Args: {
           p_run: string
@@ -5352,6 +5414,7 @@ export type Database = {
           overdue_days: number
           customer_name: string
           base_date: string
+          segment: string
         }[]
       }
       sap_customer_root: {

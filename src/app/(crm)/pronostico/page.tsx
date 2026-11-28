@@ -5,6 +5,7 @@ import { Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ObjectIcon } from "@/components/ui/icons";
 import { KpiTile } from "@/components/dashboard/Charts";
 import { RealForecastChart } from "@/components/forecast/RealForecastChart";
+import { RealBreakdown } from "@/components/forecast/RealBreakdown";
 import { REAL_LAYERS, type RealDay } from "@/components/forecast/real-layers";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -48,7 +49,7 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
   const supabase = await createClient();
   // Pronóstico con lo real de SAP: la compañía para quien ve todas las ventas; si no, lo propio.
   const seesAll = user.access.isAdmin || can(user.access, "opportunities", "view_all");
-  const [{ data, error }, { data: companyGoal }, { data: trendData }, users, { data: realRows }, { data: realGoal }, { data: staleRows }] = await Promise.all([
+  const [{ data, error }, { data: companyGoal }, { data: trendData }, users, { data: realRows }, { data: realGoal }, { data: staleRows }, { data: breakdownRows }] = await Promise.all([
     supabase.rpc("forecast_summary", { p_period_type: type, p_period_start: start }),
     supabase.from("sales_goals").select("target").is("user_id", null).eq("metric", "won_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
     supabase.rpc("forecast_trend", { p_period_type: type, p_period_start: start }),
@@ -61,7 +62,17 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
       .eq("metric", "invoiced_amount").eq("period_type", type).eq("period_start", start).maybeSingle(),
     // Pedidos y entregas vencidos hace más de 30 días: no suman al pronóstico, se listan para revisarlos en SAP.
     supabase.rpc("forecast_stale_backlog", seesAll ? {} : { p_user: user.id }),
+    // El pronóstico real repartido por zona, canal, subgrupo o segmento, vendedor y país.
+    supabase.rpc("forecast_real_breakdown", { p_period_type: type, p_period_start: start, ...(seesAll ? {} : { p_user: user.id }) }),
   ]);
+  const CUTS = [
+    { id: "zona", dimension: "zone", label: "Zona" }, { id: "canal", dimension: "channel", label: "Canal" },
+    { id: "grupo", dimension: "group", label: "Subgrupo o segmento" }, { id: "vendedor", dimension: "seller", label: "Vendedor" },
+    { id: "pais", dimension: "country", label: "País" },
+  ] as const;
+  const cut = CUTS.find((c) => c.id === sp.corte) ?? CUTS[0];
+  const breakdown = (breakdownRows ?? []).filter((r) => r.dimension === cut.dimension)
+    .map((r) => ({ key: r.key, invoiced: Number(r.invoiced), backlog: Number(r.backlog), opportunities: Number(r.opportunities) }));
   const stale = (staleRows ?? []).map((r) => ({ ...r, amount: Number(r.amount) }));
   const staleTotal = stale.reduce((n, r) => n + r.amount, 0);
   // Acumulado día a día: lo facturado hasta cada día y lo que se espera facturar hasta él.
@@ -283,6 +294,12 @@ export default async function ForecastPage({ searchParams }: PageProps<"/pronost
           <Tr>En un mes, cada barra es lo acumulado al cierre de la semana; en trimestre y año, lo que se factura en cada mes. La línea es el total: continua hasta hoy y punteada en lo proyectado. Lo facturado después del último archivo de ventas se toma de las facturas de SAP. Lo que ya debía haberse facturado se cuenta hoy, salvo lo vencido hace más de 30 días, que va en «Atrasado por revisar». Los pedidos y entregas abiertos son todos los de SAP, sean o no cuentas del CRM.</Tr>
         </p>
       </section>
+
+      <RealBreakdown t={t} rows={breakdown}
+        tabs={CUTS.map((c) => ({ id: c.id, label: t(c.label), href: `${qs({ corte: c.id })}#composicion`, active: c.id === cut.id }))}
+        note={cut.id === "grupo" ? t("Subgrupo del cliente en SAP. Los constructores del mercado nacional van por el segmento del pedido; lo ya facturado de ellos no trae segmento todavía.")
+          : cut.id === "pais" ? t("Solo el mercado internacional: el país es el territorio del cliente en SAP.")
+            : t("Los pedidos y entregas abiertos se clasifican con el maestro de clientes de SAP.")} />
 
       <h2 className="pt-2 text-sm font-medium text-muted"><Tr>Oportunidades del CRM por categoría y asesor</Tr></h2>
 

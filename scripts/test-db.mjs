@@ -2835,6 +2835,73 @@ await check('indicadores: mercado nacional o internacional, ventas por asesor, p
   }
   await db.exec(`delete from sap_sales where invoice in ('M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7')`);
 });
+await check('pronóstico real por zona, canal, subgrupo o segmento, vendedor y país, con el maestro de clientes de SAP', async () => {
+  const [{ hoy, ini }] = await q(`select (now() at time zone 'America/Bogota')::date::text hoy,
+    date_trunc('year', now() at time zone 'America/Bogota')::date::text ini`);
+  const [agente] = await q(`insert into auth.users (email) values ('agente.cortes@firplak.com') returning id`);
+  await q(`update profiles set permission_profile_id = (select id from permission_profiles where name = 'Integración SAP') where id = $1`, [agente.id]);
+  // Maestro de clientes: solo el agente lo carga; la carga siguiente quita a quien ya no viene.
+  const clientes = [
+    ['CN700-01', 'Distribuidor', 'Canal Distribución', 'ANTIOQUIA', 'Antioquia', 'S1', 'Ferreterías'],
+    ['CN701-01', 'Constructora', 'Canal Constructores', 'CENTRO DEL PAIS', 'Cundinamarca', 'S2', 'Constructor grande'],
+    ['CE702-01', 'Importador', 'Canal Distribución', 'EXTERIOR', 'Panamá', 'S3', 'Importadores'],
+    ['CN799-01', 'Ya no viene', 'Canal B2C', 'ANTIOQUIA', 'Antioquia', null, null],
+  ];
+  const l1 = '33333333-3333-4333-8333-333333333333', l2 = '44444444-4444-4444-8444-444444444444', l3 = '55555555-5555-4555-8555-555555555555';
+  await assert.rejects(as(admin, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l1, JSON.stringify(clientes)])), /Solo el agente de SAP/);
+  await as(agente, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l1, JSON.stringify(clientes)]));
+  await as(agente, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l2, JSON.stringify(clientes.slice(0, 3))]));
+  assert.deepEqual((await q(`select card_code from sap_customers order by 1`)).map((r) => r.card_code), ['CE702-01', 'CN700-01', 'CN701-01']);
+  assert.equal((await as(admin, () => q(`select count(*)::int n from sap_customers`)))[0].n, 0);
+  // Una venta facturada del distribuidor, y pedidos abiertos de los tres (ninguno tiene ventas: los clasifica el maestro).
+  await q(`insert into sap_sellers (seller, user_id) values ('VENDEDOR CORTE', $1) on conflict (seller) do update set user_id = excluded.user_id`, [admin.id]);
+  await q(`insert into sap_sales (sale_date, invoice, sale_type, zone, territory, channel, seller, card_code, customer_name, amount)
+           values ($1, 'K1', 'Nacional', 'ANTIOQUIA', 'Antioquia', 'Canal Distribución', 'VENDEDOR CORTE', 'CN700-01', 'Distribuidor', 1000)`, [ini]);
+  const filas = [
+    ['order', 8801, 0, '881', 'CN700-01', 'Distribuidor', 'VENDEDOR CORTE', hoy, 400, 'Sin POD', ''],
+    ['order', 8802, 0, '882', 'CN701-01', 'Constructora', 'VENDEDOR CORTE', hoy, 700, 'Sin POD', 'Vivienda VIS'],
+    ['order', 8803, 0, '883', 'CN701-01', 'Constructora', 'VENDEDOR CORTE', hoy, 300, 'Sin POD', ''],
+    ['order', 8804, 0, '884', 'CE702-01', 'Importador', 'OTRO DEL CORTE', hoy, 900, '', ''],
+  ];
+  await as(agente, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [l3, JSON.stringify(filas)]));
+  assert.equal((await q(`select segment from sap_backlog where doc_num = '882'`))[0].segment, 'Vivienda VIS');
+  const corte = async (usuario) => {
+    const filasCorte = await as(admin, () => q(`select dimension d, key k, invoiced::float i, backlog::float b from forecast_real_breakdown('year', $1::date${usuario ? ', $2' : ''})
+      where key in ('ANTIOQUIA', 'CENTRO DEL PAIS', 'EXTERIOR', 'Canal Constructores', 'VENDEDOR CORTE', 'OTRO DEL CORTE', 'Ferreterías', 'Importadores',
+                    'Constructores · Vivienda VIS', 'Constructores · Sin segmento', 'Constructor grande', 'Panamá')
+      order by 1, 2`, usuario ? [ini, usuario] : [ini]));
+    return Object.fromEntries(filasCorte.map((r) => [`${r.d}/${r.k}`, [r.i, r.b]]));
+  };
+  const todo = await corte(null);
+  assert.deepEqual(todo['zone/ANTIOQUIA'], [1000, 400]);
+  assert.deepEqual(todo['zone/CENTRO DEL PAIS'], [0, 1000]);
+  assert.deepEqual(todo['zone/EXTERIOR'], [0, 900]);
+  assert.deepEqual(todo['channel/Canal Constructores'], [0, 1000]);
+  assert.deepEqual(todo['seller/VENDEDOR CORTE'], [1000, 1400]);
+  // Subgrupo del cliente… salvo los constructores del mercado nacional, que van por el segmento del pedido.
+  assert.deepEqual(todo['group/Ferreterías'], [1000, 400]);
+  assert.deepEqual(todo['group/Importadores'], [0, 900]);
+  assert.deepEqual(todo['group/Constructores · Vivienda VIS'], [0, 700]);
+  assert.deepEqual(todo['group/Constructores · Sin segmento'], [0, 300]);
+  assert.equal(todo['group/Constructor grande'], undefined);
+  // País: solo el mercado internacional.
+  assert.deepEqual(todo['country/Panamá'], [0, 900]);
+  assert.equal((await as(admin, () => q(`select count(*)::int n from forecast_real_breakdown('year', $1::date) where dimension = 'country' and key in ('Antioquia', 'Cundinamarca')`, [ini])))[0].n, 0);
+  // Por persona: lo de su vendedor de SAP, sin lo del otro.
+  const mio = await corte(admin.id);
+  assert.deepEqual(mio['seller/VENDEDOR CORTE'], [1000, 1400]);
+  assert.equal(mio['seller/OTRO DEL CORTE'], undefined);
+  assert.equal(mio['country/Panamá'], undefined);
+  // Un asesor no ve la compañía ni a otra persona.
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_real_breakdown('year', $1::date)`, [ini])))[0].n, 0);
+  assert.equal((await as(rep, () => q(`select count(*)::int n from forecast_real_breakdown('year', $1::date, $2)`, [ini, admin.id])))[0].n, 0);
+  for (const f of ['forecast_real_breakdown(text, date, uuid)', 'sap_agent_customers_load(uuid, jsonb, boolean)']) {
+    assert.equal((await q(`select has_function_privilege('anon', 'public.${f}', 'execute') ok`))[0].ok, false);
+  }
+  await db.exec(`delete from sap_backlog; update sap_backlog_state set batch = null, row_count = 0, loaded_at = null; delete from sap_customers;
+                 delete from sap_sales where invoice = 'K1'; delete from sap_sellers where seller in ('VENDEDOR CORTE', 'OTRO DEL CORTE');`);
+  await q(`delete from auth.users where id = $1`, [agente.id]);
+});
 await check('una oportunidad borrada se descuenta de las fotos del pronóstico en las que sumaba', async () => {
   const [base] = await q(`select id from opportunities where not is_closed and owner_id is not null
                           and forecast_category in ('commit', 'best_case', 'pipeline') order by name limit 1`);

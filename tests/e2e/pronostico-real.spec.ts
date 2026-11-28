@@ -42,6 +42,22 @@ test("la dirección ve las tres capas del pronóstico real, su suma y las barras
   await seccion.getByText("Ver datos en tabla").click();
   await expect(seccion.getByRole("columnheader", { name: "Pedidos y entregas abiertos" })).toBeVisible();
   await expect(seccion.getByRole("columnheader", { name: "Mes", exact: true })).toBeVisible();
+  // Composición del pronóstico por corte: el cliente de SAP de la demostración es un constructor de Antioquia, y sus
+  // pedidos traen segmento. Las pestañas cambian el corte sin salir de la página.
+  const composicion = page.getByRole("region", { name: "Composición del pronóstico" });
+  await expect(composicion.getByRole("link", { name: "Zona", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(composicion.getByRole("cell", { name: "ANTIOQUIA", exact: true })).toBeVisible();
+  await expect(composicion.getByRole("columnheader", { name: "Participación" })).toBeVisible();
+  await composicion.getByRole("link", { name: "Canal", exact: true }).click();
+  await expect(composicion.getByRole("link", { name: "Canal", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(composicion.getByRole("cell", { name: "Canal Constructores", exact: true })).toBeVisible();
+  await composicion.getByRole("link", { name: "Subgrupo o segmento" }).click();
+  await expect(composicion.getByRole("cell", { name: "Constructores · Vivienda No VIS", exact: true })).toBeVisible();
+  await expect(composicion).toContainText("Los constructores del mercado nacional van por el segmento del pedido");
+  await composicion.getByRole("link", { name: "Vendedor", exact: true }).click();
+  await expect(composicion.getByRole("cell", { name: "VENDEDOR DEMO", exact: true })).toBeVisible();
+  await composicion.getByRole("link", { name: "País", exact: true }).click();
+  await expect(composicion).toContainText("Solo el mercado internacional");
   // Mes: barras acumuladas por semana, y la última termina en el pronóstico del periodo.
   await page.goto("/pronostico?tipo=month");
   const semanas = page.getByRole("region", { name: "Pronóstico con lo real de SAP" });

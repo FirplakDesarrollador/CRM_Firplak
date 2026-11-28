@@ -9,6 +9,8 @@ Qué trae, de lunes a viernes a las 7, 9, 11, 13, 15 y 17 horas:
 - De cada cuenta del CRM que tiene **Código SAP**: saldo de cartera, cupo, todos los pedidos de venta
   abiertos, todas las facturas abiertas y las diez facturas más recientes.
 - De cada producto activo del CRM (por su Referencia): inventario por bodega y listas de precios.
+- El **maestro de clientes**: canal (grupo de cliente), zona, territorio y subgrupo de cada cliente de SAP, para
+  clasificar el Pronóstico por zona, canal, subgrupo y país. De cada pedido abierto trae además su segmento.
 - De **toda la compañía**, sean o no cuentas del CRM: las líneas abiertas de los pedidos de venta y las
   entregas sin facturar (cliente, vendedor, fecha, valor sin IVA y el Tipo de facturación del pedido,
   `U_TipoFacturacion`: los «Sin POD» se facturan al despachar). Con eso el Pronóstico muestra la capa

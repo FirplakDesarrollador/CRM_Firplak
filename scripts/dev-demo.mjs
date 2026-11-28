@@ -476,7 +476,7 @@ const partners = {
   C20002: { CardCode: 'C20002', CardName: 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', FederalTaxID: '900512334-7', Phone1: '6044412200', EmailAddress: 'pagos@altosdelvalle.example',
     CurrentAccountBalance: 512000000, OpenOrdersBalance: 120000000, OpenDeliveryNotesBalance: 0, CreditLimit: 500000000 },
 };
-const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, U_TipoFacturacion: n % 2 ? 'POD Total' : 'Sin POD', DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
+const doc = (n, card, date, due, total, paid, status, oc) => ({ DocEntry: n, DocNum: n, CardCode: card, CardName: partners[card]?.CardName, SalesPersonCode: 7, U_TipoFacturacion: n % 2 ? 'POD Total' : 'Sin POD', U_Segmentacion: card === 'C20002' ? 'Vivienda No VIS' : '', DocDate: sapDay(date), DocDueDate: sapDay(due), DocTotal: total,
   PaidToDate: paid, VatSum: Math.round(total - total / 1.19), DocCurrency: 'COP', DocumentStatus: status, Cancelled: 'tNO', NumAtCard: oc });
 const sapOrders = [
   doc(41210, 'C20001', -12, 18, 245000000, 0, 'bost_Open', 'OC-CV-2231'),
@@ -550,6 +550,11 @@ Object.assign(sapItems['DEMO-LV-RD'], { SalesItem: 'tYES', U_Linea: 'Lavamanos y
                     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, [lote, ...f]);
   }
   await db.query(`update public.sap_backlog_state set batch = $1, row_count = $2, loaded_at = now()`, [lote, filas.length]);
+  // Su ficha en el maestro de clientes de SAP: con ella el Pronóstico lo clasifica por zona, canal y subgrupo.
+  await db.query(`update public.sap_backlog set segment = 'Vivienda No VIS', billing_type = 'POD Total' where card_code = 'C20002' and kind = 'order'`);
+  await db.query(`insert into public.sap_customers (card_code, name, channel, zone, territory, subgroup_code, subgroup, batch)
+                  values ('C20002', 'CONSTRUCTORA ALTOS DEL VALLE S.A.S.', 'Canal Constructores', 'ANTIOQUIA', 'Antioquia', '20', 'Constructor mediano', $1),
+                         ('C20003', 'OBRAS DEL SUR S.A.S.', 'Canal Constructores', 'ANTIOQUIA', 'Antioquia', null, null, $1)`, [lote]);
 }
 // La copia que dejaría el agente de SAP: con ella la base calcula el disponible real (En inventario − Comprometido en
 // PT-01) de cada producto de ejemplo, que es lo que muestran la lista de productos, su filtro y los kits.
@@ -633,6 +638,16 @@ const sapServer = http.createServer(async (req, res) => {
     const codes = [...(url.searchParams.get('$filter') ?? '').matchAll(/TreeCode eq '((?:[^']|'')*)'/g)].map((m) => m[1]);
     return json(res, 200, { value: codes.filter((c) => sapTrees[c]).map((c) => ({ TreeCode: c, ProductTreeLines: sapTrees[c] })) });
   }
+  // Maestro de clientes: grupos (canal), territorios con su zona, tabla de subgrupos y la lista de clientes.
+  if (path === '/BusinessPartnerGroups') return json(res, 200, { value: [{ Code: 100, Name: 'Canal Distribución' }, { Code: 101, Name: 'Canal Constructores' }] });
+  if (path === '/Territories') return json(res, 200, { value: [{ TerritoryID: 1, Description: 'CENTRO DEL PAIS', Parent: -2 }, { TerritoryID: 2, Description: 'Bogotá, D.C.', Parent: 1 }, { TerritoryID: 3, Description: 'ANTIOQUIA', Parent: -2 }, { TerritoryID: 4, Description: 'Antioquia', Parent: 3 }] });
+  if (path === '/UserTablesMD') return json(res, 200, { value: [{ TableName: 'SUBGRUPOS', TableDescription: 'Subgrupos de clientes' }] });
+  if (path === '/U_SUBGRUPOS') return json(res, 200, { value: [{ Code: '10', Name: 'Grandes superficies' }, { Code: '20', Name: 'Constructor mediano' }] });
+  if (path === '/BusinessPartners') return json(res, 200, { value: [
+    { CardCode: 'C20001', CardName: partners.C20001.CardName, GroupCode: 100, Territory: 2, U_SubGroupCode: '10' },
+    { CardCode: 'C20002', CardName: partners.C20002.CardName, GroupCode: 101, Territory: 4, U_SubGroupCode: '20' },
+    { CardCode: 'C20003', CardName: 'OBRAS DEL SUR S.A.S.', GroupCode: 101, Territory: 4, U_SubGroupCode: null },
+  ] });
   if (path === '/SalesPersons') return json(res, 200, { value: [{ SalesEmployeeCode: -1, SalesEmployeeName: '-Ningún empleado del departamento de ventas-' }, { SalesEmployeeCode: 7, SalesEmployeeName: 'VENDEDOR DEMO' }] });
   if (path === '/ProductionOrders') {
     const origins = [...(url.searchParams.get('$filter') ?? '').matchAll(/ProductionOrderOriginNumber eq (\d+)/g)].map((m) => Number(m[1]));

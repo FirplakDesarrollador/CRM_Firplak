@@ -230,7 +230,7 @@ async function cliente(sap, codigo) {
 async function pendientePorFacturar(sap, vendedor) {
   const filas = [];
   // Los pedidos traen todas sus líneas: páginas pequeñas para que SAP responda a tiempo.
-  const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,U_TipoFacturacion,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
+  const pedidos = await sap.lista(q("Orders", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDueDate,Cancelled,U_TipoFacturacion,U_Segmentacion,DocumentLines", $filter: "DocumentStatus eq 'bost_Open'", $orderby: "DocEntry" }), 100);
   for (const p of pedidos) {
     if (p.Cancelled === "tYES") continue;
     for (const ln of p.DocumentLines ?? []) {
@@ -238,7 +238,7 @@ async function pendientePorFacturar(sap, vendedor) {
       const pedida = num(ln.Quantity);
       // Parte de la línea que aún no se ha despachado.
       const valor = pedida > 0 ? Math.round((num(ln.LineTotal) * Math.max(0, num(ln.RemainingOpenQuantity)) / pedida) * 100) / 100 : 0;
-      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? ""]);
+      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? "", p.U_Segmentacion ?? ""]);
     }
   }
   const entregas = await sap.lista(q("DeliveryNotes", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDate,DocTotal,VatSum,Cancelled", $filter: "DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'", $orderby: "DocEntry" }));
@@ -269,6 +269,45 @@ async function facturasRecientes(sap, vendedor, desde) {
     }
   }
   return filas;
+}
+
+/**
+ * Maestro de clientes de SAP para clasificar ventas y pedidos: canal (grupo de cliente), territorio con su zona (el
+ * territorio padre) y subgrupo. Filas: [CardCode, nombre, canal, zona, territorio, código de subgrupo, subgrupo].
+ */
+async function maestroDeClientes(sap) {
+  const grupos = new Map((await sap.lista(q("BusinessPartnerGroups", { $select: "Code,Name" }))).map((g) => [g.Code, g.Name]));
+  const territorios = new Map((await sap.lista(q("Territories", { $select: "TerritoryID,Description,Parent" }))).map((t) => [t.TerritoryID, t]));
+  // Los nombres de los subgrupos viven en una tabla de usuario: se busca por su nombre; si no aparece, queda el código.
+  let subgrupos = new Map(), tablaSubgrupos = "";
+  try {
+    const tablas = await sap.lista(q("UserTablesMD", { $select: "TableName,TableDescription" }));
+    const tabla = tablas.find((t) => /subgru|subgroup/i.test(`${t.TableName} ${t.TableDescription}`));
+    if (tabla) {
+      tablaSubgrupos = tabla.TableName;
+      subgrupos = new Map((await sap.lista(`U_${tabla.TableName}`)).map((r) => [String(r.Code), r.Name]));
+    }
+  } catch (e) { log("AVISO nombres de subgrupo:", e?.message ?? e); }
+  const clientes = await sap.lista(q("BusinessPartners", { $select: "CardCode,CardName,GroupCode,Territory,U_SubGroupCode", $filter: "CardType eq 'cCustomer'", $orderby: "CardCode" }));
+  const filas = clientes.map((c) => {
+    const t = territorios.get(c.Territory);
+    const padre = t && t.Parent > 0 ? territorios.get(t.Parent) : null;
+    const sub = c.U_SubGroupCode === null || c.U_SubGroupCode === undefined ? "" : String(c.U_SubGroupCode);
+    return [c.CardCode, c.CardName ?? "", grupos.get(c.GroupCode) ?? "", (padre ?? t)?.Description ?? "", t?.Description ?? "", sub, subgrupos.get(sub) ?? sub];
+  });
+  return { filas, tablaSubgrupos, nombres: subgrupos.size };
+}
+
+/** Sube el maestro de clientes; solo al terminar quita a los que ya no vienen. */
+async function subirClientes(sap, destino) {
+  const { filas, tablaSubgrupos, nombres } = await maestroDeClientes(sap);
+  if (!filas.length) return { clientes: 0, tablaSubgrupos, nombres };
+  const lote = randomUUID();
+  const partes = lotes(filas, 1000);
+  for (let i = 0; i < partes.length; i++) {
+    await destino.rpc("sap_agent_customers_load", { p_batch: lote, p_rows: partes[i], p_last: i === partes.length - 1 });
+  }
+  return { clientes: filas.length, tablaSubgrupos, nombres };
 }
 
 /** Sube el pendiente por facturar y las facturas recientes como un lote nuevo; solo al terminar reemplaza al anterior. */
@@ -368,6 +407,11 @@ async function correr({ ahora }) {
       log(`Pendiente por facturar: ${p.pendiente} líneas de pedidos y entregas abiertos`);
       log(`Facturas posteriores al archivo de ventas: ${p.facturas}`);
     } catch (e) { anotar("pendiente por facturar", e); }
+    // Maestro de clientes: canal, zona, territorio y subgrupo, para los cortes del pronóstico.
+    try {
+      const c = await subirClientes(sap, destino);
+      log(`Maestro de clientes: ${c.clientes} clientes; subgrupos: ${c.tablaSubgrupos ? `tabla ${c.tablaSubgrupos}, ${c.nombres} nombres` : "sin tabla de nombres (queda el código)"}`);
+    } catch (e) { anotar("maestro de clientes", e); }
   } catch (e) {
     anotar("corrida", e);
   } finally {

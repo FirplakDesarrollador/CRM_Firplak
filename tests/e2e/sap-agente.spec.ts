@@ -46,6 +46,8 @@ test.describe("SAP por agente", () => {
       expect(salida).toMatch(/0 errores/);
       // También trae todo lo pendiente por facturar de la compañía: 7 líneas de pedido abiertas y 1 entrega.
       expect(salida).toMatch(/Pendiente por facturar: 8 líneas/);
+      // Y el maestro de clientes de SAP, con los nombres de los subgrupos de su tabla.
+      expect(salida).toMatch(/Maestro de clientes: 3 clientes; subgrupos: tabla SUBGRUPOS, 2 nombres/);
 
       await page.reload();
       await expect(page.getByText("Saldo de cartera")).toBeVisible();
