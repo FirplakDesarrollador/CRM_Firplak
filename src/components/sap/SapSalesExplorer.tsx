@@ -8,7 +8,8 @@ import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { formatCompactCurrency, formatCurrency, formatDate, formatMillions, formatMonth } from "@/lib/format";
-import { loadSalesSummary, type SalesFilters, type SalesSummary } from "@/lib/sap/sales";
+import { loadSalesSummary, type SalesFilters, type SalesMarket, type SalesSummary } from "@/lib/sap/sales";
+import { SalesByCountry, SalesBySeller } from "./SapSalesBreakdowns";
 import { Growth, SapSalesTop, type SalesGroup } from "./SapSalesTop";
 
 /** Nombre de un grupo de sucursales: lo que sus nombres de SAP tienen en común al principio («ALMACENES ACME S A S»). */
@@ -57,7 +58,7 @@ function PickBars({ title, items, picked, onToggle, color }: {
  * Ventas reales de SAP con gráficos que se filtran entre sí: al tocar un canal o una zona, lo demás
  * (meses, zonas o canales, y clientes que más compraron) muestra solo lo de esa selección.
  */
-export function SapSalesExplorer({ initial, from, to, owner }: { initial: SalesSummary; from: string; to: string; owner: string | null }) {
+export function SapSalesExplorer({ initial, from, to, owner, market = null }: { initial: SalesSummary; from: string; to: string; owner: string | null; market?: SalesMarket }) {
   const t = useT();
   const locale = useLocale();
   const [data, setData] = useState(initial);
@@ -67,7 +68,7 @@ export function SapSalesExplorer({ initial, from, to, owner }: { initial: SalesS
   const apply = (next: SalesFilters) => {
     setFilters(next);
     start(async () => {
-      const fresh = await loadSalesSummary(from, to, owner, next).catch(() => null);
+      const fresh = await loadSalesSummary(from, to, owner, next, market).catch(() => null);
       if (fresh) setData(fresh);
     });
   };
@@ -140,14 +141,35 @@ export function SapSalesExplorer({ initial, from, to, owner }: { initial: SalesS
               <span className="text-xs text-muted">{basis}</span>
             </div>
             <div className="p-4">
-              <SapSalesTop key={topKey} groups={groups} from={from} to={to} owner={owner} filters={filters} basis={basis} />
-              <p className="mt-3 text-xs text-muted"><Tr>Las sucursales de un mismo cliente van sumadas; abre una fila para ver cada una.</Tr></p>
+              <SapSalesTop key={topKey} groups={groups} total={Number(data.total)} from={from} to={to} owner={owner} filters={filters} market={market} basis={basis} />
+              <p className="mt-3 text-xs text-muted"><Tr>Las sucursales de un mismo cliente van sumadas; abre una fila para ver cada una.</Tr> <Tr>El porcentaje de cada cliente es su participación en las ventas del periodo; el de cada sucursal, su parte dentro del cliente.</Tr></p>
             </div>
           </section>
           <section className="card">
             <div className="card-header"><h3 className="card-title"><Tr>Ventas facturadas por zona</Tr></h3></div>
             <div className="p-3"><PickBars title={t("Ventas facturadas por zona")} items={data.by_zone} picked={filters.zones} onToggle={(k) => toggle("zones", k)} color="var(--accent)" /></div>
           </section>
+        </div>
+        <div className={`grid gap-4 ${(data.by_country ?? []).length ? "xl:grid-cols-2" : ""}`}>
+          <section className="card">
+            <div className="card-header flex-wrap gap-2">
+              <h3 className="card-title"><Tr>Ventas facturadas por asesor</Tr></h3>
+              <span className="text-xs text-muted"><Tr>Vendedor de SAP de cada factura</Tr></span>
+            </div>
+            <div className="p-4"><SalesBySeller items={data.by_seller ?? []} basis={basis} /></div>
+          </section>
+          {(data.by_country ?? []).length > 0 && (
+            <section className="card">
+              <div className="card-header flex-wrap gap-2">
+                <h3 className="card-title"><Tr>Ventas facturadas por país</Tr></h3>
+                <span className="text-xs text-muted"><Tr>Mercado internacional</Tr></span>
+              </div>
+              <div className="p-4">
+                <SalesByCountry key={topKey} items={data.by_country} basis={basis} from={from} to={to} owner={owner} filters={filters} />
+                <p className="mt-3 text-xs text-muted"><Tr>Abre un país para ver sus principales clientes.</Tr></p>
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </section>

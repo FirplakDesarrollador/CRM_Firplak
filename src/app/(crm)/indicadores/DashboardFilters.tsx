@@ -4,8 +4,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PERIODS } from "@/lib/periods";
 import { useT } from "@/lib/i18n/client";
 
-export function DashboardFilters({ period, from, to, owner, users, canPickOwner }: {
-  period: string; from: string; to: string; owner: string;
+export function DashboardFilters({ period, from, to, owner, market, users, canPickOwner }: {
+  period: string; from: string; to: string; owner: string; market: string;
   users: { id: string; name: string }[]; canPickOwner: boolean;
 }) {
   const router = useRouter();
@@ -35,6 +35,12 @@ export function DashboardFilters({ period, from, to, owner, users, canPickOwner 
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       )}
+      {/* Mercado: aplica a las ventas reales de SAP. */}
+      <select aria-label={t("Mercado")} className="select w-auto" value={market} onChange={(e) => set({ mercado: e.target.value === "all" ? null : e.target.value })}>
+        <option value="all">{t("Todos los mercados")}</option>
+        <option value="nacional">{t("Nacional")}</option>
+        <option value="internacional">{t("Internacional")}</option>
+      </select>
     </div>
   );
 }

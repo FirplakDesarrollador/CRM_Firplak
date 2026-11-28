@@ -2798,6 +2798,43 @@ await check('ventas reales de SAP: carga por meses, dos años, visibilidad, sucu
   await q(`update profiles set full_name = '' where id = $1`, [rep.id]);
   await q(`delete from auth.users where id = $1`, [agent.id]);
 });
+await check('indicadores: mercado nacional o internacional, ventas por asesor, por país y clientes de un país', async () => {
+  const y = new Date().getFullYear();
+  await q(`insert into sap_sales (sale_date, invoice, sale_type, zone, territory, channel, seller, card_code, customer_name, amount) values
+    ('${y}-02-03', 'M1', 'Nacional', 'ANTIOQUIA', 'Antioquia', 'Canal Distribución', 'VENDEDOR UNO', 'CN500-01', 'NACIONAL UNO', 1000),
+    ('${y}-02-04', 'M2', 'Excluido', 'ANTIOQUIA', 'Antioquia', 'Canal Constructores', 'VENDEDOR UNO', 'CN501-01', 'EXCLUIDO', 300),
+    ('${y}-02-05', 'M3', 'Zona Franca', 'CENTRO DEL PAIS', 'Cundinamarca', 'Canal Distribución', 'VENDEDOR DOS', 'CN502-01', 'ZONA FRANCA', 200),
+    ('${y}-02-06', 'M4', 'Exterior', 'EXTERIOR', 'Panamá', 'Canal Distribución', 'VENDEDOR DOS', 'CE900-01', 'ISTMO UNO', 4000),
+    ('${y}-02-07', 'M5', 'Exterior', 'EXTERIOR', 'Panamá', 'Canal Distribución', 'VENDEDOR DOS', 'CE900-02', 'ISTMO DOS', 1000),
+    ('${y}-02-08', 'M6', 'Exterior', 'Exterior', 'Estados Unidos', 'Canal Distribución', 'VENDEDOR DOS', 'CE901-01', 'NORTE', 3000),
+    -- Cliente del exterior por código, aunque la zona venga mal: es internacional.
+    ('${y}-02-09', 'M7', 'Nacional', 'ANTIOQUIA', 'Ecuador', 'Canal Distribución', 'VENDEDOR UNO', 'CE902-01', 'ANDINO', 500)`);
+  const resumen = async (mercado) => (await as(admin, () => q(`select sap_sales_summary('${y}-02-01', '${y}-02-28', 15, null, null, null, $1) r`, [mercado])))[0].r;
+  const todo = await resumen(null), nal = await resumen('national'), int = await resumen('international');
+  assert.equal(Number(todo.total), 10000);
+  // Nacional incluye «Excluido» y «Zona Franca»; internacional, la zona Exterior y los clientes «CE».
+  assert.equal(Number(nal.total), 1500);
+  assert.equal(Number(int.total), 8500);
+  assert.deepEqual(nal.by_country, []);
+  assert.deepEqual(int.by_country.map((c) => [c.key, Number(c.amount), c.customers]), [['Panamá', 5000, 1], ['Estados Unidos', 3000, 1], ['Ecuador', 500, 1]]);
+  assert.deepEqual(todo.by_country.map((c) => c.key), ['Panamá', 'Estados Unidos', 'Ecuador']);
+  assert.deepEqual(todo.by_seller.map((v) => [v.key, Number(v.amount), v.customers]), [['VENDEDOR DOS', 8200, 3], ['VENDEDOR UNO', 1800, 3]]);
+  assert.deepEqual(nal.by_seller.map((v) => [v.key, Number(v.amount)]), [['VENDEDOR UNO', 1300], ['VENDEDOR DOS', 200]]);
+  // Las sucursales de un grupo respetan el mercado.
+  const suc = await as(admin, () => q(`select card_code, amount::float a from sap_sales_group('CE900', '${y}-02-01', '${y}-02-28', null, null, null, 'international')`));
+  assert.deepEqual(suc.map((b) => [b.card_code, b.a]), [['CE900-01', 4000], ['CE900-02', 1000]]);
+  assert.equal((await as(admin, () => q(`select count(*)::int n from sap_sales_group('CE900', '${y}-02-01', '${y}-02-28', null, null, null, 'national')`)))[0].n, 0);
+  // Clientes de un país: las dos sucursales del mismo cliente van sumadas.
+  const pais = await as(admin, () => q(`select key, amount::float a, branches::int b from sap_sales_country('Panamá', '${y}-02-01', '${y}-02-28')`));
+  assert.deepEqual(pais.map((c) => [c.key, c.a, c.b]), [['CE900', 5000, 2]]);
+  // Un asesor sin vendedor de SAP relacionado no ve nada.
+  assert.equal(Number((await as(rep, () => q(`select sap_sales_summary('${y}-02-01', '${y}-02-28', 15, null, null, null, 'international') r`)))[0].r.total), 0);
+  assert.equal((await as(rep, () => q(`select count(*)::int n from sap_sales_country('Panamá', '${y}-02-01', '${y}-02-28')`)))[0].n, 0);
+  for (const f of ['sap_sales_summary(date, date, int, uuid, text[], text[], text)', 'sap_sales_group(text, date, date, uuid, text[], text[], text)', 'sap_sales_country(text, date, date, uuid, text[], int)']) {
+    assert.equal((await q(`select has_function_privilege('anon', 'public.${f}', 'execute') ok`))[0].ok, false);
+  }
+  await db.exec(`delete from sap_sales where invoice in ('M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7')`);
+});
 await check('una oportunidad borrada se descuenta de las fotos del pronóstico en las que sumaba', async () => {
   const [base] = await q(`select id from opportunities where not is_closed and owner_id is not null
                           and forecast_category in ('commit', 'best_case', 'pipeline') order by name limit 1`);

@@ -44,6 +44,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const { from, to, period } = resolvePeriod(one(sp.periodo) || "this_year", one(sp.desde), one(sp.hasta));
   const owner = one(sp.asesor) || null;
+  // Mercado de las ventas reales de SAP: nacional, internacional o todos.
+  const marketParam = one(sp.mercado);
+  const market = marketParam === "nacional" ? "national" : marketParam === "internacional" ? "international" : null;
 
   const users = await getUsers();
 
@@ -87,7 +90,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
             <h1 className="text-xl font-medium">{t("Indicadores")} · {t(PERIODS[period])} · <Fmt date={from} /> – <Fmt date={to} /></h1>
           </div>
         </div>
-        <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"}
+        <DashboardFilters period={period} from={from} to={to} owner={owner ?? "all"} market={market ? marketParam! : "all"}
           users={users.filter((u) => u.is_active).map((u) => ({ id: u.id, name: u.full_name }))} canPickOwner={canPickOwner} />
       </div>
 
@@ -168,7 +171,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/indica
       {/* Es la consulta más pesada de la página (cerca de 1 s con el año completo): el resto se muestra sin esperarla. */}
       <Suspense key={`${from}/${to}/${owner ?? ""}`}
         fallback={<div className="skeleton h-80 w-full" aria-busy="true" aria-label={t("Cargando ventas de SAP")} />}>
-        <SapSalesSection from={from} to={to} owner={owner} />
+        <SapSalesSection from={from} to={to} owner={owner} market={market} />
       </Suspense>
 
       <section className="card overflow-hidden">

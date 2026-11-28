@@ -3,16 +3,16 @@ import { Tr } from "@/components/ui/Tr";
 import { createClient } from "@/lib/supabase/server";
 import { formatCompactCurrency, formatCurrency, formatMonth } from "@/lib/format";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { loadSalesSummary } from "@/lib/sap/sales";
+import { loadSalesSummary, type SalesMarket } from "@/lib/sap/sales";
 import { SapSalesExplorer } from "./SapSalesExplorer";
 
 /** Ventas reales de SAP (facturación neta) del periodo; los gráficos se filtran entre sí (ver SapSalesExplorer). */
-export async function SapSalesSection({ from, to, owner }: { from: string; to: string; owner: string | null }) {
-  const summary = await loadSalesSummary(from, to, owner, { channels: [], zones: [] });
+export async function SapSalesSection({ from, to, owner, market = null }: { from: string; to: string; owner: string | null; market?: SalesMarket }) {
+  const summary = await loadSalesSummary(from, to, owner, { channels: [], zones: [] }, market);
   // Sin ninguna carga del agente no hay nada que mostrar.
   if (!summary?.loaded_at) return null;
   // La clave reinicia la selección cuando cambia el periodo o el asesor.
-  return <SapSalesExplorer key={`${from}/${to}/${owner ?? ""}`} initial={summary} from={from} to={to} owner={owner} />;
+  return <SapSalesExplorer key={`${from}/${to}/${owner ?? ""}/${market ?? ""}`} initial={summary} from={from} to={to} owner={owner} market={market} />;
 }
 
 /** Ventas de una cuenta en los últimos doce meses; una cuenta principal suma las de sus sucursales. */

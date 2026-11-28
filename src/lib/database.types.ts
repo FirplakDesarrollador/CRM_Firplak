@@ -5370,6 +5370,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      sap_is_international: {
+        Args: {
+          p_zone: string
+          p_card_code: string
+        }
+        Returns: boolean
+      }
       sap_item_available: {
         Args: {
           p_code: string
@@ -5388,6 +5395,22 @@ export type Database = {
         }
         Returns: string
       }
+      sap_sales_country: {
+        Args: {
+          p_country: string
+          p_from: string
+          p_to: string
+          p_owner?: string
+          p_channels?: string[]
+          p_top?: number
+        }
+        Returns: {
+          key: string
+          names: string[]
+          amount: number
+          branches: number
+        }[]
+      }
       sap_sales_group: {
         Args: {
           p_key: string
@@ -5396,6 +5419,7 @@ export type Database = {
           p_owner?: string
           p_channels?: string[]
           p_zones?: string[]
+          p_market?: string
         }
         Returns: {
           card_code: string
@@ -5433,6 +5457,7 @@ export type Database = {
           p_owner?: string
           p_channels?: string[]
           p_zones?: string[]
+          p_market?: string
         }
         Returns: Json
       }

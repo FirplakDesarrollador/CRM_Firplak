@@ -15,6 +15,10 @@ const upToToday = (to: string) => { const today = todayISO(); return to > today 
 
 export type SalesBranch = { card_code: string; customer_name: string | null; seller: string | null; amount: number; prev: number | null; account_id: string | null };
 export type SalesFilters = { channels: string[]; zones: string[] };
+/** Mercado: nacional, internacional (zona Exterior o cliente del exterior) o todo. */
+export type SalesMarket = "national" | "international" | null;
+export type SalesSlice = { key: string; amount: number; prev: number | null; customers: number };
+export type SalesCountryCustomer = { key: string; names: string[] | null; amount: number; branches: number };
 export type SalesSummary = {
   total: number; total_prev: number | null; invoices: number; customers: number; loaded_at: string | null;
   /**
@@ -25,27 +29,42 @@ export type SalesSummary = {
   by_month: { month: string; amount: number }[];
   by_channel: { key: string; amount: number }[];
   by_zone: { key: string; amount: number }[];
+  by_seller: SalesSlice[];
+  /** Solo mercado internacional: el territorio de SAP es el país. */
+  by_country: SalesSlice[];
   top: { key: string; amount: number; prev: number | null; branches: number; names: string[] | null; crm_name: string | null }[];
 };
 
 /** Resumen de ventas reales del periodo, con la selección de canales y zonas (lo que la persona puede ver). */
-export async function loadSalesSummary(from: string, to: string, owner: string | null, filters: SalesFilters): Promise<SalesSummary | null> {
+export async function loadSalesSummary(from: string, to: string, owner: string | null, filters: SalesFilters, market: SalesMarket = null): Promise<SalesSummary | null> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("sap_sales_summary", {
     p_from: from, p_to: upToToday(to), p_top: 15, p_owner: owner ?? undefined,
     p_channels: filters.channels.length ? filters.channels : undefined, p_zones: filters.zones.length ? filters.zones : undefined,
+    p_market: market ?? undefined,
   });
   return (data as unknown as SalesSummary | null) ?? null;
 }
 
 /** Sucursales de un grupo de clientes con su venta del periodo y su comparación. */
-export async function loadSalesGroup(key: string, from: string, to: string, owner: string | null, filters: SalesFilters): Promise<SalesBranch[]> {
+export async function loadSalesGroup(key: string, from: string, to: string, owner: string | null, filters: SalesFilters, market: SalesMarket = null): Promise<SalesBranch[]> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("sap_sales_group", {
     p_key: key, p_from: from, p_to: upToToday(to), p_owner: owner ?? undefined,
     p_channels: filters.channels.length ? filters.channels : undefined, p_zones: filters.zones.length ? filters.zones : undefined,
+    p_market: market ?? undefined,
   });
   return (data ?? []).map((r) => ({ ...r, amount: Number(r.amount), prev: r.prev === null ? null : Number(r.prev) }));
+}
+
+/** Principales clientes de un país del mercado internacional en el periodo. */
+export async function loadSalesCountry(country: string, from: string, to: string, owner: string | null, filters: SalesFilters): Promise<SalesCountryCustomer[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("sap_sales_country", {
+    p_country: country, p_from: from, p_to: upToToday(to), p_owner: owner ?? undefined,
+    p_channels: filters.channels.length ? filters.channels : undefined,
+  });
+  return (data ?? []).map((r) => ({ key: r.key, names: r.names, amount: Number(r.amount), branches: Number(r.branches) }));
 }
 
 /** Relaciona un vendedor de SAP con un usuario del CRM: a ese usuario se le cuentan sus ventas. */
