@@ -4033,6 +4033,7 @@ export type Database = {
           line_num: number
           segment: string | null
           seller: string | null
+          store_code: string | null
         }
         Insert: {
           amount?: number
@@ -4047,6 +4048,7 @@ export type Database = {
           line_num?: number
           segment?: string | null
           seller?: string | null
+          store_code?: string | null
         }
         Update: {
           amount?: number
@@ -4061,6 +4063,7 @@ export type Database = {
           line_num?: number
           segment?: string | null
           seller?: string | null
+          store_code?: string | null
         }
         Relationships: [
         ]
@@ -5415,6 +5418,7 @@ export type Database = {
           customer_name: string
           base_date: string
           segment: string
+          store_code: string
         }[]
       }
       sap_customer_root: {

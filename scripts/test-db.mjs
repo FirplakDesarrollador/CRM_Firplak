@@ -2847,11 +2847,14 @@ await check('pronóstico real por zona, canal, subgrupo o segmento, vendedor y p
     ['CE702-01', 'Importador', 'Canal Distribución', 'EXTERIOR', 'Panamá', 'S3', 'Importadores'],
     ['CN799-01', 'Ya no viene', 'Canal B2C', 'ANTIOQUIA', 'Antioquia', null, null],
   ];
+  // Una cadena facturada a una sola razón social (Bogotá) con tiendas en otras zonas.
+  clientes.splice(3, 0, ['CN750', 'Cadena central', 'Canal Distribución', 'CENTRO DEL PAIS', 'Bogotá', 'S9', 'Grandes superficies'],
+    ['CN750-08', 'Cadena tienda costa', 'Canal Distribución', 'COSTA ATLÁNTICA', 'Atlántico', 'S9', 'Grandes superficies']);
   const l1 = '33333333-3333-4333-8333-333333333333', l2 = '44444444-4444-4444-8444-444444444444', l3 = '55555555-5555-4555-8555-555555555555';
   await assert.rejects(as(admin, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l1, JSON.stringify(clientes)])), /Solo el agente de SAP/);
   await as(agente, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l1, JSON.stringify(clientes)]));
-  await as(agente, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l2, JSON.stringify(clientes.slice(0, 3))]));
-  assert.deepEqual((await q(`select card_code from sap_customers order by 1`)).map((r) => r.card_code), ['CE702-01', 'CN700-01', 'CN701-01']);
+  await as(agente, () => q(`select sap_agent_customers_load($1, $2::jsonb, true)`, [l2, JSON.stringify(clientes.slice(0, 5))]));
+  assert.deepEqual((await q(`select card_code from sap_customers order by 1`)).map((r) => r.card_code), ['CE702-01', 'CN700-01', 'CN701-01', 'CN750', 'CN750-08']);
   assert.equal((await as(admin, () => q(`select count(*)::int n from sap_customers`)))[0].n, 0);
   // Una venta facturada del distribuidor, y pedidos abiertos de los tres (ninguno tiene ventas: los clasifica el maestro).
   await q(`insert into sap_sellers (seller, user_id) values ('VENDEDOR CORTE', $1) on conflict (seller) do update set user_id = excluded.user_id`, [admin.id]);
@@ -2862,19 +2865,24 @@ await check('pronóstico real por zona, canal, subgrupo o segmento, vendedor y p
     ['order', 8802, 0, '882', 'CN701-01', 'Constructora', 'VENDEDOR CORTE', hoy, 700, 'Sin POD', 'Vivienda VIS'],
     ['order', 8803, 0, '883', 'CN701-01', 'Constructora', 'VENDEDOR CORTE', hoy, 300, 'Sin POD', ''],
     ['order', 8804, 0, '884', 'CE702-01', 'Importador', 'OTRO DEL CORTE', hoy, 900, '', ''],
+    // Dos líneas del mismo pedido de la cadena: una con tienda en la costa y otra sin tienda (queda en Bogotá).
+    ['order', 8805, 0, '885', 'CN750', 'Cadena central', 'OTRO DEL CORTE', hoy, 250, '', '', 'CN750-08'],
+    ['order', 8805, 1, '885', 'CN750', 'Cadena central', 'OTRO DEL CORTE', hoy, 150, '', '', ''],
   ];
   await as(agente, () => q(`select sap_agent_backlog_load($1, $2::jsonb, true)`, [l3, JSON.stringify(filas)]));
   assert.equal((await q(`select segment from sap_backlog where doc_num = '882'`))[0].segment, 'Vivienda VIS');
   const corte = async (usuario) => {
     const filasCorte = await as(admin, () => q(`select dimension d, key k, invoiced::float i, backlog::float b from forecast_real_breakdown('year', $1::date${usuario ? ', $2' : ''})
       where key in ('ANTIOQUIA', 'CENTRO DEL PAIS', 'EXTERIOR', 'Canal Constructores', 'VENDEDOR CORTE', 'OTRO DEL CORTE', 'Ferreterías', 'Importadores',
-                    'Constructores · Vivienda VIS', 'Constructores · Sin segmento', 'Constructor grande', 'Panamá')
+                    'Constructores · Vivienda VIS', 'Constructores · Sin segmento', 'Constructor grande', 'Panamá', 'COSTA ATLÁNTICA')
       order by 1, 2`, usuario ? [ini, usuario] : [ini]));
     return Object.fromEntries(filasCorte.map((r) => [`${r.d}/${r.k}`, [r.i, r.b]]));
   };
   const todo = await corte(null);
   assert.deepEqual(todo['zone/ANTIOQUIA'], [1000, 400]);
-  assert.deepEqual(todo['zone/CENTRO DEL PAIS'], [0, 1000]);
+  // El pedido de la cadena: la línea con tienda cuenta en la zona de la tienda; la otra, en la de la razón social.
+  assert.deepEqual(todo['zone/CENTRO DEL PAIS'], [0, 1150]);
+  assert.deepEqual(todo['zone/COSTA ATLÁNTICA'], [0, 250]);
   assert.deepEqual(todo['zone/EXTERIOR'], [0, 900]);
   assert.deepEqual(todo['channel/Canal Constructores'], [0, 1000]);
   assert.deepEqual(todo['seller/VENDEDOR CORTE'], [1000, 1400]);

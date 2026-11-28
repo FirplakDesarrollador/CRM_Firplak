@@ -5,6 +5,9 @@
 --   · sap_customers: el maestro de clientes de SAP que trae el agente (canal = grupo de cliente, territorio y su zona,
 --     y subgrupo). Sirve para clasificar lo que el archivo de ventas no cubre.
 --   · sap_backlog.segment: el «Segmento del Pedido» de SAP (U_Segmentacion), que vive en el pedido, no en el cliente.
+--   · sap_backlog.store_code: la tienda de destino de cada línea (U_Tiendas). Comprobado con facturas reales el
+--     2026-11-28: el territorio de una venta es el del cliente, no el de la dirección de despacho; y en las cadenas que
+--     se facturan a una sola razón social, el de la tienda de cada línea.
 --   · forecast_real_breakdown: las tres capas del pronóstico real repartidas por cada corte. En el corte de subgrupo,
 --     los constructores del mercado nacional salen por segmento (decisión de Luis); el país, solo para Exterior.
 
@@ -59,8 +62,11 @@ grant execute on function public.sap_agent_customers_load(uuid, jsonb, boolean) 
 
 alter table public.sap_backlog add column segment text;
 comment on column public.sap_backlog.segment is 'Segmento del pedido en SAP (U_Segmentacion). Para el corte por segmento de los constructores del mercado nacional.';
+alter table public.sap_backlog add column store_code text;
+comment on column public.sap_backlog.store_code is
+  'Tienda de destino de la línea (U_Tiendas): el código de cliente de la tienda, en las cadenas que se facturan a una sola razón social. Su zona y territorio son los de la tienda.';
 
--- Filas del agente: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor, tipo de facturación, segmento].
+-- Filas del agente: [tipo, DocEntry, línea, DocNum, CardCode, cliente, vendedor, fecha, valor, tipo de facturación, segmento, tienda].
 create or replace function public.sap_agent_backlog_load(p_batch uuid, p_rows jsonb, p_last boolean)
 returns int
 language plpgsql
@@ -74,15 +80,16 @@ begin
   if p_batch is null or jsonb_typeof(p_rows) <> 'array' or jsonb_array_length(p_rows) > 2000 then
     raise exception 'Lote no válido' using errcode = '22023';
   end if;
-  insert into public.sap_backlog (batch, kind, doc_entry, line_num, doc_num, card_code, customer_name, seller, base_date, amount, billing_type, segment)
+  insert into public.sap_backlog (batch, kind, doc_entry, line_num, doc_num, card_code, customer_name, seller, base_date, amount, billing_type, segment, store_code)
   select p_batch, r ->> 0, (r ->> 1)::bigint, coalesce((r ->> 2)::int, 0), nullif(r ->> 3, ''),
          upper(regexp_replace(r ->> 4, '\s', '', 'g')), nullif(r ->> 5, ''), nullif(trim(r ->> 6), ''),
-         nullif(r ->> 7, '')::date, round((r ->> 8)::numeric, 2), nullif(trim(r ->> 9), ''), nullif(trim(r ->> 10), '')
+         nullif(r ->> 7, '')::date, round((r ->> 8)::numeric, 2), nullif(trim(r ->> 9), ''), nullif(trim(r ->> 10), ''),
+         nullif(upper(regexp_replace(coalesce(r ->> 11, ''), '\s', '', 'g')), '')
   from jsonb_array_elements(p_rows) r
   where r ->> 0 in ('order', 'delivery', 'invoice', 'credit') and coalesce(r ->> 4, '') <> '' and (r ->> 8)::numeric > 0
   on conflict (batch, kind, doc_entry, line_num) do update set
     doc_num = excluded.doc_num, card_code = excluded.card_code, customer_name = excluded.customer_name,
-    seller = excluded.seller, base_date = excluded.base_date, amount = excluded.amount, billing_type = excluded.billing_type, segment = excluded.segment;
+    seller = excluded.seller, base_date = excluded.base_date, amount = excluded.amount, billing_type = excluded.billing_type, segment = excluded.segment, store_code = excluded.store_code;
   get diagnostics v_n = row_count;
   if p_last then
     update public.sap_backlog_state set batch = p_batch, loaded_at = now(),
@@ -104,7 +111,7 @@ grant execute on function public.sap_agent_backlog_load(uuid, jsonb, boolean) to
 drop function public.sap_backlog_lines();
 create function public.sap_backlog_lines()
 returns table (kind text, card_code text, doc_num text, forecast_date date, amount numeric, seller text,
-               overdue_days int, customer_name text, base_date date, segment text)
+               overdue_days int, customer_name text, base_date date, segment text, store_code text)
 language sql
 stable
 security definer
@@ -126,7 +133,7 @@ as $$
         where b.kind in ('order', 'delivery')
           and b.batch = (select s.batch from public.sap_backlog_state s where s.id))
   select l.kind, l.card_code, l.doc_num, greatest(l.due, l.today), l.amount, l.seller,
-         greatest(l.today - l.due, 0), l.customer_name, l.base_date, l.segment
+         greatest(l.today - l.due, 0), l.customer_name, l.base_date, l.segment, l.store_code
   from l;
 $$;
 revoke execute on function public.sap_backlog_lines() from public, anon, authenticated;
@@ -180,9 +187,11 @@ begin
     select 'b', b.amount, coalesce(c.zone, h.zone), coalesce(c.channel, h.channel), b.seller,
            coalesce(c.territory, h.territory), public.sap_is_international(coalesce(c.zone, h.zone), b.card_code), c.subgroup, b.segment
     from public.sap_backlog_lines() b
-    left join public.sap_customers c on c.card_code = b.card_code
+    -- Una línea con tienda de destino (cadenas facturadas a una sola razón social) se clasifica por la tienda:
+    -- así lo hace el archivo de ventas.
+    left join public.sap_customers c on c.card_code = coalesce(b.store_code, b.card_code)
     left join lateral (select s.zone, s.channel, nullif(trim(s.territory), '') as territory from public.sap_sales s
-                       where s.card_code = b.card_code order by s.sale_date desc limit 1) h on true
+                       where s.card_code = coalesce(b.store_code, b.card_code) order by s.sale_date desc limit 1) h on true
     where b.forecast_date between p_period_start and v_end and b.amount > 0
       and b.overdue_days <= public.sap_stale_days()
       and (p_user is null or public.sap_backlog_is_of(p_user, b.seller, b.card_code))
@@ -210,8 +219,7 @@ begin
     ('channel', coalesce(nullif(trim(x.channel), ''), 'Sin canal')),
     ('seller', coalesce(nullif(trim(x.seller), ''), 'Sin vendedor')),
     -- Los constructores del mercado nacional van por el segmento del pedido; los demás, por el subgrupo del cliente.
-    -- Las oportunidades del CRM no tienen pedido todavía: van por el subgrupo de su cliente.
-    ('group', case when x.layer <> 'o' and x.channel = 'Canal Constructores' and not x.intl
+    ('group', case when x.channel = 'Canal Constructores' and not x.intl
                    then 'Constructores · ' || coalesce(nullif(trim(x.segment), ''), 'Sin segmento')
                    else coalesce(nullif(trim(x.subgroup), ''), 'Sin subgrupo') end),
     ('country', case when x.intl then coalesce(nullif(trim(x.territory), ''), 'Sin país') end)

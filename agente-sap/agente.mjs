@@ -6,7 +6,7 @@
 // en el CRM por su Código SAP, y el inventario de los productos activos; lo deja en las tablas sap_*
 // del CRM con un usuario técnico que solo puede hacer eso. Nunca escribe en SAP.
 //
-// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|campos|instalar|desinstalar|estado> [--ahora]
+// Uso:  node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|campos|destino|instalar|desinstalar|estado> [--ahora]
 // Guía: agente-sap/LEEME.md
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -238,7 +238,7 @@ async function pendientePorFacturar(sap, vendedor) {
       const pedida = num(ln.Quantity);
       // Parte de la línea que aún no se ha despachado.
       const valor = pedida > 0 ? Math.round((num(ln.LineTotal) * Math.max(0, num(ln.RemainingOpenQuantity)) / pedida) * 100) / 100 : 0;
-      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? "", p.U_Segmentacion ?? ""]);
+      if (valor > 0) filas.push(["order", p.DocEntry, ln.LineNum ?? 0, String(p.DocNum), p.CardCode, p.CardName ?? "", vendedor(p), dia(ln.ShipDate) ?? dia(p.DocDueDate), valor, p.U_TipoFacturacion ?? "", p.U_Segmentacion ?? "", ln.U_Tiendas ?? ""]);
     }
   }
   const entregas = await sap.lista(q("DeliveryNotes", { $select: "DocEntry,DocNum,CardCode,CardName,SalesPersonCode,DocDate,DocTotal,VatSum,Cancelled", $filter: "DocumentStatus eq 'bost_Open' and Cancelled eq 'tNO'", $orderby: "DocEntry" }));
@@ -501,6 +501,46 @@ async function campos(palabras) {
         log(`  U_${f.Name} · ${f.Description ?? ""}${valores ? ` · valores: ${valores}` : ""}`);
       }
     }
+  } finally {
+    await sap.logout();
+  }
+  return 0;
+}
+
+/**
+ * Muestra, para las últimas facturas (o para los números de factura que se indiquen), el destino del despacho y el
+ * territorio del cliente, para saber de dónde sale el territorio de una venta. Solo lee; no muestra nombres ni valores.
+ */
+async function destino(numeros) {
+  const sap = new Sap(leerConfig());
+  await sap.login();
+  try {
+    const estados = new Map((await sap.lista(q("States", { $select: "Code,Country,Name" }))).map((e) => [`${e.Country}|${e.Code}`, e.Name]));
+    const territorios = new Map((await sap.lista(q("Territories", { $select: "TerritoryID,Description,Parent" }))).map((t) => [t.TerritoryID, t]));
+    const filtro = numeros.length ? numeros.filter((n) => /^\d+$/.test(n)).map((n) => `DocNum eq ${n}`).join(" or ") : "Cancelled eq 'tNO'";
+    // Con números de factura se traen también las líneas: en algunas facturas el destino cambia de una línea a otra.
+    const campos = `DocNum,DocDate,CardCode,ShipToCode,AddressExtension${numeros.length ? ",DocumentLines" : ""}`;
+    const docs = (await sap.get(q("Invoices", { $select: campos, $filter: filtro, $orderby: "DocEntry desc", $top: "12" })))?.value ?? [];
+    const clientes = new Map();
+    for (const d of docs) {
+      if (!clientes.has(d.CardCode)) clientes.set(d.CardCode, await sap.get(`BusinessPartners(${encodeURIComponent(comillas(d.CardCode))})?$select=Territory`));
+      const t = territorios.get(clientes.get(d.CardCode)?.Territory);
+      const padre = t && t.Parent > 0 ? territorios.get(t.Parent) : null;
+      const a = d.AddressExtension ?? {};
+      const depto = a.ShipToState ? `${a.ShipToState} (${estados.get(`${a.ShipToCountry}|${a.ShipToState}`) ?? "sin nombre"})` : "(vacío)";
+      log(`Factura ${d.DocNum} · ${dia(d.DocDate)} · cliente ${String(d.CardCode).slice(0, 2)}… · despacho: ciudad ${a.ShipToCity ?? "(vacía)"}, depto ${depto}, país ${a.ShipToCountry ?? "(vacío)"}`
+        + ` · territorio del cliente: ${t?.Description ?? "(sin territorio)"} · zona (territorio padre): ${padre?.Description ?? "(sin padre)"}`);
+      // Por línea: bodega, centros de costo y los campos de usuario que parezcan un destino, agrupados.
+      const grupos = new Map();
+      for (const ln of d.DocumentLines ?? []) {
+        const propios = Object.entries(ln).filter(([k, v]) => /^U_/.test(k) && v !== null && v !== "" && /dest|ciud|dep|suc|tiend|punto|loc|terr|zon|obra|proy|sede/i.test(k)).map(([k, v]) => `${k}=${v}`);
+        const clave = [`bodega ${ln.WarehouseCode ?? "-"}`, `centros ${[ln.CostingCode, ln.CostingCode2, ln.CostingCode3, ln.CostingCode4, ln.CostingCode5].map((c) => c || "-").join("/")}`, ...propios].join(" · ");
+        grupos.set(clave, (grupos.get(clave) ?? 0) + 1);
+      }
+      for (const [clave, n] of [...grupos].slice(0, 30)) log(`    ${n} líneas · ${clave}`);
+      if (grupos.size > 30) log(`    … y ${grupos.size - 30} combinaciones más`);
+    }
+    if (!docs.length) log("No se encontraron facturas.");
   } finally {
     await sap.logout();
   }
@@ -827,9 +867,9 @@ function estado() {
 }
 
 const [comando = "", ...resto] = process.argv.slice(2);
-const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), buscar: () => buscar(resto), campos: () => campos(resto), atender, ventas, instalar, desinstalar, estado };
+const comandos = { correr: () => correr({ ahora: resto.includes("--ahora") }), probar, muestra: () => muestra(resto), buscar: () => buscar(resto), campos: () => campos(resto), destino: () => destino(resto), atender, ventas, instalar, desinstalar, estado };
 if (!comandos[comando]) {
-  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|campos|instalar|desinstalar|estado> [--ahora]");
+  console.log("Uso: node agente-sap/agente.mjs <correr|atender|ventas|probar|muestra|buscar|campos|destino|instalar|desinstalar|estado> [--ahora]");
   process.exit(2);
 }
 /** Termina el programa. Con una lectura colgada por macOS, la salida normal también se queda esperando: se corta. */
