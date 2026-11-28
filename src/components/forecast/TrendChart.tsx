@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { AlVer } from "@/components/dashboard/AlVer";
+import { niceScale } from "./scale";
 
 export type TrendPoint = { date: string; closed: number; forecast: number; potential: number; quota: number | null; live?: boolean };
 
@@ -43,15 +44,11 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   const H = W < 560 ? 200 : 280;
   const quota = points.reduce((m, p) => Math.max(m, p.quota ?? 0), 0);
   // Escala con pasos redondos (1, 2 o 5 × 10ⁿ) para que el eje se lea fácil.
-  const raw = Math.max(1, quota, ...points.map((p) => p.potential)) / 4;
-  const pow = 10 ** Math.floor(Math.log10(raw));
-  const stepValue = ([1, 2, 5, 10].find((m) => m * pow >= raw) ?? 10) * pow;
-  const max = stepValue * 4;
+  const { max, ticks } = niceScale(Math.max(1, quota, ...points.map((p) => p.potential)));
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
   const x = (i: number) => PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
   const y = (v: number) => PAD.top + innerH - (v / max) * innerH;
-  const ticks = [0, 1, 2, 3, 4].map((k) => k * stepValue);
   const label = (p: TrendPoint) => (p.live ? t("Hoy (en vivo)") : formatDate(p.date, locale));
   const last = points.length - 1;
   // Eje de fechas: sin año en pantallas angostas y solo las que caben sin encimarse.

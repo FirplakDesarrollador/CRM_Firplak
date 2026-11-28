@@ -6,6 +6,7 @@ import { Tr } from "@/components/ui/Tr";
 import { Fmt } from "@/components/ui/Fmt";
 import { Val } from "@/components/ui/Val";
 import { AlVer } from "./AlVer";
+import { niceScale } from "@/components/forecast/scale";
 export function KpiTile({ label, value, unit, sub, tone }: {
   label: string; value: string; unit?: string; sub?: React.ReactNode; tone?: "success" | "danger" | "warning";
 }) {
@@ -82,12 +83,9 @@ export function BarList({
   );
 }
 
+// Tope ajustado al dato, para que las diferencias entre meses se alcancen a ver.
 function niceMax(v: number) {
-  if (v <= 0) return 1;
-  const pow = 10 ** Math.floor(Math.log10(v));
-  const n = v / pow;
-  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-  return step * pow;
+  return v <= 0 ? 1 : niceScale(v).max;
 }
 
 /** Columnas por mes (una serie) con eje Y redondeado, tooltip y tabla de datos. */

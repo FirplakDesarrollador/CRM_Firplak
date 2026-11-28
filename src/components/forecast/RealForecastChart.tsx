@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { formatCompactCurrency, formatCurrency, formatDate, formatMonth } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { REAL_LAYERS, type RealDay } from "./real-layers";
+import { niceScale } from "./scale";
 
 const PAD = { top: 30, right: 12, bottom: 44, left: 64 };
 const TOTAL = "var(--text)"; // la línea del total va en la tinta de la app, sobre los colores de siempre
@@ -68,17 +69,14 @@ export function RealForecastChart({ days, today, quota, mode }: { days: RealDay[
   const last = buckets.length - 1;
   const total = (b: Bucket) => b.invoiced + b.backlog + b.opportunities;
   const shownQuota = weeks ? quota : null; // la meta es del periodo completo: solo se compara contra el acumulado
-  const raw = (Math.max(1, shownQuota ?? 0, ...buckets.map(total)) * 1.08) / 4;
-  const pow = 10 ** Math.floor(Math.log10(raw));
-  const stepValue = ([1, 2, 5, 10].find((m) => m * pow >= raw) ?? 10) * pow;
-  const max = stepValue * 4;
+  // Tope ajustado al dato (con un 4 % de aire para la etiqueta del valor más alto).
+  const { max, ticks } = niceScale(Math.max(1, shownQuota ?? 0, ...buckets.map(total)) * 1.04);
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
   const band = innerW / Math.max(1, buckets.length);
   const barW = Math.max(6, Math.min(band * 0.46, 72));
   const x = (i: number) => PAD.left + band * i + band / 2;
   const y = (v: number) => PAD.top + innerH - (v / max) * innerH;
-  const ticks = [0, 1, 2, 3, 4].map((k) => k * stepValue);
   // El tramo donde cae hoy: hasta ahí la línea es real; después, proyección.
   const todayIndex = buckets.findIndex((b) => b.start <= today && today <= b.end);
   const split = todayIndex >= 0 ? todayIndex : buckets.length && today > buckets[last].end ? last : 0;

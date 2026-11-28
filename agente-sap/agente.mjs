@@ -439,15 +439,16 @@ async function buscar(palabras) {
 // ---------------------------------------------------------------- Ventas reales (CSV mensuales)
 /** Una línea de CSV en sus campos (admite comillas y comas dentro de comillas). */
 /**
- * Lista los campos de usuario de los pedidos de venta (cabecera y líneas) con su descripción y sus valores posibles,
- * para ubicar un dato por su nombre en SAP (p. ej. «campos factur»). Solo lee definiciones de campos, no documentos.
+ * Lista los campos de usuario de los pedidos de venta (cabecera y líneas), de los clientes y de los artículos, con su
+ * descripción y sus valores posibles, para ubicar un dato por su nombre en SAP (p. ej. «campos factur», «campos segment»).
+ * Solo lee definiciones de campos, no documentos ni clientes.
  */
 async function campos(palabras) {
   const texto = palabras.join(" ").trim().toLowerCase();
   const sap = new Sap(leerConfig());
   await sap.login();
   try {
-    for (const [tabla, donde] of [["ORDR", "Pedido (cabecera)"], ["RDR1", "Pedido (líneas)"]]) {
+    for (const [tabla, donde] of [["ORDR", "Pedido (cabecera)"], ["RDR1", "Pedido (líneas)"], ["OCRD", "Cliente"], ["OITM", "Artículo"]]) {
       const filas = await sap.lista(q("UserFieldsMD", { $filter: `TableName eq ${comillas(tabla)}` }));
       const vistos = filas.filter((f) => !texto || `${f.Name} ${f.Description} ${(f.ValidValuesMD ?? []).map((v) => `${v.Value} ${v.Description}`).join(" ")}`.toLowerCase().includes(texto));
       log(`${donde}: ${vistos.length} de ${filas.length} campos de usuario${texto ? ` con «${texto}»` : ""}`);
